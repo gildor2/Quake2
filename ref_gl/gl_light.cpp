@@ -5,6 +5,18 @@
 #include "protocol.h"		//!! for RF_XXX consts only !
 
 
+#define LIGHT_DEBUG		1
+
+#if MAX_DEBUG
+#undef	LIGHT_DEBUG
+#define LIGHT_DEBUG		1
+#endif
+
+#if NO_DEBUG
+#undef	LIGHT_DEBUG
+#define LIGHT_DEBUG		0
+#endif
+
 namespace OpenGLDrv {
 
 
@@ -46,6 +58,7 @@ static CVec3 entityColorAxis[6];
 // contain color values for box
 // array layout: back/front/right/left/bottom/top
 
+#if LIGHT_DEBUG
 
 static void LightLine (const CAxis &axis, const CVec3 &from, const CVec3 &to, const CVec3 &color, float lightScale)
 {
@@ -187,6 +200,8 @@ void ShowLights ()
 	glPopMatrix ();
 }
 
+#endif // LIGHT_DEBUG
+
 
 static void AddLight (const CAxis &axis, const CVec3 &dir, float scale, const CVec3 &color)
 {
@@ -298,8 +313,10 @@ static void AddPointLight (const gl_slight_t *sl, const CVec3 &origin, const CAx
 	if (CM_BrushTrace (sl->origin, origin, &br, 1)) return;
 
 	AddLight (axis, dif, scale, sl->color);
+#if LIGHT_DEBUG
 	if (gl_lightLines->value)
 		LightLine (axis, sl->origin, origin, sl->color, scale);
+#endif
 }
 
 
@@ -415,8 +432,10 @@ static void AddSurfaceLight (const surfLight_t *rl, const CVec3 &origin, const C
 
 	if (!intens) return;				// ambient-only surface
 	AddLight (axis, dir, intens, rl->color);
+#if LIGHT_DEBUG
 	if (gl_lightLines->value && intens > gl_lightLines->value)
 		LightLine (axis, dst, origin, rl->color, intens);
+#endif
 }
 
 
@@ -486,8 +505,10 @@ static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 		{
 			float intens = map.sunLight * SUN_SCALE * vp.lightStyles[0].value / 128.0f;	// sun light have style=0
 			AddLight (*axis, map.sunVec, intens, map.sunColor);
+#if LIGHT_DEBUG
 			if (gl_lightLines->value)
 				LightLine (*axis, tr.endpos, *origin, map.sunColor, intens);
+#endif
 		}
 	}
 
@@ -561,9 +582,8 @@ void LightForEntity (refEntity_t *ent)
 	gl_slight_t *sl;
 	refDlight_t	*dl;
 	float	scale;
-	gl_depthMode_t prevDepth;
 
-	clock(gl_speeds.entLight);
+	STAT(clock(gl_stats.entLight));
 
 	// NOTE: sl.color is [0..1], out color is [0..255]
 
@@ -588,6 +608,8 @@ void LightForEntity (refEntity_t *ent)
 				coord[i] -= map.gridMins[i];
 			}
 
+#if LIGHT_DEBUG
+			gl_depthMode_t prevDepth;
 			if (gl_showGrid->integer)
 			{
 //				DrawTextLeft (va("pos: %g %g %g frac: %g %g %g", VECTOR_ARG(pos), VECTOR_ARG(frac)));
@@ -599,6 +621,7 @@ void LightForEntity (refEntity_t *ent)
 				GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
 				glDisableClientState (GL_COLOR_ARRAY);
 			}
+#endif // LIGHT_DEBUG
 
 			memset (accum, 0, sizeof(accum));
 			float totalFrac = 0;
@@ -627,6 +650,7 @@ void LightForEntity (refEntity_t *ent)
 				totalFrac += f;
 				for (j = 0; j < 6; j++)
 					VectorMA (accum[j], f, entityColorAxis[j]);
+#if LIGHT_DEBUG
 				// show lightgrid
 				if (gl_showGrid->integer)
 				{
@@ -641,17 +665,20 @@ void LightForEntity (refEntity_t *ent)
 					}
 					glEnd ();
 				}
+#endif // LIGHT_DEBUG
 			}
 			if (totalFrac != 1 && totalFrac != 0)	// != 1 -- optimization, != 0 -- zero divide (may happens, when model outside world)
 			{	// if some points have missed (outside the world) -- scale light from correct points
 				totalFrac = 1.0f / totalFrac;
 				for (i = 0; i < 6; i++) accum[i].Scale (totalFrac);
 			}
+#if LIGHT_DEBUG
 			if (gl_showGrid->integer)
 			{
 				glPopMatrix ();
 				GL_DepthRange (prevDepth);
 			}
+#endif
 
 			memset (entityColorAxis, 0, sizeof(entityColorAxis));
 			for (i = 0; i < 6; i++)
@@ -705,8 +732,10 @@ void LightForEntity (refEntity_t *ent)
 		color[1] = dl->c.c[1] * denom;
 		color[2] = dl->c.c[2] * denom;
 		AddLight (ent->coord.axis, dst, scale, color);
+#if LIGHT_DEBUG
 		if (gl_lightLines->value)
 			LightLine (ent->coord.axis, dl->origin, ent->center, color, scale);
+#endif
 	}
 
 	if (ent->mirror)
@@ -745,7 +774,7 @@ void LightForEntity (refEntity_t *ent)
 		ClampColor255 (entityColorAxis[i], entityColorAxis[i]);
 #endif
 
-	unclock(gl_speeds.entLight);
+	STAT(unclock(gl_stats.entLight));
 }
 
 
@@ -755,7 +784,7 @@ void DiffuseLight (color_t *dst, float lightScale)
 	int		i, tmp;
 	bufExtra_t *ex;
 
-	clock(gl_speeds.meshLight);
+	STAT(clock(gl_stats.meshLight));
 
 	CVec3 maxColor = entityColorAxis[0];
 	maxColor.Zero ();
@@ -817,7 +846,7 @@ void DiffuseLight (color_t *dst, float lightScale)
 			dst->rgba = c.rgba;							// just put computed color
 	}
 
-	unclock(gl_speeds.meshLight);
+	STAT(unclock(gl_stats.meshLight));
 }
 
 

@@ -64,8 +64,17 @@
 
 
 // profiling
-#define clock(var)				{var -= appCycles ();}
-#define unclock(var)			{var += appCycles ();}	// UT have "-34" for removing appCycles() dependency
+inline void clock (unsigned &time)		{ time -= appCycles(); }
+inline void unclock (unsigned &time)	{ time += appCycles(); }
+inline void clock (int64 &time)			{ time -= appCycles64(); }
+inline void unclock (int64 &time)		{ time += appCycles64(); }
+
+
+#if STATS
+#	define STAT(x)				x
+#else
+#	define STAT(x)
+#endif
 
 
 #ifndef NULL
@@ -242,15 +251,6 @@ CORE_API double appSeconds ();
 CORE_API double appMillisecondsf ();
 CORE_API unsigned appMilliseconds ();
 CORE_API const char *appTimestamp ();
-
-
-extern CORE_API double GMSecondsPerCycle;
-
-inline float appDeltaCyclesToMsecf (unsigned timeDelta)
-{
-	double v = timeDelta;
-	return v * GMSecondsPerCycle;
-}
 
 
 /*-----------------------------------------------------------------------------

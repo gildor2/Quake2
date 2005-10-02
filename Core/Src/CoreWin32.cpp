@@ -25,8 +25,8 @@ HINSTANCE hInstance;
 	Timing
 -----------------------------------------------------------------------------*/
 
-// We should subtract timeBase from acquired appCycles64 value to determine time since
-// application start, this is useful only for improving precision of retreived float
+// We should subtract timeBase from acquired timeGetTime() value to determine time since
+// application startup, this is useful only for improving precision of retreived float
 // milliseconds value (large integer parts will reduce precision of float part); for
 // the same reason, we use "double" instead of "float" as a result value.
 

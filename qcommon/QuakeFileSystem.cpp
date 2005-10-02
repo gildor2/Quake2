@@ -160,6 +160,7 @@ const char *FS_NextPath (const char *prevpath)
 	// here: prev==BASEDIRNAME or GameDir
 	if (stricmp (prevpath+2, BASEDIRNAME))		// prev!=BASEDIRNAME => return BASEDIRNAME
 		return "./" BASEDIRNAME;
+	// here: prev==BASEDIRNAME
 	return NULL;
 }
 

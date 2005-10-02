@@ -186,9 +186,9 @@ sub getline0 {
 #		# remove leading spaces
 #		$line =~ s/^\s*//;
 		# line may be continued with "\"
-		if ($line =~ /.*\\$/) {
-			my ($line2) = $line =~ /\s*(\S+|\S+.*\S+)\s*\\$/;	# remove "\" at end of line and leading/trailing spaces
-			$line1 .= $line2." ";
+		if ($line =~ /.*\\\s*$/) {
+			my ($line2) = $line =~ /\s*(\S+|\S+.*\S+)\s*\\\s*$/;	# remove "\" at end of line and leading/trailing spaces
+			$line1 .= $line2." " if defined $line2;
 		} else {
 			$line = $line1.$line;
 			# remove leading and trailing spaces (again)

@@ -150,9 +150,6 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 	float prevPitch = 0;
 	if (oldent) oldent->GetAnim (prevLegs, prevTorso, prevAngle, prevPitch);
 
-	//?? torso angles: note, that Q3 angles is for legs (torso rotated), but in Q2 angles for
-	//??  torso (because legs are fixed) - legs rotated
-
 	int legs = ANIM_NOCHANGE;
 
 	if (!(ps->pmove.pm_flags & PMF_ON_GROUND))
@@ -218,8 +215,7 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 
 	/*----------------------- Torso animation -------------------------------*/
 
-	int torso = TORSO_STAND;	//?? this animation should be on IDLE: some Q3 anims may be longer, than
-								//?? Q2 analogs - should allow them to complete
+	int torso = TORSO_STAND;
 
 #define A2(first,last,num,anim)		\
 		{first, first+num-1, anim},	\

@@ -1,3 +1,14 @@
+- a bug with collision detection against moving/rotating brushes (move through model with collision INSIDE model)
+  - appeared after sv_world.cpp::LinkEdict/UnlinkEdict/AreaEdicts uses num[Solid|Trig]Edicts; sometimes this var becomes <0 ...
+  - seems, this is a bug in game source
+- game, "dead body": after player respawned, body will re-appear, and its position will be lerped from {0,0,0} (other coords?); reproduce:
+  1) start server, connect to it with 2nd q2 copy, look at some place, record demo
+  2) on 1st (or any another, but not demo-recording) q2, die few times behind player, recording demo
+  3) disconnect, view recorded demo ...
+  ?) for best effect, should dead somewhere near to {0,0,0} point
+  ?? -- is it game or my bug? may be, bug in original Q2; when bug will be reproduced: try to record same demo with ORIGINAL q2,
+    view demo with original and with my q2
+
 - "dirty": "newgame" from menu: "loading" will appear, but new game not started (no alias)
 ?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
    (saved without shot) but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)

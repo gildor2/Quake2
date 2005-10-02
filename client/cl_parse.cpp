@@ -198,12 +198,12 @@ static void ParseConfigString (void)
 				cl.model_clip[i-CS_MODELS] = NULL;
 		}
 	}
-	else if (i >= CS_SOUNDS && i < CS_SOUNDS+MAX_MODELS)
+	else if (i >= CS_SOUNDS && i < CS_SOUNDS+MAX_SOUNDS)
 	{
 		if (cl.rendererReady)
 			cl.sound_precache[i-CS_SOUNDS] = S_RegisterSound (cl.configstrings[i]);
 	}
-	else if (i >= CS_IMAGES && i < CS_IMAGES+MAX_MODELS)
+	else if (i >= CS_IMAGES && i < CS_IMAGES+MAX_IMAGES)
 	{
 		if (cl.rendererReady)
 			cl.image_precache[i-CS_IMAGES] = RE_RegisterPic (va("pics/%s", cl.configstrings[i]));
@@ -224,7 +224,7 @@ ACTION MESSAGES
 =====================================================================
 */
 
-static void ParseStartSoundPacket(void)
+static void ParseStartSoundPacket ()
 {
 	int flags = MSG_ReadByte (&net_message);
 	int sound_num = MSG_ReadByte (&net_message);

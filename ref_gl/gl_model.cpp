@@ -3,8 +3,6 @@
 
 //#define TEST_LOAD	// will add command "loadmodel <filename>"; may implement this in client (not renderer)
 
-//#define PROFILE_LOADING
-
 namespace OpenGLDrv {
 
 
@@ -54,7 +52,6 @@ model_t	*FindModel (const char *name)
 		return NULL;
 	}
 
-START_PROFILE2(FindModel::Load, name)
 	/*----- not found -- load model ------*/
 	unsigned len;
 	unsigned *file;
@@ -66,8 +63,6 @@ START_PROFILE2(FindModel::Load, name)
 		Com_DPrintf ("R_FindModel: not found: %s\n", *Name2);
 		return NULL;	// file not found
 	}
-END_PROFILE
-START_PROFILE(FindModel::Process)
 
 	switch (LittleLong(*file))
 	{
@@ -90,7 +85,6 @@ START_PROFILE(FindModel::Process)
 	}
 	if (m) modelsArray[modelCount++] = m;
 
-END_PROFILE
 	delete file;
 	return m;
 

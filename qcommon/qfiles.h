@@ -210,12 +210,11 @@ struct dSp2_t
 	.WAL texture file format
 -----------------------------------------------------------------------------*/
 
-#define	MIPLEVELS	4
-struct miptex_t
+struct dMiptex_t
 {
 	char	name[32];
 	unsigned width, height;
-	unsigned offsets[MIPLEVELS];	// 4 mip maps stored
+	unsigned offsets[4];			// 4 mip maps stored; really, required only [0]
 	char	animname[32];			// next frame in animation chain
 	unsigned flags;
 	unsigned contents;
@@ -402,9 +401,6 @@ typedef struct
 	int		contents;
 } dbrush_t;
 
-#define	ANGLE_UP	-1
-#define	ANGLE_DOWN	-2
-
 
 // the visibility lump consists of a header with a count, then
 // byte offsets for the PVS and PHS of each cluster, then the raw
@@ -533,13 +529,13 @@ typedef struct
 {
 	char	name[16];
 	unsigned width, height;
-	unsigned offsets[MIPLEVELS]; // four mip maps stored (==0 if external WAD file)
+	unsigned offsets[4];		// 4 mip maps stored (==0 if external WAD file)
 } hl_miptex_t;
 
 
 typedef struct
 {
-	float	vecs[2][4];		// [s/t][xyz offset]
+	float	vecs[2][4];			// [s/t][xyz offset]
 	int		miptex;
 	int		flags;
 } hl_texinfo_t;

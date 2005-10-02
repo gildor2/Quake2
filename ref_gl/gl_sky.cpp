@@ -442,6 +442,7 @@ void DrawSky ()
 		glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
 
 		//?? some debug stuff from FlushShader()
+#if !NO_DEBUG
 		if (DrawTriangles ())
 		{
 			// need to perform some state restoration (do it with another way ??)
@@ -455,8 +456,9 @@ void DrawSky ()
 				glColor3fv (gl_fogColor);
 			GL_SetMultitexture (1);
 		}
-		gl_speeds.tris += gl_numIndexes /* * numTmpStages*/ / 3;
-		gl_speeds.trisMT += gl_numIndexes /* * numRenderPasses*/ / 3;
+#endif // NO_DEBUG
+		STAT(gl_stats.tris   += gl_numIndexes /* * numTmpStages*/ / 3);
+		STAT(gl_stats.trisMT += gl_numIndexes /* * numRenderPasses*/ / 3);
 		//?? end of FlushShader()
 	}
 	glPopMatrix ();

@@ -12,6 +12,10 @@ namespace OpenGLDrv {
 
 
 //#define SPY_SHADER		// comment line to disable gl_spyShader stuff
+#if MAX_DEBUG
+#define SPY_SHADER
+#endif
+
 
 /*-----------------------------------------------------------------------------
 	Local cvars
@@ -19,7 +23,9 @@ namespace OpenGLDrv {
 
 static cvar_t	*gl_clear;
 static cvar_t	*gl_finish;			// debug ? (can be a situation, when gl_finish==1 is necessary ? (linux))
+#if !NO_DEBUG
 static cvar_t	*gl_showbboxes, *gl_showTris, *gl_showNormals;
+#endif
 #ifdef SPY_SHADER
 static cvar_t	*gl_spyShader;
 #endif
@@ -293,8 +299,11 @@ static void GenerateColorArray (shaderStage_t *st)
 	// other types: FOG
 	}
 
+	// some alphaGen types processed with rgbGen
 	if (st->rgbGenType == RGBGEN_EXACT_VERTEX && st->alphaGenType == ALPHAGEN_VERTEX)
-		return;	// alpha is already set
+		return;
+//	if (st->rgbGenType == RGBGEN_CONST && st->alphaGenType == ALPHAGEN_CONST) -- this situation processed in FlushShader() - no color arrays
+//		return;
 
 	/*--------- alphaGen ----------*/
 	src = srcVertexColor;
@@ -477,24 +486,19 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *te
 		{
 			bufExtra_t *ex;
 			CVec3	v;
-			float	d;
 
 			bufVertex_t *vec = vb->verts;
 			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
 				if (ex->axis)
 				{	// compute envmap using surface axis
-					CVec3	*axis;	// will point to CVec3[2]
-
-					axis = ex->axis;
+					CVec3 *axis = ex->axis;	// -> CVec3[2]
 					for (k = 0; k < ex->numVerts; k++, vec++, dst++)
 					{
 						VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
 						v.NormalizeFast ();
-						d = dot (v, axis[0]);
-						dst->tex[0] = (d - 1) / 2;
-						d = dot (v, axis[1]);
-						dst->tex[1] = (d - 1) / 2;
+						dst->tex[0] = (dot(v, axis[0]) - 1) / 2;
+						dst->tex[1] = (dot(v, axis[1]) - 1) / 2;
 					}
 				}
 				else
@@ -504,7 +508,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *te
 					{
 						VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
 						v.NormalizeFast ();
-						d = dot (v, norm) * 2;
+						float d = dot (v, norm) * 2;
 						dst->tex[0] = (d * norm[1] - v[1] + 1) / 2;
 						dst->tex[1] = (d * norm[2] - v[2] + 1) / 2;
 					}
@@ -524,7 +528,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *te
 			}
 		}
 		break;
-	// other types: ZERO (?), FOG (?)
+	// other types: FOG (?)
 
 	default:
 		if (st->tcGenType >= TCGEN_DLIGHT0 && st->tcGenType < TCGEN_DLIGHT0 + MAX_DLIGHTS)
@@ -1315,6 +1319,7 @@ static void FlushShader ()
 		GL_Unlock ();
 
 		//!! glFog don't works with multi-pass rendering
+		//!! + don't works, when scr_viewsize!=100
 		if (i == numRenderPasses - 1 && gl_state.haveFullScreen3d && !gl_showFillRate->integer
 			&& currentShader->type == SHADERTYPE_NORMAL && !gl_state.is2dMode)
 			GL_EnableFog (true);	//!!! else GL_DisableFog()!!!
@@ -1333,15 +1338,17 @@ static void FlushShader ()
 	// debug
 	if (!gl_state.is2dMode)
 	{
+#if !NO_DEBUG
 		DrawTriangles ();
 		DrawNormals ();
-		gl_speeds.tris += gl_numIndexes * numTmpStages / 3;
-		gl_speeds.trisMT += gl_numIndexes * numRenderPasses / 3;
+#endif
+		STAT(gl_stats.tris   += gl_numIndexes * numTmpStages / 3);
+		STAT(gl_stats.trisMT += gl_numIndexes * numRenderPasses / 3);
 	}
 	else
-		gl_speeds.tris2D += gl_numIndexes * numTmpStages / 3;
+		STAT(gl_stats.tris2D += gl_numIndexes * numTmpStages / 3);
 
-	gl_speeds.numFlushes++;
+	STAT(gl_stats.numFlushes++);
 	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
 
 	unguardf(("%s", *currentShader->Name));
@@ -1432,9 +1439,9 @@ void surfacePlanar_t::Tesselate (refEntity_t &ent)
 	bufExtra_t *ex = &gl_extra[gl_numExtra++];
 	ex->numVerts = numVerts;
 	if (lightmap) ex->lmWidth = lightmap->w;
-	ex->normal = plane.normal;
-	ex->axis = axis;
-	ex->dlight = dlights;
+	ex->normal   = plane.normal;
+	ex->axis     = axis;
+	ex->dlight   = dlights;
 
 	bufVertex_t *v = &vb->verts[firstVert];
 	bufTexCoordSrc_t *t = &srcTexCoord[firstVert];
@@ -1447,8 +1454,8 @@ void surfacePlanar_t::Tesselate (refEntity_t &ent)
 		v->xyz = vs->xyz;			// copy vertex
 		t->tex[0] = vs->st[0];		// copy texture coords
 		t->tex[1] = vs->st[1];
-		t->lm[0] = vs->lm[0];		// copy lightmap coords
-		t->lm[1] = vs->lm[1];
+		t->lm[0]  = vs->lm[0];		// copy lightmap coords
+		t->lm[1]  = vs->lm[1];
 		*c = vs->c.rgba;			// copy vertex color (sometimes may be ignored??)
 	}
 
@@ -1474,8 +1481,8 @@ void surfacePoly_t::Tesselate (refEntity_t &ent)
 
 	bufExtra_t *ex = &gl_extra[gl_numExtra++];
 	ex->numVerts = numVerts;
-	ex->axis = NULL;
-	ex->dlight = NULL;
+	ex->axis     = NULL;
+	ex->dlight   = NULL;
 	ex->normal.Zero ();				// normal = {0,0,0} - compute light for point
 
 	bufVertex_t *v = &vb->verts[firstVert];
@@ -1489,8 +1496,8 @@ void surfacePoly_t::Tesselate (refEntity_t &ent)
 		v->xyz = vs->xyz;			// copy vertex
 		t->tex[0] = vs->st[0];		// copy texture coords
 		t->tex[1] = vs->st[1];
-//		t->lm[0] = 0;				// lightmap coords are undefined
-//		t->lm[1] = 0;
+//		t->lm[0]  = 0;				// lightmap coords are undefined
+//		t->lm[1]  = 0;
 		*c = vs->c.rgba;			// copy vertex color (sometimes may be ignored ?)
 	}
 
@@ -1509,25 +1516,31 @@ void surfaceMd3_t::Tesselate (refEntity_t &ent)
 {
 	int		i;
 
+	// it is rather impossible, that single md3 surface will be painted twice for the same
+	// entity, but algorithm below will be simpler, when we ensure filling EMPTY vertex buffer ...
+	FlushShader ();
+
+	STAT(clock(gl_stats.meshTess));
+
 	int numIdx = numTris * 3;
 	ReserveVerts (numVerts, numIdx);
 
-	int firstVert = gl_numVerts;
-	gl_numVerts += numVerts;
-	int firstIndex = gl_numIndexes;
-	gl_numIndexes += numIdx;
-
-	bufExtra_t *ex = &gl_extra[gl_numExtra];
-	gl_numExtra += numVerts;
+	gl_numVerts   = numVerts;
+	gl_numIndexes = numIdx;
+	gl_numExtra   = numVerts;
 
 	/*------------- lerp verts ---------------*/
+	// source data
 	vertexMd3_t *vs1 = verts + numVerts * currentEntity->frame;
-	bufVertex_t *v = &vb->verts[firstVert];
+	// destination buffers
+	bufVertex_t *v = vb->verts;
+	bufExtra_t *ex = gl_extra;
+	// compute data ...
 	if (currentEntity->backLerp != 0.0f && currentEntity->frame != currentEntity->oldFrame)
 	{
 		vertexMd3_t *vs2 = verts + numVerts * currentEntity->oldFrame;
-		float backScale = currentEntity->backLerp * MD3_XYZ_SCALE * ent.drawScale;
-		float frontLerp = 1.0f - currentEntity->backLerp;
+		float backScale  = currentEntity->backLerp * MD3_XYZ_SCALE * ent.drawScale;
+		float frontLerp  = 1.0f - currentEntity->backLerp;
 		float frontScale = frontLerp * MD3_XYZ_SCALE * ent.drawScale;
 		for (i = 0; i < numVerts; i++, vs1++, vs2++, v++, ex++)
 		{
@@ -1546,8 +1559,8 @@ void surfaceMd3_t::Tesselate (refEntity_t &ent)
 			norm[1] = sa1 * SIN_FUNC2(b1,256) + sa2 * SIN_FUNC2(b2,256);
 			norm[2] = COS_FUNC2(a1,256) * frontLerp + COS_FUNC2(a2,256) * currentEntity->backLerp;
 			ex->numVerts = 1;
-			ex->axis = NULL;
-			ex->dlight = NULL;
+			ex->axis     = NULL;
+			ex->dlight   = NULL;
 		}
 	}
 	else
@@ -1566,17 +1579,17 @@ void surfaceMd3_t::Tesselate (refEntity_t &ent)
 			norm[1] = sa * SIN_FUNC2(b,256);	// sin(a)*sin(b)
 			norm[2] = COS_FUNC2(a,256);			// cos(a)
 			ex->numVerts = 1;
-			ex->axis = NULL;
-			ex->dlight = NULL;
+			ex->axis     = NULL;
+			ex->dlight   = NULL;
 		}
 	}
 
-	unsigned *c = &srcVertexColor[firstVert].rgba;
-	for (i = 0; i < gl_numVerts; i++)
-		*c++ = 0xFFFFFFFF;	//!! vertex color (should not use "RGBGEN_VERTEX", or use another function to generate color; see UberEngine)
+	//!! vertex color (should not use "RGBGEN_VERTEX", or use another function to generate color; see UberEngine)
+	// fill rgba=(1,1,1,1)
+	memset (srcVertexColor, 0xFF, sizeof(int) * numVerts);
 
 	/*----------- copy texcoords -------------*/
-	bufTexCoordSrc_t *t = &srcTexCoord[firstVert];
+	bufTexCoordSrc_t *t = srcTexCoord;
 	float *ts = texCoords;
 	for (i = 0; i < numVerts; i++, t++)
 	{
@@ -1585,10 +1598,9 @@ void surfaceMd3_t::Tesselate (refEntity_t &ent)
 	}
 
 	/*------------ copy indexes --------------*/
-	int *idx = &gl_indexesArray[firstIndex];
-	int *idxSrc = indexes;
-	for (i = 0; i < numIdx; i++)
-		*idx++ = *idxSrc++ + firstVert;
+	memcpy (gl_indexesArray, indexes, sizeof(int) * numIdx);
+
+	STAT(unclock(gl_stats.meshTess));
 }
 
 
@@ -1596,6 +1608,7 @@ void surfaceMd3_t::Tesselate (refEntity_t &ent)
 	Debug output
 -----------------------------------------------------------------------------*/
 
+#if !NO_DEBUG
 
 static void FlashColor ()
 {
@@ -1772,6 +1785,7 @@ bool DrawNormals ()
 	return true;
 }
 
+#endif // NO_DEBUG
 
 
 void surfaceEntity_t::Tesselate (refEntity_t &ent)
@@ -1892,11 +1906,11 @@ void BK_DrawScene ()
 
 	// sort surfaces
 	if (gl_finish->integer == 2) glFinish ();
-	clock(gl_speeds.sort);
+	STAT(clock(gl_stats.sort));
 	SortSurfaces (&vp, sortedSurfaces);
-	unclock(gl_speeds.sort);
+	STAT(unclock(gl_stats.sort));
 
-	gl_speeds.surfs += vp.numSurfaces;
+	STAT(gl_stats.surfs += vp.numSurfaces);
 
 	currentDlightMask = 0;
 	double worldTime = vp.time;
@@ -1952,7 +1966,7 @@ void BK_DrawScene ()
 
 		if (entNum != currentEntityNum)
 		{
-			currentEntity = &gl_entities[entNum];
+			currentEntity    = &gl_entities[entNum];
 			currentEntityNum = entNum;
 
 			bool isWorld = (entNum == ENTITYNUM_WORLD) || currentEntity->worldMatrix;
@@ -1987,11 +2001,13 @@ void BK_DrawScene ()
 
 	GL_DepthRange (DEPTH_NORMAL);
 
+#if !NO_DEBUG
 	if (gl_showbboxes->integer)
 		DrawBBoxes ();
 
 	if (gl_showLights->integer)
 		ShowLights ();
+#endif
 
 	if (gl_finish->integer == 2) glFinish ();
 
@@ -2141,7 +2157,7 @@ void BK_DrawText (const char *text, int len, int x, int y, int w, int h, unsigne
 			v += 4;
 			t += 4;
 			c += 4;
-			gl_numVerts += 4;
+			gl_numVerts   += 4;
 			gl_numIndexes += 6;
 		}
 		x1 = x2;
@@ -2189,14 +2205,16 @@ void BK_EndFrame ()
 void BK_Init ()
 {
 CVAR_BEGIN(vars)
-	CVAR_VAR(gl_clear, 0, 0),
-	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE),
 #ifdef SPY_SHADER
 	CVAR_VAR(gl_spyShader, 0, 0),
 #endif
+#if !NO_DEBUG
 	CVAR_VAR(gl_showbboxes, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showTris, 0, CVAR_CHEAT),
-	CVAR_VAR(gl_showNormals, 0, CVAR_CHEAT)
+	CVAR_VAR(gl_showNormals, 0, CVAR_CHEAT),
+#endif
+	CVAR_VAR(gl_clear, 0, 0),
+	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE)
 CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
 	ClearBuffers ();

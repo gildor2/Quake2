@@ -98,6 +98,9 @@ static const char *qglNames[NUM_GLFUNCS + NUM_EXTFUNCS] = {
 
 };
 
+#if !NO_GL_LOG
+
+
 static const char *EnumName (GLenum v)
 {
 	switch (v)
@@ -882,6 +885,8 @@ static const qgl_t logFuncs = {
 #endif
 
 };
+
+#endif // NO_GL_LOG
 
 typedef struct {
 	const char *names;				// "alias1\0alias2\0...\0" or "name\0\0"

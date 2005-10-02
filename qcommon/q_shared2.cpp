@@ -492,7 +492,9 @@ void UnTransformPoint (const CVec3 &origin, const CAxis &axis, const CVec3 &src,
 ============================================================================
 */
 
-short ShortSwap (short l)
+#ifndef LITTLE_ENDIAN
+
+short LittleShort (short l)
 {
 	byte b1 = l & 255;
 	byte b2 = (l>>8) & 255;
@@ -500,12 +502,7 @@ short ShortSwap (short l)
 	return (b1<<8) + b2;
 }
 
-short ShortNoSwap (short l)
-{
-	return l;
-}
-
-int LongSwap (int l)
+int LittieLong (int l)
 {
 	byte b1 = l & 255;
 	byte b2 = (l>>8) & 255;
@@ -515,12 +512,7 @@ int LongSwap (int l)
 	return ((int)b1<<24) + ((int)b2<<16) + ((int)b3<<8) + b4;
 }
 
-int	LongNoSwap (int l)
-{
-	return l;
-}
-
-float FloatSwap (float f)
+float LittleFloat (float f)
 {
 	union {
 		float	f;
@@ -533,52 +525,6 @@ float FloatSwap (float f)
 	dat2.b[2] = dat1.b[1];
 	dat2.b[3] = dat1.b[0];
 	return dat2.f;
-}
-
-float FloatNoSwap (float f)
-{
-	return f;
-}
-
-#ifndef LITTLE_ENDIAN
-
-static bool bigendian;
-
-// can't just use function pointers, or dll linkage can
-// mess up when qcommon is included in multiple places
-short	(*_LittleShort) (short l);
-int		(*_LittleLong) (int l);
-float	(*_LittleFloat) (float l);
-
-short	LittleShort(short l) {return _LittleShort(l);}
-int		LittleLong (int l) {return _LittleLong(l);}
-float	LittleFloat (float l) {return _LittleFloat(l);}
-
-/*
-================
-Swap_Init
-================
-*/
-void Swap_Init ()
-{
-	static const byte swaptest[2] = {1,0};
-
-	// set the byte swapping variables in a portable manner
-	if ( *(short *)swaptest == 1)
-	{
-		bigendian = false;
-		_LittleShort = ShortNoSwap;
-		_LittleLong = LongNoSwap;
-		_LittleFloat = FloatNoSwap;
-	}
-	else
-	{
-		bigendian = true;
-		_LittleShort = ShortSwap;
-		_LittleLong = LongSwap;
-		_LittleFloat = FloatSwap;
-	}
-
 }
 
 #endif

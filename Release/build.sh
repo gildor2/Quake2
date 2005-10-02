@@ -16,6 +16,8 @@ fi
 export logfile="Release/build.log"
 rm -f $logfile
 
+#export vc_ver=7
+
 TIMEFORMAT="Total time: %1R sec"
 time vc32tools --make quake2 $target
 

@@ -497,6 +497,10 @@ printf (CODE "static const char *%sNames[%s + %s] = {", $strucname, $constname, 
 Parse ("EmitString", "EmitPlatformCODE2");
 print (CODE "\n};\n\n");
 
+
+# begin of logging part
+print (CODE "#if !NO_GL_LOG\n\n\n");
+
 #------------------------------------------------------------------------------
 #	Create EnumName ()
 #------------------------------------------------------------------------------
@@ -536,6 +540,8 @@ printf (CODE "static const %s_t logFuncs = {", $strucname);
 Parse ("EmitLogInit", "EmitPlatformCODE2");
 print (CODE "\n};\n\n");
 
+# end of logging part
+print (CODE "#endif // NO_GL_LOG\n\n");
 
 #------------------------------------------------------------------------------
 #	Extensions suport

@@ -4,21 +4,23 @@
 
 =============================================================================*/
 
-// next line will create EBP frames for ALL functions, so, when application
-// crashed, we will get complete call stack trace in error logfile
-//?? make this as #define option? may be specified in VC command line "/Oy-"
-//?? WARNING: call stack will not be displayed, when crashed in some library,
-//??  compiled without this option + when error generated with appError()
-//#pragma optimize("y", off)
+#if MAX_DEBUG
+// Create EBP frames for ALL functions, so, when application crashed, we will
+//   get complete call stack trace in error logfile
+// NOTE: same effect with VC command line "/Oy-"
+// WARNING: call stack will not be displayed, when crashed in some library,
+//   compiled without this option + when error generated with appError()
+#pragma optimize("y", off)
+#endif
 
 /*-----------------------------------------------------------------------------
 	Platform-specific type defines
 -----------------------------------------------------------------------------*/
 
-typedef unsigned char	byte;		//?? change name to BYTE etc
+typedef unsigned char		byte;		//?? change name to BYTE etc
 //??typedef unsigned short	word;
 //??typedef unsigned int	dword;
-//??typedef unsigned __int64 qword;
+typedef unsigned __int64	int64;		//?? INT64
 
 typedef unsigned int	address_t;
 
@@ -66,6 +68,7 @@ typedef unsigned int	address_t;
 #pragma warning(disable : 4305)			// truncation from 'const double' to 'const float'
 #pragma warning(disable : 4244)			// conversion from 'int'/'double' to 'float'
 #pragma warning(disable : 4509)			// nonstandard extension used: function uses SEH and object has destructor
+#pragma warning(disable : 4251)			// class 'Name' needs to have dll-interface to be used by clients of class 'Class'
 
 
 const char *appGetSystemErrorMessage (unsigned code);
@@ -123,20 +126,34 @@ inline int appCeil (float f)
 -----------------------------------------------------------------------------*/
 
 #pragma warning(push)
-#pragma warning(disable : 4035)		// "no return value"
+#pragma warning(disable : 4035)			// "no return value"
 
 inline unsigned appCycles ()
 {
-//	__asm push edx
 	__asm rdtsc
-//	__asm pop edx
 }
 
-inline __int64 appCycles64 ()
+inline int64 appCycles64 ()
 {
 	__asm rdtsc
 }
 #pragma warning(pop)
+
+
+extern CORE_API double GMSecondsPerCycle;
+
+inline float appDeltaCyclesToMsecf (unsigned timeDelta)
+{
+	double v = timeDelta;
+	return v * GMSecondsPerCycle;
+}
+
+inline float appDeltaCyclesToMsecf (int64 &timeDelta)
+{
+	// no "64-bit unsigned => double" conversion allowed ... use as signed
+	double v = reinterpret_cast<__int64&>(timeDelta);
+	return v * GMSecondsPerCycle;
+}
 
 
 /*-----------------------------------------------------------------------------

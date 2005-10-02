@@ -5,12 +5,12 @@ bool	Init ();
 // called before the library is unloaded
 void	Shutdown (bool complete = false);
 
-void	BeginRegistration (const char *map);	//?? rename
+void	LoadNewWorld (const char *map);
+void	FinishLoadingWorld ();
 CRenderModel* RegisterModel (const char *name);
 CBasicImage* RegisterSkin (const char *name, bool force = false);
 CBasicImage* RegisterPic (const char *name);	//?? rename (GetPic() etc)
 void	SetSky (const char *name, float rotate, const CVec3 &axis);
-void	EndRegistration ();						//?? remove
 
 // frame; rename!!
 void	BeginFrame (double time);

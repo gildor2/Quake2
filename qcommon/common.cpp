@@ -480,8 +480,6 @@ CVAR_END
 
 	guard(Com_Init);
 
-	Swap_Init ();
-
 	ParseCmdline (cmdline);			// should be executed before any cvar creation
 	Cvar_GetVars (ARRAY_ARG(vars));
 	Cvar_Get ("version", VERSION_STR, CVAR_SERVERINFO|CVAR_NOSET);

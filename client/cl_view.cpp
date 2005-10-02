@@ -29,13 +29,15 @@ int		gun_frame;
 CRenderModel *gun_model;
 #endif
 
+#if !NO_DEBUG
 static cvar_t	*cl_testentities;
 static cvar_t	*cl_testlights;
 static cvar_t	*cl_testblend;
 
 static cvar_t	*r_playerpos;
-static cvar_t	*r_drawfps;
 static cvar_t	*r_surfinfo;
+#endif // NO_DEBUG
+static cvar_t	*r_drawfps;
 
 cvar_t			*scr_viewsize;		// non-static for menu
 
@@ -186,6 +188,8 @@ V_TestEntities
 If cl_testentities is set, create 32 player models
 ================
 */
+#if !NO_DEBUG
+
 void V_TestEntities (void)
 {
 	r_numentities = 32;
@@ -260,6 +264,8 @@ void V_TestLights (void)
 	}
 }
 
+#endif // NO_DEBUG
+
 //===================================================================
 
 void V_InitRenderer ()
@@ -304,7 +310,7 @@ void V_InitRenderer ()
 	// register models, pics, and skins
 	appPrintf ("Map: %s\r", mapname);
 	SCR_UpdateScreen ();
-	RE_BeginRegistration (mapname);
+	RE_LoadNewWorld (mapname);
 
 	// precache status bar pics
 	appPrintf ("pics\r");
@@ -381,7 +387,7 @@ void V_InitRenderer ()
 	RE_SetSky (cl.configstrings[CS_SKY], rotate, axis);
 
 	// the renderer can now free unneeded stuff
-	RE_EndRegistration ();
+	RE_FinishLoadingWorld ();
 	appPrintf (" \r");			// clear console notification about loading process; require to send space char !
 
 	Con_ClearNotify ();
@@ -587,6 +593,8 @@ static char *ModelName (int modelIndex)
 }
 
 
+#if !NO_DEBUG
+
 static void DrawSurfInfo (void)
 {
 	CVec3	start, end;
@@ -685,8 +693,9 @@ static void DrawOriginInfo (void)
 	RE_DrawTextLeft ("", RGB(0,0,0));	// empty line
 }
 
+#endif // NO_DEBUG
 
-//#define SMOOTH_FPS_COUNTER
+//#define FILTER_FPS_COUNTER
 
 static void DrawFpsInfo (void)
 {
@@ -706,40 +715,37 @@ static void DrawFpsInfo (void)
 	}
 
 	// update min/max stats
-//??	if (!fileFromPak)					// ignore frame if packfile was read
+	float tmpFps = (time == lastFrameTime) ? 1000 : 1000.0f / (time - lastFrameTime);
+#ifdef FILTER_FPS_COUNTER
+	// median filter
+	static float values[3];
+	if (minFps > maxFps)
 	{
-#ifdef SMOOTH_FPS_COUNTER
-		static float frameTime[5];
-		static float timeSum = 0;
-		static int frameIdx = 0;
-		float frmTime = time - lastFrameTime;
-		// smooth tmpFps
-		if (minFps > maxFps)
+		values[0] = values[1] = values[2] = tmpFps;
+	}
+	else
+	{
+		values[0] = values[1];
+		values[1] = values[2];
+		values[2] = tmpFps;
+		if (values[0] < values[1] && values[0] < values[2])
 		{
-			for (int i = 0; i < ARRAY_COUNT(frameTime); i++) frameTime[i] = frmTime;
-			timeSum = ARRAY_COUNT(frameTime) * frmTime;
+			// [0] is min
+			tmpFps = min(values[1], values[2]);
+		}
+		else if (values[0] > values[1] && values[0] > values[2])
+		{
+			// [0] is max
+			tmpFps = max(values[1], values[2]);
 		}
 		else
 		{
-			timeSum = timeSum - frameTime[frameIdx] + frmTime;
-			frameTime[frameIdx] = frmTime;
-			if (++frameIdx >= ARRAY_COUNT(frameTime)) frameIdx = 0;
+			// [0] is average
+			tmpFps = values[0];
 		}
-		float tmpFps = timeSum / ARRAY_COUNT(frameTime);
-		if (tmpFps > 0)
-		{
-			tmpFps = 1000.0f / tmpFps;
-			EXPAND_BOUNDS(tmpFps, minFps, maxFps);
-		}
-#else
-		// avoid zero-divide
-		float tmpFps = (time == lastFrameTime) ? 1000 : 1000.0f / (time - lastFrameTime);
-		//?? may be, draw FPS graph on screen (to detect min/max FPS spikes reason)
-		EXPAND_BOUNDS(tmpFps, minFps, maxFps);
-#endif
 	}
-//??	else
-//??		fileFromPak = false;
+#endif
+	EXPAND_BOUNDS(tmpFps, minFps, maxFps);
 
 	lastFrameTime = time;
 
@@ -864,6 +870,7 @@ bool V_RenderView (void)
 		CL_AddEffects ();
 		CL_AddTEnts ();
 
+#if !NO_DEBUG
 		if (cl_testentities->integer)	V_TestEntities ();
 		if (cl_testlights->integer)		V_TestLights ();
 		if (cl_testblend->integer)
@@ -877,6 +884,7 @@ bool V_RenderView (void)
 		// debug output
 		if (r_playerpos->integer)	DrawOriginInfo ();
 		if (r_surfinfo->integer)	DrawSurfInfo ();
+#endif // NO_DEBUG
 
 #if 0
 		// never let it sit exactly on a node line, because a water plane can
@@ -942,14 +950,16 @@ V_Init
 void V_Init (void)
 {
 CVAR_BEGIN(vars)
+#if !NO_DEBUG
 	CVAR_VAR(cl_testblend, 0, 0),
 	CVAR_VAR(cl_testentities, 0, 0),
 	CVAR_VAR(cl_testlights, 0, CVAR_CHEAT),
 
-	CVAR_VAR(r_drawfps, 0, 0),
 	CVAR_VAR(r_playerpos, 0, CVAR_CHEAT),
 	CVAR_VAR(r_surfinfo, 0, CVAR_CHEAT),
+#endif // NO_DEBUG
 
+	CVAR_VAR(r_drawfps, 0, 0),
 	CVAR_VAR(scr_viewsize, 100, CVAR_ARCHIVE)	//?? should rename: not scr var
 CVAR_END
 

@@ -1,10 +1,11 @@
+//#define PROFILE_LOADING
+
 #include "OpenGLDrv.h"
 #include "gl_model.h"
 #include "gl_math.h"
 #include "gl_poly.h"
 #include "gl_lightmap.h"
 
-//#define PROFILE_LOADING
 
 namespace OpenGLDrv {
 
@@ -1026,7 +1027,7 @@ void LoadWorldMap (const char *name)
 	TString<64> Name2;
 	Name2.filename (name);
 
-	// map must be reloaded to update shaders (which are restarted every BeginRegistration())
+	// map must be reloaded to update shaders (which are restarted every LoadWorld())
 //	if (Name2 == map.Name)
 //		return;		// map is not changed
 

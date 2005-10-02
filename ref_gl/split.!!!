@@ -13,7 +13,7 @@ F*: frontend, accessible from backend
 - split gl_interface.h::gl_config struc to F/B; some fields should be accessible from both:
   - gamma info; place in a separate struc -> gammaInfo_t -- initialized by F,
     then copied to B ?)
-- split gl_speeds struc (may be, change profiling method -- make it global, with registering
+- split gl_stats struc (may be, change profiling method -- make it global, with registering
   sub-functions ?!); RENAME!! ("speeds" is incorrect name ...)
 - split gl_main.cpp: cut most gfxinfo -> B; Init() - most code -> B
 
@@ -104,7 +104,7 @@ gl_main.cpp: (most -> F)
 	SetMode() -> B
 	Init() - extensions, GL info -> B; common code, calling all other -> F
 	BeginFrame/EndFrame: parts -> B (logging, texture mode); gamma -> F
-	RenderFrame -> F; r_speeds -> parts to B
+	RenderFrame -> F; r_stats -> parts to B
 	renderer interface -- may be shared with client (F will be part of Engine, B - separated)
 
 gl_image.cpp:

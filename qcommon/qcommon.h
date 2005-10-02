@@ -98,11 +98,15 @@ struct cplane_t;
 #endif
 
 
+#if NO_DEBUG && !defined(NO_DEVELOPER)
+#define NO_DEVELOPER
+#endif
+
 #ifndef NO_DEVELOPER
 #define DEVELOPER		developer->integer
 #else
 #define DEVELOPER		0
-#define Com_DPrintf(m)	{}
+inline void Com_DPrintf (const char*, ...) {}
 #endif
 
 

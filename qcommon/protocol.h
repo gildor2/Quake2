@@ -352,26 +352,35 @@ enum
 // config strings are a general means of communication from the server to
 // all connected clients. Each config string can be at most MAX_QPATH characters
 // (exception: CS_STATUSBAR)
+
+#define	MAX_MODELS			256
+#define	MAX_SOUNDS			256
+#define	MAX_IMAGES			256
+#define	MAX_LIGHTSTYLES		256
+#define	MAX_ITEMS			256
+#define	MAX_CLIENTS			256
+#define MAX_GENERAL			(MAX_CLIENTS*2)		// reserved for game developers
+
 enum
 {
 	CS_NAME,
 	CS_CDTRACK,
 	CS_SKY,
-	CS_SKYAXIS,			// %f %f %f format
+	CS_SKYAXIS,									// %f %f %f format
 	CS_SKYROTATE,
-	CS_STATUSBAR,		// display program string (NOTE: few configstring indexes used)
+	CS_STATUSBAR,								// display program string (NOTE: few configstring indexes used)
 
-	CS_AIRACCEL = 29,	// air acceleration control
+	CS_AIRACCEL = 29,							// air acceleration control
 	CS_MAXCLIENTS,
-	CS_MAPCHECKSUM,		// for catching cheater maps
+	CS_MAPCHECKSUM,								// for catching cheater maps
 
 	CS_MODELS,
 	CS_SOUNDS = CS_MODELS+MAX_MODELS,
-	CS_IMAGES = CS_SOUNDS+MAX_SOUNDS,
-	CS_LIGHTS = CS_IMAGES+MAX_IMAGES,
-	CS_ITEMS = CS_LIGHTS+MAX_LIGHTSTYLES,
-	CS_PLAYERSKINS = CS_ITEMS+MAX_ITEMS,
-	CS_GENERAL = CS_PLAYERSKINS+MAX_CLIENTS,
+	CS_IMAGES = CS_SOUNDS+MAX_SOUNDS,			// static 2D images (from pics/ directory)
+	CS_LIGHTS = CS_IMAGES+MAX_IMAGES,			// lightstyles
+	CS_ITEMS = CS_LIGHTS+MAX_LIGHTSTYLES,		// inventory to draw
+	CS_PLAYERSKINS = CS_ITEMS+MAX_ITEMS,		// model/skin for each client
+	CS_GENERAL = CS_PLAYERSKINS+MAX_CLIENTS,	// reserved
 
 	MAX_CONFIGSTRINGS = CS_GENERAL+MAX_GENERAL
 };

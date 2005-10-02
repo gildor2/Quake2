@@ -77,9 +77,30 @@ void	QGL_PrintExtensionsString (const char *label, const char *str, const char *
 
 void	QGL_SwapBuffers ();
 
+
+// OpenGL function call logging
+#if NO_DEBUG && !defined(NO_GL_LOG)
+#define NO_GL_LOG	1
+#endif
+
+#ifndef NO_GL_LOG
+#define NO_GL_LOG	0
+#endif
+
+#if !NO_GL_LOG
+
+extern cvar_t	*gl_logFile;
+
 void	QGL_EnableLogging (bool enable);
 void	QGL_LogMessage (const char *text);
 #define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage (str);
+
+#else // NO_GL_LOG
+
+#define QGL_EnableLogging(x)
+#define LOG_STRING(str)
+
+#endif // NO_GL_LOG
 
 
 //??
@@ -117,6 +138,8 @@ extern const unsigned colorTable[];		// C_XXX->rgba; used for DrawChar() and Dra
  * - PVS: can perform non-alpha-water-vis-bug avoiding in client (send combined vis)
  */
 
+#if STATS
+
 struct FDrawStats
 {
 	// geometry complexity
@@ -132,17 +155,49 @@ struct FDrawStats
 	int		numBinds, numUploads, numFlushes;
 	// pefromance measuring (appCycles())
 	unsigned frontend;
+	unsigned dlightSurf;		// computing dlight application
 	unsigned occlTest;
 	unsigned flareTrace;
 	unsigned backend;
 	unsigned sort;				// sorting surfaces
 	unsigned entLight;
 	unsigned meshLight;
+	unsigned meshTess;
 	unsigned dynLightmap;
+	// methods
+	inline void Zero ()
+	{
+		int numVisLeafs = visLeafs;		// keep number of visLeafs (remove when MarkLeaves() will be called every frame)
+		memset (this, 0, sizeof(FDrawStats));
+		visLeafs = numVisLeafs;
+	}
 };
+extern FDrawStats gl_stats;
 
-//?? "speeds" -> "stats"
-extern FDrawStats gl_speeds;
+
+struct FLoadStats
+{
+	// NOTE: all fields should be "int64" (check EndRegistration() displaying)
+	// int32 enough for 1.5s on 2.6GHz machine ... so - use int64
+	// texture stats
+	int64 imgResample;
+	int64 imgMipmap;
+	int64 imgLightscale;
+	int64 imgUpload;
+	// model loading
+	int64 md2normals;
+	// methods
+	inline void Zero ()
+	{
+		memset (this, 0, sizeof(FLoadStats));
+	}
+};
+extern FLoadStats gl_ldStats;
+
+void DumpLoadStats ();
+extern cvar_t	*r_stats;
+
+#endif
 
 
 /*----------- gl_text.cpp -------------------*/
@@ -190,7 +245,6 @@ extern cvar_t	*gl_driver;
 extern cvar_t	*gl_bitdepth;
 
 extern cvar_t	*gl_nobind;
-extern cvar_t	*gl_logFile;
 extern cvar_t	*r_novis;			//?? ~gl_pvsCull ?
 extern cvar_t	*gl_frustumCull;
 extern cvar_t	*gl_oCull;

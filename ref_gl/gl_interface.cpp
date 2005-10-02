@@ -228,7 +228,7 @@ void GL_Bind (const image_t *tex)
 		gl_state.currentBinds[tmu] = tex;
 		LOG_STRING(va("// GL_Bind(%s)\n", *tex->Name));
 		glBindTexture (tex->target, tex->texnum);
-		gl_speeds.numBinds++;
+		STAT(gl_stats.numBinds++);
 	}
 }
 
@@ -251,7 +251,7 @@ void GL_BindForce (const image_t *tex)
 	gl_state.currentBinds[tmu] = tex;
 	LOG_STRING(va("// GL_Bind(%s)\n", *tex->Name));
 	glBindTexture (tex->target, tex->texnum);
-	gl_speeds.numBinds++;
+	STAT(gl_stats.numBinds++);
 }
 
 

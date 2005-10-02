@@ -95,8 +95,8 @@ COMMON
     separately: "pcx,jpg,tga" with simple adding to filename
   - '#' - place, when wildcard started; currently, started after last '/' for filenames -- really, started from start of string
   - may be, make following form (bash-like): "path/filename.{pcx,jpg,tga}"
-- option "#define MAX_DEBUG 1": use GUARD_SLOW, win32 ebp frames etc.; allow all debug #define's
-- option "#define NO_DEBUG 1" (+wrap current NO_DEVELOPER): exclude debugging code to reduce file size
+- NO_DEBUG=1
+  - no stats
 
 
 MEMORY

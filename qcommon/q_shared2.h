@@ -2,33 +2,11 @@
 #define QSHARED_H
 
 
-// this is the define for determining if we have an asm version of a C function
-//?? used in client/snd_mix.cpp only
-#if (defined _M_IX86 || defined __i386__)
-#define id386	1
-#else
-#define id386	0
-#endif
-
-
-//============================================================================
-
-
 #define	MAX_STRING_CHARS	1024	// max length of a string passed to TokenizeString()
 #define	MAX_STRING_TOKENS	80		// max tokens resulting from TokenizeString()
 
 #define	MAX_QPATH			64		// max length of a quake game pathname
 #define	MAX_OSPATH			128		// max length of a filesystem pathname
-
-// per-level limits
-#define	MAX_CLIENTS			256		// absolute limit
-#define	MAX_EDICTS			1024	// must change protocol to increase more
-#define	MAX_LIGHTSTYLES		256
-#define	MAX_MODELS			256		// these are sent over the net as bytes
-#define	MAX_SOUNDS			256		// so they cannot be blindly increased
-#define	MAX_IMAGES			256
-#define	MAX_ITEMS			256
-#define MAX_GENERAL			(MAX_CLIENTS*2)	// general config strings
 
 
 // game print flags; for svc_print command; client system uses PRINT_CHAT only; server - PRINT_HIGH
@@ -50,6 +28,8 @@ typedef enum
 	MULTICAST_PHS_R,
 	MULTICAST_PVS_R
 } multicast_t;
+
+#define	MAX_EDICTS		1024		// must change protocol to increase more
 
 
 /*-----------------------------------------------------------------------------
@@ -83,6 +63,11 @@ inline unsigned IsNegative (float f)
 		s = mask >> 31;	\
 	}
 
+inline void FAbs (float &a)
+{
+	uint_cast(a) &= 0x7FFFFFFF;
+}
+
 inline void FNegate (const float &a, float &b)
 {
 	uint_cast(b) = uint_cast_const(a) ^ 0x80000000;
@@ -108,6 +93,12 @@ inline unsigned IsNegative(f)
 		s = IsNegative(f);	\
 		d = fabs(f);		\
 	}
+
+inline void FAbs (float &a)
+{
+	a = fabs (a);
+}
+
 inline void FNegate (const float &a, float &b)
 {
 	b = -a;
@@ -401,6 +392,7 @@ float Vec2Yaw (const CVec3 &vec);
 
 // colors
 
+//?? implement as class
 typedef union
 {
 	byte	c[4];
@@ -419,6 +411,7 @@ typedef union
 #define RGBA255(r,g,b,a)	((r) | ((g)<<8) | ((b)<<16) | ((a)<<24))
 
 // computed colors
+//?? make as methods; or - constructor or CColor
 #define RGBAS(r,g,b,a)		(appRound((r)*255) | (appRound((g)*255)<<8) | (appRound((b)*255)<<16) | (appRound((a)*255)<<24))
 #define RGBS(r,g,b)			(appRound((r)*255) | (appRound((g)*255)<<8) | (appRound((b)*255)<<16) | (255<<24))
 
@@ -456,24 +449,15 @@ const char *COM_QuoteString (const char *str, bool alwaysQuote);
 
 #ifdef LITTLE_ENDIAN
 
-// functions for big-endian numbers
-short	ShortSwap (short l);
-int		LongSwap (int l);
-float	FloatSwap (float f);
-
 #define LittleShort(n)	((short)n)
 #define LittleLong(n)	((long)n)
 #define LittleFloat(n)	((float)n)
 
-#define Swap_Init()		// empty definition
-
 #else
 
-short	LittleShort(short l);
+short	LittleShort (short l);
 int		LittleLong (int l);
 float	LittleFloat (float l);
-
-void	Swap_Init ();
 
 #endif
 

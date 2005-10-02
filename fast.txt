@@ -10,7 +10,7 @@
   - alpha
 - shader.globalTime -- force to use vp.time; shader.absoluteTime -- use ent.time instead of (vp.time-ent.time) (useful for sprites)
 =============
-- correct autoflare center
+- correct autoflare center -- can get texture coords of surface, and compute, when it's center
 - gl_state.haveFullscreen3d -- change (may be, remove var)
 =============
 - cmd.cpp -> Commands.cpp (Core) & cbuf.cpp (qcommon)

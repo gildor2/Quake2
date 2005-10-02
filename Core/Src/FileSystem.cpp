@@ -247,6 +247,9 @@ void CFileSystem::Mount (const char *mask, const char *point)
 		return;
 	}
 
+	int64 time = 0;
+	clock(time);
+
 	CFileList *list = new CFileList;
 	appListDirectoryOS (Path, *list, FS_FILE|FS_DIR);
 	if (!*list)
@@ -287,8 +290,10 @@ void CFileSystem::Mount (const char *mask, const char *point)
 	}
 	// free file list
 	delete list;
+
 	// show stats
-	appPrintf ("Mounted %d containers (%d archived files)\n", numMounts, numFiles);
+	unclock(time);
+	appPrintf ("Mounted %d containers (%d archived files) in %.4f sec\n", numMounts, numFiles, appDeltaCyclesToMsecf (time) / 1000);
 }
 
 void CFileSystem::Umount (const char *mask)

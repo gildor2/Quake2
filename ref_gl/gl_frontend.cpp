@@ -234,11 +234,11 @@ static bool BoxOccluded (const refEntity_t *e, const CVec3 &size2)
 	CVec3	v, left, right;
 	int		n, brushes[NUM_TEST_BRUSHES];
 
-	clock(gl_speeds.occlTest);
+	STAT(clock(gl_stats.occlTest));
 	if (!GetBoxRect (e, size2, mins2, maxs2))
 	{
 notOccluded:	// we use "goto" for unclock() + return false ...
-		unclock(gl_speeds.occlTest);
+		STAT(unclock(gl_stats.occlTest));
 		return false;
 	}
 
@@ -270,7 +270,7 @@ notOccluded:	// we use "goto" for unclock() + return false ...
 	n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
 	if (!n) goto notOccluded;
 
-	unclock(gl_speeds.occlTest);
+	STAT(unclock(gl_stats.occlTest));
 	return true;
 }
 
@@ -281,7 +281,9 @@ static bool WorldBoxOccluded (const CVec3 &mins, const CVec3 &maxs)	//?? CBox
 //	if (!test) test=Cvar_Get("test","32",0);
 	// optimize !!: 8 -> 4 points (find contour -- fast for axial boxes); change trace order
 	// in a case of fast non-occluded test: top-left, bottom-right, other 2 points
-	clock(gl_speeds.occlTest);
+	STAT(clock(gl_stats.occlTest));
+
+	int	n, brushes[NUM_TEST_BRUSHES];	// keep data between iterations
 	for (int i = 0; i < 8; i++)
 	{
 		CVec3	v;
@@ -289,19 +291,19 @@ static bool WorldBoxOccluded (const CVec3 &mins, const CVec3 &maxs)	//?? CBox
 		v[1] = (i & 2) ? maxs[1] : mins[1];
 		v[2] = (i & 4) ? maxs[2] : mins[2];
 
-		int	n, brushes[NUM_TEST_BRUSHES];
 		if (i == 0)
 			n = CM_BrushTrace (vp.view.origin, v, brushes, NUM_TEST_BRUSHES);	// test->integer);
 		else
 			n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
 		if (!n)
 		{
-			unclock(gl_speeds.occlTest);
+			STAT(unclock(gl_stats.occlTest));
 			return false;
 		}
 	}
 
-	unclock(gl_speeds.occlTest);
+	STAT(unclock(gl_stats.occlTest));
+
 	return true;
 }
 
@@ -442,7 +444,7 @@ static bool CutCylinder (CVec3 &v1, CVec3 &v2, float radius)
 /* NOTE:
   - required for ents with shader->sort > OPAQUE (sort alpha-ents)
   - useful for other entity types if world occlusion culling will be
-    imlemented (insert ents AFTER world culling)
+    imlemented (insert ents AFTER world culling) - ??
 */
 
 // Find nearest to sphere center visible leaf, occupied by entity bounding sphere
@@ -690,7 +692,7 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 					gl_cullMode_t cull = pl->shader->cullMode;
 #define CULL_SURF	\
 	{				\
-		gl_speeds.cullSurfs++;	\
+		STAT(gl_stats.cullSurfs++);	\
 		continue;	\
 	}
 
@@ -730,6 +732,8 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 					surfDlight_t *sdl;
 					unsigned mask;
 
+					STAT(clock(gl_stats.dlightSurf));
+
 					sdl = pl->dlights = (surfDlight_t*)AllocDynamicMemory (sizeof(surfDlight_t) * MAX_DLIGHTS);
 					if (!sdl) pl->dlightMask = 0;		// easiest way to break the loop below; speed does not matter here
 					for (j = 0, mask = 1, dl = vp.dlights; j < vp.numDlights; j++, dl++, mask <<= 1)
@@ -757,7 +761,7 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 							sdl->pos[1] = org1;
 							sdl->radius = rad;
 							sdl->dlight = dl;
-							sdl->axis = pl->axis;
+							sdl->axis   = pl->axis;
 							// next dlight
 							numDlights++;
 							sdl++;
@@ -767,9 +771,11 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 						ResizeDynamicMemory (pl->dlights, sizeof(surfDlight_t) * numDlights);
 					if (numDlights)
 					{
-						gl_speeds.dlightSurfs++;
-						gl_speeds.dlightVerts += numDlights * pl->numVerts;
+						STAT(gl_stats.dlightSurfs++);
+						STAT(gl_stats.dlightVerts += numDlights * pl->numVerts);
 					}
+
+					STAT(unclock(gl_stats.dlightSurf));
 				}
 				else
 					pl->dlightMask = 0;
@@ -1011,8 +1017,8 @@ void md3Model_t::DrawLabel (refEntity_t *e)
 
 bool sprModel_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
-	out->center = out->coord.origin;
-	out->radius = radius;
+	out->center      = out->coord.origin;
+	out->radius      = radius;
 	out->worldMatrix = true;
 	return true;
 }
@@ -1108,9 +1114,9 @@ static void AddBeamSurfaces (const beam_t *b)
 
 		// setup xyz
 		VectorAdd (b->drawStart, dir1, p->verts[0].xyz);
-		VectorAdd (b->drawEnd, dir1, p->verts[1].xyz);
+		VectorAdd (b->drawEnd,   dir1, p->verts[1].xyz);
 		VectorAdd (b->drawStart, dir2, p->verts[3].xyz);
-		VectorAdd (b->drawEnd, dir2, p->verts[2].xyz);
+		VectorAdd (b->drawEnd,   dir2, p->verts[2].xyz);
 
 		// setup st
 		p->verts[0].st[0] = p->verts[3].st[0] = 1;
@@ -1212,9 +1218,9 @@ static void AddCylinderSurfaces (const beam_t *b)
 
 		// setup xyz
 		VectorAdd (b->drawStart, dir1, p->verts[0].xyz);
-		VectorAdd (b->drawEnd, dir1, p->verts[1].xyz);
+		VectorAdd (b->drawEnd,   dir1, p->verts[1].xyz);
 		VectorAdd (b->drawStart, dir2, p->verts[3].xyz);
-		VectorAdd (b->drawEnd, dir2, p->verts[2].xyz);
+		VectorAdd (b->drawEnd,   dir2, p->verts[2].xyz);
 
 		p->verts[0].st[1] = p->verts[3].st[1] = len + st0;
 		p->verts[1].st[1] = p->verts[2].st[1] = st0;
@@ -1482,7 +1488,7 @@ static node_t *WalkBspTree ()
 		else
 			lastLeaf->drawNext = node;
 		lastLeaf = node;
-		gl_speeds.frustLeafs++;
+		STAT(gl_stats.frustLeafs++);
 
 		node->frame        = drawFrame;
 		node->frustumMask  = frustumMask;
@@ -1551,7 +1557,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 		if (!leaf)
 		{
 			// entity do not occupy any visible leafs
-			gl_speeds.cullEnts++;
+			STAT(gl_stats.cullEnts++);
 			continue;
 		}
 
@@ -1564,7 +1570,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 			{
 				if (gl_labels->integer == 2)
 					DrawText3D (e->center, va("occluded\n%s", *e->model->Name), RGB(0.1,0.2,0.4));
-				gl_speeds.ocullEnts++;
+				STAT(gl_stats.ocullEnts++);
 				continue;
 			}
 		}
@@ -1620,9 +1626,9 @@ static void DrawParticles ()
 			leaf->drawParticle = p;
 		}
 		else
-			gl_speeds.cullParts++;
+			STAT(gl_stats.cullParts++);
 
-		gl_speeds.parts++;
+		STAT(gl_stats.parts++);
 	}
 
 	for (beam_t *b = vp.beams; b; b = b->next)
@@ -1631,7 +1637,7 @@ static void DrawParticles ()
 		b->drawEnd = b->end;
 		if (!CutCylinder (b->drawStart, b->drawEnd, b->radius))
 		{
-			gl_speeds.cullParts++;
+			STAT(gl_stats.cullParts++);
 			continue;
 		}
 		else
@@ -1649,8 +1655,8 @@ static void DrawParticles ()
 			leaf->drawBeam = b;
 		}
 		else
-			gl_speeds.cullParts++;
-		gl_speeds.parts++;
+			STAT(gl_stats.cullParts++);
+		STAT(gl_stats.parts++);
 	}
 }
 
@@ -1724,7 +1730,7 @@ static void DrawFlares ()
 		// can be occluded / outside frustum -- fade / hide
 		if (PointCull (flarePos, (f->owner || cull || f->radius < 0) ? MAX_FRUSTUM_MASK : f->leaf->frustumMask) == FRUSTUM_OUTSIDE)
 		{
-			gl_speeds.cullFlares++;		// outside frustum - do not fade
+			STAT(gl_stats.cullFlares++);				// outside frustum - do not fade
 			continue;
 		}
 		if (f->radius > 0)
@@ -1747,7 +1753,7 @@ static void DrawFlares ()
 
 			if (dist < FLARE_DIST0)			// too near - do not fade
 			{
-				gl_speeds.cullFlares++;
+				STAT(gl_stats.cullFlares++);
 				continue;
 			}
 			if (dist < FLARE_DIST1)
@@ -1761,8 +1767,8 @@ static void DrawFlares ()
 		{
 			trace_t	trace;
 
-			clock(gl_speeds.flareTrace);
-			gl_speeds.testFlares++;
+			STAT(clock(gl_stats.flareTrace));
+			STAT(gl_stats.testFlares++);
 			// check visibility with trace
 			if (f->radius >= 0)
 			{
@@ -1781,7 +1787,7 @@ static void DrawFlares ()
 				if (!(trace.fraction < 1 && trace.surface->flags & SURF_SKY))
 					cull = true;
 			}
-			unclock(gl_speeds.flareTrace);
+			STAT(unclock(gl_stats.flareTrace));
 
 			if (!cull)
 				f->lastTime = vp.time;
@@ -1793,7 +1799,7 @@ static void DrawFlares ()
 			float timeDelta = (vp.time - f->lastTime) / FLARE_FADE;
 			if (timeDelta >= 1)
 			{
-				gl_speeds.cullFlares++;
+				STAT(gl_stats.cullFlares++);
 				continue;
 			}
 			style = appRound((1 - timeDelta) * style);
@@ -1837,7 +1843,7 @@ static void DrawFlares ()
 		AddSurfaceToPortal (p, gl_flareShader, ENTITYNUM_WORLD);
 	}
 
-	gl_speeds.flares = map.numFlares;
+	STAT(gl_stats.flares = map.numFlares);
 }
 
 
@@ -1895,6 +1901,8 @@ static void DrawBspSequence (node_t *leaf)
 }
 
 
+//?? rename: VisSetup() or MarkNodes() (more correct, than MarkLeaves) or MarkBsp() ...
+//?? NOTE: this function is slow in comparision with whole frontend
 static void MarkLeaves ()
 {
 	int		i;
@@ -1903,32 +1911,33 @@ static void MarkLeaves ()
 	// determine the vieworg cluster
 	int cluster = PointInLeaf (vp.view.origin)->cluster;
 	// if cluster or areamask changed -- re-mark visible leaves
-	if (viewCluster != cluster || forceVisMap)
+	if (viewCluster == cluster && !forceVisMap) return;
+
+	viewCluster = cluster;
+	forceVisMap = false;
+	visFrame++;
+	if (r_novis->integer || cluster < 0 || cluster >= map.numClusters || map.numClusters <= 1)
 	{
-		viewCluster = cluster;
-		forceVisMap = false;
-		visFrame++;
-		if (r_novis->integer || cluster < 0 || cluster >= map.numClusters || map.numClusters <= 1)
-		{	// mark ALL nodes
-			for (i = 0, n = map.nodes; i < map.numLeafNodes; i++, n++)
-				n->visFrame = visFrame;
-			gl_speeds.visLeafs = map.numLeafNodes - map.numNodes;
-		}
-		else
-		{	// use visinfo to mark nodes
-			gl_speeds.visLeafs = 0;
-			const byte *row = map.visInfo + cluster * map.visRowSize;
-			for (i = map.numNodes, n = map.nodes + map.numNodes; i < map.numLeafNodes; i++, n++)
-			{
-				int cl = n->cluster;
-				int ar = n->area;
-				if (row[cl>>3] & (1<<(cl&7)) && areaMask[ar>>3] & (1<<(ar&7)))
-				{
-					for (node_t *p = n; p && p->visFrame != visFrame; p = p->parent)
-						p->visFrame = visFrame;
-					gl_speeds.visLeafs++;
-				}
-			}
+		// mark ALL nodes
+		for (i = 0, n = map.nodes; i < map.numLeafNodes; i++, n++)
+			n->visFrame = visFrame;
+		STAT(gl_stats.visLeafs = map.numLeafNodes - map.numNodes);
+		return;
+	}
+
+	// use visinfo to mark nodes
+	STAT(gl_stats.visLeafs = 0);
+	const byte *row = map.visInfo + cluster * map.visRowSize;
+	for (i = map.numNodes, n = map.nodes + map.numNodes; i < map.numLeafNodes; i++, n++)
+	{
+		int cl = n->cluster;
+		int ar = n->area;
+#define TEST_BIT(arr,bit)	((arr[bit>>3] >> (bit&7)) & 1)
+		if (TEST_BIT(row,cl) && TEST_BIT(areaMask,ar))
+		{
+			for (node_t *p = n; p && p->visFrame != visFrame; p = p->parent)
+				p->visFrame = visFrame;
+			STAT(gl_stats.visLeafs++);
 		}
 	}
 }
@@ -1986,7 +1995,7 @@ void AddEntity (entity_t *ent)
 
 	gl_numEntities++;
 	vp.numEntities++;
-	gl_speeds.ents++;
+	STAT(gl_stats.ents++);
 }
 
 

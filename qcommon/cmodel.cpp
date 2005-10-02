@@ -873,7 +873,7 @@ void CMod_LoadHLBrushSides (lump_t *lf, lump_t *lm, lump_t *lv, lump_t *le, lump
 			face = &faces[num];
 
 			//?? skip planebacks
-//??			if (LittleShort (face->side)) continue;
+//??			if (face->side) continue;
 
 			num = LittleShort (face->planenum);
 			out->plane = &map_planes[num];
@@ -1326,11 +1326,7 @@ static struct
 } tr;
 static int traceFrame;		// cannot place into "tr": should increment value between frames ("tr" will be zeroed)
 
-/*
-================
-ClipBoxToBrush
-================
-*/
+
 static void ClipBoxToBrush (const cbrush_t &brush)
 {
 	int		i;
@@ -1447,11 +1443,7 @@ static void ClipBoxToBrush (const cbrush_t &brush)
 	}
 }
 
-/*
-================
-TraceToLeaf
-================
-*/
+
 bool trace_skipAlpha;		//!! need another way to pass through SURF_ALPHA (callbacks??); used in SV_TraceHook()
 
 static void TraceToLeaf (int leafnum)
@@ -1560,11 +1552,6 @@ static void TestInLeaf (int leafnum)
 }
 
 
-/*
-==================
-RecursiveHullCheck
-==================
-*/
 static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &point1, const CVec3 &point2)
 {
 	CVec3 p1 = point1;
@@ -1629,26 +1616,35 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &
 		// put the crosspoint DIST_EPSILON pixels on the near side
 		if (t1 == t2)
 		{
-			side = 0;
 			frac1 = 1;
 			frac2 = 0;
+			side  = 0;
 		}
 		else
 		{
 			float idist = 1.0f / (t1 - t2);
 			offset += DIST_EPSILON;
-			if (t1 < t2)
+#if 0
+			if (t1 < t2)						// NOTE: here idist<0
 			{
-				frac1 = (t1 - offset) * idist;
-				frac2 = (t1 + offset) * idist;
-				side = 1;
+				frac1 = (t1 - offset) * idist;	// -offset*idist > 0
+				frac2 = (t1 + offset) * idist;	// +offset*idist < 0
+				side  = 1;
 			}
-			else if (t1 > t2)
+			else if (t1 > t2)					// here idist>0
 			{
-				frac1 = (t1 + offset) * idist;
-				frac2 = (t1 - offset) * idist;
-				side = 0;
+				frac1 = (t1 + offset) * idist;	// +offset*idist > 0
+				frac2 = (t1 - offset) * idist;	// -offset*idist < 0
+				side  = 0;
 			}
+#else
+			frac1 = frac2 = t1 * idist;
+			float offset2;
+			FAbsSign (idist, offset2, side);	// side=1 when t1<t2
+			offset2 *= offset;					// offset2 = fabs(idist)*offset; >0
+			frac1 += offset2;
+			frac2 -= offset2;
+#endif
 
 			frac1 = bound(frac1, 0, 1);
 			frac2 = bound(frac2, 0, 1);
@@ -1883,9 +1879,9 @@ static bool TestBrush (const CVec3 &start, const CVec3 &end, const cbrush_t &bru
 			d1 = dot (plane->normal, start) - plane->dist;
 			d2 = dot (plane->normal, end) - plane->dist;
 		}
-		// d1 and d2: 0 -- on plane, <0 -- inside brush plane, >0 -- outside brush plane
 
-		if (d1 > 0 && d2 > 0)		// start and end points are outside this plane
+		// d1 and d2: 0 -- on plane, <0 -- inside brush plane, >0 -- outside brush plane
+		if (d1 >= 0 && d2 >= 0)		// start and end points are outside this plane
 			return false;
 		if (d1 < 0 && d2 < 0)		// both points inside plane
 			continue;
@@ -1912,10 +1908,8 @@ static void RecursiveBrushTest (const CVec3 &point1, const CVec3 &point2, int no
 {
 	CVec3 p1 = point1;
 	CVec3 p2 = point2;
-	while (true)
+	while (trace_numBrushes < trace_maxBrushes)					// have buffer space
 	{
-		if (trace_numBrushes >= trace_maxBrushes) return;		// buffer full
-
 		if (nodeNum < 0)
 		{
 			//------------------ test leaf ---------------------
@@ -1927,15 +1921,15 @@ static void RecursiveBrushTest (const CVec3 &point1, const CVec3 &point2, int no
 				//-------------- test brush --------------------
 				int brushNum = map_leafBrushes[leaf.firstleafbrush + i];
 				cbrush_t &b = map_brushes[brushNum];
-				if (b.traceFrame != traceFrame && (b.contents & CONTENTS_SOLID))
+				if (b.traceFrame == traceFrame || !(b.contents & CONTENTS_SOLID))
+					continue;									// already checked, or non-solid
+				b.traceFrame = traceFrame;
+				if (TestBrush (p1, p2, b))
 				{
-					b.traceFrame = traceFrame;
-					if (TestBrush (p1, p2, b))
-					{
-						trace_brushes[trace_numBrushes++] = brushNum;
-						if (trace_numBrushes >= trace_maxBrushes)
-							return;								// buffer full
-					}
+					// remember brush
+					trace_brushes[trace_numBrushes++] = brushNum;
+					if (trace_numBrushes >= trace_maxBrushes)
+						return;									// buffer full
 				}
 			}
 			return;
@@ -1963,33 +1957,37 @@ static void RecursiveBrushTest (const CVec3 &point1, const CVec3 &point2, int no
 
 		int s1, s2;
 		s1 = IsNegative (t1); s2 = IsNegative (t2);
-		if (!(s1 | s2))		// (t1 >= 0 && t2 >= 0)
+		if (s1 == s2)
 		{
-			nodeNum = node.children[0];
-			continue;
-		}
-		if (s1 & s2)		// (t1 < 0 && t2 < 0)
-		{
-			nodeNum = node.children[1];
+			nodeNum = node.children[s1];	// t1 >= 0  => [0], < 0  => [1]
 			continue;
 		}
 
-		// here: sign(t1) != sign(t2)
-		float idist = 1.0f / (t1 - t2);	// "t1 == t2" should not happen: different signs but same numbers
+		// here: sign(t1) != sign(t2), t1-t2 != 0
+		float idist = 1.0f / (t1 - t2);
 		float frac1, frac2;
 		int side;
-		if (t1 < t2)
+#if 0
+		if (t1 < t2)						// t1<0, t2>=0; here idist<0
 		{
 			frac1 = (t1 - DIST_EPSILON) * idist;
 			frac2 = (t1 + DIST_EPSILON) * idist;
-			side = 1;
+			side  = 1;
 		}
-		else
+		else								// t1>=0, t2<0
 		{
 			frac1 = (t1 + DIST_EPSILON) * idist;
 			frac2 = (t1 - DIST_EPSILON) * idist;
-			side = 0;
+			side  = 0;
 		}
+#else
+		frac1 = frac2 = t1 * idist;
+		float offset2;
+		FAbsSign (idist, offset2, side);	// side=1 when t1<t2 (when t1<0 and t2>0)
+		offset2 *= DIST_EPSILON;			// offset2 = fabs(idist)*DIST_EPSILON; >0
+		frac1 += offset2;
+		frac2 -= offset2;
+#endif
 		frac1 = bound(frac1, 0, 1);
 		frac2 = bound(frac2, 0, 1);
 
@@ -2014,7 +2012,7 @@ int CM_BrushTrace (const CVec3 &start, const CVec3 &end, int *brushes, int maxBr
 	guard(CM_BrushTrace);
 
 	trace_numBrushes = 0;
-	trace_brushes = brushes;
+	trace_brushes    = brushes;
 	trace_maxBrushes = maxBrushes;
 	traceFrame++;
 
@@ -2057,27 +2055,18 @@ PVS / PHS
 ===============================================================================
 */
 
-/*
-===================
-CM_DecompressVis
-===================
-*/
 static void DecompressVis (const byte *in, byte *out)
 {
-	int		c;
-	byte	*out_p;
-	int		rowSize;
-
-	rowSize = (numclusters + 7) >> 3;
-	out_p = out;
+	int rowSize = (numclusters + 7) >> 3;
 
 	if (!in || !numvisibility)
 	{
 		// no vis info, so make all visible
-		memset (out_p, 0xFF, rowSize);
+		memset (out, 0xFF, rowSize);
 		return;
 	}
 
+	byte *out_p = out;
 	do
 	{
 		if (*in)
@@ -2086,7 +2075,7 @@ static void DecompressVis (const byte *in, byte *out)
 			continue;
 		}
 
-		c = in[1];
+		int c = in[1];
 		in += 2;
 		if ((out_p - out) + c > rowSize)
 		{
@@ -2155,7 +2144,7 @@ static void FloodArea_r (carea_t *area, int floodnum)
 		Com_DropError ("FloodArea_r: reflooded");
 	}
 
-	area->floodnum = floodnum;
+	area->floodnum   = floodnum;
 	area->floodvalid = floodvalid;
 	dareaportal_t *p = &map_areaportals[area->firstareaportal];
 	for (int i = 0; i < area->numareaportals; i++, p++)
@@ -2165,11 +2154,6 @@ static void FloodArea_r (carea_t *area, int floodnum)
 	}
 }
 
-/*
-====================
-FloodAreaConnections
-====================
-*/
 static void FloodAreaConnections ()
 {
 	// all current floods are now invalid

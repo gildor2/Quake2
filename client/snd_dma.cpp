@@ -895,14 +895,13 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 {
 	int		i;
 	int		src, dst;
-	float	scale;
 
 	if (!sound_started)
 		return;
 
 	if (s_rawend < paintedtime)
 		s_rawend = paintedtime;
-	scale = (float)rate / dma.speed;
+	float scale = (float)rate / dma.speed;
 
 //appPrintf ("%i < %i < %i\n", soundtime, paintedtime, s_rawend);
 	if (channels == 2 && width == 2)
@@ -913,8 +912,8 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 			{
 				dst = s_rawend&(MAX_RAW_SAMPLES-1);
 				s_rawend++;
-				s_rawsamples[dst].left =  LittleShort(((short *)data)[i*2]) << 8;
-				s_rawsamples[dst].right = LittleShort(((short *)data)[i*2+1]) << 8;
+				s_rawsamples[dst].left  = ((short *)data)[i*2]   << 8;
+				s_rawsamples[dst].right = ((short *)data)[i*2+1] << 8;
 			}
 		}
 		else
@@ -926,8 +925,8 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 					break;
 				dst = s_rawend&(MAX_RAW_SAMPLES-1);
 				s_rawend++;
-				s_rawsamples[dst].left =  LittleShort(((short *)data)[src*2]) << 8;
-				s_rawsamples[dst].right = LittleShort(((short *)data)[src*2+1]) << 8;
+				s_rawsamples[dst].left  = ((short *)data)[src*2]   << 8;
+				s_rawsamples[dst].right = ((short *)data)[src*2+1] << 8;
 			}
 		}
 	}
@@ -940,8 +939,8 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 				break;
 			dst = s_rawend&(MAX_RAW_SAMPLES-1);
 			s_rawend++;
-			s_rawsamples[dst].left =  LittleShort(((short *)data)[src]) << 8;
-			s_rawsamples[dst].right = LittleShort(((short *)data)[src]) << 8;
+			s_rawsamples[dst].left  = ((short *)data)[src] << 8;
+			s_rawsamples[dst].right = ((short *)data)[src] << 8;
 		}
 	}
 	else if (channels == 2 && width == 1)
@@ -953,7 +952,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 				break;
 			dst = s_rawend&(MAX_RAW_SAMPLES-1);
 			s_rawend++;
-			s_rawsamples[dst].left =  ((char *)data)[src*2] << 16;
+			s_rawsamples[dst].left  = ((char *)data)[src*2]   << 16;
 			s_rawsamples[dst].right = ((char *)data)[src*2+1] << 16;
 		}
 	}
@@ -966,7 +965,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 				break;
 			dst = s_rawend&(MAX_RAW_SAMPLES-1);
 			s_rawend++;
-			s_rawsamples[dst].left =  (((byte *)data)[src]-128) << 16;
+			s_rawsamples[dst].left  = (((byte *)data)[src]-128) << 16;
 			s_rawsamples[dst].right = (((byte *)data)[src]-128) << 16;
 		}
 	}
@@ -1159,7 +1158,7 @@ static void S_SoundList_f (bool usage, int argc, char **argv)
 		{
 			int size = sc->length*sc->width*(sc->stereo+1);
 			total += size;
-			appPrintf ("%-3d %c %-2d  %-7d %s\n", i, sc->loopstart >= 0 ? 'L' : ' ', sc->width*8, size, *sfx->Name);
+			appPrintf ("%-3d %c %2d  %-7d %s\n", i, sc->loopstart >= 0 ? 'L' : ' ', sc->width*8, size, *sfx->Name);
 		}
 		else
 		{

@@ -1,9 +1,4 @@
 
-#define	MAX_QPATH			64		// max length of a game pathname
-#define	MAX_OSPATH			128		// max length of a filesystem pathname
-#define MAX_STRING_CHARS	1024
-
-
 inline char toLower (char c)
 {
 	return c >= 'A' && c <= 'Z' ? c - 'A' + 'a' : c;
@@ -342,15 +337,24 @@ public:
 	// so, to correct this situation, we overloaded binary operator (char*,TString<>&) too
 	int cmp (const char *s2) const			{ return strcmp (str, s2); }
 	int icmp (const char *s2) const			{ return stricmp (str, s2); }
-	bool operator< (const char *s2) const	{ return strcmp (str, s2) < 0; }
-	bool operator<= (const char *s2) const	{ return strcmp (str, s2) <= 0; }
+	// operator == (for "const char*", "char*", "const TString<>", "TString<>"
 	bool operator== (const char *s2) const	{ return strcmp (str, s2) == 0; }
+	bool operator== (char *s2) const		{ return strcmp (str, s2) == 0; }	// dup
 	template<int M> bool operator== (const TString<M> &S) const
 	{ return strcmp (str, S.str) == 0; }
+	template<int M> bool operator== (TString<M> &S)								// dup
+	{ return strcmp (str, S.str) == 0; }
+	// operator !=
 	bool operator!= (const char *s2) const	{ return strcmp (str, s2) != 0; }
+	bool operator!= (char *s2) const		{ return strcmp (str, s2) != 0; }	// dup
 	template<int M> bool operator!= (const TString<M> &S) const
 	{ return strcmp (str, S.str) != 0; }
-	bool operator> (const char *s2) const	{ return strcmp (str, s2) > 0; }
+	template<int M> bool operator!= (TString<M> &S)								// dup
+	{ return strcmp (str, S.str) != 0; }
+	// operators < <= > >=
+	bool operator<  (const char *s2) const	{ return strcmp (str, s2) < 0; }
+	bool operator<= (const char *s2) const	{ return strcmp (str, s2) <= 0; }
+	bool operator>  (const char *s2) const	{ return strcmp (str, s2) > 0; }
 	bool operator>= (const char *s2) const	{ return strcmp (str, s2) >= 0; }
 	// implicit use as "const char*"
 	operator const char* () const			{ return str; }

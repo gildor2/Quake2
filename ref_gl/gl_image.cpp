@@ -1,27 +1,3 @@
-//#define PROFILE_LOADING
-
-#ifdef PROFILE_LOADING
-#define START_PROFILE(name)			\
-	{								\
-		static const char _name[] = #name;\
-		const char *_arg = "";		\
-		unsigned _time = appCycles();
-#define START_PROFILE2(name,arg)	\
-	{								\
-		static const char _name[] = #name;\
-		const char *_arg = arg;		\
-		unsigned _time = appCycles();
-#define END_PROFILE	\
-		if (Cvar_VariableInt("r_profile2")) \
-			appPrintf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %.2f ms\n", _name, _arg, \
-			appDeltaCyclesToMsecf(appCycles() - _time)); \
-	}
-#else
-#define START_PROFILE(name)
-#define START_PROFILE2(name,arg)
-#define END_PROFILE
-#endif
-
 #include "OpenGLDrv.h"
 #include "gl_image.h"
 #include "gl_backend.h"			// for BK_DrawPic() only
@@ -88,7 +64,10 @@ static int ComputeHash (const char *name)
 	return h & HASH_MASK;
 }
 
-//-------------- 8-bit palette -----------------------------------------
+
+/*-----------------------------------------------------------------------------
+	8-bit paletted textures
+-----------------------------------------------------------------------------*/
 
 static void GetPalette ()
 {
@@ -109,8 +88,8 @@ static void GetPalette ()
 	gl_config.tbl_8to32[255] &= LittleLong(0x00FFFFFF);		// #255 is transparent (alpha = 0)
 
 	// free image
-	appFree (pic);
-	appFree (pal);
+	delete pic;
+	delete pal;
 }
 
 
@@ -179,19 +158,20 @@ void GL_TextureMode (const char *name)	//?? change (not strings; use enum {none,
 }
 
 
-//----------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
+	Scaling image diminsions and colors
+-----------------------------------------------------------------------------*/
 
 static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *out, int outwidth, int outheight)
 {
-	int			i, j;
-	unsigned	*inrow, *inrow2;
-	unsigned	frac, fracstep;
-	unsigned	p1[MAX_TEX_SIZE], p2[MAX_TEX_SIZE];
-	float		f, f1, f2;
+	STAT(clock(gl_ldStats.imgResample));
 
-	fracstep = (inwidth << 16) / outwidth;
+	int		i;
+	unsigned p1[MAX_TEX_SIZE], p2[MAX_TEX_SIZE];
 
-	frac = fracstep >> 2;
+	unsigned fracstep = (inwidth << 16) / outwidth;
+	unsigned frac = fracstep >> 2;
+
 	for (i = 0; i < outwidth; i++)
 	{
 		p1[i] = 4 * (frac >> 16);
@@ -204,12 +184,13 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 		frac += fracstep;
 	}
 
+	float f, f1, f2;
 	f = (float)inheight / outheight;
 	for (i = 0, f1 = 0.25f * f, f2 = 0.75f * f; i < outheight; i++, out += outwidth, f1 += f, f2 += f)
 	{
-		inrow = in + inwidth * appFloor (f1);
-		inrow2 = in + inwidth * appFloor (f2);
-		for (j = 0; j < outwidth; j++)
+		unsigned *inrow  = in + inwidth * appFloor (f1);
+		unsigned *inrow2 = in + inwidth * appFloor (f2);
+		for (int j = 0; j < outwidth; j++)
 		{
 			int		n, r, g, b, a;
 			byte	*pix;
@@ -251,6 +232,8 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 			((byte *)(out+j))[3] = a;
 		}
 	}
+
+	STAT(unclock(gl_ldStats.imgResample));
 }
 
 
@@ -258,6 +241,8 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 
 static void LightScaleTexture (unsigned *pic, int width, int height)
 {
+	STAT(clock(gl_ldStats.imgLightscale));
+
 	int		i;
 	byte	*p;
 #ifdef TBL_SATURATE
@@ -318,22 +303,23 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 		}
 	}
 
-	if (gl_config.deviceSupportsGamma)
-		return;
+	if (!gl_config.deviceSupportsGamma)
+		for (i = 0, p = (byte*) pic; i < c; i++, p+=4)
+		{
+			p[0] = gammaTable[p[0]];
+			p[1] = gammaTable[p[1]];
+			p[2] = gammaTable[p[2]];
+		}
 
-	p = (byte *)pic;
-	for (i = 0; i < c; i++, p+=4)
-	{
-		p[0] = gammaTable[p[0]];
-		p[1] = gammaTable[p[1]];
-		p[2] = gammaTable[p[2]];
-	}
+	STAT(unclock(gl_ldStats.imgLightscale));
 }
 
 
 // Scale lightmap; additional scaling data encoded in alpha-channel (0 - don't scale; 1 - /=2; -1==255 - *=2)
 static void LightScaleLightmap (unsigned *pic, int width, int height)
 {
+	STAT(clock(gl_ldStats.imgLightscale));
+
 	int shift = gl_config.overbright;
 	if (!gl_config.doubleModulateLM)
 		shift--;
@@ -363,11 +349,15 @@ static void LightScaleLightmap (unsigned *pic, int width, int height)
 		}
 		p[3] = 255;		// alpha
 	}
+
+	STAT(unclock(gl_ldStats.imgLightscale));
 }
 
 
 static void MipMap (byte *in, int width, int height)
 {
+	STAT(clock(gl_ldStats.imgMipmap));
+
 	width *= 4;		// sizeof(rgba)
 	height >>= 1;
 	byte *out = in;
@@ -427,8 +417,14 @@ static void MipMap (byte *in, int width, int height)
 			out[3] = (am + a) / 2;
 		}
 	}
+
+	STAT(unclock(gl_ldStats.imgMipmap));
 }
 
+
+/*-----------------------------------------------------------------------------
+	Uploading textures
+-----------------------------------------------------------------------------*/
 
 static void GetImageDimensions (int width, int height, int *scaledWidth, int *scaledHeight, bool picmip)
 {
@@ -503,19 +499,15 @@ static void Upload (void *pic, unsigned flags, image_t *image)
 	/*---------------- Resample/lightscale texture ------------------*/
 	size = scaledWidth * scaledHeight * 4;
 	unsigned *scaledPic = (unsigned*)appMalloc (size);
-START_PROFILE(..up::scale)
 	if (image->width != scaledWidth || image->height != scaledHeight)
 		ResampleTexture ((unsigned*)pic, image->width, image->height, scaledPic, scaledWidth, scaledHeight);
 	else
 		memcpy (scaledPic, pic, size);
-END_PROFILE
 
-START_PROFILE(..up::lscale)
 	if (!(flags & IMAGE_LIGHTMAP))
 		LightScaleTexture (scaledPic, scaledWidth, scaledHeight);
 	else
 		LightScaleLightmap (scaledPic, scaledWidth, scaledHeight);			// lightmap overbright
-END_PROFILE
 
 	/*------------- Determine texture format to upload --------------*/
 	//?? add GL_LUMINANCE and GL_ALPHA formats ?
@@ -567,9 +559,9 @@ END_PROFILE
 	image->internalFormat = format;
 
 	/*------------------ Upload the image ---------------------------*/
-START_PROFILE(..up::gl)
+	STAT(clock(gl_ldStats.imgUpload));
 	glTexImage2D (image->target, 0, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
-END_PROFILE
+	STAT(unclock(gl_ldStats.imgUpload));
 	if (!(flags & IMAGE_MIPMAP))
 	{
 		// setup min/max filter
@@ -578,7 +570,6 @@ END_PROFILE
 	}
 	else
 	{
-START_PROFILE(..up::mip)
 		int miplevel = 0;
 		while (scaledWidth > 1 || scaledHeight > 1)
 		{
@@ -605,16 +596,17 @@ START_PROFILE(..up::mip)
 					p[2] = (c.c[2] + p[2]) / 4;
 				}
 			}
+			STAT(clock(gl_ldStats.imgUpload));
 			glTexImage2D (image->target, miplevel, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
+			STAT(unclock(gl_ldStats.imgUpload));
 		}
 		// setup min/max filter
 		glTexParameteri (image->target, GL_TEXTURE_MIN_FILTER, gl_filter_min);
 		glTexParameteri (image->target, GL_TEXTURE_MAG_FILTER, gl_filter_max);
-END_PROFILE
 	}
 
 	// setup wrap flags
-    GLenum repMode = flags & IMAGE_CLAMP ? GL_CLAMP : GL_REPEAT;
+	GLenum repMode = flags & IMAGE_CLAMP ? GL_CLAMP : GL_REPEAT;
 	glTexParameteri (image->target, GL_TEXTURE_WRAP_S, repMode);
 	glTexParameteri (image->target, GL_TEXTURE_WRAP_T, repMode);
 
@@ -788,7 +780,9 @@ void LoadDelayedImages ()
 }
 
 
-/*-------------------- Video support ----------------------*/
+/*-----------------------------------------------------------------------------
+	Video playback support
+-----------------------------------------------------------------------------*/
 
 
 void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette)
@@ -863,7 +857,7 @@ void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *p
 		image->internalHeight = height;
 		glTexImage2D (image->target, 0, image->internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pic32);
 	}
-	gl_speeds.numUploads++;
+	STAT(gl_stats.numUploads++);
 	// free converted pic
 	delete pic32;
 
@@ -1116,18 +1110,22 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 
 static void ImageReload_f (bool usage, int argc, char **argv)
 {
-	int		i;
-	image_t	*img;
-
 	if (argc != 2 || usage)
 	{
 		appPrintf ("Usage: img_reload <mask>\n");
 		return;
 	}
 
-	unsigned time = appCycles();
+#if STATS
+	gl_ldStats.Zero ();
+	int64 time = 0;
+	clock(time);
+#endif
+
 	const char *mask = argv[1];
 	int num = 0;
+	int		i;
+	image_t	*img;
 	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
 	{
 		if (!img->Name[0]) continue;	// free slot
@@ -1140,16 +1138,23 @@ static void ImageReload_f (bool usage, int argc, char **argv)
 			num++;
 		}
 	}
-	Com_DPrintf ("%d images reloaded in %g sec\n", num, appDeltaCyclesToMsecf(appCycles() - time) / 1000.0f);
+#if STATS
+	if (r_stats->integer)
+	{
+		DumpLoadStats ();
+		unclock(time);
+		appPrintf ("%d images reloaded in %g sec\n", num, appDeltaCyclesToMsecf(time) / 1000.0f);
+	}
+#endif
 }
 
 
-/*-------------------- Screenshots ---------------------*/
-
+/*-----------------------------------------------------------------------------
+	Taking screenshots
+-----------------------------------------------------------------------------*/
 
 #define LEVELSHOT_W		256
 #define LEVELSHOT_H		256
-
 
 void PerformScreenshot ()
 {
@@ -1198,12 +1203,12 @@ void PerformScreenshot ()
 		// replace "buffer" pointer with a resampled image
 		delete buffer;
 		buffer = buffer2;
-		width = LEVELSHOT_W;
+		width  = LEVELSHOT_W;
 		height = LEVELSHOT_H;
 	}
 	else
 	{
-		width = vid_width;
+		width  = vid_width;
 		height = vid_height;
 	}
 	int size = width * height;
@@ -1252,8 +1257,9 @@ void PerformScreenshot ()
 }
 
 
-/*------------------ Init/shutdown --------------------*/
-
+/*-----------------------------------------------------------------------------
+	Init/shutdown
+-----------------------------------------------------------------------------*/
 
 #define DEF_IMG_SIZE	16
 #define DLIGHT_SIZE		16
@@ -1326,16 +1332,13 @@ CVAR_END
 		yv = (y - DLIGHT_SIZE/2 + 0.5f); yv *= yv;
 		for (x = 0; x < DLIGHT_SIZE; x++)
 		{
-			float	xv;
-			int		v;
-
-			xv = (x - DLIGHT_SIZE/2 + 0.5f); xv *= xv;
+			float xv = (x - DLIGHT_SIZE/2 + 0.5f); xv *= xv;
 #if 1
-			v = appRound (255 * (1 - (sqrt (xv + yv) + 1) / (DLIGHT_SIZE/2)));		// linear
+			int v = appRound (255 * (1 - (sqrt (xv + yv) + 1) / (DLIGHT_SIZE/2)));		// linear
 //			xv = (1 - (sqrt (xv + yv) + 1) / (DLIGHT_SIZE/2)); xv = bound(xv, 0, 1); v = xv * xv * 255;	// square
 			v = bound(v, 0, 255);
 #else
-			v = appCeil (4000.0f / (xv + yv));
+			int v = appCeil (4000.0f / (xv + yv));
 			if (v < 75) v = 0;
 			if (v > 255) v = 255;
 #endif
@@ -1555,6 +1558,7 @@ void ShowImages ()
 	}
 }
 
+
 //------------- Loading images --------------------------
 
 // FindImage -- main image creating/loading function
@@ -1648,23 +1652,18 @@ image_t *FindImage (const char *name, unsigned flags)
 	if (fmt & IMAGE_TGA)
 	{
 		strcpy (s, ".tga");
-START_PROFILE2(img::tga, name)
 		LoadTGA (Name2, pic, width, height);
-END_PROFILE
 	}
 	else if (fmt & IMAGE_JPG)
 	{
 		strcpy (s, ".jpg");
-START_PROFILE2(img::jpg, name)
 		LoadJPG (Name2, pic, width, height);
-END_PROFILE
 	}
 	else if (fmt & IMAGE_PCX)
 	{
 		byte	*pic8, *palette;
 
 		strcpy (s, ".pcx");
-START_PROFILE2(img::pcx, name)
 		LoadPCX (Name2, pic8, palette, width, height);
 		if (pic8)
 		{
@@ -1688,13 +1687,11 @@ START_PROFILE2(img::pcx, name)
 		}
 		else
 			pic = NULL;
-END_PROFILE
 	}
 	else if (fmt & IMAGE_WAL)
 	{
 		strcpy (s, ".wal");
-START_PROFILE2(img::wal, name)
-		if (miptex_t *mt = (miptex_t*) GFileSystem->LoadFile (Name2))
+		if (dMiptex_t *mt = (dMiptex_t*) GFileSystem->LoadFile (Name2))
 		{
 			width  = LittleLong(mt->width);
 			height = LittleLong(mt->height);
@@ -1703,7 +1700,6 @@ START_PROFILE2(img::wal, name)
 		}
 		else
 			pic = NULL;
-END_PROFILE
 	}
 	else
 	{
@@ -1715,10 +1711,8 @@ END_PROFILE
 	// upload image
 	if (pic)
 	{
-START_PROFILE(..img::up)
 		image_t *img = CreateImage (Name2, pic, width, height, flags);
 		appFree (pic);
-END_PROFILE
 		return img;
 	}
 	else

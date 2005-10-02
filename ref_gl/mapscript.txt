@@ -1,10 +1,10 @@
 - disabling lightmaps on some surfaces (trans, alpha - neon messages etc.) -- do it with spec. shader keyword,
-  don't specify LM stage in shader or another way
+  don't specify LM stage in shader or another way -- fullbright?
 - map scale (mostly for KP)
 ? sun/ambient light
 - change sky
 * coronas (size, color, lightstyle, position, radius (for placing inside objects, e.g. lamp))
-- inline shaders
+- inline shaders (easy!)
 - surface sounds (local materials.lst)
 ! C-style preprocessor (#include, at least) -- may be, inside COM_Parse?
 ! entity editor (not convert, just "add"/"remove" for entire entities or fields)

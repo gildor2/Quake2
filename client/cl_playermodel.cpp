@@ -23,7 +23,7 @@ static bool Md2SkinExists (const char *skin, CFileList *pcxfiles)
 	TString<64> Search;
 	Search.sprintf ("%s_i", skin);
 	for (CListIterator item = *pcxfiles; item; ++item)
-		if (item->name == Search) return true;
+		if (Search == item->name) return true;
 	return false;
 }
 
@@ -643,10 +643,10 @@ static void ApplyAnimation (clientInfo_t &ci, animState_t &as, entity_t &ent)
 
 static bool IsGroundLegsAnim (int n)
 {
-	if (n == LEGS_RUN    || n == LEGS_BACK ||
+	if (n == LEGS_RUN    || n == LEGS_BACK     ||
 		n == LEGS_WALK   || n == LEGS_BACKWALK ||
-		n == LEGS_WALKCR || n == LEGS_BACKCR ||
-		n == LEGS_IDLE   || n == LEGS_IDLECR ||
+		n == LEGS_WALKCR || n == LEGS_BACKCR   ||
+		n == LEGS_IDLE   || n == LEGS_IDLECR   ||
 		n == LEGS_LAND   || n == LEGS_LANDB)
 		return true;
 	return false;
@@ -1022,20 +1022,27 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, c
 	st->GetAnim (legsAnim, torsoAnim, movingDir, pitchAngle);
 	//?? do not exec jump animation, when falling from small height
 
-	int prevLegs  = ANIM_NOCHANGE,
-		prevTorso = ANIM_NOCHANGE,
-		prevDir   = LEGS_NEUTRAL;
-	float prevPitch = pitchAngle;
+	// torso animations: "stand" is idle
+	if (torsoAnim == TORSO_STAND)
+	{
+		if (ta.animNum >= TORSO_GESTURE)				// not death animation
+			torsoAnim = ANIM_NOCHANGE;
+	}
+	// jump animations
 	if (IsGroundLegsAnim (legsAnim))
 	{
-		cent.prev.GetAnim (prevLegs, prevTorso, prevDir, prevPitch);
-		if (prevLegs == LEGS_JUMP)
+		if (la.animNum == LEGS_JUMP)
 			legsAnim = LEGS_LAND;
-		else if (prevLegs == LEGS_JUMPB)
+		else if (la.animNum == LEGS_JUMPB)
 			legsAnim = LEGS_LANDB;
 		else if ((la.animNum == LEGS_LAND || la.animNum == LEGS_LANDB) && !la.completed && legsAnim != LEGS_IDLECR)
 			legsAnim = ANIM_NOCHANGE;
 	}
+
+	// get prev pitch
+	int prevLegs, prevTorso, prevDir;					// unused
+	float prevPitch;
+	cent.prev.GetAnim (prevLegs, prevTorso, prevDir, prevPitch);
 
 #if 0
 	//!! testing

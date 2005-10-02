@@ -23,6 +23,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "cmodel.h"
 
 
+//#define AREA_EDICTS_OPT		-- not works:
+	// in some circusmances, it is possible, that UnlinkEdict()
+	// will set numSolidEdicts<0 or numTrigEdicts<0, and AreaEdicts() will work
+	// incorrectly (if exists, demo of "effect" is "baseq2/buggy1.dm2"; recorded
+	// with cheats=1 (required) and lots of "pause" use ...)
+	// REASON: not balanced LinkEdict()/UnlinkEdict() calls -- edict copied, then
+	//   both unlinked (or: created copy, original unlinked+removed, copy - linked;
+	//   link() will call unlink() before ...) ?
+
+
 /*
 ===============================================================================
 
@@ -270,8 +280,8 @@ void SV_LinkEdict (edict_t *ent)
 
 	// link to PVS leafs
 	ent->num_clusters = 0;
-	ent->areanum = 0;
-	ent->areanum2 = 0;
+	ent->areanum      = 0;
+	ent->areanum2     = 0;
 
 	// get all leafs, including solids
 	int leafs[MAX_TOTAL_ENT_LEAFS];
@@ -301,7 +311,7 @@ void SV_LinkEdict (edict_t *ent)
 	if (num_leafs >= MAX_TOTAL_ENT_LEAFS)
 	{	// assume we missed some leafs, and mark by headnode
 		ent->num_clusters = -1;
-		ent->headnode = topnode;
+		ent->headnode     = topnode;
 	}
 	else
 	{
@@ -318,7 +328,7 @@ void SV_LinkEdict (edict_t *ent)
 				if (ent->num_clusters == MAX_ENT_CLUSTERS)
 				{	// assume we missed some leafs, and mark by headnode
 					ent->num_clusters = -1;
-					ent->headnode = topnode;
+					ent->headnode     = topnode;
 					break;
 				}
 
@@ -380,12 +390,16 @@ static void SV_AreaEdicts_r (areanode_t *node)
 	// touch linked edicts
 	if (area_type == AREA_SOLID)
 	{
+#ifdef AREA_EDICTS_OPT
 		if (!node->numSolidEdicts) return;
+#endif
 		start = &node->solidEdicts;
 	}
 	else // AREA_TRIGGERS
 	{
+#ifdef AREA_EDICTS_OPT
 		if (!node->numTrigEdicts) return;
+#endif
 		start = &node->trigEdicts;
 	}
 

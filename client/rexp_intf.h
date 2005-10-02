@@ -4,12 +4,12 @@ typedef struct {
 	int		struc_size;
 	bool	(*Init) ();
 	void	(*Shutdown) (bool complete);
-	void	(*BeginRegistration) (const char *map);
+	void	(*LoadNewWorld) (const char *map);
+	void	(*FinishLoadingWorld) ();
 	CRenderModel*	(*RegisterModel) (const char *name);
 	CBasicImage*	(*RegisterSkin) (const char *name, bool force);
 	CBasicImage*	(*RegisterPic) (const char *name);
 	void	(*SetSky) (const char *name, float rotate, const CVec3 &axis);
-	void	(*EndRegistration) ();
 	void	(*BeginFrame) (double time);
 	void	(*RenderFrame) (refdef_t *fd);
 	void	(*EndFrame) ();
@@ -42,9 +42,13 @@ inline void RE_Shutdown (bool complete = false)
 {
 	re.Shutdown (complete);
 }
-inline void RE_BeginRegistration (const char *map)
+inline void RE_LoadNewWorld (const char *map)
 {
-	re.BeginRegistration (map);
+	re.LoadNewWorld (map);
+}
+inline void RE_FinishLoadingWorld ()
+{
+	re.FinishLoadingWorld ();
 }
 inline CRenderModel* RE_RegisterModel (const char *name)
 {
@@ -61,10 +65,6 @@ inline CBasicImage* RE_RegisterPic (const char *name)
 inline void RE_SetSky (const char *name, float rotate, const CVec3 &axis)
 {
 	re.SetSky (name, rotate, axis);
-}
-inline void RE_EndRegistration ()
-{
-	re.EndRegistration ();
 }
 inline void RE_BeginFrame (double time)
 {
@@ -148,12 +148,12 @@ namespace OpenGLDrv
 
 #define RE_Init	OpenGLDrv::Init
 #define RE_Shutdown	OpenGLDrv::Shutdown
-#define RE_BeginRegistration	OpenGLDrv::BeginRegistration
+#define RE_LoadNewWorld	OpenGLDrv::LoadNewWorld
+#define RE_FinishLoadingWorld	OpenGLDrv::FinishLoadingWorld
 #define RE_RegisterModel	OpenGLDrv::RegisterModel
 #define RE_RegisterSkin	OpenGLDrv::RegisterSkin
 #define RE_RegisterPic	OpenGLDrv::RegisterPic
 #define RE_SetSky	OpenGLDrv::SetSky
-#define RE_EndRegistration	OpenGLDrv::EndRegistration
 #define RE_BeginFrame	OpenGLDrv::BeginFrame
 #define RE_RenderFrame	OpenGLDrv::RenderFrame
 #define RE_EndFrame	OpenGLDrv::EndFrame

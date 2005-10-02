@@ -14,8 +14,11 @@
 
 namespace OpenGLDrv {
 
-
-FDrawStats gl_speeds;
+#if STATS
+FDrawStats	gl_stats;
+FLoadStats	gl_ldStats;
+cvar_t		*r_stats;
+#endif
 
 #ifndef STATIC_BUILD
 refImport_t	ri;
@@ -72,21 +75,22 @@ cvar_t	*gl_swapinterval;
 cvar_t	*gl_maxTextureUnits;
 
 // debugging
+#if !NO_GL_LOG
 cvar_t	*gl_logFile;
+#endif
 cvar_t	*r_novis, *gl_frustumCull, *gl_oCull, *gl_backfaceCull;
-static cvar_t *r_speeds;
 cvar_t	*gl_showSky;
 cvar_t	*r_drawworld, *r_drawentities;
 cvar_t	*gl_sortAlpha;
 
 cvar_t	*gl_labels;
-cvar_t	*gl_lightLines, *gl_showLights;
+cvar_t	*gl_lightLines, *gl_showLights;		//?? LIGHT_DEBUG
 cvar_t	*gl_singleShader;
 cvar_t	*gl_showFillRate;
 
 
 //?? move to gl_interface.cpp ??
-static void Gfxinfo_f (bool usage, int argc, char **argv)
+static void cGfxinfo (bool usage, int argc, char **argv)
 {
 	static const char *boolNames[] = {"no", "yes"};
 	static const char *overbrNames[2][2] = {"disabled", "forced", "unneeded", "required"};
@@ -179,12 +183,16 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_maxTextureUnits, 0, CVAR_ARCHIVE),
 
 	CVAR_VAR(gl_nobind, 0, 0),
+#if !NO_GL_LOG
 	CVAR_VAR(gl_logFile, 0, 0),
+#endif
 	CVAR_VAR(r_novis, 0, 0),
 	CVAR_VAR(gl_frustumCull, 1, 0),
 	CVAR_VAR(gl_oCull, 1, 0),
 	CVAR_VAR(gl_backfaceCull, 1, 0),
-	CVAR_VAR(r_speeds, 0, 0),
+#if STATS
+	CVAR_VAR(r_stats, 0, 0),
+#endif
 	CVAR_VAR(gl_showSky, 0, 0),
 	CVAR_VAR(r_drawworld, 1, CVAR_CHEAT),
 	CVAR_VAR(r_drawentities, 1, 0),
@@ -198,7 +206,7 @@ CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 
-	RegisterCommand ("gfxinfo", Gfxinfo_f);
+	RegisterCommand ("gfxinfo", cGfxinfo);
 }
 
 
@@ -242,9 +250,6 @@ bool Init ()
 
 	memset (&gl_config, 0, sizeof(gl_config));
 
-#ifndef STATIC_BUILD
-	Swap_Init ();
-#endif
 	RegisterCvars ();
 
 	// initialize our QGL dynamic bindings
@@ -417,6 +422,7 @@ void BeginFrame (double time)
 {
 	defaultTime = vp.time = time;
 
+#if !NO_GL_LOG
 	if (gl_logFile->modified)
 	{
 		QGL_EnableLogging (gl_logFile->integer != 0);
@@ -427,6 +433,7 @@ void BeginFrame (double time)
 		QGL_EnableLogging (false);
 		Cvar_SetInteger ("gl_logFile", 0);
 	}
+#endif
 
 	LOG_STRING ("\n---------- Begin Frame ----------\n\n");
 
@@ -595,8 +602,8 @@ static void SetPerspective ()
 	memset (m, 0, sizeof(m));
 	m[0][0] = zmin * 2 / (xmax - xmin);				// A
 	m[1][1] = zmin * 2 / (ymax - ymin);				// B
-	m[2][0] = (xmax + xmin) / (xmax - xmin);		// C
-	m[2][1] = (ymax + ymin) / (ymax - ymin);		// D
+	m[2][0] =  (xmax + xmin) / (xmax - xmin);		// C
+	m[2][1] =  (ymax + ymin) / (ymax - ymin);		// D
 	m[2][2] = -(zmax + zmin) / (zmax - zmin);		// E
 	m[2][3] = -1;
 	m[3][2] = -2.0f * zmin * zmax / (zmax - zmin);	// F
@@ -621,18 +628,13 @@ void RenderFrame (refdef_t *fd)
 {
 	if (!renderingEnabled) return;
 
-	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !map.Name[0])
-		Com_FatalError ("R_RenderFrame: NULL worldModel");
-
-	int numVisLeafs = gl_speeds.visLeafs;			// keep number of visLeafs (remove when MarkLeaves() will be called every frame)
-	memset (&gl_speeds, 0, sizeof(gl_speeds));		// clear
-	gl_speeds.visLeafs = numVisLeafs;
+	STAT(gl_stats.Zero ());
+	STAT(clock(gl_stats.frontend));
 
 	/*----------- prepare data ------------*/
 
-	clock(gl_speeds.frontend);
-
 	gl_state.have3d = true;
+
 	if (!(fd->rdflags & RDF_NOWORLDMODEL))
 	{
 		byte	floodArea[MAX_MAP_AREAS/8];
@@ -651,47 +653,47 @@ void RenderFrame (refdef_t *fd)
 		}
 	}
 
-	/*------------ rendering -------------*/
-
 	gl_state.haveFullScreen3d = (vp.x == 0) && (vp.y == 0) && (vp.w == vid_width) && (vp.h == vid_height);
 
 	// setup viewPortal structure
 	memset (&vp, 0, sizeof(vp));
-	vp.flags = fd->rdflags;
-	vp.x = fd->x;
-	vp.y = vid_height - (fd->y + fd->height);
-	vp.w = fd->width;
-	vp.h = fd->height;
-	vp.fov_x = fd->fov_x;
-	vp.fov_y = fd->fov_y;
-	vp.t_fov_x = tan (vp.fov_x * M_PI / 360.0f);
-	vp.t_fov_y = tan (vp.fov_y * M_PI / 360.0f);
-	vp.fov_scale = tan (fd->fov_x / 2.0f / 180.0f * M_PI);
+	vp.flags        = fd->rdflags;
+	vp.x            = fd->x;
+	vp.y            = vid_height - (fd->y + fd->height);
+	vp.w            = fd->width;
+	vp.h            = fd->height;
+	vp.fov_x        = fd->fov_x;
+	vp.fov_y        = fd->fov_y;
+	vp.t_fov_x      = tan (vp.fov_x * M_PI / 360.0f);
+	vp.t_fov_y      = tan (vp.fov_y * M_PI / 360.0f);
+	vp.fov_scale    = tan (fd->fov_x / 2.0f / 180.0f * M_PI);
 	if (vp.fov_scale < 0.01f) vp.fov_scale = 0.01f;
 
 	// set vp.view before all to allow 3D text output
-	vp.view.origin = fd->vieworg;
+	vp.view.origin  = fd->vieworg;
 	vp.view.axis.FromAngles (fd->viewangles);
 
-	vp.lightStyles = fd->lightstyles;
+	vp.lightStyles  = fd->lightstyles;
 
-	vp.time = fd->time;						// set scene time
+	vp.time         = fd->time;				// set scene time
 
 	// add entities
-	vp.firstEntity = gl_numEntities;		//!! gl_numEntities is always 0 here (vp.firstEntity!=0 only when scene contains portals)
+	vp.firstEntity  = gl_numEntities;		//!! gl_numEntities is always 0 here (vp.firstEntity!=0 only when scene contains portals)
 	int		i;
 	entity_t *ent;
 	for (i = 0, ent = fd->entities; i < fd->num_entities; i++, ent++)
 		AddEntity (ent);
 	// add dlights
-	vp.dlights = &gl_dlights[gl_numDlights]; //!! gl_numDlights is always 0 here
-	vp.numDlights = fd->num_dlights;
+	vp.dlights      = &gl_dlights[gl_numDlights]; //!! gl_numDlights is always 0 here
+	vp.numDlights   = fd->num_dlights;
 	dlight_t *dl;
 	for (i = 0, dl = fd->dlights; i < fd->num_dlights; i++, dl++)
 		AddDlight (dl);
 	// add particle effects
-	vp.particles = fd->particles;
-	vp.beams = fd->beams;
+	vp.particles    = fd->particles;
+	vp.beams        = fd->beams;
+
+	/*------------ rendering -------------*/
 
 	ClearPortal ();
 	SetWorldModelview ();					// prepare modelview matrix
@@ -701,49 +703,54 @@ void RenderFrame (refdef_t *fd)
 	// NOTE: vp.numSurfaces may be 0, when only sky is visible
 	SetPerspective ();						// prepare projection matrix using some info from DrawPortal()
 
-	unclock(gl_speeds.frontend);
+	STAT(unclock(gl_stats.frontend));
 
-	clock(gl_speeds.backend);
+	STAT(clock(gl_stats.backend));
 	BK_DrawScene ();						// rasterization
-	unclock(gl_speeds.backend);
+	STAT(unclock(gl_stats.backend));
 
 	/*------------ debug info ------------*/
 
-	if (r_speeds->integer)
+#if STATS
+	if (r_stats->integer)
 	{
 		//?? implement as loop, with table {OFS2FIELD(), name}
-#define S gl_speeds
-#define T(name)		appDeltaCyclesToMsecf (gl_speeds.name)
+#define S gl_stats
+#define T(name)		appDeltaCyclesToMsecf (gl_stats.name)
 		DrawTextRight (va(
-						"*** frontend: %.2f ***\n"
-						"occl test: %.3f\n"
-						"flare trace: %.3f\n"
-						"*** backend: %.2f ***\n"
-						"sort: %.3f\n"
-						"entity light: %.3f\n"
-						"mesh light: %.3f\n"
-						"comp dyn lm: %.3f",
-						T(frontend), T(occlTest), T(flareTrace),
-						T(backend), T(sort), T(entLight), T(meshLight), T(dynLightmap)
-			), RGB(1,0.6,0.1));
+						"--- frontend %5.2f ---\n"
+						" dlight surf   %.3f\n"
+						" occl test     %.3f\n"
+						" flare trace   %.3f\n"
+						"--- backend  %5.2f ---\n"
+						" sort          %.3f\n"
+						" entity light  %.3f\n"
+						" mesh tess     %.3f\n"
+						" mesh light    %.3f\n"
+						" comp dyn lm   %.3f",
+						T(frontend), T(dlightSurf), T(occlTest), T(flareTrace),
+						T(backend), T(sort), T(entLight), T(meshTess), T(meshLight), T(dynLightmap)
+			), RGB(0.1,0.6,0.1));
 		int lgridSize = map.mapGrid[0]*map.mapGrid[1]*map.mapGrid[2];
 		if (!lgridSize) lgridSize = 1;	// to avoid zero divide
 		//?? can be processed per-frame (not per-scene): tris2D
-		//?? split structure: gl_speeds -> frameStats + sceneStats
+		//?? split structure: gl_stats -> frameStats + sceneStats
 		DrawTextRight (va(
-			"surfs: %d culled: %d\n"
-			"tris: %d (+%d) mtex: %1.2f\n"
-			"ents: %d cull: %d occl: %d\n"
-			"bind: %d upload: %2d flush: %d",
+			"------ common counts ------\n"
+			" surfs: %d culled: %d\n"
+			" tris: %d (+%d 2D) mtex: %1.2f\n"
+			" ents: %d culled: %2d occl:  %d\n"
+			" bind: %d upload: %2d flush: %d",
 			S.surfs, S.cullSurfs,
 			S.trisMT, S.tris2D, S.trisMT ? (float)S.tris / S.trisMT : 0,
 			S.ents, S.cullEnts, S.ocullEnts,
 			S.numBinds, S.numUploads, S.numFlushes
-			), RGB(1,0.5,0));
+			), RGB(0.1,0.6,0.1));
 
 		if (!(fd->rdflags & RDF_NOWORLDMODEL))
 		{
 		DrawTextRight (va(
+			"--------- world ----------\n"
 			"leafs: vis: %-3d fr: %-3d total: %d\n"
 			"particles: %d cull: %d\n"
 			"dlights: %d surfs: %d verts: %d\n"
@@ -754,11 +761,12 @@ void RenderFrame (refdef_t *fd)
 			gl_numDlights, S.dlightSurfs, S.dlightVerts,
 			S.flares, S.testFlares, S.cullFlares,
 			map.numLightCells, lgridSize, (float)map.numLightCells / lgridSize * 100
-			), RGB(1,0.5,0));
+			), RGB(0.1,0.6,0.1));
 		}
 #undef S
 #undef T
 	}
+#endif // STATS
 
 	ClearBuffers ();						// cleanup scene info (after stats display)
 	vp.time = defaultTime;					// restore time for 2D
@@ -766,13 +774,6 @@ void RenderFrame (refdef_t *fd)
 
 
 /*--------------------- 2D picture output ---------------------*/
-
-static shader_t *FindPic (const char *name, bool force)	//?? rename
-{
-	int flags = SHADER_ALPHA|SHADER_CLAMP;
-	if (!force) flags |= SHADER_CHECK;
-	return FindShader (name, flags);
-}
 
 void Fill8 (int x, int y, int w, int h, int c)
 {
@@ -792,6 +793,13 @@ void TileClear (int x, int y, int w, int h, const char *name)
 			(float)(x + w) / sh->width, (float)(y + h) / sh->height);
 	else
 		Fill (x, y, w, h, RGB(0,0,0));
+}
+
+inline shader_t *FindPic (const char *name, bool force)	//?? rename
+{
+	int flags = SHADER_ALPHA|SHADER_CLAMP;
+	if (!force) flags |= SHADER_CHECK;
+	return FindShader (name, flags);
 }
 
 void DrawStretchPic (int x, int y, int w, int h, const char *name)
@@ -825,17 +833,55 @@ void DrawPic (int x, int y, const char *name, int anchor, int color)
 
 /*------------------- Model registration ----------------------*/
 
-void BeginRegistration (const char *mapname)
+void LoadNewWorld (const char *mapname)
 {
+	STAT(gl_ldStats.Zero ());		// clear loading stats
 	ResetShaders ();				// delete all shaders and re-create auto-shaders
 	LoadWorldMap (va("maps/%s.bsp", mapname));
 	forceVisMap = true;
 }
 
 
-void EndRegistration ()
+#if STATS
+void DumpLoadStats ()
 {
-	//?? empty
+	if (!r_stats->integer) return;
+
+	// draw loading statistics
+	typedef struct {
+		int64 *data;
+		const char *name;
+	} statInfo_t;
+	static const statInfo_t info[] = {
+#define F(field,name)	&gl_ldStats.field, name
+		F(imgResample,		"tex resample"),
+		F(imgMipmap,		"tex mipmap"),
+		F(imgLightscale,	"tex lightscale"),
+		F(imgUpload,		"tex upload"),
+		F(md2normals,		"md2 normals")
+#undef F
+	};
+	int i;
+	int maxLen = 0;
+	for (i = 0; i < ARRAY_COUNT(info); i++)
+	{
+		int len = strlen (info[i].name);
+		if (len > maxLen) maxLen = len;
+	}
+	TString<64> Fmt;
+	// build "%-NNs  %7.3f ms"
+	Fmt.sprintf (S_GREEN"%%-%ds  %%7.3f ms\n", maxLen);
+	for (i = 0; i < ARRAY_COUNT(info); i++)
+	{
+		if (!*info[i].data) continue;	// skip this line
+		appPrintf (Fmt, info[i].name, appDeltaCyclesToMsecf (*info[i].data));
+	}
+}
+#endif
+
+void FinishLoadingWorld ()
+{
+	STAT(DumpLoadStats ());
 }
 
 
@@ -892,10 +938,9 @@ void SetSky (const char *name, float rotate, const CVec3 &axis)
 void Screenshot (int flags, const char *name)
 {
 	static TString<64> ShotName;
-
-	ShotName = name;
+	ShotName        = name;
 	screenshotFlags = flags;
-	screenshotName = ShotName;
+	screenshotName  = ShotName;
 }
 
 

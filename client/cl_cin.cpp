@@ -1,6 +1,11 @@
-//!! TODO: cin_t -> class
-
 #include "client.h"
+
+//?? TODO: class CCinematic with virtuals:
+//??   - Draw()
+//??   - Run() (for video only - not for pics ?)
+//??   - Free() - virtual destructor ?
+//??   - static constructor (may be, supported file extension)
+//?? Derived: .cin, .roq, .pcx (image)
 
 #define CIN_SPEED	14		// do not change: video format depends on in (number of sound samples)
 							// to change video playback speed, edit RunCinematic() function (CIN_MSEC_PER_FRAME)
@@ -45,14 +50,7 @@ static cinematics_t cin;
 	Decompression of .CIN files
 -----------------------------------------------------------------------------*/
 
-struct cblock_t
-{
-	byte	*data;
-	int		count;
-};
-
-
-static int SmallestNode1 (int numhnodes, bool *h_used, int *h_count)
+static int GetSmallestNode (int numhnodes, bool *h_used, int *h_count)
 {
 	int best = BIG_NUMBER;
 	int bestnode = -1;
@@ -73,13 +71,12 @@ static int SmallestNode1 (int numhnodes, bool *h_used, int *h_count)
 }
 
 
-// .CIN compression uses huffman encoding with dependency on previous byte
-// This function will create 256 huffman tables (for each previous byte)
+// .CIN compression uses Huffman encoding with dependency on previous byte
+// This function will create 256 Huffman tables (for each previous byte)
 static void InitHuffTable ()
 {
 	//?? if make cin dynamically allocated, can place huffNodes[] as static
 	cin.huffNodes = new int [256*256*2];		// 128K integers
-	memset (cin.huffNodes, 0, 256*256*2*sizeof(int));
 
 	for (int prev = 0; prev < 256; prev++)
 	{
@@ -88,32 +85,29 @@ static void InitHuffTable ()
 		memset (h_used, 0, sizeof(h_used));
 
 		// read a row of counts and convert byte[]->int[]
-		byte	counts[256];
-		cin.file->Read (counts, sizeof(counts));
 		for (int j = 0; j < 256; j++)
-			h_count[j] = counts[j];
+			h_count[j] = cin.file->ReadByte ();
 
 		// build the nodes
 		int *node = cin.huffNodes + prev*256*2;
 		for (int numhnodes = 256; numhnodes < 511; numhnodes++, node += 2)
 		{
 			// pick two lowest counts
-			node[0] = SmallestNode1 (numhnodes, h_used, h_count);
+			node[0] = GetSmallestNode (numhnodes, h_used, h_count);
 			if (node[0] == -1) break;	// no more
-			node[1] = SmallestNode1 (numhnodes, h_used, h_count);
+			node[1] = GetSmallestNode (numhnodes, h_used, h_count);
 			if (node[1] == -1) break;	// no more
 			h_count[numhnodes] = h_count[node[0]] + h_count[node[1]];
 		}
 
-		cin.numHuffNodes[prev] = numhnodes-1;
+		cin.numHuffNodes[prev] = numhnodes-1;	// last node was "-1", or whole table iterated ...
 	}
 }
 
 
-static void HuffDecompress (cblock_t *in, cblock_t *out, byte *buffer, int count)
+static void HuffDecompress (const byte *inData, int inSize, byte *outBuffer, int outSize)
 {
-	byte *input = in->data;
-	out->data = buffer;
+	const byte *input = inData;
 
 #define NEXT_TABLE(prevByte)	\
 	hnodes = cin.huffNodes + ((prevByte-1)*256*2); \
@@ -124,36 +118,28 @@ static void HuffDecompress (cblock_t *in, cblock_t *out, byte *buffer, int count
 	// init decompression; assume previous byte is 0
 	NEXT_TABLE(0);
 
-	byte bit = 0;
-	byte inbyte;
+	int inbyte = 0;
 	while (true)
 	{
 		if (nodenum < 256)
 		{
 			// leaf - place output byte
-			*buffer++ = nodenum;
-			if (!--count) break;
+			*outBuffer++ = nodenum;
+			if (!--outSize) break;
 			// prepare to decode next byte
 			NEXT_TABLE(nodenum);
 		}
 		// acquire next data byte when needed
-		if (!bit)
-		{
-			inbyte = *input++;
-			bit = 8;
-		}
+		if (inbyte <= 1)
+			inbyte = *input++ | 0x100;
 		// analyze next bit
 		nodenum = hnodes[nodenum*2 + (inbyte&1)];
 		inbyte >>= 1;
-		bit--;
 	}
 
-	int readCount = input - in->data;
-	if (readCount != in->count && readCount != in->count + 1)
-		appWPrintf ("Decompression overread by %d\n", readCount - in->count);
-
-	out->count = buffer - out->data;
-	return;
+	int readCount = input - inData;
+	if (readCount != inSize && readCount != inSize + 1)
+		appWPrintf ("Decompression overread by %d\n", readCount - inSize);
 #undef NEXT_TABLE
 }
 
@@ -214,7 +200,7 @@ static bool ReadNextFrame (byte *buffer)
 	byte compressed[0x20000];
 	int size = cin.file->ReadInt () - 4;
 	if (size > sizeof(compressed) || size < 1)
-		Com_DropError ("Bad compressed frame size: %d\n", size);
+		Com_DropError ("bad compressed frame size: %d\n", size);
 	// read and verify check decompressed frame size
 	if (cin.file->ReadInt() != cin.frameSize)
 		Com_FatalError ("bad cinematic frame size");
@@ -229,12 +215,7 @@ static bool ReadNextFrame (byte *buffer)
 	byte samples[22050 * 4];
 	cin.file->Read (samples, count*cin.s_width*cin.s_channels);
 	S_RawSamples (count, cin.s_rate, cin.s_width, cin.s_channels, samples);
-
-	cblock_t in, huf1;
-	in.data  = compressed;
-	in.count = size;
-
-	HuffDecompress (&in, &huf1, buffer, cin.frameSize);
+	HuffDecompress (compressed, size, buffer, cin.frameSize);
 
 	return true;
 
@@ -313,6 +294,15 @@ bool SCR_DrawCinematic ()
 }
 
 
+#if 0
+CFile& operator<< (CFile &File, int &var)
+{
+	var = File.ReadInt ();
+	return File;
+}
+#endif
+
+
 void SCR_PlayCinematic (const char *filename)
 {
 	guard(SCR_PlayCinematic);
@@ -343,20 +333,25 @@ void SCR_PlayCinematic (const char *filename)
 	else
 	{
 		// .cin file
-		cin.file = GFileSystem->OpenFile (va("video/%s", filename));
-		if (!cin.file)
+		if (!(cin.file = GFileSystem->OpenFile (va("video/%s", filename))))
 		{
 			Com_DPrintf ("Cinematic %s not found\n", filename);
 			SCR_StopCinematic ();			// launch next server
 			return;
 		}
 
-		//?? read as struct
+		//?? can read this as struct
+#if 1
+		// 4C bytes of code
 		cin.width      = cin.file->ReadInt ();
 		cin.height     = cin.file->ReadInt ();
 		cin.s_rate     = cin.file->ReadInt ();
 		cin.s_width    = cin.file->ReadInt ();
 		cin.s_channels = cin.file->ReadInt ();
+#else
+		// 3F bytes of code
+		*cin.file << cin.width << cin.height << cin.s_rate << cin.s_width << cin.s_channels;
+#endif
 
 		cin.frameSize  = cin.width * cin.height;
 		cin.buf[0]     = new byte [cin.frameSize];

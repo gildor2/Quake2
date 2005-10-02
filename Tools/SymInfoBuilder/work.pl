@@ -40,7 +40,7 @@ sub ProcessMap {
 		($_) = $_ =~ /^\s*(\S.*\S)\s*$/;
 		next if !defined($_);
 #		print "LINE: $_\n";	#!!!
-		($addr, $name, undef, $args) = / \s* (\S+) \s+ ([\w<>:*\s]+) \s* (\( (.*) \))? /x;
+		($addr, $name, undef, $args) = / \s* (\S+) \s+ ([\w<>:*,~\s]+) \s* (\( (.*) \))? /x;
 		my $curr = hex($addr);
 		next if $name =~ /^__/;						# do not include in list names, started with double underscore
 		# process return type
@@ -52,6 +52,21 @@ sub ProcessMap {
 			$name = ProcessType($t)." ".$n;
 		}
 #		print "  [$t/$n] -> [$name] [$args]\n";	#!!!
+		# cut "virtual"
+		if ($name =~ /^virtual\s/) {
+			($name) = $name =~ /^virtual\s+(\S+.*)/;
+		}
+		# detect constructors/destructors
+		($t, $n) = $name =~ /^ (.*) \:\: (.*) $/x;
+		if (defined $t && defined $n)
+		{
+			if ($n eq $t) {
+				$name = "$t\:\:construc";
+			} elsif ($n eq "~".$t) {
+				$name = "$t\:\:destruc";
+			}
+		}
+
 		if (defined($args)) {
 			$args = "" if $args eq "void";			# replace func(void) -> func()
 			# some processing on arguments list

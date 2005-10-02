@@ -7,6 +7,7 @@ SOURCE CODE
 - appStrcpy, strncpy, strcmp, stricmp -> CRT functions (when required, can make #define strcpy appStrcpy ...)
 - GCC: add macros for printf_format-like functions (better control on wrong parameters); check wrong TString<> usage
   as "Str", not "*Str"
+- VC2003+: compiler option /LTCG - intermodule optimizations ("link-time code generation") + /GL
 
 COMPILER BUGS
 ~~~~~~~~~~~~~

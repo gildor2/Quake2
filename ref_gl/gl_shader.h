@@ -15,9 +15,9 @@ namespace OpenGLDrv {
 /* NOTES:
  *	- SKY				- useless (originally was used for drawing sky before other surfaces)
  *	- PORTAL			- tech-dependent ??
- *	- OPAQUE/SEETHROUGH - useless (opaque - sorted by shader, seethrough - sort bu BSP)
+ *	- OPAQUE/SEETHROUGH - useless (opaque - sorted by shader, seethrough - sort by BSP)
  *	- DECAL, BANNER, UNDERWATER - ??
- *	- SPRITE (ADDITIVE) - no depthwrite, draw it last (flares only?)
+ *	- SPRITE (ADDITIVE) - no depthwrite, draw it last (flares only?); default for scripts with "blend"+!"sort"+!"depthwrite"
  */
 typedef enum
 {
@@ -63,8 +63,7 @@ typedef enum
 	// internal-use modes
 	TCGEN_LIGHTMAP1, TCGEN_LIGHTMAP2, TCGEN_LIGHTMAP3, TCGEN_LIGHTMAP4,	// for fast lightstyles
 	TCGEN_DLIGHT0,				// 32 values, index is for surfDlights[], not for portal.dlights[]
-	TCGEN_ZERO = TCGEN_DLIGHT0 + MAX_DLIGHTS,	//?? s = t = 0 (unused/unimplemented)
-	TCGEN_FOG									//?? used for fog image (unimplemented)
+	TCGEN_FOG = TCGEN_DLIGHT0 + MAX_DLIGHTS		//?? used for fog image (unimplemented)
 } tcGenType_t;
 
 typedef enum

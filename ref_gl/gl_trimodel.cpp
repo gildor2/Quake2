@@ -52,7 +52,7 @@ bool md3Model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagNam
 		{
 			// linear lerp axis vectors
 			Lerp (tag1.axis[i], tag2.axis[i], lerp, tag.axis[i]);
-			tag.axis[i].Normalize ();
+			tag.axis[i].NormalizeFast ();
 		}
 		// interpolate origin
 		Lerp (tag1.origin, tag2.origin, lerp, tag.origin);
@@ -226,12 +226,11 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 			// add normal to verts
 			for (k = 0; k < 3; k++)
 			{
-				float	ang;
+				float ang = - dot (vecs[k], vecs[k == 0 ? 2 : k - 1]);
 #if 1
-				ang = - dot (vecs[k], vecs[k == 0 ? 2 : k - 1]);
 				ang = ACOS_FUNC(ang);
 #else
-				ang = acos (- dot (vecs[k], vecs[k == 0 ? 2 : k - 1]));
+				ang = acos (ang);
 #endif
 				VectorMA (normals[xyzIndexes[idx[k]]], ang, n);		// weighted normal: weight ~ angle
 			}
@@ -303,6 +302,7 @@ static void SetMd3Skin (const char *name, surfaceMd3_t *surf, int index, const c
 #if 0
 #define BUILD_SCELETON
 //???? rename, may be remove
+//???? not works with MD3 (Q3) models
 static void CheckTrisSizes (surfaceMd3_t *surf, dMd2Frame_t *md2Frame = NULL, int md2FrameSize = 0)
 {
 	int		tri, *inds;
@@ -398,9 +398,9 @@ static void CheckTrisSizes (surfaceMd3_t *surf, dMd2Frame_t *md2Frame = NULL, in
 			inds[0] = inds[1] = inds[2] = 0;
 
 		//???
-//		appPrintf ("%s%3d\n", fixed[tri] ? S_GREEN : "", tri);
+		appPrintf ("%s%3d\n", fixed[tri] ? S_GREEN : "", tri);
 	}
-	appPrintf (S_CYAN"FIXED: %d / %d\n", numFixed, surf->numTris);	//??
+//	appPrintf (S_CYAN"FIXED: %d / %d\n", numFixed, surf->numTris);	//??
 }
 
 #endif
@@ -483,37 +483,31 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 	surf->verts      = (vertexMd3_t*)(surf->indexes + 3*surf->numTris);
 	surf->shaders    = (shader_t**)(surf->verts + surf->numVerts*surf->numFrames);
 
-START_PROFILE(..Md2::Parse)
 	/*--- build texcoords and indexes ----*/
 	if (!ParseGlCmds (name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes))
 	{
 		appFree (md3);
 		return NULL;
 	}
-END_PROFILE
 
-START_PROFILE(..Md2::Frame)
 	/*---- generate vertexes/normals -----*/
 	for (i = 0; i < surf->numFrames; i++)
 		ProcessMd2Frame (surf->verts + i * numVerts,
 				(dMd2Frame_t*)(buf + hdr->ofsFrames + i * hdr->frameSize),
 				md3->frames + i, numVerts, xyzIndexes);
-END_PROFILE
-START_PROFILE(..Md2::Normals)
+	STAT(clock(gl_ldStats.md2normals));
 	BuildMd2Normals (surf, xyzIndexes, hdr->numXyz);
-END_PROFILE
+	STAT(unclock(gl_ldStats.md2normals));
 
 #ifdef BUILD_SCELETON	//????
 	CheckTrisSizes (surf, (dMd2Frame_t*)(buf + hdr->ofsFrames), hdr->frameSize);
 #endif
 
-START_PROFILE(..Md2::Skin)
 	/*---------- load skins --------------*/
 	surf->numShaders = hdr->numSkins;
 	const char *skin;
 	for (i = 0, skin = (char*)(buf + hdr->ofsSkins); i < surf->numShaders; i++, skin += MD2_MAX_SKINNAME)
 		SetMd3Skin (name, surf, i, skin);
-END_PROFILE
 
 	return md3;
 
@@ -664,6 +658,9 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 			SetMd3Skin (name, surf, j, ss->name);
 		// next surface
 		ds = OffsetPointer (ds, ds->ofsEnd);
+#ifdef BUILD_SCELETON	//????
+		CheckTrisSizes (surf);
+#endif
 	}
 	// compute frame radiuses
 	md3Frame_t *frm = md3->frames;

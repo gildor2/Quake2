@@ -8,7 +8,7 @@ namespace OpenGLDrv {
 
 
 // per-shader limits
-#define MAX_VERTEXES	4096		// 1024 in Q3, 2048 in Q2, but have VALID model with more than 2048 verts
+#define MAX_VERTEXES	4096		// 1024 in Q3, 2048 in Q2, but have VALID Q2 model with more than 2048 verts
 #define MAX_INDEXES		(MAX_VERTEXES*6)
 
 
@@ -66,8 +66,8 @@ void BK_BeginFrame ();
 void BK_EndFrame ();
 
 void BK_DrawPic (shader_t *shader, int x, int y, int w, int h,
-			float s1 = 0, float t1 = 0, float s2 = 1, float t2 = 1,
-			unsigned color = RGB(1,1,1), byte flipMode = 0);
+				 float s1 = 0, float t1 = 0, float s2 = 1, float t2 = 1,
+				 unsigned color = RGB(1,1,1), byte flipMode = 0);
 void BK_DrawText (const char *text, int len, int x, int y, int w, int h, unsigned color);
 void BK_DrawScene ();
 

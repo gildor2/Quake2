@@ -25,7 +25,9 @@ static HINSTANCE libGL;		//!! win32 (type)
 qgl_t			qgl;
 static qgl_t	lib;
 
+#if !NO_GL_LOG
 static COutputDeviceFile *LogFile;
+#endif
 
 #include "../ref_gl/qgl_impl.h"
 
@@ -84,11 +86,13 @@ bool QGL_Init (const char *libName)
 
 void QGL_Shutdown ()
 {
+#if !NO_GL_LOG
 	if (LogFile)
 	{
 		delete LogFile;
 		LogFile = NULL;
 	}
+#endif
 
 	if (libGL)
 	{
@@ -162,11 +166,10 @@ void QGL_InitExtensions ()
 	ext2 = NULL;
 #ifdef _WIN32
 	{
-		typedef const char * (APIENTRY * wglGetExtensionsStringARB_t) (HDC hdc);
-		wglGetExtensionsStringARB_t wglGetExtensionsStringARB;
-
-		wglGetExtensionsStringARB = (wglGetExtensionsStringARB_t)wglGetProcAddress ("wglGetExtensionsStringARB");
-			//?? better type conversion, may be, use wglext.h
+		//?? from wglext.h -- later, when use this header, remove line
+		typedef const char * (WINAPI * PFNWGLGETEXTENSIONSSTRINGARBPROC) (HDC hdc);
+		PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB =
+			(PFNWGLGETEXTENSIONSSTRINGARBPROC)wglGetProcAddress ("wglGetExtensionsStringARB");
 		if (wglGetExtensionsStringARB)
 			ext2 = wglGetExtensionsStringARB (gl_hDC);
 	}
@@ -372,6 +375,8 @@ void QGL_PrintExtensionsString (const char *label, const char *str, const char *
 	Logging OpenGL function calls
 -----------------------------------------------------------------------------*/
 
+#if !NO_GL_LOG
+
 void QGL_EnableLogging (bool enable)
 {
 	if (enable)
@@ -409,6 +414,8 @@ void QGL_LogMessage (const char *text)
 	if (!LogFile) return;
 	LogFile->Printf (text);
 }
+
+#endif
 
 
 /*-----------------------------------------------------------------------------

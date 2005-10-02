@@ -95,7 +95,7 @@ struct glstate_t
 	short	maxUsedShaderIndex;
 	bool	is2dMode;
 	bool	have3d;
-	bool	haveFullScreen3d;					// 3D, which fill whole window (incorrect var name? remove??)
+	bool	haveFullScreen3d;	// 3D, which fill whole window (incorrect var name? useless?? not works, when scr_viewsize<100)
 	bool	useFastSky;
 };
 

@@ -5,7 +5,7 @@
 =============================================================================*/
 
 //?? zlib will be linked to Core or other place ??
-#define CORE_API
+#define STATIC_BUILD
 
 #include "../Core/Inc/Core.h"
 
