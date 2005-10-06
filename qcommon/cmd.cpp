@@ -656,5 +656,5 @@ static void Cmd_Init ()
 	RegisterCommand ("unalias", Cmd_Unalias_f);
 	RegisterCommand ("wait", Cmd_Wait_f);
 	// cvars
-	cmd_debug = Cvar_Get ("cmd_debug", "0", 0);
+	cmd_debug = Cvar_Get ("cmd_debug", "0");
 }

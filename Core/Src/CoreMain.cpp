@@ -17,7 +17,7 @@ static void Cmd_Version ()
 
 const char *appTimestamp ()
 {
-	static char ctime[256];
+	static char ctime[64];
 	time_t itime;
 	time (&itime);
 	strftime (ARRAY_ARG(ctime), "%b %d %Y %H:%M:%S", localtime (&itime));

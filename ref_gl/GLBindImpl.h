@@ -15,7 +15,7 @@
 #endif
 
 
-static const char *qglNames[NUM_GLFUNCS + NUM_EXTFUNCS] = {
+static const char *GLNames[NUM_GLFUNCS + NUM_EXTFUNCS] = {
 	"glAlphaFunc",
 	"glBegin",
 	"glBindTexture",
@@ -803,7 +803,7 @@ static BOOL APIENTRY logSwapIntervalEXT (int interval)
 
 #endif
 
-static const qgl_t logFuncs = {
+static const GL_t logFuncs = {
 	logAlphaFunc,
 	logBegin,
 	logBindTexture,

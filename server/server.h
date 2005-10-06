@@ -79,7 +79,7 @@ struct client_frame_t
 };
 
 #define	LATENCY_COUNTS	16
-#define	RATE_MESSAGES	10
+#define	RATE_MESSAGES	10				// 10 messages * sv_fps => 1 sec
 
 struct client_t
 {

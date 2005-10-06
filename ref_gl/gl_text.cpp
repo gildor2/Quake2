@@ -150,7 +150,7 @@ void DrawText3D (const CVec3 &pos, const char *text, unsigned rgba)
 
 void InitTexts ()
 {
-	gl_logTexts = Cvar_Get ("gl_logTexts", "0", 0);
+	gl_logTexts = Cvar_Get ("gl_logTexts", "0");
 	//?? should init fonts here
 }
 

@@ -183,7 +183,7 @@ struct client_static_t
 
 	int			realtime;		// always increasing, no clamping, etc
 	float		frametime;		// seconds since last frame
-	bool		netFrameDropped;
+	bool		netFrameDropped;// true, when cl_inFps rejects input frame; used for correct prediction
 
 	/*----- screen rendering information -----*/
 	int			disable_servercount; // when we receive a frame and cl.servercount
@@ -238,12 +238,11 @@ extern	cvar_t	*cl_pitchspeed;
 
 extern	cvar_t	*cl_run;
 
-extern	cvar_t	*cl_anglespeedkey;
-
 extern	cvar_t	*cl_shownet;
 extern	cvar_t	*cl_showmiss;
 extern	cvar_t	*cl_showclamp;
 
+extern	cvar_t	*freelook;
 extern	cvar_t	*lookspring;
 extern	cvar_t	*lookstrafe;
 extern	cvar_t	*sensitivity;
@@ -252,8 +251,6 @@ extern	cvar_t	*m_pitch;
 extern	cvar_t	*m_yaw;
 extern	cvar_t	*m_forward;
 extern	cvar_t	*m_side;
-
-extern	cvar_t	*freelook;
 
 extern	cvar_t	*cl_paused;
 
@@ -303,42 +300,34 @@ void CL_PingServers_f (void);
 void CL_Snd_Restart_f (void);
 void CL_RegisterSounds (void);
 
-void CL_WriteDemoMessage (void);
+void CL_ReadPackets ();
+void CL_WriteDemoMessage ();
+
+void CL_ClearState ();
 
 
 //
 // cl_input.cpp
 //
 
-// declarations for exporting to in_win32.cpp:
-typedef struct
+void CL_InitInput ();
+void CL_SendCmd ();
+
+// declarations for exporting to in_win32.cpp: (make local for cl_input.cpp!)
+struct kbutton_t
 {
-	int			down[2];		// key nums holding it down
+	short		down[2];		// key nums holding it down
+	byte		state;
 	unsigned	downtime;		// msec timestamp
-	unsigned	msec;			// msec down this frame
-	int			state;
-} kbutton_t;
-extern 	kbutton_t 	in_Strafe;
-extern 	kbutton_t 	in_Speed;
-
-void CL_InitInput (void);
-void CL_SendCmd (void);
-void CL_SendMove (usercmd_t *cmd);
-
-void CL_ClearState (void);
-
-void CL_ReadPackets (void);
-
-int  CL_ReadFromServer (void);
-void CL_WriteToServer (usercmd_t *cmd);
-void CL_BaseMove (usercmd_t *cmd);
-
-void IN_CenterView (void);
+	unsigned	msec;			// != 0 only for frame, when button released
+};
+extern kbutton_t in_Strafe, in_Speed;
+void IN_CenterView ();			// global for MLook.up only (for in_win.cpp)
 
 //
 // cl_parse.cpp
 //
-extern	const char *svc_strings[svc_last];
+extern const char *svc_strings[svc_last];
 
 void CL_ParseServerMessage (void);
 

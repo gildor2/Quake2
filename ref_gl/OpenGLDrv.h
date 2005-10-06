@@ -2,7 +2,7 @@
 #define __OPENGLDRV_INCLUDED__
 
 
-#include <stdio.h>
+//??#include <stdio.h>
 
 /*-----------------------------------------------------------------------------
 	Standard OpenGL stuff
@@ -67,7 +67,7 @@
 
 namespace OpenGLDrv {
 
-#include "qgl_decl.h"
+#include "GLBind.h"
 
 bool	QGL_Init (const char *libName);
 void	QGL_Shutdown ();

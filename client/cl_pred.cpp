@@ -27,24 +27,20 @@ static float predictLerp = -1;		// >= 0 -- use this value for prediction; if < 0
 
 void CL_CheckPredictionError (void)
 {
-	int		frame;
-	short	delta[3];
-	int		i, len;
-
 	guard(CL_CheckPredictionError);
 
 	if (!cl_predict->integer || (cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION) || cl.attractloop)
 		return;
 
 	// calculate the last usercmd_t we sent that the server has processed
-	frame = cls.netchan.incoming_acknowledged;
-	frame &= (CMD_BACKUP-1);
+	int frame = cls.netchan.incoming_acknowledged & (CMD_BACKUP-1);
 
 	// compare what the server returned with what we had predicted it to be
+	short delta[3];
 	VectorSubtract2 (cl.frame.playerstate.pmove.origin, cl.predicted_origins[frame], delta);
 
 	// save the prediction error for interpolation
-	len = abs(delta[0]) + abs(delta[1]) + abs(delta[2]);	//?? VectorLength()
+	int len = abs(delta[0]) + abs(delta[1]) + abs(delta[2]);	//?? VectorLength()
 	if (len > 640)	// 80 world units
 	{	// a teleport or something
 		cl.prediction_error.Zero();
@@ -52,7 +48,7 @@ void CL_CheckPredictionError (void)
 	else
 	{
 		// save for error itnerpolation
-		for (i = 0; i < 3; i++)
+		for (int i = 0; i < 3; i++)
 			cl.prediction_error[i] = delta[i] * 0.125f;
 
 		if (cl_showmiss->integer && len)
@@ -83,7 +79,6 @@ void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CB
 
 	for (int i = 0; i < cl.frame.num_entities; i++)
 	{
-		cmodel_t *cmodel;
 		CVec3	tmp, delta;
 
 		clEntityState_t *ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
@@ -122,7 +117,7 @@ void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CB
 		trace_t	trace;
 		if (ent->solid == 31)
 		{
-			cmodel = cl.model_clip[ent->modelindex];
+			cmodel_t *cmodel = cl.model_clip[ent->modelindex];
 			if (!cmodel) continue;
 			CM_TransformedBoxTrace (trace, start, end, bounds, cmodel->headnode, contents, eOrigin, ent->axis);
 		}
@@ -182,34 +177,27 @@ static trace_t CL_PMTrace (const CVec3 &start, const CVec3 &mins, const CVec3 &m
 
 int CL_PMpointcontents (const CVec3 &point)
 {
-	int		i, j;
-	cmodel_t *cmodel;
-	int		contents;
-	float	dist2;
-
 	guard(CL_PMpointcontents);
 
-	contents = CM_PointContents (point, 0);
+	unsigned contents = CM_PointContents (point, 0);
 #ifndef NO_PREDICT_LERP
 	float backlerp = 1.0f - cl.lerpfrac;
 #endif
 
-	for (i = 0; i < cl.frame.num_entities; i++)
+	for (int i = 0; i < cl.frame.num_entities; i++)
 	{
 		CVec3	 tmp, delta, eCenter, eOrigin;
 
 		clEntityState_t *ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
+		if (ent->solid != 31) continue;	// use pointcontents() only for inline models
 
-		if (ent->solid != 31)	// use pointcontents only for inline models
-			continue;
-
-		cmodel = cl.model_clip[ent->modelindex];
+		cmodel_t *cmodel = cl.model_clip[ent->modelindex];
 		if (!cmodel) continue;
 
 		// compute lerped entity position
 		centity_t *cent = &cl_entities[ent->number];
 #ifndef NO_PREDICT_LERP
-		for (j = 0; j < 3; j++)
+		for (int j = 0; j < 3; j++)
 			delta[j] = backlerp * (cent->current.origin[j] - cent->prev.origin[j]);
 #else
 		delta.Zero();
@@ -222,7 +210,7 @@ int CL_PMpointcontents (const CVec3 &point)
 
 		// check entity bounding sphere
 		VectorSubtract (eCenter, point, tmp);
-		dist2 = dot (tmp, tmp);
+		float dist2 = dot (tmp, tmp);
 		if (dist2 > ent->radius * ent->radius) continue;
 		// accurate check with trace
 		contents |= CM_TransformedPointContents (point, cmodel->headnode, eOrigin, ent->axis);

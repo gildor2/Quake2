@@ -393,15 +393,9 @@ void SV_DemoCompleted (void)
 }
 
 
-/*
-=======================
-SV_RateDrop
-
-Returns true if the client is over its current
-bandwidth estimation and should not be sent another packet
-=======================
-*/
-bool SV_RateDrop (client_t *c)
+// Returns true if the client is over its current
+// bandwidth estimation and should not be sent another packet
+static bool RateDrop (client_t *c)
 {
 	// never drop over the loopback
 	if (c->netchan.remote_address.type == NA_LOOPBACK)
@@ -467,7 +461,7 @@ void SV_SendClientMessages (void)
 		else if (c->state == cs_spawned)
 		{
 			// don't overrun bandwidth
-			if (SV_RateDrop (c)) continue;
+			if (RateDrop (c)) continue;
 			SV_SendClientDatagram (c);
 		}
 		else

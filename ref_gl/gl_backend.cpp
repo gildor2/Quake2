@@ -194,14 +194,14 @@ static void ProcessShaderDeforms (shader_t *sh)
 					radius = SQRTFAST(radius);
 					// compute vertexes
 					VectorMA (center,  radius, mViewAxis[1], tmp);		// right
-					VectorMA (tmp,  radius, mViewAxis[2], vec->xyz);
+					VectorMA (tmp,     radius, mViewAxis[2], vec->xyz);
 					vec++;
-					VectorMA (tmp, -radius, mViewAxis[2], vec->xyz);
+					VectorMA (tmp,    -radius, mViewAxis[2], vec->xyz);
 					vec++;
 					VectorMA (center, -radius, mViewAxis[1], tmp);		// left
-					VectorMA (tmp, -radius, mViewAxis[2], vec->xyz);
+					VectorMA (tmp,    -radius, mViewAxis[2], vec->xyz);
 					vec++;
-					VectorMA (tmp,  radius, mViewAxis[2], vec->xyz);
+					VectorMA (tmp,     radius, mViewAxis[2], vec->xyz);
 					vec++;
 					// recompute texcoords
 					tex->tex[0] = 0; tex->tex[1] = 0; tex++;
@@ -422,21 +422,15 @@ static void GenerateColorArray (shaderStage_t *st)
 
 static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *tex)
 {
-	int				j, k;
-	tcModParms_t	*tcmod;
-	bufTexCoord_t	*dst, *dst2;
-	bufTexCoordSrc_t *src;
-
-	dst = vb->texCoord[tmu];
-
-	src = srcTexCoord;
-	dst2 = dst;		// save this for tcMod
-
 	guard(GenerateTexCoordArray);
+
 	if (tex && tex->target == GL_TEXTURE_RECTANGLE_NV && st->tcGenType != TCGEN_TEXTURE)
 		Com_DropError ("shader %s uses TEXTURE_RECTANGLE with not \"tcGen texture\"", *currentShader->Name);
 
+	int j, k;
 	// process tcGen
+	bufTexCoord_t *dst = vb->texCoord[tmu];
+	bufTexCoordSrc_t *src = srcTexCoord;
 	switch (st->tcGenType)
 	{
 	case TCGEN_TEXTURE:
@@ -551,11 +545,12 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *te
 	}
 
 	// process tcMod
+	tcModParms_t *tcmod;
 	for (j = 0, tcmod = st->tcModParms; j < st->numTcMods; j++, tcmod++)
 	{
 		float	f1, f2;
 
-		dst = dst2;
+		dst = vb->texCoord[tmu];
 		switch (tcmod->type)
 		{
 		case TCMOD_SCROLL:

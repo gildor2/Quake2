@@ -495,7 +495,7 @@ void S_Spatialize(channel_t *ch)
 	// anything coming from the view entity will always be full volume
 	if (ch->entnum == cl.playernum+1)
 	{
-		ch->leftvol = ch->master_vol;
+		ch->leftvol  = ch->master_vol;
 		ch->rightvol = ch->master_vol;
 		return;
 	}
@@ -873,12 +873,12 @@ void S_AddLoopSounds ()
 			left_total = 255;
 		if (right_total > 255)
 			right_total = 255;
-		ch->leftvol = left_total;
-		ch->rightvol = right_total;
+		ch->leftvol   = left_total;
+		ch->rightvol  = right_total;
 		ch->autosound = true;	// remove next frame
-		ch->sfx = sfx;
-		ch->pos = paintedtime % sc->length;
-		ch->end = paintedtime + sc->length - ch->pos;
+		ch->sfx       = sfx;
+		ch->pos       = paintedtime % sc->length;
+		ch->end       = paintedtime + sc->length - ch->pos;
 	}
 }
 

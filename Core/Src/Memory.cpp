@@ -16,7 +16,7 @@ static int	chainBlocks, chainsSize;
 #endif
 
 #if MEM_DEBUG
-unsigned GCurrentMemAllocator;
+address_t GCurrentMemAllocator;
 #endif
 
 
@@ -81,12 +81,12 @@ void *appMalloc (size_t size, int alignment)
 	void *data = hdr + 1;
 	// align pointers
 	int pad = SizeToAlign (data, alignment);
-	hdr = OffsetPointer (hdr, pad);
+	hdr  = OffsetPointer (hdr, pad);
 	data = OffsetPointer (data, pad);
 	// fill header
 	hdr->offset = pad;
 #if MEM_STATS
-	hdr->size = size;
+	hdr->size   = size;
 	hdr->Link ();
 	// update stats
 	allocsSize += size;

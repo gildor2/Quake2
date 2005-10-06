@@ -6,8 +6,6 @@
 #include "gl_buffers.h"
 
 /*!! TODO:
- *	- Linux: if gl_finish!=0 required (see gl_main.cpp::GL_Init() -- can force
- *		glFinish() on begin or end of frame (check this!))
  *  - UT BeginFrame / EndFrame (SwapBuffers) -- Lock / Unlock
  */
 
@@ -177,7 +175,11 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_znear, 4, 0),
 	CVAR_VAR(gl_swapinterval, 0, CVAR_ARCHIVE|CVAR_UPDATE),
 
-	CVAR_VAR(gl_driver, opengl32, CVAR_ARCHIVE),			//?? use different gl_driver default value for Linux, or use different cvar ?
+#ifdef _WIN32
+	CVAR_VAR(gl_driver, opengl32, CVAR_ARCHIVE),
+#else
+	CVAR_VAR(gl_driver, libGL.so, CVAR_ARCHIVE),
+#endif
 	CVAR_VAR(gl_mode, 3, CVAR_ARCHIVE),
 
 	CVAR_VAR(gl_maxTextureUnits, 0, CVAR_ARCHIVE),
@@ -288,10 +290,6 @@ bool Init ()
 		QGL_Shutdown ();
 		return false;
 	}
-
-#ifdef __linux__
-	Cvar_SetInteger ("gl_finish", 1);	//??
-#endif
 
 	/*------------------ Check extensions ----------------------*/
 	//?? move this part to gl_interface.cpp ??

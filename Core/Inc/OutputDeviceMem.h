@@ -9,11 +9,10 @@ private:
 	int		size;
 public:
 	COutputDeviceMem (int bufSize = 4096)
+	:	size(bufSize), used(0)
 	{
-		size = bufSize;
 		buffer = new char [bufSize];
 //		buffer[0] = 0;
-		used = 0;
 	}
 	~COutputDeviceMem ()
 	{

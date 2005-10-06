@@ -42,7 +42,7 @@ typedef struct {
 
 extern refImport_t ri;
 
-inline cvar_t* Cvar_Get (const char *name, const char *value, int flags)
+inline cvar_t* Cvar_Get (const char *name, const char *value, int flags = 0)
 {
 	return ri._Cvar_Get (name, value, flags);
 }

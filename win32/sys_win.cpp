@@ -1,8 +1,7 @@
-#include "winquake.h"
-#include "Core.h"
-#include "OutputDeviceMem.h"
-
+#include "WinPrivate.h"
 #include "../client/client.h"		//!! for editLine[], CompleteCommand() + COutputDeviceCon
+
+#include "OutputDeviceMem.h"
 
 bool		ActiveApp, MinimizedApp, FullscreenApp;
 
@@ -238,97 +237,6 @@ void Sys_ProcessMessages ()
 }
 
 
-
-/*-----------------------------------------------------------------------------
-	Game DLL
------------------------------------------------------------------------------*/
-
-static HINSTANCE game_library;
-
-
-void Sys_UnloadGame ()
-{
-	guard(Sys_UnloadGame);
-	if (!FreeLibrary (game_library))
-		Com_FatalError ("Cannot unload game library");
-	Com_DPrintf ("FreeLibrary(game.dll)\n");
-	game_library = NULL;
-	unguard;
-}
-
-
-void *Sys_GetGameAPI (void *parms)
-{
-	guard(Sys_GetGameAPI);
-
-	if (game_library)
-		Com_FatalError ("Sys_GetGameAPI() without Sys_UnloadGame()");
-
-#if defined(_M_IX86)
-#	define GAME_DLL "gamex86.dll"
-#elif defined(_M_ALPHA)
-#	define GAME_DLL "gameaxp.dll"
-#else
-#	error "Don't know, how game dll named"
-#endif
-
-#if 0
-	// run through the search paths
-	const char *path = NULL;
-	while (path = FS_NextPath (path))
-	{
-		TString<MAX_OSPATH> DllName;
-		DllName.sprintf ("%s/" GAME_DLL, path);
-		if (FILE *f = fopen (DllName, "rb"))	// check file presence
-		{
-			fclose (f);
-			if (game_library = LoadLibrary (DllName))
-			{
-				Com_DPrintf ("LoadLibrary (%s)\n", *DllName);
-				break;
-			}
-			else
-				appWPrintf ("Sys_GetGameAPI(%s): failed to load library\n", *DllName);
-		}
-		else
-			Com_DPrintf ("Sys_GetGameAPI(%s): file not found\n", *DllName);
-	}
-	if (!game_library)
-		return NULL;		// couldn't find one anywhere
-#else
-	CFile *Lib = GFileSystem->OpenFile (GAME_DLL, FS_OS);
-	if (!Lib)
-		return NULL;
-	TString<256> DllName; DllName.sprintf ("%s/%s", Lib->Owner->name, *Lib->Name);
-	game_library = LoadLibrary (DllName);
-	delete Lib;
-	if (game_library)
-		Com_DPrintf ("LoadLibrary (%s)\n", *DllName);
-	else
-	{
-		appWPrintf ("Sys_GetGameAPI(%s): failed to load library\n", *DllName);
-		return NULL;
-	}
-	//!! NOTE: if game dll is on remote file system, can use FS_CopyFile() function
-#endif
-
-	typedef void * (* pGetGameApi_t)(void *);
-	pGetGameApi_t pGetGameAPI;
-	pGetGameAPI = (pGetGameApi_t)GetProcAddress (game_library, "GetGameAPI");
-	if (!pGetGameAPI)
-	{
-		Sys_UnloadGame ();
-		return NULL;
-	}
-
-	guard(GetGameAPI);
-	return pGetGameAPI (parms);
-	unguard;
-
-	unguard;
-}
-
-
 /*-----------------------------------------------------------------------------
 	Program startup, main loop and exception handling
 -----------------------------------------------------------------------------*/
@@ -348,11 +256,9 @@ int main (int argc, const char **argv) // force to link as console application
 		const char *cmdline = GetCommandLine ();
 		// skip executable name (argv[0])
 		//?? NOTE: Linux/Unix have no ability to get full command line - argc/argv[] only!
-		if (*cmdline++ == '"')
-			cmdline = strchr (cmdline, '"')+1;
-		else
-			cmdline = strchr (cmdline, ' ')+1;
+		cmdline = strchr (cmdline, (cmdline[0] == '\"') ? '\"' : ' ');
 		if (!cmdline) cmdline = "";
+		else cmdline++;
 
 #ifdef CD_PATH
 		if (const char *cddir = ScanForCD ())
@@ -401,6 +307,7 @@ int main (int argc, const char **argv) // force to link as console application
 			double timeDelta, newtime;
 			while (true)
 			{
+				//?? should process maxfps here (Sleep() required amount of time); problem: ensure server framerate!
 				newtime = appMillisecondsf ();	//?? can use appCycles() for measuring time delta, but (currently) this is Pentium-only
 				timeDelta = newtime - oldtime;
 				if (timeDelta < 0)

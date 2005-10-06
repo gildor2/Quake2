@@ -114,7 +114,8 @@ GL_RENDERER = \
 	$D/gl_text.cpp \
 	$D/gl_model.cpp \
 	$D/gl_bspmodel.cpp \
-	$D/gl_trimodel.cpp
+	$D/gl_trimodel.cpp \
+	$D/GLBind.cpp
 
 D = win32
 WIN32_FILES = \
@@ -129,7 +130,7 @@ DED_WIN32 = \
 	$D/sys_win.cpp
 
 # Win32 renderer files
-GL_RENDERER  +=  $D/qgl_win.cpp  $D/gl_win.cpp
+GL_RENDERER  +=  $D/gl_win.cpp
 
 # Win32 resources
 WIN32_FILES += $D/q2.rc

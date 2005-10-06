@@ -10,7 +10,7 @@
      * wave <div> <func> <base> <amp> <phase> <freq>
        if <div> == 0 --> error, div = 100
      * move <x> <y> <z> <func> <base> <amp> <phase> <freq>
-     - normal <amp> <freq>        -- distort normal with noise (??)
+     - normal <amp> <freq>        -- distort normal with noise
      ? projectionShadow           -- used internally in Q3 for blob shadow ONLY
      ? text0 .. text7             -- originally was used in Q3 for scoreboard; currently unused
 * 3) tessSize <value>             -- in Q3 used by q3map util; in Q2 used for surface tesselation
@@ -19,9 +19,11 @@
 * 6) q3map*		          -- ignore (note: check "q3map_surfacelight" and other "q3map_*light*")
 * 7) surfaceParm	          -- ignore (use "nodraw" only)
      - contents: slime, lava, playerclip, monsterclip, nodrop, origin, translucent,
-       detail, structural, areaportal, clusterportal, donotenter, fog, sky, 
+       detail, structural, areaportal, clusterportal, donotenter, fog, sky
+       Q3A uses: fog (for no decals)
      - surf: nonsolid, lightfilter, alphashadow, hint, slick, noimpact, nomarks, ladder,
        nodamage, metalsteps, flesh, nosteps, nodraw, pointlight, nolightmap, nodlight, dust
+       Q3A uses: nodraw, noimpact,nomarks (for no decals), nodlight,sky (for no dlights)
 * 8) nomipmaps
 * 9) nopicmip
 * 10) polygonOffset
@@ -59,10 +61,12 @@
      - nearest          == 17
    18) if <0|1|mtex|no_mtex> / endif
    19) fogonly  (required for fog ??)
-*  20) force32bit
-   21) portalsky
-   22) spriteGen <parallel|parallel_oriented|parallel_upright|oriented>
-   23) spriteScale <value>
+   20) fogParms <f1> <f2> <f3> <depth>
+   21) foggen <func> <base> <amp> <phase> <freq>
+*  22) force32bit
+   23) portalsky                  -- will set sort to 2
+   24) spriteGen <parallel|parallel_oriented|parallel_upright|oriented>
+   25) spriteScale <value>
 
 
 2. Stage keywords
@@ -165,9 +169,9 @@
   3) triangle
   4) sawtooth
   5) inversesawtooth
-  6)* noise     (only for "deformVertexes normal" and "rgbGen [color]wave noise")
+  6)* noise     (only for "rgbGen [color]wave noise")
 
-  Result = amp * (func(TIME * freq) + phase) + base
+  Result = base + amp * (phase + func(freq * TIME))
 
 
 4. Where shader scripts should be placed

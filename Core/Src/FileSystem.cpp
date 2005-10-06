@@ -173,6 +173,7 @@ void CFileSystem::Mount (CFileContainer &Container, const char *point)
 	mounts.InsertFirst (&Container);
 	Container.Owner = this;
 	Container.MountPoint.filename (point);
+	modifyCount++;
 }
 
 void CFileSystem::Umount (CFileContainer &Container)
@@ -181,6 +182,7 @@ void CFileSystem::Umount (CFileContainer &Container)
 		appError ("CFileSystem::Umount(): container not owned");
 	mounts.Remove (&Container);
 	Container.Owner = NULL;
+	modifyCount++;
 }
 
 CFileContainer *CFileSystem::MountDirectory (const char *path, const char *point)

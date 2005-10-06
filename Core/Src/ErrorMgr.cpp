@@ -141,7 +141,8 @@ void appUnwindThrow (const char *fmt, ...)
 	va_start (argptr, fmt);
 	if (GErr.wasError)
 	{
-		buf[0] = ' '; buf[1] = '<'; buf[2] = '-'; buf[3] = ' ';
+		*((unsigned*)buf) = BYTES4(' ','<','-',' ');
+//		buf[0] = ' '; buf[1] = '<'; buf[2] = '-'; buf[3] = ' ';
 		vsnprintf (buf+4, sizeof(buf)-4, fmt, argptr);
 	}
 	else
@@ -171,6 +172,7 @@ void CErrorHandler::Reset ()
 	Initialization
 -----------------------------------------------------------------------------*/
 
+#if !NO_DEBUG
 static void Cmd_Error (int argc, char **argv)
 {
 	guard(Cmd_Error);
@@ -180,14 +182,19 @@ static void Cmd_Error (int argc, char **argv)
 		appNonFatalError ("testing drop error");
 	else if (!stricmp (argv[1], "-stack"))
 		Cmd_Error (argc, argv);					// infinite recurse
+	else if (!stricmp (argv[1], "-throw"))
+		throw 1;
 	appFatalError ("%s", argv[1]);
 	unguard;
 }
+#endif
 
 
 //?? set GErr
 void appInitError ()
 {
 	GErr.Reset ();
+#if !NO_DEBUG
 	RegisterCommand ("error", Cmd_Error);
+#endif
 }

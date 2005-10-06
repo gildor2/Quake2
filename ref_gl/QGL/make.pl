@@ -12,8 +12,8 @@ if (not TEST) {
 	#......... work .........
 	$infile  = "funcs.in";
 	$constfile = "consts.in";
-	$outhdr  = "../qgl_decl.h";
-	$outcode = "../qgl_impl.h";
+	$outhdr  = "../GLBind.h";
+	$outcode = "../GLBindImpl.h";
 } else {
 	#......... test .........
 	print "*** TEST RUN ***\n";
@@ -23,7 +23,7 @@ if (not TEST) {
 	$outcode = "impl.h";
 }
 
-$strucname   = "qgl";
+$strucname   = "GL";
 $constname   = "NUM_GLFUNCS";
 $constname2  = "NUM_EXTFUNCS";
 $constname3  = "NUM_EXTENSIONS";
@@ -439,9 +439,9 @@ for $ct (@numBase)
 #------------------------------------------------------------------------------
 
 print (HDR <<EOF
-typedef void (APIENTRY * dummyFunc_t) (void);
+typedef void (APIENTRY * dummyFunc_t) ();
 
-typedef union
+union ${strucname}_t
 {
 	struct {
 EOF
@@ -450,7 +450,7 @@ Parse ("EmitStruc", "EmitPlatformHDR");
 print (HDR <<EOF
 	};
 	dummyFunc_t funcs[1];
-} ${strucname}_t;
+};
 
 extern ${strucname}_t $strucname;
 

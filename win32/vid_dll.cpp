@@ -1,7 +1,7 @@
-#include "winquake.h"
-#include "resource.h"
-
+#include "WinPrivate.h"
 #include "../client/client.h"
+
+#include "resource.h"
 
 
 #define DEFAULT_RENDERER	"gl"		// for vid_ref cvar
@@ -16,10 +16,11 @@ static UINT MSH_MOUSEWHEEL = 0xDEAD0000; // initialized to something unused
 static cvar_t	*vid_xpos;				// X coordinate of window position
 static cvar_t	*vid_ypos;				// Y coordinate of window position
 
+
 #ifndef SINGLE_RENDERER
 
 static cvar_t	*vid_ref;
-static HINSTANCE refLibrary;			// handle to renderer DLL
+static CDynamicLib refLibrary;			// handle to renderer DLL; rename ??
 // Imports from main engine for renderer DLL
 #include "../client/engine_exp.h"
 
@@ -27,6 +28,7 @@ static HINSTANCE refLibrary;			// handle to renderer DLL
 refExport_t	re;
 
 #endif // SINGLE_RENDERER
+
 
 // Global variables used internally by this module
 viddef_t viddef;						// global video state; used by other modules
@@ -156,6 +158,7 @@ static void AppActivate (bool active, bool minimized)
 		ActiveApp = active;
 
 		Key_ClearStates ();
+		//!! should be callbacks (or system.virtualMethod())
 		IN_Activate (active);
 		CDAudio_Activate (active);
 		S_Activate (active);
@@ -508,17 +511,16 @@ static void Vid_UpdateWindowPosAndSize (int x, int y)
 }
 
 
+//!! can move FreeRenderer(), LoadRenderer() and major part of Vid_Tick() to client (platform-independent)
+//!! + move needRestart and Vid_Restart() func; will require to load renderer
+//?? Really, renderer system should be redesigned (split backend--frontend, frontend will load/init backend ...
+//?? so, this code will be removed at all.
+
 static void FreeRenderer ()
 {
 	refActive = false;
-
 #ifndef SINGLE_RENDERER
-	if (refLibrary)		// if false - statically linked
-	{
-		if (!FreeLibrary (refLibrary))
-			Com_FatalError ("Renderer FreeLibrary() failed");
-		refLibrary = NULL;
-	}
+	refLibrary.Free ();		// if statically linked, handle = NULL ...
 	memset (&re, 0, sizeof(re));
 #endif
 }
@@ -550,24 +552,22 @@ static bool LoadRenderer ()
 	appPrintf ("Loading %s\n", name);
 
 #ifdef STATIC_BUILD
-	refLibrary = NULL;
-
 	if (!strcmp (name, "gl"))
 		re = OpenGLDrv::re;
 	else
 #endif
 	{
 		TString<256> DllName;
-		DllName.sprintf ("ref_%s.dll", name);
-		if (!(refLibrary = LoadLibrary (DllName)))
+		DllName.sprintf ("ref_%s" DLLEXT, name);
+		if (!(refLibrary.Load (DllName)))
 		{
-			appWPrintf ("LoadLibrary(\"%s\") failed\n", *DllName);
+			appWPrintf ("Load(\"%s\") failed\n", *DllName);
 			return false;
 		}
 		CreateDynRenderer_t pCreateRenderer;
-		if (!(pCreateRenderer = (CreateDynRenderer_t) GetProcAddress (refLibrary, "CreateRenderer")))
+		if (!refLibrary.GetProc ("CreateRenderer", &pCreateRenderer))
 		{
-			appWPrintf ("GetProcAddress() failed on %s\n", *DllName);
+			appWPrintf ("GetProc() failed on %s\n", *DllName);
 			FreeRenderer ();
 			return false;
 		}
@@ -674,7 +674,6 @@ CVAR_END
 
 	guard(Vid_Init);
 
-	needRestart = true;		// should init renderer on startup
 	Cvar_GetVars (ARRAY_ARG(vars));
 	InitRendererVars ();
 
@@ -688,6 +687,7 @@ CVAR_END
 	Vid_CreateWindow (0, 0, false);
 
 	// start the graphics mode and load refresh DLL
+	needRestart = true;		// should init renderer on startup
 	Vid_Tick ();
 
 	unguard;

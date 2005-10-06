@@ -1,4 +1,5 @@
 //?? rename to ConfigVar.h ??
+//?? rename cvar_t -> CVar
 
 // cvar_t->flags values
 
@@ -105,7 +106,7 @@ public:
 };
 
 
-CORE_API cvar_t *Cvar_Get (const char *name, const char *value, int flags = 0);
+CORE_API cvar_t *Cvar_Get (const char *name, const char *value, unsigned flags = 0);
 
 CORE_API cvar_t *Cvar_Set (const char *name, int *value);
 CORE_API cvar_t *Cvar_Set (const char *name, float *value);

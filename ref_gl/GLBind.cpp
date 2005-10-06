@@ -1,35 +1,32 @@
-//!! make this file multi-platform (and move from /win32 to renderer directory + rename file + header)
-
 #ifdef _WIN32
 #	define WIN32_LEAN_AND_MEAN		// exclude rarely-used services from windown headers
 #	include <windows.h>				// need this include, because have wgl and GDI functions in gl.h
 #endif
 
-#include "../ref_gl/OpenGLDrv.h"
-
+#include "OpenGLDrv.h"
 #ifdef _WIN32
-#	include "gl_win.h"				// gl_hDC
+#	include "../win32/gl_win.h"		// for gl_hDC only
 #endif
 
 #include "OutputDeviceFile.h"
 
 
-extern bool ActiveApp;	//!!! change
+extern bool ActiveApp;				//!!! change
 
 
 namespace OpenGLDrv {
 
 
-static HINSTANCE libGL;		//!! win32 (type)
+static CDynamicLib libGL;
 
-qgl_t			qgl;
-static qgl_t	lib;
+GL_t		GL;
+static GL_t	lib;
 
 #if !NO_GL_LOG
 static COutputDeviceFile *LogFile;
 #endif
 
-#include "../ref_gl/qgl_impl.h"
+#include "GLBindImpl.h"
 
 
 /*-----------------------------------------------------------------------------
@@ -38,7 +35,7 @@ static COutputDeviceFile *LogFile;
 
 bool QGL_Init (const char *libName)
 {
-	if (!(libGL = LoadLibrary (libName)))	//!! win32
+	if (!(libGL.Load (libName)))
 	{
 		appWPrintf ("QGL_Init: LoadLibrary(%s) failed\n", libName);
 		return false;
@@ -46,13 +43,11 @@ bool QGL_Init (const char *libName)
 
 	for (int i = 0; i < NUM_GLFUNCS; i++)
 	{
-		if (!(lib.funcs[i] = (dummyFunc_t) (GetProcAddress (libGL, qglNames[i]))))	//!! win32
+		if (!libGL.GetProc (GLNames[i], &lib.funcs[i]))
 		{
 			// free library
-			FreeLibrary (libGL);	//!! win32
-			libGL = NULL;
-
-			appWPrintf ("QGL_Init: inconsistent OpenGL library %s: function %s is not found\n", libName, qglNames[i]);
+			libGL.Free ();
+			appWPrintf ("QGL_Init: inconsistent OpenGL library %s: function %s is not found\n", libName, GLNames[i]);
 			return false;
 		}
 	}
@@ -63,15 +58,15 @@ bool QGL_Init (const char *libName)
 	else
 	{
 		// replace some wgl function with equivalent GDI ones
-		lib.ChoosePixelFormat = ChoosePixelFormat;
+		lib.ChoosePixelFormat   = ChoosePixelFormat;
 		lib.DescribePixelFormat = DescribePixelFormat;
-		// lib.GetPixelFormat = GetPixelFormat;
-		lib.SetPixelFormat = SetPixelFormat;
-		lib.SwapBuffers = SwapBuffers;
+		// lib.GetPixelFormat   = GetPixelFormat;
+		lib.SetPixelFormat      = SetPixelFormat;
+		lib.SwapBuffers         = SwapBuffers;
 	}
 #endif
 
-	qgl = lib;
+	GL = lib;
 
 	// allow init-time logging
 	QGL_EnableLogging (gl_logFile->integer != 0);
@@ -94,13 +89,8 @@ void QGL_Shutdown ()
 	}
 #endif
 
-	if (libGL)
-	{
-		FreeLibrary (libGL);	//!! win32
-		libGL = NULL;
-	}
-
-	memset (&qgl, 0, sizeof(qgl));
+	libGL.Free ();
+	memset (&GL, 0, sizeof(GL));
 }
 
 
@@ -165,16 +155,12 @@ void QGL_InitExtensions ()
 
 	ext2 = NULL;
 #ifdef _WIN32
-	{
-		//?? from wglext.h -- later, when use this header, remove line
-		typedef const char * (WINAPI * PFNWGLGETEXTENSIONSSTRINGARBPROC) (HDC hdc);
-		PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB =
-			(PFNWGLGETEXTENSIONSSTRINGARBPROC)wglGetProcAddress ("wglGetExtensionsStringARB");
-		if (wglGetExtensionsStringARB)
-			ext2 = wglGetExtensionsStringARB (gl_hDC);
-	}
-#else
-	use glXQueryExtensionsString() ?
+	//?? from wglext.h -- later, when use this header, remove line
+	typedef const char * (WINAPI * PFNWGLGETEXTENSIONSSTRINGARBPROC) (HDC hdc);
+	PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB =
+		(PFNWGLGETEXTENSIONSSTRINGARBPROC)wglGetProcAddress ("wglGetExtensionsStringARB");
+	if (wglGetExtensionsStringARB)
+		ext2 = wglGetExtensionsStringARB (gl_hDC);
 #endif
 	gl_config.extensions2 = ext2;
 
@@ -196,10 +182,16 @@ void QGL_InitExtensions ()
 			gl_config.extensionMask |= 1 << i;
 			for (j = ext->first; j < ext->first + ext->count; j++)
 			{
-				dummyFunc_t func = qgl.funcs[j] = lib.funcs[j] = (dummyFunc_t) (wglGetProcAddress (qglNames[j]));	//!! win32
+#if _WIN32
+				dummyFunc_t func = (dummyFunc_t) (wglGetProcAddress (GLNames[j]));
+#else
+				dummyFunc_t func;
+				libGL.GetProc (GLNames[j], &func);
+#endif
+				GL.funcs[j] = lib.funcs[j] = func;
 				if (!func)
 				{
-					appWPrintf ("Inconsistent extension %s: function %s is not found\n", ext->name, qglNames[j]);
+					appWPrintf ("Inconsistent extension %s: function %s is not found\n", ext->name, GLNames[j]);
 					enable = false;
 					break;
 				}
@@ -211,7 +203,7 @@ void QGL_InitExtensions ()
 		{
 			gl_config.extensionMask &= ~(1 << i);
 			for (j = ext->first; j < ext->first + ext->count; j++)
-				qgl.funcs[j] = NULL;
+				GL.funcs[j] = NULL;
 		}
 	}
 
@@ -394,7 +386,7 @@ void QGL_EnableLogging (bool enable)
 			LogFile->Printf ("\n---------------------------\n%s\n---------------------------\n", appTimestamp ());
 		}
 
-		qgl = logFuncs;
+		GL = logFuncs;
 	}
 	else
 	{
@@ -404,7 +396,7 @@ void QGL_EnableLogging (bool enable)
 			LogFile = NULL;
 		}
 
-		qgl = lib;
+		GL = lib;
 	}
 }
 
@@ -445,7 +437,7 @@ void QGL_SwapBuffers ()
 			appWPrintf ("wglSwapBuffers() failed\n");
 	}
 #else
-	glXSwapBuffers() ?
+	glXSwapBuffers (display, wnd) //??
 #endif
 }
 

@@ -23,11 +23,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static cvar_t	*cl_nodelta;
 
-// used as time delta from previous input frame
-// UGLY!!
+// used as time delta from previous input frame; UGLY!!
+//?? PROBLEMS:
+//?? - we needs sys_frame_time -> exact time of key down/up (comes from message in win32) - for exact
+//??   timings of button down time in systems with low FPS (to allow downtime less than frame time)
+//?? - but, we must compare sys_frame_time with some timer, when button holded more than one frame; this
+//??   timer should be the same, as used for sys_frame_time
+//?? - exact downtime value will be received, when button will be released (up)
+//?? - so, when buttom is pressed/released, we will get following frames:
+//??   1.      down:   downtime = time - msg.sys_frame_time     // where to get "time" ?
+//??   2..N-1. holded: downtime = frame_time                    // all OK - frame_time is known (input for CL_Frame())
+//??   N.      up:     downtime = msg.sys_frame_time - prevTime // prevTime = time of prev frame (see 1.)
 extern unsigned sys_frame_time;
 static unsigned old_sys_frame_time;
 static unsigned frame_msec;
+//!! NOTE: may be, use timescale for msec values (will affect all movement, depending on KeyState() call value)
 
 static float accum_frame_time;
 
@@ -39,6 +49,10 @@ KEY BUTTONS
 ===============================================================================
 */
 
+#define STATE_DOWN			1
+#define STATE_IMPULSEDOWN	2	// used for "attack" and "use" only
+#define STATE_IMPULSEUP		4	// not used
+
 
 static kbutton_t	in_KLook;
 static kbutton_t	in_Left, in_Right, in_Forward, in_Back;
@@ -48,13 +62,13 @@ static kbutton_t	in_Up, in_Down;
 kbutton_t	in_Strafe, in_Speed;
 
 
+//?? make as method of kbutton_t
 static void KeyDown (kbutton_t &b, char **argv)
 {
 	int		k;
 
-	const char *c = argv[1];
-	if (c[0])
-		k = atoi(c);
+	if (*argv[1])
+		k = atoi (argv[1]);
 	else
 		k = -1;					// typed manually at the console for continuous down
 
@@ -67,33 +81,32 @@ static void KeyDown (kbutton_t &b, char **argv)
 		b.down[1] = k;
 	else
 	{
-		appPrintf ("Three keys down for a button!\n");
+		Com_DPrintf ("KeyDown: 3 keys down for a button\n");
 		return;
 	}
 
-	if (b.state & 1)
-		return;					// still down
+	if (b.state & STATE_DOWN) return;
 
 	// save timestamp
-	c = argv[2];
-	b.downtime = atoi(c);
+	b.downtime = atoi (argv[2]);
 	if (!b.downtime)
-		b.downtime = sys_frame_time - 100;
+		b.downtime = sys_frame_time - 100;	//?? const=100; situation: KeyDown() <- console, downtime = time of prev frame
 
-	b.state |= 1 + 2;			// down + impulse down
+	b.state |= STATE_DOWN|STATE_IMPULSEDOWN;
 }
 
+//?? make as method of kbutton_t
 static void KeyUp (kbutton_t &b, char **argv)
 {
 	int		k;
 
-	const char *c = argv[1];
-	if (c[0])
-		k = atoi(c);
+	if (*argv[1])
+		k = atoi (argv[1]);
 	else
-	{	// typed manually at the console, assume for unsticking, so clear all
+	{
+		// typed manually at the console, assume for unsticking, so clear all
 		b.down[0] = b.down[1] = 0;
-		b.state = 4;			// impulse up
+		b.state = STATE_IMPULSEUP;
 		return;
 	}
 
@@ -103,29 +116,28 @@ static void KeyUp (kbutton_t &b, char **argv)
 		b.down[1] = 0;
 	else
 		return;					// key up without corresponding down (menu pass through)
+
 	if (b.down[0] || b.down[1])
 		return;					// some other key is still holding it down
 
-	if (!(b.state & 1))
-		return;					// still up (this should not happen)
+	if (!(b.state & STATE_DOWN))
+		return;					// up (this should not happen: 2 times "up" one by one)
 
 	// save timestamp
-	c = argv[2];
-	unsigned uptime = atoi(c);
+	unsigned uptime = atoi (argv[2]);
 	if (uptime)
 		b.msec += uptime - b.downtime;
 	else
-		b.msec += 10;
+		b.msec += 10;			//?? const=10; should allow using KeyDown()+KeyUp() in a single frame to produce msec>0
 
-	b.state &= ~1;				// now up
-	b.state |= 4; 				// impulse up
+	b.state &= ~STATE_DOWN;
+	b.state |= STATE_IMPULSEUP;
 }
 
 // Declare console functions
 #define KB(name)	\
 static void IN_##name##Up (int argc, char **argv) { KeyUp(in_##name, argv); }	\
 static void IN_##name##Down (int argc, char **argv) { KeyDown(in_##name, argv); }
-
 	KB(KLook)
 	KB(Up)			KB(Down)
 	KB(Right)		KB(Left)
@@ -135,25 +147,23 @@ static void IN_##name##Down (int argc, char **argv) { KeyDown(in_##name, argv); 
 	KB(Speed)
 	KB(Strafe)
 	KB(Attack)		KB(Use)
-
 #undef KB
 
-/*
-===============
-KeyState
 
-Returns the fraction of the frame that the key was down
-===============
-*/
+// Returns the fraction of the frame that the key was down
+//?? make as method of kbutton_t
+//?? NOTE: always used for delta: "KeyState(up)-KeyState(down)" etc
 static float KeyState (kbutton_t &key)
 {
-	key.state &= 1;			// clear impulses
+	int msec = key.msec;		// != 0 only if KeyUp() called ...
 
-	int msec = key.msec;
+	key.state &= STATE_DOWN;	// clear impulses
 	key.msec = 0;
 
+	// here: key.state == 0|STATE_DOWN
 	if (key.state)
-	{	// still down
+	{
+		// still down; really, "msec" here == 0
 		msec += sys_frame_time - key.downtime;
 		key.downtime = sys_frame_time;
 	}
@@ -167,6 +177,8 @@ static float KeyState (kbutton_t &key)
 
 //==========================================================================
 
+// can make this cvars static, if move joystick movement code here (cvars used in JoyMove() ...)
+// some cvars used in menu.cpp, but this is not critical
 cvar_t	*cl_upspeed;
 cvar_t	*cl_forwardspeed;
 cvar_t	*cl_sidespeed;
@@ -176,71 +188,51 @@ cvar_t	*cl_pitchspeed;
 
 cvar_t	*cl_run;
 
-cvar_t	*cl_anglespeedkey;
+static cvar_t *cl_anglespeedkey;
 
 
-/*
-================
-CL_AdjustAngles
-
-Moves the local angle positions
-================
-*/
-static void AdjustAngles (void)
+// Send the intended movement message to the server
+static void KeyboardMove (usercmd_t *cmd)
 {
-	float	speed;
+	memset (cmd, 0, sizeof(usercmd_t));
 
-	if (in_Speed.state & 1)
-		speed = cls.frametime * cl_anglespeedkey->value;
-	else
-		speed = cls.frametime;
+	// rotate player with keyboard + keyboard look/strafe
+	float speed = cls.frametime;
+	if (in_Speed.state & STATE_DOWN)
+		speed *= cl_anglespeedkey->value;
 
-	if (!(in_Strafe.state & 1))
+	if (!(in_Strafe.state & STATE_DOWN))
 		cl.viewangles[YAW] += speed * cl_yawspeed->value * (KeyState (in_Left) - KeyState (in_Right));
+	else
+		cmd->sidemove += appRound (cl_sidespeed->value * (KeyState (in_Right) - KeyState (in_Left)));
 
-	if (in_KLook.state & 1)
+	if (in_KLook.state & STATE_DOWN)
 		cl.viewangles[PITCH] += speed * cl_pitchspeed->value * (KeyState (in_Back) - KeyState (in_Forward));
+	else
+		cmd->forwardmove += appRound (cl_forwardspeed->value * (KeyState (in_Forward) - KeyState (in_Back)));
 
 	cl.viewangles[PITCH] += speed * cl_pitchspeed->value * (KeyState (in_Lookdown) - KeyState (in_Lookup));
-}
-
-/*
-================
-CL_BaseMove
-
-Send the intended movement message to the server
-================
-*/
-static void BaseMove (usercmd_t *cmd)
-{
-	AdjustAngles ();
-
-	memset (cmd, 0, sizeof(usercmd_t));
 
 	// copy angles with float->short
 	cmd->angles[0] = appRound (cl.viewangles[0]);
 	cmd->angles[1] = appRound (cl.viewangles[1]);
 	cmd->angles[2] = appRound (cl.viewangles[2]);
-	if (in_Strafe.state & 1)
-		cmd->sidemove += appRound (cl_sidespeed->value * (KeyState (in_Right) - KeyState (in_Left)));
 
+	// movement
 	cmd->sidemove += appRound (cl_sidespeed->value * (KeyState (in_Moveright) - KeyState (in_Moveleft)));
-
-	cmd->upmove += appRound (cl_upspeed->value * (KeyState (in_Up) - KeyState (in_Down)));
-
-	if (!(in_KLook.state & 1))
-		cmd->forwardmove += appRound (cl_forwardspeed->value * (KeyState (in_Forward) - KeyState (in_Back)));
+	cmd->upmove   += appRound (cl_upspeed->value * (KeyState (in_Up) - KeyState (in_Down)));
 
 	// adjust for speed key / running
-	if ((in_Speed.state & 1) ^ cl_run->integer)
+	if ((in_Speed.state & STATE_DOWN) ^ cl_run->integer)
 	{
 		cmd->forwardmove *= 2;
-		cmd->sidemove *= 2;
-		cmd->upmove *= 2;
+		cmd->sidemove    *= 2;
+		cmd->upmove      *= 2;
 	}
 }
 
-static void ClampPitch (void)
+
+static void ClampPitch ()
 {
 	float pitch = SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
 	if (pitch > 180)
@@ -256,13 +248,13 @@ static void ClampPitch (void)
 static void FinishMove (usercmd_t *cmd)
 {
 	// figure button bits
-	if (in_Attack.state & 3)
+	if (in_Attack.state & (STATE_DOWN|STATE_IMPULSEDOWN))
 		cmd->buttons |= BUTTON_ATTACK;
-	in_Attack.state &= ~2;
+	in_Attack.state &= ~STATE_IMPULSEDOWN;
 
-	if (in_Use.state & 3)
+	if (in_Use.state & (STATE_DOWN|STATE_IMPULSEDOWN))
 		cmd->buttons |= BUTTON_USE;
-	in_Use.state &= ~2;
+	in_Use.state &= ~STATE_IMPULSEDOWN;
 
 	if (keysDown && cls.key_dest == key_game)
 		cmd->buttons |= BUTTON_ANY;
@@ -277,8 +269,7 @@ static void FinishMove (usercmd_t *cmd)
 	for (int i = 0; i < 3; i++)
 		cmd->angles[i] = ANGLE2SHORT(cl.viewangles[i]);
 
-	cmd->impulse = 0;		//!! unused
-
+	cmd->impulse    = 0;		//!! unused
 	// send the ambient light level at the player's current position
 	cmd->lightlevel = appRound (RE_GetClientLight ());
 }
@@ -289,13 +280,20 @@ static void CreateCmd (usercmd_t *cmd)
 	frame_msec = sys_frame_time - old_sys_frame_time;
 	frame_msec = bound(frame_msec, 1, 200);
 
-	// keyboard movement
-	BaseMove (cmd);
-	// mouse and joystick movement
-	IN_Move (cmd);
+	// save view angles to restore it when needed
+	CVec3 oldAngles = cl.viewangles;
 
+	KeyboardMove (cmd);
+	IN_Move (cmd);			// mouse and joystick movement (platform-dependent)
 	FinishMove (cmd);
-	//?? if not in game (menu, console, paused/gui ...) -- clear usercmd
+
+	// if client paused, do not produce movement
+	if (cl_paused->integer)
+	{
+		//?? if not in game (menu, console, gui ...) -- clear usercmd too
+		memset (cmd, 0, sizeof(usercmd_t));
+		cl.viewangles = oldAngles;
+	}
 
 	old_sys_frame_time = sys_frame_time;
 
@@ -303,7 +301,8 @@ static void CreateCmd (usercmd_t *cmd)
 }
 
 
-void IN_CenterView (void)
+//?? global for MLook.up only (for in_win.cpp)
+void IN_CenterView ()
 {
 	cl.viewangles[PITCH] = -SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
 }
@@ -333,46 +332,49 @@ static void IN_Lookup (bool usage, int argc, char **argv)	// can be used "lookdo
 
 void CL_InitInput ()
 {
-	RegisterCommand ("centerview", IN_CenterView);
+CVAR_BEGIN(vars)
+	// movement speed
+	CVAR_VAR(cl_upspeed, 200, 0),
+	CVAR_VAR(cl_forwardspeed, 200, 0),
+	CVAR_VAR(cl_sidespeed, 200, 0),
+	// rotation speed
+	CVAR_VAR(cl_yawspeed, 140, 0),
+	CVAR_VAR(cl_pitchspeed, 150, 0),
+	CVAR_VAR(cl_anglespeedkey, 1.5, 0),
+	// other
+	CVAR_VAR(cl_run, 0, CVAR_ARCHIVE),
+CVAR_END
+	Cvar_GetVars (ARRAY_ARG(vars));
 
-	RegisterCommand ("+moveup", IN_UpDown);
-	RegisterCommand ("-moveup", IN_UpUp);
-	RegisterCommand ("+movedown", IN_DownDown);
-	RegisterCommand ("-movedown", IN_DownUp);
-	RegisterCommand ("+left", IN_LeftDown);
-	RegisterCommand ("-left", IN_LeftUp);
-	RegisterCommand ("+right", IN_RightDown);
-	RegisterCommand ("-right", IN_RightUp);
-	RegisterCommand ("+forward", IN_ForwardDown);
-	RegisterCommand ("-forward", IN_ForwardUp);
-	RegisterCommand ("+back", IN_BackDown);
-	RegisterCommand ("-back", IN_BackUp);
-	RegisterCommand ("+lookup", IN_LookupDown);
-	RegisterCommand ("-lookup", IN_LookupUp);
-	RegisterCommand ("+lookdown", IN_LookdownDown);
-	RegisterCommand ("-lookdown", IN_LookdownUp);
-	RegisterCommand ("+strafe", IN_StrafeDown);
-	RegisterCommand ("-strafe", IN_StrafeUp);
-	RegisterCommand ("+moveleft", IN_MoveleftDown);
-	RegisterCommand ("-moveleft", IN_MoveleftUp);
-	RegisterCommand ("+moveright", IN_MoverightDown);
-	RegisterCommand ("-moveright", IN_MoverightUp);
-	RegisterCommand ("+speed", IN_SpeedDown);
-	RegisterCommand ("-speed", IN_SpeedUp);
-	RegisterCommand ("+attack", IN_AttackDown);
-	RegisterCommand ("-attack", IN_AttackUp);
-	RegisterCommand ("+use", IN_UseDown);
-	RegisterCommand ("-use", IN_UseUp);
-	RegisterCommand ("+klook", IN_KLookDown);
-	RegisterCommand ("-klook", IN_KLookUp);
+	RegisterCommand ("centerview", IN_CenterView);
+#define KB(name, str)	\
+	RegisterCommand ("+" #str, IN_##name##Down); \
+	RegisterCommand ("-" #str, IN_##name##Up);
+	KB(Up, moveup);
+	KB(Down, movedown);
+	KB(Left, left);
+	KB(Right, right);
+	KB(Forward, forward);
+	KB(Back, back);
+	KB(Lookup, lookup);
+	KB(Lookdown, lookdown);
+	KB(Strafe, strafe);
+	KB(Moveleft, moveleft);
+	KB(Moveright, moveright);
+	KB(Speed, speed);
+	KB(Attack, attack);
+	KB(Use, use);
+	KB(KLook, klook);
+#undef KB
 
 	RegisterCommand ("lookdown", IN_Lookdown);
 	RegisterCommand ("lookup", IN_Lookup);
 
-	cl_nodelta = Cvar_Get ("cl_nodelta", "0", 0);
+	cl_nodelta = Cvar_Get ("cl_nodelta", "0");
 }
 
 
+// network stuff
 void CL_SendCmd ()
 {
 	accum_frame_time += cls.frametime;
@@ -428,8 +430,9 @@ void CL_SendCmd ()
 	byte	data[128];
 	buf.Init (ARRAY_ARG(data));
 
+	// stop the cinematic when any key is down
 	if (cmd->buttons && cl.cinematicActive && !cl.attractloop)
-		SCR_StopCinematic ();		// skip the rest of the cinematic with any key down
+		SCR_StopCinematic ();
 
 	// begin a client move command
 	MSG_WriteByte (&buf, clc_move);
@@ -450,18 +453,15 @@ void CL_SendCmd ()
 	usercmd_t nullcmd;
 	memset (&nullcmd, 0, sizeof(nullcmd));
 
-	i = (cls.netchan.outgoing_sequence-2) & (CMD_BACKUP-1);
-	cmd = &cl.cmds[i];
+	cmd = &cl.cmds[(cls.netchan.outgoing_sequence-2) & (CMD_BACKUP-1)];
 	MSG_WriteDeltaUsercmd (&buf, &nullcmd, cmd);
 	usercmd_t *oldcmd = cmd;
 
-	i = (cls.netchan.outgoing_sequence-1) & (CMD_BACKUP-1);
-	cmd = &cl.cmds[i];
+	cmd = &cl.cmds[(cls.netchan.outgoing_sequence-1) & (CMD_BACKUP-1)];
 	MSG_WriteDeltaUsercmd (&buf, oldcmd, cmd);
 	oldcmd = cmd;
 
-	i = (cls.netchan.outgoing_sequence) & (CMD_BACKUP-1);
-	cmd = &cl.cmds[i];
+	cmd = &cl.cmds[(cls.netchan.outgoing_sequence) & (CMD_BACKUP-1)];
 	MSG_WriteDeltaUsercmd (&buf, oldcmd, cmd);
 
 	// calculate a checksum over the move commands

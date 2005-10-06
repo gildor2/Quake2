@@ -1,22 +1,24 @@
 #include <winsock2.h>
+#include "qcommon.h"
+
 #if 0
-// this will require ws2_32.dll (WinSock2 update for Win95)
+// This library will require ws2_32.dll (WinSock2 update for Win95)
+// Anyway, wsock32.dll will redirect most functions to ws2_32.dll
 #pragma comment (lib, "ws2_32.lib")
 #else
 #pragma comment (lib, "wsock32.lib")
 #endif
 
-#include "qcommon.h"
 
-
-static const char *NET_ErrorString ()
+static const char *GetErrorString ()
 {
-#if 0
+#if MAX_DEBUG
 	static const struct {
 		int		code;
 		char	*str;
 	} info[] = {
 		// list winsock2 error consts
+		//?? linux: different set of errors? + no "WSA..." prefix
 #define T(str)	{WSA##str, #str}
 		T(EINTR), T(EBADF), T(EACCES), T(EDISCON), T(EFAULT), T(EINVAL), T(EMFILE),
 		T(EWOULDBLOCK), T(EINPROGRESS), T(EALREADY), T(ENOTSOCK), T(EDESTADDRREQ),
@@ -59,26 +61,17 @@ static const char *NET_ErrorString ()
 static void NetadrToSockadr (netadr_t *a, SOCKADDR *s)
 {
 	memset (s, 0, sizeof(*s));
-
 	SOCKADDR_IN	*s1 = (SOCKADDR_IN*)s;
-	s1->sin_family = AF_INET;
-	s1->sin_port   = a->port;
-	switch (a->type)
-	{
-	case NA_BROADCAST:
-		s1->sin_addr.s_addr = INADDR_BROADCAST;
-		break;
-	case NA_IP:
-		s1->sin_addr.s_addr = *(int *)&a->ip;		// copy 4 bytes as DWORD
-		break;
-	}
+	s1->sin_family      = AF_INET;
+	s1->sin_addr.s_addr = (a->type == NA_BROADCAST) ? INADDR_BROADCAST : a->ip4;
+	s1->sin_port        = a->port;
 }
 
 static void SockadrToNetadr (SOCKADDR *s, netadr_t *a)
 {
-	a->type        = NA_IP;
-	*(int *)&a->ip = ((SOCKADDR_IN *)s)->sin_addr.s_addr;
-	a->port        = ((SOCKADDR_IN *)s)->sin_port;
+	a->type = NA_IP;
+	a->ip4  = ((SOCKADDR_IN *)s)->sin_addr.s_addr;
+	a->port = ((SOCKADDR_IN *)s)->sin_port;
 }
 
 
@@ -92,7 +85,7 @@ bool NET_CompareAdr (netadr_t *a, netadr_t *b)
 	case NA_LOOPBACK:
 		return true;
 	case NA_IP:
-		return (memcmp (a->ip, b->ip, 4) == 0) && (a->port == b->port);
+		return (a->ip4 == b->ip4) && (a->port == b->port);
 	}
 
 	return false;
@@ -110,22 +103,17 @@ bool NET_CompareBaseAdr (netadr_t *a, netadr_t *b)
 	case NA_LOOPBACK:		// no other address parts
 		return true;
 	case NA_IP:
-		return memcmp (a->ip, b->ip, 4) == 0;
+		return a->ip4 == b->ip4;
 	}
 
 	return false;
 }
 
-char *NET_AdrToString (netadr_t *a)
+const char *NET_AdrToString (netadr_t *a)
 {
-	static TString<64> s;
-
-	if (a->type == NA_LOOPBACK)
-		s = "loopback";
-	else // if (a->type == NA_IP)
-		s.sprintf ("%d.%d.%d.%d:%d", a->ip[0], a->ip[1], a->ip[2], a->ip[3], ntohs(a->port));
-
-	return s;
+	return (a->type == NA_LOOPBACK)
+		? "loopback"
+		: va("%d.%d.%d.%d:%d", a->ip[0], a->ip[1], a->ip[2], a->ip[3], ntohs(a->port));
 }
 
 
@@ -140,34 +128,32 @@ static bool StringToSockaddr (const char *s, SOCKADDR *sadr, short defPort)
 {
 	memset (sadr, 0, sizeof(*sadr));
 
-	SOCKADDR_IN *s1 = (SOCKADDR_IN*)sadr;
+	SOCKADDR_IN *s1 = (SOCKADDR_IN*)sadr;		// s1 -> saddr
 	s1->sin_family = AF_INET;
 	s1->sin_port   = 0;
 
-	TString<128> Copy;
-	Copy = s;
+	TString<128> Copy; Copy = s;
 	// find and process ":port"
 	char *p = Copy.chr (':');
 	if (p)
 	{
 		*p++ = 0;
-		s1->sin_port = htons (atoi (p));
+		defPort = atoi (p);
 	}
-	else
-	{
-		s1->sin_port = htons (defPort);
-	}
+	s1->sin_port = htons (defPort);
 
 	if (Copy[0] >= '0' && Copy[0] <= '9')
 	{
-		*(int *) &s1->sin_addr = inet_addr (Copy);
+		s1->sin_addr.s_addr = inet_addr (Copy);
+		if (s1->sin_addr.s_addr == INADDR_NONE)	// invalid address
+			return false;
 	}
 	else
 	{
-		struct hostent *h;
+		HOSTENT *h;
 		if (!(h = gethostbyname (Copy)))
-			return 0;
-		*(int *) &s1->sin_addr = *(int *)h->h_addr_list[0];
+			return false;
+		s1->sin_addr.s_addr = *(unsigned *)h->h_addr_list[0];
 	}
 
 	return true;
@@ -190,10 +176,9 @@ bool NET_StringToAdr (const char *s, netadr_t *a, short defPort)
 	}
 
 	SOCKADDR sadr;
-	if (!StringToSockaddr (s, &sadr, defPort)) return false;
-
+	if (!StringToSockaddr (s, &sadr, defPort))
+		return false;
 	SockadrToNetadr (&sadr, a);
-
 	return true;
 }
 
@@ -207,6 +192,7 @@ bool NET_IsLocalAddress (netadr_t *adr)
 /*-----------------------------------------------------------------------------
 	Loopback communication
 -----------------------------------------------------------------------------*/
+//!! move to qcommon (netchan.cpp?)
 
 #define	MAX_LOOPBACK	8
 
@@ -225,21 +211,20 @@ struct loopback_t
 static loopback_t loopbacks[2];
 
 
-bool NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg)
+static bool GetLoopPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg)
 {
-	loopback_t *loop = &loopbacks[sock];
+	loopback_t &loop = loopbacks[sock];
 
-	if (loop->send - loop->get > MAX_LOOPBACK)
-		loop->get = loop->send - MAX_LOOPBACK;
+	if (loop.send - loop.get > MAX_LOOPBACK)
+		loop.get = loop.send - MAX_LOOPBACK;
 
-	if (loop->get >= loop->send)
+	if (loop.get >= loop.send)
 		return false;
 
-	int i = loop->get & (MAX_LOOPBACK-1);
-	loop->get++;
+	int i = loop.get++ & (MAX_LOOPBACK-1);
 
-	memcpy (net_msg->data, loop->msgs[i].data, loop->msgs[i].datalen);
-	net_msg->cursize = loop->msgs[i].datalen;
+	memcpy (net_msg->data, loop.msgs[i].data, loop.msgs[i].datalen);
+	net_msg->cursize = loop.msgs[i].datalen;
 
 	memset (net_from, 0, sizeof(*net_from));
 	net_from->type = NA_LOOPBACK;
@@ -247,34 +232,34 @@ bool NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg)
 }
 
 
-void NET_SendLoopPacket (netsrc_t sock, int length, void *data, netadr_t to)
+static void SendLoopPacket (netsrc_t sock, int length, void *data, netadr_t &to)
 {
-	loopback_t *loop = &loopbacks[sock^1];
+	loopback_t &loop = loopbacks[sock^1];
 
-	int i = loop->send & (MAX_LOOPBACK-1);
-	loop->send++;
+	int i = loop.send++ & (MAX_LOOPBACK-1);
 
-	memcpy (loop->msgs[i].data, data, length);
-	loop->msgs[i].datalen = length;
+	memcpy (loop.msgs[i].data, data, length);
+	loop.msgs[i].datalen = length;
 }
 
 
 /*-----------------------------------------------------------------------------
 	Socket communication
 -----------------------------------------------------------------------------*/
+//!! NOTE: NET_[Get|Send]Packet(): "sock" used for loopback only
 
 static int netSocket;
 
 bool NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg)
 {
-	if (NET_GetLoopPacket (sock, net_from, net_msg))
+	if (GetLoopPacket (sock, net_from, net_msg))
 		return true;
 
 	if (!netSocket) return false;
 
 	SOCKADDR from;
 	int fromlen = sizeof(from);
-	int ret = recvfrom (netSocket, (char*)net_msg->data, net_msg->maxsize, 0, (SOCKADDR *)&from, &fromlen);
+	int ret = recvfrom (netSocket, (char*)net_msg->data, net_msg->maxsize, 0, &from, &fromlen);
 
 	SockadrToNetadr (&from, net_from);
 
@@ -287,7 +272,7 @@ bool NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg)
 		if (err == WSAEMSGSIZE)
 			appWPrintf ("Oversize packet from %s\n", NET_AdrToString(net_from));
 		else
-			Com_DPrintf ("NET_GetPacket(%s): %s\n", NET_AdrToString(net_from), NET_ErrorString());
+			Com_DPrintf ("NET_GetPacket(%s): %s\n", NET_AdrToString(net_from), GetErrorString());
 		return false;
 	}
 
@@ -306,7 +291,7 @@ void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
 {
 	if (to.type == NA_LOOPBACK)
 	{
-		NET_SendLoopPacket (sock, length, data, to);
+		SendLoopPacket (sock, length, data, to);
 		return;
 	}
 	if (!netSocket) return;
@@ -324,7 +309,7 @@ void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
 		if (err == WSAEADDRNOTAVAIL && to.type == NA_BROADCAST)	// broadcast not allowed
 			return;
 
-		Com_DPrintf ("NET_SendPacket(%s,%d): %s\n", NET_AdrToString (&to), length, NET_ErrorString ());
+		Com_DPrintf ("NET_SendPacket(%s,%d): %s\n", NET_AdrToString (&to), length, GetErrorString ());
 	}
 }
 
@@ -340,7 +325,7 @@ static int IPSocket (const char *net_interface, int port)
 	if ((newsocket = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
 	{
 		if (WSAGetLastError() != WSAEAFNOSUPPORT)
-			appWPrintf ("IPSocket: socket: %s", NET_ErrorString());
+			appWPrintf ("IPSocket: socket: %s", GetErrorString());
 		return 0;
 	}
 
@@ -348,7 +333,7 @@ static int IPSocket (const char *net_interface, int port)
 	static unsigned long _true = 1;
 	if (ioctlsocket (newsocket, FIONBIO, &_true) == SOCKET_ERROR)
 	{
-		appWPrintf ("IPSocket: nonblocking: %s\n", NET_ErrorString());
+		appWPrintf ("IPSocket: nonblocking: %s\n", GetErrorString());
 		return 0;
 	}
 
@@ -356,28 +341,31 @@ static int IPSocket (const char *net_interface, int port)
 	int i = 1;
 	if (setsockopt(newsocket, SOL_SOCKET, SO_BROADCAST, (char *)&i, sizeof(i)) == SOCKET_ERROR)
 	{
-		appWPrintf ("IPSocket: broadcast: %s\n", NET_ErrorString());
+		appWPrintf ("IPSocket: broadcast: %s\n", GetErrorString());
 		return 0;
 	}
 
-	SOCKADDR_IN address;
-	if (!stricmp(net_interface, "localhost"))
-		address.sin_addr.s_addr = INADDR_ANY;
+	SOCKADDR address;
+	SOCKADDR_IN *address1 = (SOCKADDR_IN*) &address;
+	if (!stricmp (net_interface, "localhost"))
+	{
+		address1->sin_family      = AF_INET;
+		address1->sin_addr.s_addr = INADDR_ANY;
+	}
 	else
-		StringToSockaddr (net_interface, (SOCKADDR *)&address, 0);
+		StringToSockaddr (net_interface, &address, 0);
+	address1->sin_port = htons (port);
 
-	address.sin_port   = htons (port);
-	address.sin_family = AF_INET;
-	if (!bind (newsocket, (SOCKADDR*)&address, sizeof(address)))
+	if (!bind (newsocket, &address, sizeof(address)))
 		return newsocket;
 
 	// error allocating socket -- try different port
 	appPrintf ("IPSocket: unable to bind to port %d. Trying next port\n", port);
-	for (i = 1; i < 32; i++)
+	for (i = 0; i < 32; i++)
 	{
 		port++;
-		address.sin_port = htons (port);
-		if (!bind (newsocket, (SOCKADDR*)&address, sizeof(address)))
+		address1->sin_port = htons (port);
+		if (!bind (newsocket, &address, sizeof(address)))
 		{
 			appPrintf ("IPSocket: allocated port %d\n", port);
 			return newsocket;
@@ -385,8 +373,7 @@ static int IPSocket (const char *net_interface, int port)
 	}
 	// this may happen when no TCP/IP support available, or when running 32 applications with
 	// such port address
-	appWPrintf ("IPSocket: unable to allocate address (%s)\n", NET_ErrorString ());
-
+	appWPrintf ("IPSocket: unable to allocate address (%s)\n", GetErrorString ());
 	closesocket (newsocket);
 	return 0;
 }
@@ -408,31 +395,40 @@ void NET_Config (bool multiplayer)
 	if (multiplayer)
 	{
 		// open socket
-		cvar_t *ip = Cvar_Get ("ip", "localhost", CVAR_NOSET);		//?? useless cvar
-		int port = Cvar_Get ("port", va("%d", PORT_SERVER), CVAR_NOSET)->integer;	//?? useless cvar
-		netSocket = IPSocket (ip->string, port);
+		cvar_t *ip   = Cvar_Get ("ip", "localhost", CVAR_NOSET);		//?? useless cvar
+		cvar_t *port = Cvar_Get ("port", STR(PORT_SERVER), CVAR_NOSET);	//?? useless cvar
+		netSocket = IPSocket (ip->string, port->integer);
 		if (!netSocket) multiplayer = false;
 	}
 
 	netConfig = multiplayer;
 }
 
+
 void NET_Init ()
 {
 	guard(NET_Init);
 
-	WSADATA winsockdata;
-	if (WSAStartup (MAKEWORD(1,1), &winsockdata))
-		Com_FatalError ("Winsock initialization failed");
+#ifdef _WIN32
+	//?? may be, non-fatal error; when try to NET_Config(true) -> DropError("no network")
+	WSADATA data;
+	if (int err = WSAStartup (MAKEWORD(1,1), &data))
+		Com_FatalError ("WSAStartup failed: %s", appGetSystemErrorMessage (err));
 
-	appPrintf ("Winsock Initialized\n");
+	appPrintf ("WinSock: version %d.%d (%d.%d)\n",
+		data.wVersion >> 8, data.wVersion & 255,
+		data.wHighVersion >> 8, data.wHighVersion & 255);
+//	appPrintf ("%s\n", data.szDescription);
+#endif
 
 	unguard;
 }
 
 
-void NET_Shutdown (void)
+void NET_Shutdown ()
 {
 	NET_Config (false);	// close sockets
+#ifdef _WIN32
 	WSACleanup ();
+#endif
 }

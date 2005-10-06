@@ -13,16 +13,19 @@
 #pragma optimize("y", off)
 #endif
 
+
 /*-----------------------------------------------------------------------------
 	Platform-specific type defines
 -----------------------------------------------------------------------------*/
+
+#define LITTLE_ENDIAN
 
 typedef unsigned char		byte;		//?? change name to BYTE etc
 //??typedef unsigned short	word;
 //??typedef unsigned int	dword;
 typedef unsigned __int64	int64;		//?? INT64
 
-typedef unsigned int	address_t;
+typedef unsigned int		address_t;
 
 
 // if windows.h is not included ...
@@ -32,16 +35,14 @@ typedef unsigned int	address_t;
 #endif
 
 
-#define LITTLE_ENDIAN
-
-// this functions are smaller. when in intrinsic form (and, of course, faster):
-#pragma intrinsic(memcpy, memset, memcmp, abs, fabs)
-// allow nested inline expansions
-#pragma inline_depth(8)
-
 /*-----------------------------------------------------------------------------
 	Miscellaneous
 -----------------------------------------------------------------------------*/
+
+// this functions are smaller, when in intrinsic form (and, of course, faster):
+#pragma intrinsic(memcpy, memset, memcmp, abs, fabs)
+// allow nested inline expansions
+#pragma inline_depth(8)
 
 #define DLL_IMPORT	__declspec(dllimport)
 #define DLL_EXPORT	__declspec(dllexport)
@@ -63,13 +64,17 @@ typedef unsigned int	address_t;
 
 // disable some compiler warnings
 #pragma warning(disable : 4018)			// signed/unsigned mismatch
-#pragma warning(disable : 4291)			// no matched operator delete found
-#pragma warning(disable : 4275)			// non dll-interface class used as base for dll-interface class
-#pragma warning(disable : 4305)			// truncation from 'const double' to 'const float'
 #pragma warning(disable : 4244)			// conversion from 'int'/'double' to 'float'
-#pragma warning(disable : 4509)			// nonstandard extension used: function uses SEH and object has destructor
 #pragma warning(disable : 4251)			// class 'Name' needs to have dll-interface to be used by clients of class 'Class'
+#pragma warning(disable : 4275)			// non dll-interface class used as base for dll-interface class
+#pragma warning(disable : 4291)			// no matched operator delete found
+#pragma warning(disable : 4305)			// truncation from 'const double' to 'const float'
+#pragma warning(disable : 4509)			// nonstandard extension used: function uses SEH and object has destructor
 
+
+/*-----------------------------------------------------------------------------
+	Win32 global variables
+-----------------------------------------------------------------------------*/
 
 const char *appGetSystemErrorMessage (unsigned code);
 extern bool GIsWinNT, GIsWin2K;
@@ -154,6 +159,50 @@ inline float appDeltaCyclesToMsecf (int64 &timeDelta)
 	double v = reinterpret_cast<__int64&>(timeDelta);
 	return v * GMSecondsPerCycle;
 }
+
+
+/*-----------------------------------------------------------------------------
+	Dynamic libraries
+-----------------------------------------------------------------------------*/
+
+#define DLLEXT		".dll"
+
+// some declarations from kernel32.dll (to avoid use of <windows.h>)
+#ifndef WINAPI
+extern "C" {
+	DLL_IMPORT	HINSTANCE __stdcall LoadLibraryA (const char *name);
+	DLL_IMPORT	void*	__stdcall GetProcAddress (HINSTANCE dllHandle, const char *name);
+	DLL_IMPORT	int		__stdcall FreeLibrary (HINSTANCE dllHandle);
+}
+#endif
+
+// portable wrapped for dynamic libraries
+class CDynamicLib
+{
+private:
+	HINSTANCE hDll;
+public:
+	inline bool Load (const char *name)
+	{
+		hDll = LoadLibraryA (name);
+		return hDll != NULL;
+	}
+	inline void Free ()
+	{
+		if (!hDll) return;			// not loaded
+		FreeLibrary (hDll);
+		hDll = NULL;
+	}
+	inline bool GetProc (const char *name, void *func)
+	{
+		*(address_t*)func = (address_t) GetProcAddress (hDll, name);
+		return (*(address_t*)func != NULL);
+	}
+	inline operator bool ()
+	{
+		return hDll != NULL;
+	}
+};
 
 
 /*-----------------------------------------------------------------------------

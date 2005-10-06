@@ -117,7 +117,7 @@ gl_image.cpp:
 	DrawStretchRaw8() -> B (contains GL only)
 	gamma table, calling win32 gamma ramp -> F
 	imagelist -> B (displays GL info ...)
-	image reload: file assess -> F, upload -> B
+	image reload: file access -> F, upload -> B
 	screenshot: glFinish(), glReadPixels() -> B, other (resampling, gamma, files) -> F
 	InitImages() - creating system textures -> F
 	ShutdownImages() - free all images -> B

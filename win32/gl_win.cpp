@@ -80,11 +80,11 @@ void GLimp_SetGamma (float gamma)
 #ifdef FIND_GAMMA
 	float	a, b;			// y = ax + b
 
-	a = Cvar_Get("a","1",0)->value;
+	a = Cvar_Get("a","1")->value;
 #	ifndef FIND_GAMMA2
-	b = Cvar_Get("b","0.5",0)->value;
+	b = Cvar_Get("b","0.5")->value;
 #	else
-	b = Cvar_Get("b","-0.5",0)->value;
+	b = Cvar_Get("b","-0.5")->value;
 #	endif
 #endif
 

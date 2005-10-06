@@ -468,10 +468,10 @@ static void SV_MoveClient (client_t *cl)
 		return;
 	}
 
-	if (!sv_paused->integer)
+	if (!sv_paused->integer || sv_maxclients->integer > 1)
 	{
 		int net_drop = cl->netchan.dropped;
-		if (net_drop < 20)
+		if (net_drop > 0 && net_drop < 20)
 		{
 			while (net_drop > 2)
 			{

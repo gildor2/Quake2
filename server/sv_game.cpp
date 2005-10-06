@@ -436,6 +436,54 @@ static void PZ_FreeTags (int tag)
 	Library dynamic binding
 -----------------------------------------------------------------------------*/
 
+static CDynamicLib gameLib;
+
+static void UnloadGame ()
+{
+	guard(UnloadGame);
+	gameLib.Free ();
+	Com_DPrintf ("Free(game"DLLEXT")\n");
+	unguard;
+}
+
+static game_export_t *GetGameAPI (game_import_t *parms)
+{
+	guard(GetGameAPI);
+
+	//?? linux: check: used "setreuid(getuid(), getuid());" + "setegid(getgid());"
+	// find library file
+#define GAME_DLL	"game"CPUSTRING DLLEXT		// name of dynamic library to load
+	CFile *Lib = GFileSystem->OpenFile (GAME_DLL, FS_OS);
+	if (!Lib)
+		return NULL;
+	TString<256> DllName; DllName.sprintf ("%s/%s", Lib->Owner->name, *Lib->Name);
+	delete Lib;
+
+	if (gameLib.Load (DllName))
+		Com_DPrintf ("Load(%s)\n", *DllName);
+	else
+	{
+		appWPrintf ("GetGameAPI(%s): failed to load\n", *DllName);
+		return NULL;
+	}
+	//!! NOTE: if game dll is on remote file system, can use FS_CopyFile() function
+
+	typedef game_export_t* (* pGetGameApi_t)(game_import_t *);
+	pGetGameApi_t pGetGameAPI;
+	if (!gameLib.GetProc ("GetGameAPI", &pGetGameAPI))
+	{
+		UnloadGame ();
+		return NULL;
+	}
+
+	guard(dll.GetGameAPI);
+	return pGetGameAPI (parms);
+	unguard;
+
+	unguard;
+}
+
+
 static void cFwdToServer (const char *args)
 {
 	ExecuteCommand (va("cmd %s\n", args));
@@ -511,7 +559,7 @@ void SV_InitGameLibrary (bool dummy)
 	// load game library
 	// make a local copy in a case GetGameAPI() modify it (no "const" modifier for this arg ...)
 	game_import_t import = importFuncs;
-	ge = (game_export_t*) Sys_GetGameAPI (&import);
+	ge = GetGameAPI (&import);
 
 	if (!ge)
 		Com_DropError ("failed to load game library");
@@ -546,7 +594,7 @@ void SV_ShutdownGameLibrary ()
 	guard(ge.Shutdown);
 	ge->Shutdown ();
 	unguard;
-	Sys_UnloadGame ();
+	UnloadGame ();
 	ge = NULL;
 
 	// free tagged memory (in a case of memory leaks)

@@ -82,30 +82,18 @@ netadr_t	net_from;
 sizebuf_t	net_message;
 static byte	message_buffer[MAX_MSGLEN];
 
-/*
-===============
-Netchan_Init
 
-===============
-*/
-void Netchan_Init (void)
+void Netchan_Init ()
 {
-	// pick a port value that should be nice and random
-	int port = appMilliseconds () & 0xFFFF;
-
-	showpackets = Cvar_Get ("showpackets", "0", 0);
-	showdrop = Cvar_Get ("showdrop", "0", 0);
-	qport = Cvar_Get ("qport", va("%d", port), CVAR_NOSET);
+	showpackets = Cvar_Get ("showpackets", "0");
+	showdrop    = Cvar_Get ("showdrop", "0");
+	// port value that should be nice and random
+	qport       = Cvar_Get ("qport", va("%d", appMilliseconds() & 0xFFFF), CVAR_NOSET);
 	net_message.Init (ARRAY_ARG(message_buffer));
 }
 
-/*
-===============
-Netchan_OutOfBandPrint
 
-Sends a text message in an out-of-band datagram
-================
-*/
+//Sends a text message in an out-of-band datagram
 void Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, const char *format, ...)
 {
 	va_list argptr;
@@ -128,13 +116,7 @@ void Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, const char *form
 }
 
 
-/*
-==============
-netchan_t::Setup
-
-called to open a channel to a remote system
-==============
-*/
+// called to open a channel to a remote system
 void netchan_t::Setup (netsrc_t sock, netadr_t adr, int qport)
 {
 	memset (this, 0, sizeof(netchan_t));
@@ -166,22 +148,15 @@ bool netchan_t::NeedReliable ()
 	return false;
 }
 
-/*
-===============
-netchan_t::Transmit
 
-tries to send an unreliable message to a connection, and handles the
-transmition / retransmition of the reliable messages.
-
-A 0 length will still generate a packet and deal with the reliable messages.
-================
-*/
+// tries to send an unreliable message to a connection, and handles the
+// transmition / retransmition of the reliable messages.
+// A 0 length will still generate a packet and deal with the reliable messages (retransmit).
 void netchan_t::Transmit (void *data, int length)
 {
 	// check for message overflow
 	if (message.overflowed)
 	{
-		fatal_error = true;
 		appWPrintf ("%s: outgoing message overflow\n", NET_AdrToString (&remote_address));
 		return;
 	}
@@ -195,7 +170,6 @@ void netchan_t::Transmit (void *data, int length)
 		message.cursize = 0;
 		reliable_sequence ^= 1;
 	}
-
 
 	// write the packet header
 	sizebuf_t	send;
@@ -249,31 +223,25 @@ void netchan_t::Transmit (void *data, int length)
 	}
 }
 
-/*
-=================
-netchan_t::Process
 
-called when the current net_message is from remote_address
-modifies net_message so that it points to the packet payload
-NOTE: arg msg is always = net_message
-=================
-*/
+// called when the current net_message is from remote_address
+// modifies net_message so that it points to the packet payload
+// NOTE: arg msg is always = net_message
 bool netchan_t::Process (sizebuf_t *msg)
 {
 	// get sequence numbers
 	msg->BeginReading ();
 
-	unsigned sequence = MSG_ReadLong (msg);
+	unsigned sequence     = MSG_ReadLong (msg);
 	unsigned sequence_ack = MSG_ReadLong (msg);
 	unsigned reliable_message = sequence >> 31;
-	unsigned reliable_ack = sequence_ack >> 31;
+	unsigned reliable_ack     = sequence_ack >> 31;
 	sequence &= 0x7FFFFFFF;
 	sequence_ack &= 0x7FFFFFFF;
 
 	// read the qport if we are a server
-	int qport;
-	if (sock == NS_SERVER)
-		qport = MSG_ReadShort (msg);
+	// value of qport analyzed in SV_ReadPackets() (function, called net_message.Process())
+	if (sock == NS_SERVER) MSG_ReadShort (msg);
 
 	if (showpackets->integer)
 	{
@@ -320,8 +288,8 @@ bool netchan_t::Process (sizebuf_t *msg)
 		reliable_length = 0;		// it has been received
 
 	// if this message contains a reliable message, bump incoming_reliable_sequence
-	incoming_sequence = sequence;
-	incoming_acknowledged = sequence_ack;
+	incoming_sequence              = sequence;
+	incoming_acknowledged          = sequence_ack;
 	incoming_reliable_acknowledged = reliable_ack;
 	if (reliable_message)
 		incoming_reliable_sequence ^= 1;

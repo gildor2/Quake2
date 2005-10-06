@@ -23,10 +23,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "snd_loc.h"
 
 #define	PAINTBUFFER_SIZE	2048
-portable_samplepair_t paintbuffer[PAINTBUFFER_SIZE];
-int		snd_scaletable[32][256];
-int 	*snd_p, snd_linear_count, snd_vol;
-short	*snd_out;
+static portable_samplepair_t paintbuffer[PAINTBUFFER_SIZE];
+static int		snd_scaletable[32][256];		// table for fast changing volume of 8-bit sounds
+static int	 	*snd_p, snd_linear_count, snd_vol;
+static short	*snd_out;
 
 
 void S_WriteLinearBlastStereo16 (void)
@@ -34,23 +34,12 @@ void S_WriteLinearBlastStereo16 (void)
 	int		i;
 	int		val;
 
-	for (i=0 ; i<snd_linear_count ; i+=2)
+	for (i = 0; i < snd_linear_count; i+=2)
 	{
 		val = snd_p[i]>>8;
-		if (val > 0x7fff)
-			snd_out[i] = 0x7fff;
-		else if (val < -32768)
-			snd_out[i] = -32768;
-		else
-			snd_out[i] = val;
-
+		snd_out[i] = bound(val, -32768, 32767);
 		val = snd_p[i+1]>>8;
-		if (val > 0x7fff)
-			snd_out[i+1] = 0x7fff;
-		else if (val < -32768)
-			snd_out[i+1] = -32768;
-		else
-			snd_out[i+1] = val;
+		snd_out[i+1] = bound(val, -32768, 32767);
 	}
 }
 
@@ -84,13 +73,8 @@ void S_TransferStereo16 (unsigned long *pbuf, int endtime)
 	}
 }
 
-/*
-===================
-S_TransferPaintBuffer
 
-===================
-*/
-void S_TransferPaintBuffer(int endtime)
+void S_TransferPaintBuffer (int endtime)
 {
 	int 	out_idx;
 	int 	count;
@@ -132,12 +116,8 @@ void S_TransferPaintBuffer(int endtime)
 			while (count--)
 			{
 				val = *p >> 8;
-				p+= step;
-				if (val > 0x7fff)
-					val = 0x7fff;
-				else if (val < -32768)
-					val = -32768;
-				out[out_idx] = val;
+				p += step;
+				out[out_idx] = bound(val, -32768, 32767);
 				out_idx = (out_idx + 1) & out_mask;
 			}
 		}
@@ -147,11 +127,8 @@ void S_TransferPaintBuffer(int endtime)
 			while (count--)
 			{
 				val = *p >> 8;
-				p+= step;
-				if (val > 0x7fff)
-					val = 0x7fff;
-				else if (val < -32768)
-					val = -32768;
+				p += step;
+				val = bound(val, -32768, 32767);
 				out[out_idx] = (val>>8) + 128;
 				out_idx = (out_idx + 1) & out_mask;
 			}
@@ -171,7 +148,7 @@ CHANNEL MIXING
 void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int endtime, int offset);
 void S_PaintChannelFrom16 (channel_t *ch, sfxcache_t *sc, int endtime, int offset);
 
-void S_PaintChannels(int endtime)
+void S_PaintChannels (int endtime)
 {
 	int 	i;
 	int 	end;
@@ -324,14 +301,12 @@ void S_InitScaletable (void)
 
 static void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int count, int offset)
 {
-	int		*lscale, *rscale;
-
 	if (ch->leftvol > 255)	ch->leftvol  = 255;
 	if (ch->rightvol > 255)	ch->rightvol = 255;
 
-	lscale = snd_scaletable[ch->leftvol >> 3];					// cut 3 lower bits
-	rscale = snd_scaletable[ch->rightvol >> 3];					// ...
-	signed char *sfx = (signed char *)sc->data + ch->pos;
+	int *lscale = snd_scaletable[ch->leftvol >> 3];				// cut 3 lower bits
+	int *rscale = snd_scaletable[ch->rightvol >> 3];			// ...
+	byte *sfx   = sc->data + ch->pos;
 
 	portable_samplepair_t *samp = &paintbuffer[offset];
 	for (int i = 0; i < count; i++, samp++)

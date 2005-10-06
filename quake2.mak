@@ -98,7 +98,7 @@ STATIC = \
 	Release/obj/q2stat/gl_model.obj \
 	Release/obj/q2stat/gl_bspmodel.obj \
 	Release/obj/q2stat/gl_trimodel.obj \
-	Release/obj/q2stat/qgl_win.obj \
+	Release/obj/q2stat/GLBind.obj \
 	Release/obj/q2stat/gl_win.obj
 
 Release/Quake2.exe : DIRS $(STATIC)
@@ -302,14 +302,14 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
+	ref_gl/GLBindImpl.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_interface.h \
-	ref_gl/qgl_decl.h \
-	ref_gl/qgl_impl.h \
 	win32/gl_win.h
 
-Release/obj/q2stat/qgl_win.obj : win32/qgl_win.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/qgl_win.obj" win32/qgl_win.cpp
+Release/obj/q2stat/GLBind.obj : ref_gl/GLBind.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/GLBind.obj" ref_gl/GLBind.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -413,7 +413,7 @@ DEPENDS = \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
-	win32/winquake.h
+	win32/WinPrivate.h
 
 Release/obj/dedstat/sys_win.obj : win32/sys_win.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/sys_win.obj" win32/sys_win.cpp
@@ -559,7 +559,7 @@ DEPENDS = \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
-	win32/winquake.h
+	win32/WinPrivate.h
 
 Release/obj/q2stat/in_win.obj : win32/in_win.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/in_win.obj" win32/in_win.cpp
@@ -587,6 +587,7 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_buffers.h \
@@ -596,8 +597,7 @@ DEPENDS = \
 	ref_gl/gl_light.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
-	ref_gl/gl_shader.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_shader.h
 
 Release/obj/q2stat/gl_main.obj : ref_gl/gl_main.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_main.obj" ref_gl/gl_main.cpp
@@ -625,6 +625,7 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_buffers.h \
@@ -636,8 +637,7 @@ DEPENDS = \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h \
-	ref_gl/gl_sky.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_sky.h
 
 Release/obj/q2stat/gl_backend.obj : ref_gl/gl_backend.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_backend.obj" ref_gl/gl_backend.cpp
@@ -665,6 +665,7 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_buffers.h \
@@ -675,8 +676,7 @@ DEPENDS = \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h \
-	ref_gl/gl_sky.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_sky.h
 
 Release/obj/q2stat/gl_frontend.obj : ref_gl/gl_frontend.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_frontend.obj" ref_gl/gl_frontend.cpp
@@ -704,6 +704,7 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_frontend.h \
@@ -712,8 +713,7 @@ DEPENDS = \
 	ref_gl/gl_light.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
-	ref_gl/gl_shader.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_shader.h
 
 Release/obj/q2stat/gl_light.obj : ref_gl/gl_light.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_light.obj" ref_gl/gl_light.cpp
@@ -740,6 +740,7 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_frontend.h \
@@ -748,45 +749,7 @@ DEPENDS = \
 	ref_gl/gl_light.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
-	ref_gl/gl_shader.h \
-	ref_gl/gl_sky.h \
-	ref_gl/qgl_decl.h
-
-Release/obj/q2stat/gl_sky.obj : ref_gl/gl_sky.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_sky.obj" ref_gl/gl_sky.cpp
-
-DEPENDS = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/FileSystem.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	Core/Inc/VcWin32.h \
-	SDK/include/glext.h \
-	client/engine.h \
-	client/engine_intf.h \
-	client/ref.h \
-	client/renderer.h \
-	client/rexp_intf.h \
-	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h \
-	ref_gl/OpenGLDrv.h \
-	ref_gl/gl_backend.h \
-	ref_gl/gl_frontend.h \
-	ref_gl/gl_image.h \
-	ref_gl/gl_interface.h \
-	ref_gl/gl_light.h \
-	ref_gl/gl_math.h \
-	ref_gl/gl_model.h \
-	ref_gl/gl_shader.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_shader.h
 
 Release/obj/q2stat/gl_text.obj : ref_gl/gl_text.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_text.obj" ref_gl/gl_text.cpp
@@ -813,6 +776,44 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_backend.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_math.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h \
+	ref_gl/gl_sky.h
+
+Release/obj/q2stat/gl_sky.obj : ref_gl/gl_sky.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_sky.obj" ref_gl/gl_sky.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Inc/VcWin32.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_frontend.h \
@@ -820,8 +821,7 @@ DEPENDS = \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_light.h \
 	ref_gl/gl_model.h \
-	ref_gl/gl_shader.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_shader.h
 
 Release/obj/q2stat/gl_buffers.obj : ref_gl/gl_buffers.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_buffers.obj" ref_gl/gl_buffers.cpp
@@ -851,6 +851,7 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
@@ -860,8 +861,7 @@ DEPENDS = \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_poly.h \
-	ref_gl/gl_shader.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_shader.h
 
 Release/obj/q2stat/gl_bspmodel.obj : ref_gl/gl_bspmodel.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_bspmodel.obj" ref_gl/gl_bspmodel.cpp
@@ -888,6 +888,7 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
@@ -896,8 +897,7 @@ DEPENDS = \
 	ref_gl/gl_lightmap.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
-	ref_gl/gl_shader.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_shader.h
 
 Release/obj/q2stat/gl_lightmap.obj : ref_gl/gl_lightmap.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_lightmap.obj" ref_gl/gl_lightmap.cpp
@@ -924,6 +924,7 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
@@ -931,8 +932,7 @@ DEPENDS = \
 	ref_gl/gl_light.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
-	ref_gl/gl_shader.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_shader.h
 
 Release/obj/q2stat/gl_trimodel.obj : ref_gl/gl_trimodel.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_trimodel.obj" ref_gl/gl_trimodel.cpp
@@ -959,14 +959,14 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_light.h \
 	ref_gl/gl_model.h \
-	ref_gl/gl_shader.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_shader.h
 
 Release/obj/q2stat/gl_model.obj : ref_gl/gl_model.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_model.obj" ref_gl/gl_model.cpp
@@ -991,14 +991,14 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_buffers.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_shader.h \
-	ref_gl/gl_shadersyntax.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_shadersyntax.h
 
 Release/obj/q2stat/gl_shader.obj : ref_gl/gl_shader.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_shader.obj" ref_gl/gl_shader.cpp
@@ -1023,13 +1023,13 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_math.h \
-	ref_gl/gl_shader.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_shader.h
 
 Release/obj/q2stat/gl_math.obj : ref_gl/gl_math.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_math.obj" ref_gl/gl_math.cpp
@@ -1054,12 +1054,12 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
-	ref_gl/gl_shader.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_shader.h
 
 Release/obj/q2stat/gl_interface.obj : ref_gl/gl_interface.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_interface.obj" ref_gl/gl_interface.cpp
@@ -1084,10 +1084,10 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_interface.h \
-	ref_gl/gl_poly.h \
-	ref_gl/qgl_decl.h
+	ref_gl/gl_poly.h
 
 Release/obj/q2stat/gl_poly.obj : ref_gl/gl_poly.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_poly.obj" ref_gl/gl_poly.cpp
@@ -1112,9 +1112,9 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_interface.h \
-	ref_gl/qgl_decl.h \
 	win32/gl_win.h
 
 Release/obj/q2stat/gl_win.obj : win32/gl_win.cpp $(DEPENDS)
@@ -1151,8 +1151,8 @@ DEPENDS = \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
-	win32/resource.h \
-	win32/winquake.h
+	win32/WinPrivate.h \
+	win32/resource.h
 
 Release/obj/q2stat/vid_dll.obj : win32/vid_dll.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/vid_dll.obj" win32/vid_dll.cpp
@@ -1308,7 +1308,7 @@ DEPENDS = \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
-	win32/winquake.h
+	win32/WinPrivate.h
 
 Release/obj/q2stat/snd_win.obj : win32/snd_win.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/snd_win.obj" win32/snd_win.cpp
@@ -1466,7 +1466,7 @@ DEPENDS = \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
-	win32/winquake.h
+	win32/WinPrivate.h
 
 Release/obj/q2stat/cd_win.obj : win32/cd_win.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/cd_win.obj" win32/cd_win.cpp

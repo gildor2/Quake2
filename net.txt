@@ -1,0 +1,18 @@
+when it is possible, that 2 sockets (server+client) used at the same time? (server browser?)
+which port used for network connection? (server port?)
+BUG: when server launched, cannot see other servers in "join" menu - cl send "info" req, remote
+ server ansver "info ...", and this answer go to out local server, where rejected (should go to client!)
+ - original Q2 uses PORT_SERVER and PORT_CLIENT - 2 sockets
+ - may be, create temp connection with separate port (when to close connection, if no answers?)
+=================
+loopback: can use single buffer, if ensure no NET_SendPacket() while data not completely
+  read using NET_GetPacket() in both client and server ReadPackets() functions (i.e.
+  ReadPackets() function should be complete before 1st attempt to send data over network - this
+  attempt is only OutOfBandPrint() ? - other data collected in netchan_t and sent on frame end
+may be, use NET_SetSock(server|client) (which name?) -- will select used loopback buffer
+  (BUT: readBuf != writeBuf) - and eliminate "sock" parameter from all data ...
+problem: "qport" field in packets when sending message from client to server - needs to know,
+  is it server or client (may keep this field in netchan_t, and remove from other funcs);
+  NS_CLIENT, NS_SERVER here -> "netchan::bool isServer"
+DEDICATED_ONLY: no loopback + no NET_Config() - always multiplayer
+loopback code: move to netchan.cpp

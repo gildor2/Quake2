@@ -22,8 +22,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define DIRECTINPUT_VERSION  0x0800
 
 //#define INITGUID
-#include "winquake.h"
+#include "WinPrivate.h"
+#include <mmsystem.h>		// for mmsystem joystick
 #include "dinput.h"
+
+// from cl_imput.cpp; temp!!
+#define STATE_DOWN	1
+
 
 /*-----------------------------------------------------------------------------
 	Some DirectInput GUIDs
@@ -31,6 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	before #include "dinput.h", ALL DirectInput GUIDs will be created)
 -----------------------------------------------------------------------------*/
 
+// library used for c_dfDI* variables (DirectInput format)
 #if DIRECTINPUT_VERSION < 0x0800
 #pragma comment (lib, "dinput.lib")
 #else
@@ -113,9 +119,7 @@ static cvar_t	*m_filter;
 	DirectInput mouse
 -----------------------------------------------------------------------------*/
 
-static int	move_x, move_y;
-
-static HINSTANCE hInstDI;
+static CDynamicLib libDI;
 
 #if DIRECTINPUT_VERSION < 0x0800
 static IDirectInput *pDI;
@@ -141,11 +145,7 @@ static void DXMouse_Free ()
 		pDI->Release ();
 		pDI = NULL;
 	}
-	if (hInstDI)
-	{
-		FreeLibrary (hInstDI);
-		hInstDI = NULL;
-	}
+	libDI.Free ();
 	ShowCursor (TRUE);
 }
 
@@ -156,14 +156,14 @@ static bool DXMouse_Init ()
 #if DIRECTINPUT_VERSION < 0x0800
 	typedef HRESULT (WINAPI * pDirectInputCreate_t) (HINSTANCE, DWORD, LPDIRECTINPUT *, LPUNKNOWN);
 	static pDirectInputCreate_t pDirectInputCreate;
-	if (!hInstDI)
+	if (!libDI)
 	{
-		if (!(hInstDI = LoadLibrary ("dinput.dll")))
+		if (!(libDI.Load ("dinput.dll")))
 		{
 			appWPrintf ("dinput.dll not found\n");
 			return false;
 		}
-		if (!(pDirectInputCreate = (pDirectInputCreate_t) GetProcAddress (hInstDI, "DirectInputCreateA")))
+		if (!(libDI.GetProc ("DirectInputCreateA", &pDirectInputCreate)))
 		{
 			appWPrintf ("Wrong dinput.dll\n");
 			DXMouse_Free ();
@@ -180,14 +180,14 @@ static bool DXMouse_Init ()
 #else
 	typedef HRESULT (WINAPI * pDirectInput8Create_t) (HINSTANCE, DWORD, REFIID, LPVOID *, LPUNKNOWN);
 	static pDirectInput8Create_t pDirectInput8Create;
-	if (!hInstDI)
+	if (!libDI)
 	{
-		if (!(hInstDI = LoadLibrary ("dinput8.dll")))
+		if (!(libDI.Load ("dinput8.dll")))
 		{
 			appWPrintf ("dinput8.dll not found\n");
 			return false;
 		}
-		if (!(pDirectInput8Create = (pDirectInput8Create_t) GetProcAddress (hInstDI, "DirectInput8Create")))
+		if (!(libDI.GetProc ("DirectInput8Create", &pDirectInput8Create)))
 		{
 			appWPrintf ("Wrong dinput8.dll\n");
 			DXMouse_Free ();
@@ -262,7 +262,7 @@ static bool DXMouse_Init ()
 }
 
 
-static void DXMouse_Frame ()
+static void DXMouse_Frame (int &move_x, int &move_y)
 {
 	// poll DirectInput mouse
 #ifdef BUFFERED_MOUSE
@@ -360,7 +360,7 @@ static bool MouseMsgHook (UINT uMsg, WPARAM wParam, LPARAM lParam)
 	switch (uMsg)
 	{
 	case WM_MOUSEWHEEL:
-		if (wParam >> 31)	// really, HIWORD(wParam) should be checked, but LOWORD() does not affects the sign of result
+		if (wParam >> 31)	// sign of HIWORD(wParam)
 		{
 			Key_Event (K_MWHEELDOWN, true);
 			Key_Event (K_MWHEELDOWN, false);
@@ -371,21 +371,23 @@ static bool MouseMsgHook (UINT uMsg, WPARAM wParam, LPARAM lParam)
 			Key_Event (K_MWHEELUP, false);
 		}
 		break;
-
-	// this is complicated because Win32 seems to pack multiple mouse events into
-	// one update sometimes, so we always check all states and look for events
+	// catch all mouse state messages
 	case WM_LBUTTONDOWN:
 	case WM_LBUTTONUP:
 	case WM_RBUTTONDOWN:
 	case WM_RBUTTONUP:
 	case WM_MBUTTONDOWN:
 	case WM_MBUTTONUP:
+	case WM_XBUTTONDOWN:
+	case WM_XBUTTONUP:
 	case WM_MOUSEMOVE:
 		{
 			int temp = 0;
-			if (wParam & MK_LBUTTON) temp |= 1;
-			if (wParam & MK_RBUTTON) temp |= 2;
-			if (wParam & MK_MBUTTON) temp |= 4;
+			if (wParam & MK_LBUTTON)  temp |= 1;
+			if (wParam & MK_RBUTTON)  temp |= 2;
+			if (wParam & MK_MBUTTON)  temp |= 4;
+			if (wParam & MK_XBUTTON1) temp |= 8;
+			if (wParam & MK_XBUTTON2) temp |= 16;
 			MouseEvent (temp);
 		}
 		break;
@@ -412,14 +414,13 @@ static void WinMouse_Init ()
 
 	RECT window_rect;
 	GetWindowRect (cl_hwnd, &window_rect);
-	if (window_rect.left < 0)	window_rect.left = 0;
-	if (window_rect.top < 0) 	window_rect.top = 0;
-	if (window_rect.right >= width)		window_rect.right = width-1;
+	if (window_rect.left < 0)			window_rect.left   = 0;
+	if (window_rect.top < 0)		 	window_rect.top    = 0;
+	if (window_rect.right >= width)		window_rect.right  = width-1;
 	if (window_rect.bottom >= height-1)	window_rect.bottom = height-1;
 
 	window_center_x = (window_rect.right + window_rect.left) / 2;
 	window_center_y = (window_rect.top + window_rect.bottom) / 2;
-
 	SetCursorPos (window_center_x, window_center_y);
 
 	SetCapture (cl_hwnd);
@@ -497,7 +498,7 @@ static void ActivateMouse ()
 
 static void StartupMouse ()
 {
-	haveSpiMouse = SystemParametersInfo (SPI_GETMOUSE, 0, originalMouseParms, 0) != 0;
+	haveSpiMouse      = SystemParametersInfo (SPI_GETMOUSE, 0, originalMouseParms, 0) != 0;
 	haveSpiMouseSpeed = SystemParametersInfo (SPI_GETMOUSESPEED, 0, &originalMouseSpeed, 0) != 0;	// Win98+, Win2K+
 }
 
@@ -516,7 +517,7 @@ static void MouseEvent (unsigned buttons)
 			Key_Event (key, buttons & 1);
 
 		buttons >>= 1;
-		old >>= 1;
+		old     >>= 1;
 		key++;
 	}
 }
@@ -531,11 +532,7 @@ static void MouseMove (usercmd_t *cmd)
 		return;
 
 	if (mouseType == 2)
-	{
-		mx = move_x;
-		my = move_y;
-		DXMouse_Frame ();
-	}
+		DXMouse_Frame (mx, my);
 	else
 	{
 		// get mouse position
@@ -574,12 +571,12 @@ static void MouseMove (usercmd_t *cmd)
 	//!! NOTE: following code is the same on all platforms (can be migrated to cl_input.cpp)
 	//!! If do the same with joystick code, we can set in_Strafe, m_pitch etc to static
 	// add mouse X/Y movement to cmd
-	if ((in_Strafe.state & 1) || (lookstrafe->integer && mlooking))
+	if ((in_Strafe.state & STATE_DOWN) || (lookstrafe->integer && mlooking))
 		cmd->sidemove += appRound (m_side->value * mouse_x);
 	else
 		cl.viewangles[YAW] -= m_yaw->value * mouse_x;
 
-	if ((mlooking || freelook->integer) && !(in_Strafe.state & 1))
+	if ((mlooking || freelook->integer) && !(in_Strafe.state & STATE_DOWN))
 		cl.viewangles[PITCH] += m_pitch->value * mouse_y;
 	else
 		cmd->forwardmove -= appRound (m_forward->value * mouse_y);
@@ -926,7 +923,7 @@ static void JoyMove (usercmd_t *cmd)
 	// collect the joystick data, if possible
 	if (!ReadJoystick ()) return;
 
-	if ((in_Speed.state & 1) ^ cl_run->integer)
+	if ((in_Speed.state & STATE_DOWN) ^ cl_run->integer)
 		speed = 2;
 	else
 		speed = 1;
@@ -975,7 +972,7 @@ static void JoyMove (usercmd_t *cmd)
 			break;
 
 		case AxisTurn:
-			if ((in_Strafe.state & 1) || (lookstrafe->value && mlooking))
+			if ((in_Strafe.state & STATE_DOWN) || (lookstrafe->value && mlooking))
 			{
 				// user wants turn control to become side control
 				if (fabs(fAxisValue) > joy_sidethreshold->value)

@@ -25,14 +25,13 @@ void *AllocDynamicMemory (int size)
 	{
 		//?? make this message developer-only
 		DrawTextLeft (va("R_AllocDynamicMemory(%d) failed\n", size), RGB(1, 0, 0));
-//		Com_FatalError ("R_AllocDynamicMemory(%d) failed\n", size);
 		lastDynamicPtr = NULL;
 		return NULL;
 	}
 
 	void *ptr = &dynamicBuffer[dynamicBufferSize];
 	lastDynamicSize = dynamicBufferSize;
-	lastDynamicPtr = ptr;
+	lastDynamicPtr  = ptr;
 	dynamicBufferSize += size;
 	memset (ptr, 0, size);
 
@@ -84,14 +83,14 @@ void InsertShaderIndex (int index)
 	int		i;
 	surfaceInfo_t *si;
 
-	int n = 0;
+//	int n = 0;
 	for (i = 0, si = surfaceBuffer; i < numSurfacesTotal; i++, si++)
 	{
 		int s = (si->sort >> SHADERNUM_SHIFT) & SHADERNUM_MASK;
 		if (s >= index)								// shader index incremented
 		{
 			si->sort += (1 << SHADERNUM_SHIFT);		// increment shader index field
-			n++;
+//			n++;
 		}
 	}
 //	Com_DPrintf ("R_InsertShaderIndex(%d): changed %d indexes\n", index, n);
@@ -104,7 +103,7 @@ void InsertShaderIndex (int index)
 
 void ClearPortal ()
 {
-	vp.surfaces = &surfaceBuffer[numSurfacesTotal];
+	vp.surfaces    = &surfaceBuffer[numSurfacesTotal];
 	vp.numSurfaces = 0;
 }
 
@@ -120,15 +119,14 @@ void ClearPortal ()
 void SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 {
 	int		i, k;
-	surfaceInfo_t *s, **src1, **dst1;
-	surfaceInfo_t **src, **dst;
-	int		alpha1, alpha2;		// indexes of "*alpha1" and "*alpha2" shaders
+	surfaceInfo_t *s;
 
 	surfaceInfo_t	*sortFirst[SORT_SIZE], *sortFirst2[SORT_SIZE],
 					// we will use sortFirst and sortFirst2 by turns
 					*sortLast[SORT_SIZE];
 					// save pointer to a last chain element (fast insertion to the end)
 
+	int alpha1, alpha2;							// indexes of "*alpha1" and "*alpha2" shaders
 	if (!gl_sortAlpha->integer)
 	{
 		alpha1 = gl_alphaShader1->sortIndex << SHADERNUM_SHIFT;
@@ -167,22 +165,21 @@ void SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 		sortLast[b] = s;
 	}
 
-	src1 = &sortFirst[0];
-	dst1 = &sortFirst2[0];
+	surfaceInfo_t **src1 = &sortFirst[0];
+	surfaceInfo_t **dst1 = &sortFirst2[0];
 	/* Sort other bits. Use sortFirst, sortFirst2, sortFirst ... as source.
 	 * This is a modified variant of the previous loop.
 	 */
 	for (k = SORT_BITS; k < 32; k += SORT_BITS)	// shift index
 	{
-		src = src1;
-		dst = dst1;
+		surfaceInfo_t **src = src1;
+		surfaceInfo_t **dst = dst1;
 		src1 = dst1; dst1 = src;				// swap src1 and dst1 (for next loop)
 
 		memset (dst, 0, sizeof(sortFirst));		// clear dst heads
 		for (i = 0; i < SORT_SIZE; i++)
 		{
 			surfaceInfo_t *next;
-
 			for (s = *src++; s; s = next)		// next chain
 			{
 				int		b;
@@ -200,12 +197,10 @@ void SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 		}
 	}
 	/*------ fill sortedSurfaces array --------*/
-	src = src1;
-	dst = destination;
 	for (i = 0; i < SORT_SIZE; i++)
 	{
 		for (s = *src1++; s; s = s->sortNext)
-			*dst++ = s;
+			*destination++ = s;
 	}
 #undef GET_SORT
 }
@@ -216,9 +211,9 @@ void SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 // prepare buffers for new scene
 void ClearBuffers ()
 {
-	numSurfacesTotal = 0;
-	gl_numEntities = 0;
-	gl_numDlights = 0;
+	numSurfacesTotal  = 0;
+	gl_numEntities    = 0;
+	gl_numDlights     = 0;
 	dynamicBufferSize = 0;
 }
 

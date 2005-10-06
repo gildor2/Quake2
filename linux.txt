@@ -1,0 +1,10 @@
+To port application to Linux require following steps:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- adapt "genmake" for GCC (G++)
+- port Core/*Win32.cpp
+- compile TestApp
+- make net_wins.cpp cross-platform
+- create sys_win.cpp for Linux
+- compile dedicated server
+- verify network compatibility with Win32
+- ...

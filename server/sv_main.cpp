@@ -176,7 +176,8 @@ static void cInfo (int argc, char **argv)
 	int version = atoi (argv[1]);
 
 	if (!version)
-	{	// we should reject this packet -- this is our "info" answer to local client
+	{
+		// we should reject this packet -- this is our "info" answer to local client (loopback packet)
 		Com_DPrintf ("rejected \"info\" answer\n");
 		return;
 	}
@@ -276,7 +277,7 @@ static void cDirectConnect (int argc, char **argv)
 	{
 		if (!NET_IsLocalAddress (&adr))
 		{
-			appPrintf ("Remote connect in attract loop.  Ignored.\n");
+			appPrintf ("Remote connect in attract loop. Ignored.\n");
 			Netchan_OutOfBandPrint (NS_SERVER, adr, "print\nConnection refused.\n");
 			return;
 		}
@@ -605,13 +606,15 @@ void SV_ReadPackets (void)
 		{
 			if (cl->state == cs_free)
 				continue;
+			// compare address: ignore network port, but use qport
 			if (!NET_CompareBaseAdr (&net_from, &cl->netchan.remote_address))
 				continue;
 			if (cl->netchan.port != qport)
 				continue;
+			// found a client
 			if (cl->netchan.remote_address.port != net_from.port)
 			{
-				appPrintf ("SV_ReadPackets: fixing up a translated port\n");
+				appWPrintf ("SV_ReadPackets: fixing up a translated port\n");
 				cl->netchan.remote_address.port = net_from.port;
 			}
 
@@ -1115,7 +1118,7 @@ void SV_Frame (float msec)
 		{
 			if (sv_showclamp->integer)
 				appPrintf ("sv lowclamp s:%d -- r:%d -> %d\n", sv.time, svs.realtime, sv.time - frameTime);
-			svs.realtime = sv.time - frameTime;
+			svs.realtime  = sv.time - frameTime;
 			svs.realtimef = svs.realtime;
 		}
 		return;
@@ -1155,7 +1158,7 @@ void SV_Frame (float msec)
 		{
 			if (sv_showclamp->integer)
 				appPrintf ("sv highclamp s:%d r:%d -> %d\n", sv.time, svs.realtime, sv.time);
-			svs.realtime = sv.time;
+			svs.realtime  = sv.time;
 			svs.realtimef = sv.time;
 		}
 		if (com_speeds->integer)

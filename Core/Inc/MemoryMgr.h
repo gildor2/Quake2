@@ -7,7 +7,7 @@
  *	2.	use MEM_ALLOCATOR() for wrappers, which will call appMalloc() ONLY (directly or indirectly; no memory chains!);
  *		if call to appMalloc() suppressed, should use MEM_ALLOCATOR(NULL) if MEM_ALLOCATOR(arg) was used. (??)
  */
-CORE_API extern unsigned GCurrentMemAllocator;	//?? address_t
+CORE_API extern address_t GCurrentMemAllocator;
 #	define MEM_ALLOCATOR(firstarg)	GCurrentMemAllocator = GET_RETADDR(firstarg)
 #else
 #	define MEM_ALLOCATOR(firstarg)
@@ -37,7 +37,7 @@ private:
 	byte	*end;
 #if MEM_DEBUG
 	address_t owner;
-	CMemoryChain *dPrev, *dNext;		//?? GPrev/GNext -- global list
+	CMemoryChain *dPrev, *dNext;
 	static CMemoryChain *first;
 	void	Link ();
 	void	Unlink ();

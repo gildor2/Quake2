@@ -2,6 +2,11 @@
 #include "gl_shader.h"
 #include "gl_buffers.h"
 
+//#define DEBUG_SHADERS
+#if MAX_DEBUG
+#define DEBUG_SHADERS
+#endif
+
 
 namespace OpenGLDrv {
 
@@ -18,6 +23,10 @@ shader_t *gl_flareShader;
 shader_t *gl_detailShader;
 shader_t *gl_skyShader;				// current sky shader (have mapped images)
 shader_t *gl_alphaShader1, *gl_alphaShader2;
+
+#ifdef DEBUG_SHADERS
+static cvar_t *gl_debugShaders;
+#endif
 
 
 #define HASH_BITS		8
@@ -112,6 +121,9 @@ static void Shaderlist_f (bool usage, int argc, char **argv)
 void InitShaders ()
 {
 	RegisterCommand ("shaderlist", Shaderlist_f);
+#ifdef DEBUG_SHADERS
+	gl_debugShaders = Cvar_Get ("gl_debugShaders", "0");
+#endif
 
 	// reading scripts
 	FindShaderScripts ();
@@ -535,6 +547,7 @@ shader_t *GetAlphaShader (shader_t *shader)
 
 
 static unsigned sh_imgFlags;
+static unsigned fsModifyCount;		// local copy of GFileSystem->modifyCount
 
 // "mipmap" is used only for auto-generated shaders
 shader_t *FindShader (const char *name, unsigned style)
@@ -542,6 +555,13 @@ shader_t *FindShader (const char *name, unsigned style)
 	guard(FindShader);
 
 	if (!name || !name[0]) return gl_defaultShader;
+
+	// check requirement to reload shader scripts
+	if (GFileSystem->modifyCount != fsModifyCount)
+	{
+		Com_DPrintf ("FindShader: file system modified, reloading shader scripts\n");
+		FindShaderScripts ();
+	}
 
 	// compute image flags
 	sh_imgFlags = (style & (SHADER_WALL|SHADER_SKIN)) ? (IMAGE_PICMIP|IMAGE_MIPMAP) : 0;
@@ -872,8 +892,6 @@ shader_t *FindShader (const char *name, unsigned style)
 	Quake shader script support
 -----------------------------------------------------------------------------*/
 
-//#define DEBUG_SHADERS		//?? cvar; change macro
-
 class shaderScript_t : public CStringItem
 {
 public:
@@ -894,6 +912,7 @@ static void FindShaderScripts ()
 	FreeShaderScripts ();
 	scriptChain = new CMemoryChain;
 	scriptList.Reset ();
+	fsModifyCount = GFileSystem->modifyCount;
 
 	int numFiles = 0, numScripts = 0;
 
@@ -908,7 +927,7 @@ static void FindShaderScripts ()
 		if (!buf) continue;			// should not happens
 
 #ifdef DEBUG_SHADERS
-		appPrintf (S_GREEN"%s\n", file->name);
+		if (gl_debugShaders->integer) appPrintf (S_GREEN"%s\n", file->name);
 #endif
 		CSimpleParser text;
 		text.InitFromBuf (buf, PARSER_CPP_COMMENTS|PARSER_SEPARATE_BRACES);
@@ -921,7 +940,7 @@ static void FindShaderScripts ()
 				break;
 			}
 #ifdef DEBUG_SHADERS
-			appPrintf (S_RED"%s\n", line);
+			if (gl_debugShaders->integer) appPrintf (S_RED"%s\n", line);
 #endif
 			TString<64> Name;
 			Name.filename (line);
@@ -958,7 +977,7 @@ static void FindShaderScripts ()
 			numScripts++;
 		}
 #ifdef DEBUG_SHADERS
-		if (errMsg) appWPrintf ("ERROR in scripts/%s: %s\n", file->name, errMsg);	//?? FS_PATH_NAMES
+		if (gl_debugShaders->integer && errMsg) appWPrintf ("ERROR in scripts/%s: %s\n", file->name, errMsg);	//?? FS_PATH_NAMES
 #endif
 
 		delete buf;
@@ -1016,7 +1035,7 @@ static bool InitShaderFromScript (const char *srcName, const char *text)
 			if (!scr) return false;
 
 #ifdef DEBUG_SHADERS
-			appWPrintf ("found %s in %s %X-%X\n", scr->name, scr->file, scr->start, scr->end);
+			if (gl_debugShaders->integer) appWPrintf ("found %s in %s %X-%X\n", scr->name, *scr->FileName, scr->start, scr->end);
 #endif
 			// load script file
 			unsigned length;
@@ -1032,7 +1051,7 @@ static bool InitShaderFromScript (const char *srcName, const char *text)
 	}
 
 #ifdef DEBUG_SHADERS
-	appPrintf (S_GREEN"%s:\n-----\n%s\n-----\n", srcName, text);
+	if (gl_debugShaders->integer) appPrintf (S_GREEN"%s:\n-----\n%s\n-----\n", srcName, text);
 #endif
 
 	sh.scripted = true;

@@ -247,7 +247,7 @@ notOccluded:	// we use "goto" for unclock() + return false ...
 	VectorMA (left, mins2[1], vp.view.axis[2], v);
 #if 0
 	static cvar_t *test;
-	if (!test) test=Cvar_Get("test","32",0);
+	if (!test) test=Cvar_Get("test","32");
 	n = CM_BrushTrace (vp.view.origin, v, brushes, test->integer);
 #else
 	n = CM_BrushTrace (vp.view.origin, v, brushes, NUM_TEST_BRUSHES);
@@ -278,7 +278,7 @@ notOccluded:	// we use "goto" for unclock() + return false ...
 static bool WorldBoxOccluded (const CVec3 &mins, const CVec3 &maxs)	//?? CBox
 {
 //	static cvar_t *test;
-//	if (!test) test=Cvar_Get("test","32",0);
+//	if (!test) test=Cvar_Get("test","32");
 	// optimize !!: 8 -> 4 points (find contour -- fast for axial boxes); change trace order
 	// in a case of fast non-occluded test: top-left, bottom-right, other 2 points
 	STAT(clock(gl_stats.occlTest));

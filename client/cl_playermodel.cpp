@@ -1049,9 +1049,9 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, c
 	legsAnim = torsoAnim = ANIM_NOCHANGE;
 	static cvar_t *v1, *v2, *v3;
 	EXEC_ONCE (
-		v1 = Cvar_Get ("v1", "14", 0);
-		v2 = Cvar_Get ("v2", "11", 0);
-		v3 = Cvar_Get ("v3", "0", 0);
+		v1 = Cvar_Get ("v1", "14");
+		v2 = Cvar_Get ("v2", "11");
+		v3 = Cvar_Get ("v3", "0");
 		v1->modified = v2->modified = true;
 	)
 	if (v1->modified) {

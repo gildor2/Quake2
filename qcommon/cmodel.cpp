@@ -959,7 +959,7 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 {
 	guard(CM_LoadMap);
 
-	map_noareas = Cvar_Get ("map_noareas", "0", 0);
+	map_noareas = Cvar_Get ("map_noareas", "0");
 
 	static unsigned	last_checksum;
 	if (map_name[0] && !stricmp (map_name, name) && (clientload || !Cvar_VariableInt ("flushmap")))

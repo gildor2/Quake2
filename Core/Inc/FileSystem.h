@@ -1,6 +1,6 @@
 /*=============================================================================
 
-	File system header
+	File system
 
 	- Most file operation should be done via CFileSystem object.
 	- Access to files restricted by mount points. For example, if CFileSystem
@@ -166,6 +166,7 @@ public:
 typedef CFileContainer* (*CreateArchive_t) (const char *name, FILE *f);
 
 
+//?? derive from CFileContainer; this will allow to mount one fs to another
 class CORE_API CFileSystem
 {
 	friend void cMount(bool,int,char**);
@@ -174,6 +175,7 @@ private:
 	TList<CFileContainer> mounts;
 	static CreateArchive_t ArchiveReaders[MAX_ARCHIVE_FORMATS];
 public:
+	unsigned modifyCount;		// incremented every time something mounted/umounted; rename??
 	// registering archive format
 	static void RegisterFormat (CreateArchive_t reader);
 	// file operations

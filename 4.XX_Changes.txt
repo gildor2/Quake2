@@ -12,6 +12,16 @@ Comments:
   All-IP mask is "*.*.*.*" or "0-255.0-255.0-255.0-255"
 
 
+Contains third-party libraries:
+===============================
+- JPEGlib
+  Copyright (C) 1991-1998, Thomas G. Lane.
+  http://www.ijg.org
+- ZLib
+  Copyright (C) 1995-2005 Jean-loup Gailly and Mark Adler
+  http://www.zlib.org
+
+
 4.00 Changes
 ============
 
@@ -53,7 +63,7 @@ Comments:
 - bug with menu spin control (crash when curvalue > maxvalue)
 - removed calling "-alias" EVERY time key depressed
 - fixed collision detection code to prevent from "blocked inside the opening door" and some other bugs
-- fixed "WSAECONRESET" error for Win2K (server was crashed when one client exits game)
+- fixed "WSAECONRESET" error for Win2K (server was crashed when one of clients exits game)
 - demos:
   - allowed cheatvars (timedemo, r_lightmap ...) for demos, recorded from deathmatch
   - disabled "set <var> <value>" commands from recorded demos
@@ -68,6 +78,8 @@ Comments:
   - use logfile=2 for flushing file after every write
 - using specified model/skin in a singleplayer mode (original: used male/grunt skin)
 - air acceleration works correct (sv_airaccelerate); before: value of cvar was ignored
+- when multiplayer server is paused, it will process other clients anyway (will be paused only local server's
+  client)
 
 3. ADDONS
 ~~~~~~~~~

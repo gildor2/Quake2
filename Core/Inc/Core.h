@@ -285,4 +285,4 @@ CORE_API extern bool			GIsFatalError;
 CORE_API extern bool			GIsRequestingExit;
 
 
-#endif
+#endif // __CORE_H__

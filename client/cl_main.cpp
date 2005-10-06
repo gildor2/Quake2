@@ -22,8 +22,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 #include "OutputDeviceFile.h"
 
-cvar_t	*freelook;
-
 cvar_t	*rcon_client_password;
 cvar_t	*rcon_address;
 
@@ -45,6 +43,7 @@ cvar_t	*cl_showclamp;
 
 cvar_t	*cl_paused;
 
+cvar_t	*freelook;
 cvar_t	*lookspring;
 cvar_t	*lookstrafe;
 cvar_t	*sensitivity;
@@ -64,10 +63,9 @@ cvar_t	*skin;
 cvar_t	*railcolor, *railtype;
 cvar_t	*rate;
 cvar_t	*fov;
-cvar_t	*msg;
+cvar_t	*msg;		//?? what this cvar for (can remove - and no errors ...)
 cvar_t	*hand;
-cvar_t	*gender;
-cvar_t	*gender_auto;
+cvar_t	*gender, *gender_auto;
 
 cvar_t	*cl_vwep;
 cvar_t	*cl_3rd_person;
@@ -102,24 +100,22 @@ static bool TryParseStatus (const char *str)
 {
 	if (!statusRequest) return false;
 
-	char	buf[MAX_MSGLEN];
-	appStrncpyz (buf, str, sizeof(buf));
+	TString<MAX_MSGLEN> Buf;
+	Buf = str;
 	// remove players info
-	char *s = strchr (buf, '\n');
+	char *s = Buf.chr ('\n');
 	if (!s) return false;
 	*s = 0;
 
 	// validate ServerInfo
-	const char *v = Info_ValueForKey (buf, "mapname");
-	if (!v) return false;
+	const char *v;
+	if (!(v = Info_ValueForKey (Buf, "mapname"))) return false;
 	strcpy (cl_mapname, v);
 
-	v = Info_ValueForKey (buf, "gamename");
-	if (!v) return false;
+	if (!(v = Info_ValueForKey (Buf, "gamename"))) return false;
 	strcpy (cl_gamename, v);
 
-	v = Info_ValueForKey (buf, "cheats");
-	if (!v) return false;
+	if (!(v = Info_ValueForKey (Buf, "cheats"))) return false;
 	cl_cheats = atoi (v) != 0;
 
 	appPrintf ("map: %s game: %s cheats: %d\n", cl_mapname, cl_gamename, cl_cheats);
@@ -130,7 +126,7 @@ static bool TryParseStatus (const char *str)
 
 static void SendStatusRequest ()
 {
-	statusRequest = true;
+	statusRequest  = true;
 	cl_cheats      = false;
 	cl_mapname[0]  = 0;		// needed ??
 	cl_gamename[0] = 0;
@@ -372,21 +368,18 @@ void CL_Drop (bool fromError)
 
 
 // We have gotten a challenge from the server, so try to connect
-void CL_SendConnectPacket (void)
+void CL_SendConnectPacket ()
 {
-	int port = Cvar_VariableInt ("qport");
 	cvar_t::modifiedFlags &= ~CVAR_USERINFO;
 
+	const char *str = "";
 	if (cl_extProtocol->integer)
-		Netchan_OutOfBandPrint (NS_CLIENT, cls.serverAddr, "connect "STR(PROTOCOL_VERSION)" %d %d \"%s\" "
-			NEW_PROTOCOL_ID" "STR(NEW_PROTOCOL_VERSION),
-			port, cls.challenge, Cvar_BitInfo (CVAR_USERINFO));
+		str = " "NEW_PROTOCOL_ID" "STR(NEW_PROTOCOL_VERSION);
 	else
-	{
 		Com_DPrintf ("Extended protocol disabled\n");
-		Netchan_OutOfBandPrint (NS_CLIENT, cls.serverAddr, "connect "STR(PROTOCOL_VERSION)" %d %d \"%s\"",
-			port, cls.challenge, Cvar_BitInfo (CVAR_USERINFO));
-	}
+	// "connect protocolVer qport challenge "userinfo" [extProtocolInfo]"
+	Netchan_OutOfBandPrint (NS_CLIENT, cls.serverAddr, "connect "STR(PROTOCOL_VERSION)" %d %d \"%s\"%s",
+		Cvar_VariableInt ("qport"), cls.challenge, Cvar_BitInfo (CVAR_USERINFO), str);
 }
 
 
@@ -692,7 +685,7 @@ static void cClientConnect (int argc, char **argv)
 	cls.netchan.Setup (NS_CLIENT, net_from, 0);	// use default qport value
 	MSG_WriteChar (&cls.netchan.message, clc_stringcmd);
 	MSG_WriteString (&cls.netchan.message, "new");
-	cls.state = ca_connected;
+	cls.state       = ca_connected;
 	cls.newprotocol = !strcmp (argv[1], NEW_PROTOCOL_ID);
 	if (cls.newprotocol)
 	{
@@ -716,7 +709,8 @@ static void cInfo (int argc, char **argv)
 	// server responding to a status broadcast
 	if (argc != 1)
 	{
-		// this can be message from ourselves -- request command is "info <protocol>", answer is "info\n<data>"
+		// this can be a loopback message from ourselves -- request command
+		// is "info <protocol>", answer is "info\n<data>"
 		return;
 	}
 
@@ -964,14 +958,6 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(cl_predict, 1, 0),
 	CVAR_VAR(cl_maxfps, 0, CVAR_ARCHIVE),		// ignored by default
 
-	CVAR_VAR(cl_upspeed, 200, 0),
-	CVAR_VAR(cl_forwardspeed, 200, 0),
-	CVAR_VAR(cl_sidespeed, 200, 0),
-	CVAR_VAR(cl_yawspeed, 140, 0),
-	CVAR_VAR(cl_pitchspeed, 150, 0),
-	CVAR_VAR(cl_anglespeedkey, 1.5, 0),
-
-	CVAR_VAR(cl_run, 0, CVAR_ARCHIVE),
 	CVAR_VAR(freelook, 1, CVAR_ARCHIVE),
 	CVAR_VAR(lookspring, 0, CVAR_ARCHIVE),
 	CVAR_VAR(lookstrafe, 0, CVAR_ARCHIVE),

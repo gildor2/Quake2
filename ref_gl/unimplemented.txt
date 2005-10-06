@@ -14,7 +14,7 @@ FAST TODO:
 - surface lights:
   - when nearest and center points occluded, check far point too
   - when distance/size is large, check center point only
-- move SPY_SHADER, LIGHT_DEBUG, some other -> "RenBuild.h" - separate options file
+- move SPY_SHADER, LIGHT_DEBUG, DEBUG_SHADERS, some other -> "RenBuild.h" - separate options file
 
 -------------------------------------------------------------------------------
 	new lightgrid:

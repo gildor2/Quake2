@@ -20,9 +20,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //#define WAVEOUT_DRV -- not works anyway
 
-#include "winquake.h"
+#include "WinPrivate.h"
+#include <mmsystem.h>		// required for dsound.h and for WAVEOUT_DRV
 #include <dsound.h>
-
 #include "../client/client.h"
 #include "../client/snd_loc.h"
 
@@ -547,7 +547,7 @@ bool SNDDMA_Init ()
 	memset ((void *)&dma, 0, sizeof (dma));
 
 #ifdef WAVEOUT_DRV
-	s_wavonly = Cvar_Get ("s_wavonly", "0", 0);
+	s_wavonly = Cvar_Get ("s_wavonly", "0");
 #endif
 
 	dsound_init = wav_init = 0;

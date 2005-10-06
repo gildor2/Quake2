@@ -850,7 +850,7 @@ void Key_Event (int key, bool down)
 	// to keep the character from continuing an action started before a console
 	// switch.  Button commands include the kenum as a parameter, so multiple
 	// downs can be matched with ups
-	unsigned time = appMilliseconds ();
+	unsigned time = appMilliseconds ();		//!! should be func argument (as in original q2)
 
 	if (!down)
 	{

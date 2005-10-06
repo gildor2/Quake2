@@ -540,8 +540,11 @@ typedef enum {NS_CLIENT, NS_SERVER} netsrc_t;
 struct netadr_t
 {
 	netadrtype_t type;
-	unsigned short port;
-	byte	ip[4];
+	unsigned short port;	// big-endian value
+	union {
+		byte	ip[4];
+		unsigned ip4;
+	};
 };
 
 bool	IPWildcard (netadr_t *a, const char *mask);
@@ -557,16 +560,17 @@ void	NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to);
 bool	NET_CompareAdr (netadr_t *a, netadr_t *b);
 bool	NET_CompareBaseAdr (netadr_t *a, netadr_t *b);
 bool	NET_IsLocalAddress (netadr_t *adr);
-char	*NET_AdrToString (netadr_t *a);
+const char *NET_AdrToString (netadr_t *a);
 bool	NET_StringToAdr (const char *s, netadr_t *a, short defPort = 0);
 
 
 class netchan_t
 {
 public:
-	bool	fatal_error;
-
-	netsrc_t sock;
+	netsrc_t sock;				// NS_CLIENT|NS_SERVER -- used only in Process()/Transmit() for "qport" insertion
+								//	and for NET_SendPacket(sock, ...)
+	//?? physically, "sock" used only in NET_[Get|Send]Packet() => loopback transfer; to remove this, we
+	//?? should insert loopback buffers here?
 
 	int		dropped;			// between last packet and previous
 
@@ -599,12 +603,16 @@ public:
 
 	void Setup (netsrc_t sock, netadr_t adr, int qport);
 	// returns true if the last reliable message has acked; UNUSED??
-	inline bool CanReliable ()			// used in net_chan.cpp only
+	inline bool CanReliable ()
 	{
 		return (reliable_length == 0);	// if != 0 -- waiting for ack
 	}
+	// returns true, when have reliable data to (re)transmit
 	bool NeedReliable ();
+	// combine reliable+unreliable data, send; retransmit reliable, when needed
+	// reliable data taken from "message"+"reliable_buf", unreliable - "data"+"length"
 	void Transmit (void *data, int length);
+	// process/skip incoming message header
 	bool Process (sizebuf_t *msg);
 };
 
@@ -738,10 +746,6 @@ void	SCR_DebugGraph (float value, int color);
 /*-----------------------------------------------------------------------------
 	Non-portable system services (sys_*.cpp)
 -----------------------------------------------------------------------------*/
-
-void	*Sys_GetGameAPI (void *parms);
-void	Sys_UnloadGame (void);
-// loads the game dll and calls the api init function
 
 char	*Sys_ConsoleInput ();
 void	Sys_ProcessMessages ();
