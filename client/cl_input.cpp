@@ -41,25 +41,19 @@ static unsigned frame_msec;
 
 static float accum_frame_time;
 
-/*
-===============================================================================
 
-KEY BUTTONS
 
-===============================================================================
-*/
 
 #define STATE_DOWN			1
 #define STATE_IMPULSEDOWN	2	// used for "attack" and "use" only
 #define STATE_IMPULSEUP		4	// not used
 
 
-static kbutton_t	in_KLook;
 static kbutton_t	in_Left, in_Right, in_Forward, in_Back;
 static kbutton_t	in_Lookup, in_Lookdown, in_Moveleft, in_Moveright;
 static kbutton_t	in_Use, in_Attack;
 static kbutton_t	in_Up, in_Down;
-kbutton_t	in_Strafe, in_Speed;
+kbutton_t			in_Speed;
 
 
 //?? make as method of kbutton_t
@@ -134,25 +128,9 @@ static void KeyUp (kbutton_t &b, char **argv)
 	b.state |= STATE_IMPULSEUP;
 }
 
-// Declare console functions
-#define KB(name)	\
-static void IN_##name##Up (int argc, char **argv) { KeyUp(in_##name, argv); }	\
-static void IN_##name##Down (int argc, char **argv) { KeyDown(in_##name, argv); }
-	KB(KLook)
-	KB(Up)			KB(Down)
-	KB(Right)		KB(Left)
-	KB(Forward)		KB(Back)
-	KB(Lookup)		KB(Lookdown)
-	KB(Moveleft)	KB(Moveright)
-	KB(Speed)
-	KB(Strafe)
-	KB(Attack)		KB(Use)
-#undef KB
-
 
 // Returns the fraction of the frame that the key was down
 //?? make as method of kbutton_t
-//?? NOTE: always used for delta: "KeyState(up)-KeyState(down)" etc
 static float KeyState (kbutton_t &key)
 {
 	int msec = key.msec;		// != 0 only if KeyUp() called ...
@@ -173,9 +151,12 @@ static float KeyState (kbutton_t &key)
 }
 
 
+static float KeyDelta (kbutton_t &key1, kbutton_t &key2)
+{
+	return KeyState (key1) - KeyState (key2);
+}
 
 
-//==========================================================================
 
 // can make this cvars static, if move joystick movement code here (cvars used in JoyMove() ...)
 // some cvars used in menu.cpp, but this is not critical
@@ -191,27 +172,17 @@ cvar_t	*cl_run;
 static cvar_t *cl_anglespeedkey;
 
 
-// Send the intended movement message to the server
 static void KeyboardMove (usercmd_t *cmd)
 {
 	memset (cmd, 0, sizeof(usercmd_t));
 
-	// rotate player with keyboard + keyboard look/strafe
+	// rotate player with keyboard
 	float speed = cls.frametime;
 	if (in_Speed.state & STATE_DOWN)
 		speed *= cl_anglespeedkey->value;
 
-	if (!(in_Strafe.state & STATE_DOWN))
-		cl.viewangles[YAW] += speed * cl_yawspeed->value * (KeyState (in_Left) - KeyState (in_Right));
-	else
-		cmd->sidemove += appRound (cl_sidespeed->value * (KeyState (in_Right) - KeyState (in_Left)));
-
-	if (in_KLook.state & STATE_DOWN)
-		cl.viewangles[PITCH] += speed * cl_pitchspeed->value * (KeyState (in_Back) - KeyState (in_Forward));
-	else
-		cmd->forwardmove += appRound (cl_forwardspeed->value * (KeyState (in_Forward) - KeyState (in_Back)));
-
-	cl.viewangles[PITCH] += speed * cl_pitchspeed->value * (KeyState (in_Lookdown) - KeyState (in_Lookup));
+	cl.viewangles[YAW]   += speed * cl_yawspeed->value   * KeyDelta (in_Left, in_Right);
+	cl.viewangles[PITCH] += speed * cl_pitchspeed->value * KeyDelta (in_Lookdown, in_Lookup);
 
 	// copy angles with float->short
 	cmd->angles[0] = appRound (cl.viewangles[0]);
@@ -219,8 +190,9 @@ static void KeyboardMove (usercmd_t *cmd)
 	cmd->angles[2] = appRound (cl.viewangles[2]);
 
 	// movement
-	cmd->sidemove += appRound (cl_sidespeed->value * (KeyState (in_Moveright) - KeyState (in_Moveleft)));
-	cmd->upmove   += appRound (cl_upspeed->value * (KeyState (in_Up) - KeyState (in_Down)));
+	cmd->forwardmove += appRound (cl_forwardspeed->value * KeyDelta (in_Forward, in_Back));
+	cmd->sidemove    += appRound (cl_sidespeed->value    * KeyDelta (in_Moveright, in_Moveleft));
+	cmd->upmove      += appRound (cl_upspeed->value      * KeyDelta (in_Up, in_Down));
 
 	// adjust for speed key / running
 	if ((in_Speed.state & STATE_DOWN) ^ cl_run->integer)
@@ -301,8 +273,7 @@ static void CreateCmd (usercmd_t *cmd)
 }
 
 
-//?? global for MLook.up only (for in_win.cpp)
-void IN_CenterView ()
+static void IN_CenterView ()
 {
 	cl.viewangles[PITCH] = -SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
 }
@@ -330,19 +301,33 @@ static void IN_Lookup (bool usage, int argc, char **argv)	// can be used "lookdo
 }
 
 
+// Declare console functions
+#define KB(name)	\
+static void IN_##name##Up (int argc, char **argv) { KeyUp(in_##name, argv); }	\
+static void IN_##name##Down (int argc, char **argv) { KeyDown(in_##name, argv); }
+	KB(Up)			KB(Down)
+	KB(Left)		KB(Right)
+	KB(Forward)		KB(Back)
+	KB(Lookup)		KB(Lookdown)
+	KB(Moveleft)	KB(Moveright)
+	KB(Speed)
+	KB(Attack)		KB(Use)
+#undef KB
+
+
 void CL_InitInput ()
 {
 CVAR_BEGIN(vars)
 	// movement speed
-	CVAR_VAR(cl_upspeed, 200, 0),
+	CVAR_VAR(cl_upspeed,      200, 0),
 	CVAR_VAR(cl_forwardspeed, 200, 0),
-	CVAR_VAR(cl_sidespeed, 200, 0),
-	// rotation speed
-	CVAR_VAR(cl_yawspeed, 140, 0),
+	CVAR_VAR(cl_sidespeed,    200, 0),
+	// rotation using keyboard speed
+	CVAR_VAR(cl_yawspeed,   140, 0),
 	CVAR_VAR(cl_pitchspeed, 150, 0),
 	CVAR_VAR(cl_anglespeedkey, 1.5, 0),
 	// other
-	CVAR_VAR(cl_run, 0, CVAR_ARCHIVE),
+	CVAR_VAR(cl_run, 0, CVAR_ARCHIVE),		// always run; make default==1 ??
 CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
 
@@ -350,21 +335,13 @@ CVAR_END
 #define KB(name, str)	\
 	RegisterCommand ("+" #str, IN_##name##Down); \
 	RegisterCommand ("-" #str, IN_##name##Up);
-	KB(Up, moveup);
-	KB(Down, movedown);
-	KB(Left, left);
-	KB(Right, right);
-	KB(Forward, forward);
-	KB(Back, back);
-	KB(Lookup, lookup);
-	KB(Lookdown, lookdown);
-	KB(Strafe, strafe);
-	KB(Moveleft, moveleft);
-	KB(Moveright, moveright);
+	KB(Up, moveup);			KB(Down, movedown);
+	KB(Left, left);			KB(Right, right);
+	KB(Forward, forward);	KB(Back, back);
+	KB(Lookup, lookup);		KB(Lookdown, lookdown);
+	KB(Moveleft, moveleft);	KB(Moveright, moveright);
 	KB(Speed, speed);
-	KB(Attack, attack);
-	KB(Use, use);
-	KB(KLook, klook);
+	KB(Attack, attack);		KB(Use, use);
 #undef KB
 
 	RegisterCommand ("lookdown", IN_Lookdown);

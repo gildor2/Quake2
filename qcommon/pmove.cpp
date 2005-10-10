@@ -45,9 +45,8 @@ struct pml_t
 	bool		ladder;
 	cplane_t	ladderPlane;
 };
-
-static pmove_t		*pm;
-static pml_t		pml;
+static pml_t	pml;
+static pmove_t	*pm;
 
 
 // movement parameters
@@ -934,11 +933,6 @@ static void CheckDuck ()
 }
 
 
-/*
-==============
-DeadMove
-==============
-*/
 static void DeadMove ()
 {
 	if (!pm->groundentity) return;
@@ -1026,7 +1020,7 @@ static void SnapPosition ()
 	int		i, j, bits;
 	short	base[3];
 	// try all single bits first
-	static int jitterbits[8] = {0,4,1,2,3,5,6,7};
+	static const byte jitterbits[8] = {0,4,1,2,3,5,6,7};
 
 	// snap velocity to eigths
 	for (i = 0; i < 3; i++)
@@ -1065,11 +1059,7 @@ static void SnapPosition ()
 	pm->s.origin[2] = pml.previous_origin[2];
 }
 
-/*
-================
-InitialSnapPosition
-================
-*/
+
 //?? combine ...SnapPosition() funcs, +GoodPosition()
 static void InitialSnapPosition()
 {
@@ -1107,18 +1097,13 @@ static void InitialSnapPosition()
 }
 
 
-/*
-================
-ClampAngles
-================
-*/
 static void ClampAngles ()
 {
 	if (pm->s.pm_flags & PMF_TIME_TELEPORT)
 	{
-		pm->viewangles[YAW] = SHORT2ANGLE(pm->cmd.angles[YAW] + pm->s.delta_angles[YAW]);
+		pm->viewangles[YAW]   = SHORT2ANGLE(pm->cmd.angles[YAW] + pm->s.delta_angles[YAW]);
 		pm->viewangles[PITCH] = 0;
-		pm->viewangles[ROLL] = 0;
+		pm->viewangles[ROLL]  = 0;
 	}
 	else
 	{
@@ -1152,12 +1137,12 @@ void Pmove (pmove_t *pmove)
 	pm = pmove;
 
 	// clear results
-	pm->numtouch = 0;
+	pm->numtouch     = 0;
 	pm->viewangles.Zero();
-	pm->viewheight = 0;
+	pm->viewheight   = 0;
 	pm->groundentity = NULL;
-	pm->watertype = 0;
-	pm->waterlevel = 0;
+	pm->watertype    = 0;
+	pm->waterlevel   = 0;
 
 	// clear all pmove local vars
 	memset (&pml, 0, sizeof(pml));
@@ -1190,8 +1175,8 @@ void Pmove (pmove_t *pmove)
 	if (pm->s.pm_type >= PM_DEAD)
 	{
 		pm->cmd.forwardmove = 0;
-		pm->cmd.sidemove = 0;
-		pm->cmd.upmove = 0;
+		pm->cmd.sidemove    = 0;
+		pm->cmd.upmove      = 0;
 	}
 
 	if (pm->s.pm_type == PM_FREEZE)

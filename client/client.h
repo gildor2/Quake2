@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "vid.h"
 #include "screen.h"
 #include "sound.h"
-#include "input.h"
+#include "cl_input.h"
 #include "keys.h"
 #include "console.h"
 #include "cdaudio.h"
@@ -229,28 +229,9 @@ extern	cvar_t	*cl_predict;
 extern	cvar_t	*cl_footsteps;
 extern	cvar_t	*cl_noskins;
 
-extern	cvar_t	*cl_upspeed;
-extern	cvar_t	*cl_forwardspeed;
-extern	cvar_t	*cl_sidespeed;
-
-extern	cvar_t	*cl_yawspeed;
-extern	cvar_t	*cl_pitchspeed;
-
-extern	cvar_t	*cl_run;
-
 extern	cvar_t	*cl_shownet;
 extern	cvar_t	*cl_showmiss;
 extern	cvar_t	*cl_showclamp;
-
-extern	cvar_t	*freelook;
-extern	cvar_t	*lookspring;
-extern	cvar_t	*lookstrafe;
-extern	cvar_t	*sensitivity;
-
-extern	cvar_t	*m_pitch;
-extern	cvar_t	*m_yaw;
-extern	cvar_t	*m_forward;
-extern	cvar_t	*m_side;
 
 extern	cvar_t	*cl_paused;
 
@@ -265,11 +246,9 @@ extern	cvar_t	*cl_newfx;
 extern	cvar_t	*cl_showbboxes;
 extern	cvar_t	*r_sfx_pause;
 
-extern	cvar_t	*cl_infps;
-
 extern	cvar_t	*gender, *gender_auto, *skin;
 
-extern	centity_t	*cl_entities;	// [MAX_EDICTS]
+extern	centity_t *cl_entities;	// [MAX_EDICTS]
 
 // the cl_parse_entities must be large enough to hold UPDATE_BACKUP frames of
 // entities, so that when a delta compressed message arives from the server
@@ -283,46 +262,28 @@ extern	clEntityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 void CL_ParseDelta (clEntityState_t *from, clEntityState_t *to, int number, unsigned bits, bool baseline);
 void CL_AddEntityBox (clEntityState_t *st, unsigned rgba);
 void CL_AddEntities ();
-void CL_ParseFrame (void);
+void CL_ParseFrame ();
 
 //
 // cl_main.cpp
 //
-void CL_Init (void);
+void CL_Init ();
 
 void CL_Pause (bool enable);
-void CL_Disconnect (void);
-void CL_Disconnect_f (void);
-void CL_GetChallengePacket (void);
+void CL_Disconnect ();
+void CL_Disconnect_f ();
+void CL_GetChallengePacket ();
 
 #define NUM_ADDRESSBOOK_ENTRIES 9
-void CL_PingServers_f (void);
-void CL_Snd_Restart_f (void);
-void CL_RegisterSounds (void);
+void CL_PingServers_f ();
+void CL_Snd_Restart_f ();
+void CL_RegisterSounds ();
 
 void CL_ReadPackets ();
 void CL_WriteDemoMessage ();
 
 void CL_ClearState ();
 
-
-//
-// cl_input.cpp
-//
-
-void CL_InitInput ();
-void CL_SendCmd ();
-
-// declarations for exporting to in_win32.cpp: (make local for cl_input.cpp!)
-struct kbutton_t
-{
-	short		down[2];		// key nums holding it down
-	byte		state;
-	unsigned	downtime;		// msec timestamp
-	unsigned	msec;			// != 0 only for frame, when button released
-};
-extern kbutton_t in_Strafe, in_Speed;
-void IN_CenterView ();			// global for MLook.up only (for in_win.cpp)
 
 //
 // cl_parse.cpp

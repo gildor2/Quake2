@@ -46,7 +46,6 @@ enum {
 
 	// joystick buttons
 	K_JOY1, K_JOY2, K_JOY3, K_JOY4,
-
 	// aux keys are for multi-buttoned joysticks
 	K_AUX1,	K_AUX2,	K_AUX3,	K_AUX4,	K_AUX5,	K_AUX6,
 	K_AUX7,	K_AUX8,	K_AUX9,	K_AUX10, K_AUX11, K_AUX12,
@@ -59,8 +58,9 @@ enum {
 	K_NUMLOCK,
 	K_SCRLOCK,
 	K_PRINTSCRN,
-	K_PAUSE
-	// should not be greater than 255
+	K_PAUSE,
+
+	K_LASTKEY			// used for assertion: should be <=256 (all key codes are 1-byte values)
 };
 
 // keys with code >= FIRST_NONCONSOLE_KEY will not be sent to console

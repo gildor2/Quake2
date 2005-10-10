@@ -37,6 +37,11 @@ void appInit (/*?? const char *_cmdLine */)
 {
 	guard(appInit);
 
+	// verify fundamental sizes
+	staticAssert(sizeof(short)==2, Sizeof_Short_2);
+	staticAssert(sizeof(int)==4, Sizeof_Int_4);
+	staticAssert((char)127 > (char)128, Char_Should_Be_Signed);
+
 	appInitPlatform ();
 	appInitMemory ();
 	appInitError ();

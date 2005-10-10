@@ -63,6 +63,22 @@
 #endif
 
 
+// Static assertion: some assertions are compile-time, but preprocessor not allows
+// using in "#if (condition)" something, other than #define'd consts. Use staticAssert()
+// for this purpose. If compiler have ability to check this at compile-time, should be
+// defined special staticAssert() macro, otherwise - using this one (for MAX_DEBUG only!)
+#if !defined(staticAssert) && MAX_DEBUG
+// NOTE: this macro is execution-time (like normal assert()), so, place staticAssert() in
+// code somewhere, where it will be executed as soon as possible
+#define staticAssert(expr,name)		\
+	if (!(expr)) appError ("Assertion: %s (%s)", #expr, __FILE__);
+#endif
+
+#ifndef staticAssert
+#define staticAssert(expr,name)
+#endif
+
+
 // profiling
 inline void clock (unsigned &time)		{ time -= appCycles(); }
 inline void unclock (unsigned &time)	{ time += appCycles(); }

@@ -529,11 +529,8 @@ struct optionsMenu_t : menuFramework_t
 	menuAction_t	defaults_action;
 	menuAction_t	customize_options_action;
 	static menuSlider_t	sensitivity_slider;
-	static menuList_t	freelook_box;
-	static menuList_t	alwaysrun_box;
 	static menuList_t	invertmouse_box;
-	static menuList_t	lookspring_box;
-	static menuList_t	lookstrafe_box;
+	static menuList_t	alwaysrun_box;
 	static menuList_t	crosshair_box;
 	static menuList_t	crosshair_color_box;
 	static menuSlider_t	sfxvolume_slider;
@@ -560,11 +557,6 @@ struct optionsMenu_t : menuFramework_t
 		Cvar_SetInteger ("cl_run", alwaysrun_box.curvalue);
 	}
 
-	static void FreeLookFunc (void *unused)
-	{
-		Cvar_SetInteger ("freelook", freelook_box.curvalue);
-	}
-
 	static void MouseSpeedFunc (void *unused)
 	{
 		Cvar_SetValue ("sensitivity", sensitivity_slider.curvalue / 2.0f);
@@ -572,17 +564,7 @@ struct optionsMenu_t : menuFramework_t
 
 	static void InvertMouseFunc (void *unused)
 	{
-		Cvar_SetValue ("m_pitch", -m_pitch->value);
-	}
-
-	static void LookspringFunc (void *unused)
-	{
-		Cvar_SetInteger ("lookspring", !lookspring->integer);
-	}
-
-	static void LookstrafeFunc (void *unused)
-	{
-		Cvar_SetInteger ("lookstrafe", !lookstrafe->integer);
+		Cvar_SetValue ("m_invert", !m_invert->value);
 	}
 
 	static void UpdateVolumeFunc (void *unused)
@@ -609,16 +591,7 @@ struct optionsMenu_t : menuFramework_t
 		cl_run->Clamp (0, 1);
 		alwaysrun_box.curvalue		= cl_run->integer;
 
-		invertmouse_box.curvalue	= m_pitch->value < 0;
-
-		lookspring->Clamp (0, 1);
-		lookspring_box.curvalue		= lookspring->integer;
-
-		lookstrafe->Clamp (0, 1);
-		lookstrafe_box.curvalue		= lookstrafe->integer;
-
-		freelook->Clamp (0, 1);
-		freelook_box.curvalue		= freelook->integer;
+		invertmouse_box.curvalue	= m_invert->integer;
 
 		crosshair->Clamp (0, crosshairs_count);
 		crosshair_box.curvalue		= crosshair->integer;
@@ -715,16 +688,10 @@ struct optionsMenu_t : menuFramework_t
 		y += 10;
 		MENU_SLIDER(sensitivity_slider,y+=10,"mouse speed",MouseSpeedFunc,2,22)
 		AddItem (&sensitivity_slider);
-		MENU_SPIN(alwaysrun_box,y+=10,"always run",AlwaysRunFunc,yesno_names)
-		AddItem (&alwaysrun_box);
 		MENU_SPIN(invertmouse_box,y+=10,"invert mouse",InvertMouseFunc,yesno_names)
 		AddItem (&invertmouse_box);
-		MENU_SPIN(lookspring_box,y+=10,"lookspring",LookspringFunc,yesno_names)
-		AddItem (&lookspring_box);
-		MENU_SPIN(lookstrafe_box,y+=10,"lookstrafe",LookstrafeFunc,yesno_names)
-		AddItem (&lookstrafe_box);
-		MENU_SPIN(freelook_box,y+=10,"free look",FreeLookFunc,yesno_names)
-		AddItem (&freelook_box);
+		MENU_SPIN(alwaysrun_box,y+=10,"always run",AlwaysRunFunc,yesno_names)
+		AddItem (&alwaysrun_box);
 		y += 10;
 		MENU_SPIN(crosshair_box,y+=10,"crosshair shape",CrosshairFunc,crosshair_names)
 		AddItem (&crosshair_box);
@@ -756,11 +723,8 @@ struct optionsMenu_t : menuFramework_t
 static optionsMenu_t optionsMenu;
 
 menuSlider_t optionsMenu_t::sensitivity_slider;
-menuList_t	optionsMenu_t::freelook_box;
-menuList_t	optionsMenu_t::alwaysrun_box;
 menuList_t	optionsMenu_t::invertmouse_box;
-menuList_t	optionsMenu_t::lookspring_box;
-menuList_t	optionsMenu_t::lookstrafe_box;
+menuList_t	optionsMenu_t::alwaysrun_box;
 menuList_t	optionsMenu_t::crosshair_box;
 menuList_t	optionsMenu_t::crosshair_color_box;
 menuSlider_t optionsMenu_t::sfxvolume_slider;

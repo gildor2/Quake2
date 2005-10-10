@@ -72,6 +72,14 @@ typedef unsigned int		address_t;
 #pragma warning(disable : 4509)			// nonstandard extension used: function uses SEH and object has destructor
 
 
+// link-time static assertion (linker will exit with error "unresolved external 'int* [name]'"
+#define staticAssert(expr,name)			\
+	{									\
+		extern int *assert_##name;		\
+		if (!(expr)) assert_##name = 0;	\
+	}
+
+
 /*-----------------------------------------------------------------------------
 	Win32 global variables
 -----------------------------------------------------------------------------*/

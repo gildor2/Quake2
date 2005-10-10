@@ -19,7 +19,7 @@ enum {
 
 
 // destination class for gi.multicast()
-typedef enum
+enum multicast_t
 {
 	MULTICAST_ALL,
 	MULTICAST_PHS,
@@ -27,9 +27,9 @@ typedef enum
 	MULTICAST_ALL_R,
 	MULTICAST_PHS_R,
 	MULTICAST_PVS_R
-} multicast_t;
+};
 
-#define	MAX_EDICTS		1024		// must change protocol to increase more
+#define	MAX_EDICTS			1024	// must change protocol to increase more
 
 
 /*-----------------------------------------------------------------------------
@@ -39,9 +39,8 @@ typedef enum
 // float numbers
 
 //!! change, rename
-#ifndef M_PI
-#define M_PI				3.14159265358979323846	// matches value in gcc v2 math.h
-#endif
+#undef M_PI
+#define M_PI				(3.14159265358979323846)
 
 float appRsqrt (float number);
 #define SQRTFAST(x)			(x * appRsqrt(x))
@@ -59,7 +58,7 @@ inline unsigned IsNegative (float f)
 #define FAbsSign(f,d,s)	\
 	{					\
 		unsigned mask = uint_cast_const(f) & 0x80000000; \
-		uint_cast(d) = uint_cast_const(f) ^ mask;		\
+		uint_cast(d)  = uint_cast_const(f) ^ mask;		\
 		s = mask >> 31;	\
 	}
 
@@ -80,9 +79,10 @@ inline void FNegate (float &a)
 
 #else
 
-#define appRound(f)			(int) (f >= 0 ? (int)(f+0.5f) : (int)(f-0.5f))
-#define appFloor(f)			((int)floor(f))
-#define appCeil(f)			((int)ceil(f))
+//!! should be in a Core (appRound,appFloor,appCeil)
+#define appRound(f)			((int) (f >= 0 ? (f)+0.5f : (f)-0.5f))
+#define appFloor(f)			((int) floor(f))
+#define appCeil(f)			((int) ceil(f))
 
 inline unsigned IsNegative(f)
 {
@@ -141,14 +141,14 @@ struct CVec3
 		FNegate (v[1]);
 		FNegate (v[2]);
 	}
-	//!! +Negate(dst)
+	//!! +NegateTo(dst)
 	inline void Scale (float scale) //?? == "operator *= (float)"
 	{
 		v[0] *= scale;
 		v[1] *= scale;
 		v[2] *= scale;
 	}
-	//!! +Scale(dst)
+	//!! +ScaleTo(dst)
 	float Normalize ();			// returns vector length
 	float NormalizeFast ();		//?? 2-arg version too?
 };
@@ -230,6 +230,7 @@ inline void VectorMA (CVec3 &a, float scale, const CVec3 &b)	//!! method, rename
 
 float VectorLength (const CVec3 &v);	//!! method
 float VectorDistance (const CVec3 &vec1, const CVec3 &vec2);
+//?? VectorDistanceFast()
 float VectorNormalize (const CVec3 &v, CVec3 &out);
 
 // normal type for cplane_t
@@ -246,9 +247,10 @@ enum
 
 struct cplane_t		//?? rename
 {
+	// really, plane can be specified with "normal" and "dist" only; other fields - for speedup some calculations
 	CVec3	normal;
 	float	dist;
-	byte	type;					// for fast side tests; PLANE_[M]X|Y|Z
+	byte	type;					// for fast DistanceTo() tests; PLANE_[M]X|Y|Z
 	byte	signbits;				// sign(x) + (sign(y)<<1) + (sign(z)<<2); used for speedup CBox::OnPlaneSide()
 	byte	pad[2];					// for dword alignment
 	// methods
@@ -393,11 +395,11 @@ float Vec2Yaw (const CVec3 &vec);
 // colors
 
 //?? implement as class
-typedef union
+union color_t
 {
 	byte	c[4];
 	unsigned rgba;
-} color_t;
+};
 
 #undef RGBA
 #undef RGB
@@ -420,16 +422,16 @@ float NormalizeColor (const CVec3 &in, CVec3 &out);
 float NormalizeColor255 (const CVec3 &in, CVec3 &out);
 
 // rename to CLAMP_COLOR255 ??
-#define NORMALIZE_COLOR255(r,g,b)	\
-	if ((r|g|b) > 255)	\
-	{					\
-		int		m;		\
-		m = max(r,g);	\
-		m = max(m,b);	\
+#define NORMALIZE_COLOR255(r,g,b) \
+	if ((r|g|b) > 255)		\
+	{						\
+		int		m;			\
+		m = max(r,g);		\
+		m = max(m,b);		\
 		m = 255 * 256 / m;	\
-		r = r * m >> 8;	\
-		g = g * m >> 8;	\
-		b = b * m >> 8;	\
+		r = r * m >> 8;		\
+		g = g * m >> 8;		\
+		b = b * m >> 8;		\
 	}
 
 float ClampColor255 (const CVec3 &in, CVec3 &out);
@@ -483,16 +485,16 @@ struct csurface_t
 // a trace is returned when a box is swept through the world
 struct trace_t
 {
-	bool	allsolid;		// if true, plane is not valid
-	byte	pad1[3];		// qboolean pad
-	bool	startsolid;		// if true, the initial point was in a solid area
-	byte	pad2[3];		// qboolean pad
-	float	fraction;		// time completed, 1.0 = didn't hit anything
-	CVec3	endpos;			// final position
-	cplane_t plane;			// surface normal at impact
-	csurface_t *surface;	// surface hit
-	int		contents;		// contents on other side of surface hit
-	struct edict_s *ent;	// not set by CM_*() functions; unknown type at this point !
+	bool		allsolid;			// if true, plane is not valid
+	byte		pad1[3];			// qboolean pad
+	bool		startsolid;			// if true, the initial point was in a solid area
+	byte		pad2[3];			// qboolean pad
+	float		fraction;			// time completed, 1.0 = didn't hit anything
+	CVec3		endpos;				// final position
+	cplane_t	plane;				// surface normal at impact
+	csurface_t	*surface;			// surface hit
+	int			contents;			// contents on other side of surface hit
+	struct edict_s *ent;			// not set by CM_*() functions; unknown type at this point !
 };
 
 
@@ -501,7 +503,7 @@ struct trace_t
 -----------------------------------------------------------------------------*/
 
 // pmove_state_t is the information necessary for client side movement prediction
-typedef enum
+enum pmtype_t
 {
 	// can accelerate and turn
 	PM_NORMAL,
@@ -510,7 +512,7 @@ typedef enum
 	PM_DEAD,
 	PM_GIB,		// different bounding box
 	PM_FREEZE
-} pmtype_t;
+};
 
 // pmove->pm_flags
 #define	PMF_DUCKED			1
@@ -521,11 +523,9 @@ typedef enum
 #define	PMF_TIME_TELEPORT	32		// pm_time is non-moving time
 #define PMF_NO_PREDICTION	64		// temporarily disables prediction (used for grappling hook)
 
-// this structure needs to be communicated bit-accurate
-// from the server to the client to guarantee that
-// prediction stays in sync, so no floats are used.
-// if any part of the game code modifies this struct, it
-// will result in a prediction error of some degree.
+// This structure needs to be communicated bit-accurate from the server to the client to
+// guarantee that prediction stays in sync, so no floats are used. If any part of the game
+// code modifies this struct, it will result in a prediction error of some degree.
 struct pmove_state_t
 {
 	pmtype_t	pm_type;
@@ -535,14 +535,14 @@ struct pmove_state_t
 	byte		pm_flags;			// ducked, jump_held, etc
 	byte		pm_time;			// each unit = 8 ms
 	short		gravity;
-	short		delta_angles[3];	// add to command angles to get view direction changed by spawns, rotating objects, and teleporters
+	short		delta_angles[3];	// add to command angles to get view direction; modified by game code only
 };
 
 
 // button bits
 #define	BUTTON_ATTACK		1
 #define	BUTTON_USE			2
-#define	BUTTON_ANY			128			// any key whatsoever
+#define	BUTTON_ANY			128		// any key whatsoever
 
 
 // usercmd_t is sent to the server each client frame
@@ -552,8 +552,8 @@ struct usercmd_t
 	byte	buttons;
 	short	angles[3];
 	short	forwardmove, sidemove, upmove;
-	byte	impulse;			// remove? (unused !!)
-	byte	lightlevel;			// light level the player is standing on
+	byte	impulse;				// remove? (unused !!)
+	byte	lightlevel;				// light level the player is standing on
 };
 
 
@@ -565,17 +565,17 @@ struct pmove_t
 
 	// command (in)
 	usercmd_t	cmd;
-	bool		snapinitial;	// if s has been changed outside pmove
-	byte		pad[3];			// qboolean pad
+	bool		snapinitial;		// if s has been changed outside pmove
+	byte		pad[3];				// qboolean pad
 
 	// results (out)
 	int			numtouch;
 	struct edict_s	*touchents[MAXTOUCH];
 
-	CVec3		viewangles;		// clamped
+	CVec3		viewangles;			// clamped
 	float		viewheight;
 
-	CBox		bounds;			// bounding box
+	CBox		bounds;				// bounding box
 
 	struct edict_s	*groundentity;
 	int			watertype;
@@ -588,8 +588,8 @@ struct pmove_t
 
 
 // player_state_t->rdflags (refdef flags)
-#define	RDF_UNDERWATER		1				// warp the screen as apropriate
-#define RDF_NOWORLDMODEL	2				// used for player configuration screen
+#define	RDF_UNDERWATER		1		// warp the screen as apropriate
+#define RDF_NOWORLDMODEL	2		// used for player configuration screen
 //ROGUE
 #define	RDF_IRGOGGLES		4
 #define RDF_UVGOGGLES		8		//?? unused
@@ -625,16 +625,16 @@ enum {
 
 typedef enum
 {
-	MATERIAL_SILENT,	// no footstep sounds (and no bullethit sounds)
-	MATERIAL_CONCRETE,	// standard sounds
-	MATERIAL_FABRIC,	// rug
-	MATERIAL_GRAVEL,	// gravel
-	MATERIAL_METAL,		// metalh
-	MATERIAL_METAL_L,	// metall
-	MATERIAL_SNOW,		// tin (replace with pure snow from AHL??)
+	MATERIAL_SILENT,		// no footstep sounds (and no bullethit sounds)
+	MATERIAL_CONCRETE,		// standard sounds
+	MATERIAL_FABRIC,		// rug
+	MATERIAL_GRAVEL,		// gravel
+	MATERIAL_METAL,			// metalh
+	MATERIAL_METAL_L,		// metall
+	MATERIAL_SNOW,			// tin (replace with pure snow from AHL??)
 	MATERIAL_TIN,
-	MATERIAL_TILE,		// marble (similar to concrete, but slightly muffled sound)
-	MATERIAL_WOOD,		// wood
+	MATERIAL_TILE,			// marble (similar to concrete, but slightly muffled sound)
+	MATERIAL_WOOD,			// wood
 	MATERIAL_WATER,
 	MATERIAL_GLASS,
 	MATERIAL_DIRT,
@@ -644,7 +644,7 @@ typedef enum
 	MATERIAL_R2,
 	MATERIAL_R3,
 
-	MATERIAL_COUNT		// must be last
+	MATERIAL_COUNT			// must be last
 } material_t;
 
 #define MATERIAL_FIRST	0
@@ -702,9 +702,9 @@ struct entityStateEx_t : entity_state_t
 	}
 	inline void GetAnim (int &legs, int &torso, int &moveDir, float &pitch) const
 	{
-		legs    = anim & 0x3F;
-		torso   = (anim >> 6) & 0x3F;
-		moveDir = (anim >> 12) & 7;
+		legs    =   anim        & 0x3F;
+		torso   =  (anim >> 6)  & 0x3F;
+		moveDir =  (anim >> 12) & 7;
 		pitch   = ((anim >> 15) & 0xFF) - 90.0f;
 	}
 };
@@ -715,32 +715,30 @@ struct entityStateEx_t : entity_state_t
 
 
 // player_state_t is the information needed in addition to pmove_state_t
-// to rendered a view.  There will only be 10 player_state_t sent each second,
-// but the number of pmove_state_t changes will be reletive to client
-// frame rates
+// to rendered a view.  There will only be 10 (sv_fps) player_state_t sent
+// each second, but the number of pmove_state_t changes will be relative to
+// client frame rates
 struct player_state_t
 {
-	pmove_state_t	pmove;		// for prediction
+	pmove_state_t	pmove;	// for prediction
 
 	// these fields do not need to be communicated bit-precise
 
-	CVec3		viewangles;		// for fixed views
-	CVec3		viewoffset;		// add to pmovestate->origin
-	CVec3		kick_angles;	// add to view direction to get render angles
-								// set by weapon kicks, pain effects, etc
+	CVec3		viewangles;	// for fixed views
+	CVec3		viewoffset;	// add to pmovestate->origin
+	CVec3		kick_angles;// add to view direction to get render angles
+							// set by weapon kicks, pain effects, etc
 
 	CVec3		gunangles;
 	CVec3		gunoffset;
 	int			gunindex;
 	int			gunframe;
 
-	float		blend[4];		// rgba full screen effect
+	float		blend[4];	// rgba full screen effect
+	float		fov;		// horizontal field of view
+	int			rdflags;	// refdef flags
 
-	float		fov;			// horizontal field of view
-
-	int			rdflags;		// refdef flags
-
-	short		stats[MAX_STATS];		// fast status bar updates
+	short		stats[MAX_STATS]; // fast status bar updates
 };
 
 

@@ -8,3 +8,7 @@ To port application to Linux require following steps:
 - compile dedicated server
 - verify network compatibility with Win32
 - ...
+
+
+Functions:
+- strerror(code) -- appGetSystemErrorMessage()

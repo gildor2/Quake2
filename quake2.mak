@@ -326,12 +326,12 @@ DEPENDS = \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
+	client/cl_input.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
-	client/input.h \
 	client/keys.h \
 	client/ref.h \
 	client/renderer.h \
@@ -397,12 +397,12 @@ DEPENDS = \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
+	client/cl_input.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
-	client/input.h \
 	client/keys.h \
 	client/ref.h \
 	client/renderer.h \
@@ -543,12 +543,12 @@ DEPENDS = \
 	SDK/include/dinput.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
+	client/cl_input.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
-	client/input.h \
 	client/keys.h \
 	client/ref.h \
 	client/renderer.h \
@@ -1134,13 +1134,13 @@ DEPENDS = \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
+	client/cl_input.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
 	client/engine_exp.h \
 	client/engine_intf.h \
-	client/input.h \
 	client/keys.h \
 	client/ref.h \
 	client/renderer.h \
@@ -1171,12 +1171,12 @@ DEPENDS = \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
+	client/cl_input.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
-	client/input.h \
 	client/keys.h \
 	client/monster_flash.h \
 	client/ref.h \
@@ -1206,12 +1206,12 @@ DEPENDS = \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
+	client/cl_input.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
-	client/input.h \
 	client/keys.h \
 	client/qmenu.h \
 	client/ref.h \
@@ -1247,12 +1247,12 @@ DEPENDS = \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
+	client/cl_input.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
-	client/input.h \
 	client/keys.h \
 	client/ref.h \
 	client/renderer.h \
@@ -1291,12 +1291,12 @@ DEPENDS = \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
+	client/cl_input.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
-	client/input.h \
 	client/keys.h \
 	client/ref.h \
 	client/renderer.h \
@@ -1327,12 +1327,12 @@ DEPENDS = \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
+	client/cl_input.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
-	client/input.h \
 	client/keys.h \
 	client/ref.h \
 	client/renderer.h \
@@ -1366,12 +1366,12 @@ DEPENDS = \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
+	client/cl_input.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
-	client/input.h \
 	client/keys.h \
 	client/ref.h \
 	client/renderer.h \
@@ -1415,12 +1415,12 @@ DEPENDS = \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
+	client/cl_input.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
-	client/input.h \
 	client/keys.h \
 	client/ref.h \
 	client/renderer.h \
@@ -1450,12 +1450,12 @@ DEPENDS = \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
+	client/cl_input.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
-	client/input.h \
 	client/keys.h \
 	client/ref.h \
 	client/renderer.h \

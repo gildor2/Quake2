@@ -84,13 +84,13 @@ static const byte typeSize[] = {
 };
 
 // delta info
-typedef struct
+struct deltaInfo_t
 {
 	byte	offset;
 	byte	type;
 	byte	extra1;
 	byte	extra2;
-} deltaInfo_t;
+};
 #define N(field, type, extra1, extra2)	\
 	{ FIELD2OFS(STRUC,field), type, extra1, extra2 }
 
@@ -99,9 +99,8 @@ typedef struct
 //!! function will be smaller, if use msg->Serialize(&data) -- single function for reading/writting
 static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *info, int count, unsigned bits, sizebuf_t *w, sizebuf_t *r)
 {
-	unsigned ret = 0;
-
 	guard(ParseDelta);
+	unsigned ret = 0;
 
 	for ( ; count; count--, info++)
 	{
@@ -170,8 +169,8 @@ static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *inf
 			{
 				// NOTE: PSHORT code is VERY similar to PINT, but using F(short) instead of F(int) ...
 				unsigned short d = F(unsigned short);
-				int e1 = 1<<info->extra1;
-				int e2 = 1<<info->extra2;
+				unsigned e1 = 1<<info->extra1;
+				unsigned e2 = 1<<info->extra2;
 				m = (d < 256) ? e1 : e2;
 
 				if (bits & e1)
@@ -191,8 +190,8 @@ static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *inf
 		case PINT2:
 			{
 				unsigned d = F(unsigned);
-				int e1 = 1<<info->extra1;
-				int e2 = 1<<info->extra2;
+				unsigned e1 = 1<<info->extra1;
+				unsigned e2 = 1<<info->extra2;
 				if (d < 0x100)
 					m = e1;				// 1 byte
 				else if ((d < 0x10000 && info->type == PINT) || (d < 0x8000 && info->type == PINT2))
@@ -200,7 +199,7 @@ static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *inf
 				else
 					m = e1 | e2;		// 4 bytes
 
-				int chk = bits & (e1|e2);
+				unsigned chk = bits & (e1|e2);
 				if (chk == e1) {
 					if (w) MSG_WriteByte (w, d);
 					if (r) F(unsigned) = MSG_ReadByte (r);
@@ -218,9 +217,8 @@ static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *inf
 	}
 #undef F
 
-	unguard;
-
 	return ret;
+	unguard;
 }
 
 

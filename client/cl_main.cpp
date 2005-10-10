@@ -43,16 +43,6 @@ cvar_t	*cl_showclamp;
 
 cvar_t	*cl_paused;
 
-cvar_t	*freelook;
-cvar_t	*lookspring;
-cvar_t	*lookstrafe;
-cvar_t	*sensitivity;
-
-cvar_t	*m_pitch;
-cvar_t	*m_yaw;
-cvar_t	*m_forward;
-cvar_t	*m_side;
-
 //
 // userinfo
 //
@@ -958,16 +948,6 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(cl_predict, 1, 0),
 	CVAR_VAR(cl_maxfps, 0, CVAR_ARCHIVE),		// ignored by default
 
-	CVAR_VAR(freelook, 1, CVAR_ARCHIVE),
-	CVAR_VAR(lookspring, 0, CVAR_ARCHIVE),
-	CVAR_VAR(lookstrafe, 0, CVAR_ARCHIVE),
-	CVAR_VAR(sensitivity, 3, CVAR_ARCHIVE),
-
-	CVAR_VAR(m_pitch, 0.022, CVAR_ARCHIVE),
-	CVAR_VAR(m_yaw, 0.022, 0),
-	CVAR_VAR(m_forward, 1, 0),
-	CVAR_VAR(m_side, 1, 0),
-
 	CVAR_VAR(cl_shownet, 0, 0),
 	CVAR_VAR(cl_showmiss, 0, 0),
 	CVAR_FULL(&cl_showclamp, "showclamp", "0", 0),
@@ -1097,8 +1077,8 @@ void CL_Frame (float msec, float realMsec)
 	// decide the simulation time
 	cls.frametime = extratime;
 	cl.ftime += extratime;
-	cl.time = appFloor (cl.ftime * 1000.0f);
-	extratime = 0;
+	cl.time  = appFloor (cl.ftime * 1000.0f);
+	extratime      = 0;
 	extratime_real = 0;
 
 	cls.realtime = appMilliseconds ();
@@ -1113,13 +1093,12 @@ void CL_Frame (float msec, float realMsec)
 	// fetch results from server
 	CL_ReadPackets ();
 
-	Sys_ProcessMessages ();			// get OS events
-	IN_Commands ();					// allow mice or other external controllers to add commands
-	Cbuf_Execute ();				// process console commands
+	Sys_ProcessMessages ();			// get OS events (??)
+	Cbuf_Execute ();				// process console commands (??)
 	CL_FixCvarCheats ();			// fix any cheating cvars
 
 	// send a new command message to the server
-	CL_SendCmd ();					// send intentions now
+	CL_SendCmd ();					// send intentions now (IN_Tick()?)
 	CL_InitiateConnection ();		// resend a connection request if necessary
 
 	// predict all unacknowledged movements

@@ -178,7 +178,7 @@ extern FDrawStats gl_stats;
 struct FLoadStats
 {
 	// NOTE: all fields should be "int64" (check EndRegistration() displaying)
-	// int32 enough for 1.5s on 2.6GHz machine ... so - use int64
+	// int32 enough for 1.5s on 2.6GHz machine, so - use int64 (these operations are slow)
 	// texture stats
 	int64 imgResample;
 	int64 imgMipmap;

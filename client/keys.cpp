@@ -21,11 +21,11 @@ static int		keyshift[NUM_KEYS];		// key to map to if shift held down in console
 	?? should check for correct UNKxx keys: UNK30 is "correct", but will newer be pressed
 -----------------------------------------------------------------------------*/
 
-typedef struct
+struct keyname_t
 {
 	char	*name;
 	int		keynum;
-} keyname_t;
+};
 
 //?? make a table keyNames[NUM_KEYS] for faster searching (can store BAD_KEY mark in this table)
 static const keyname_t keynames[] =
@@ -686,13 +686,6 @@ static void Key_Bindlist_f (bool usage, int argc, char **argv)
 }
 
 
-/*
-============
-Key_WriteBindings
-
-Writes lines containing "bind key value"
-============
-*/
 void Key_WriteBindings (COutputDevice *Out)
 {
 	for (int i = 0; i < NUM_BINDINGS; i++)
@@ -705,8 +698,10 @@ void Key_WriteBindings (COutputDevice *Out)
 	Miscellaneous
 -----------------------------------------------------------------------------*/
 
-void Key_Init (void)
+void Key_Init ()
 {
+	staticAssert(K_LASTKEY <= 256, LastKeyShouldBeLess256);
+
 	static const struct {char base; char shift;} keyShifts[] = {
 		{'1', '!'},	{'2', '@'},	{'3', '#'},	{'4', '$'},	{'5', '%'},
 		{'6', '^'},	{'7', '&'},	{'8', '*'},	{'9', '('},	{'0', ')'},
@@ -732,13 +727,11 @@ void Key_Init (void)
 
 void Key_Event (int key, bool down)
 {
-	int		modKey, bindKey, rep;
-	char	*kb;
-	static bool plus_cmd_fired[NUM_BINDINGS];		//?? make global, clear with Key_ClearStates(); rename
-	static int modKeyDown;							//?? global
-	bool	skip;
+	static bool plusCmdFired[NUM_BINDINGS];		//?? make global, clear with Key_ClearStates(); rename
+	static int modKeyDown;						//?? global
 
 	// update auto-repeat status
+	int rep;
 	if (down)
 		rep = ++key_repeats[key];
 	else
@@ -806,6 +799,7 @@ void Key_Event (int key, bool down)
 		if (--keysDown < 0) keysDown = 0;
 
 	// process Ctrl+Key and Alt+Key
+	int modKey, bindKey;
 	bindKey = modKey = key;
 	if (down && keysDown == 2 && key != K_CTRL && key != K_RCTRL && key != K_ALT && key != K_RALT)
 	{
@@ -828,13 +822,13 @@ void Key_Event (int key, bool down)
 		modKeyDown = 0;
 		down = false;									// force "up" even when +Ctrl/Alt > +Key > +AnotherKey
 	}
-	kb = keybindings[bindKey];
+	const char *kb = keybindings[bindKey];
 
 	// no autorepeats for "+cmd"-like bindings
 	if (down && (cls.key_dest == key_game && cls.state != ca_disconnected) && rep > 1 && kb && kb[0] == '+')
 		return;
 
-	skip = false;
+	bool skip = false;
 	if (cls.key_dest == key_bindingMenu)
 	{
 		bool needDown = true;
@@ -854,9 +848,9 @@ void Key_Event (int key, bool down)
 
 	if (!down)
 	{
-		if (!plus_cmd_fired[bindKey])
+		if (!plusCmdFired[bindKey])
 			return;
-		plus_cmd_fired[bindKey] = false;
+		plusCmdFired[bindKey] = false;
 
 		if (kb && kb[0] == '+')
 			Cbuf_AddText (va("-%s %d %d\n", kb+1, bindKey, time));
@@ -868,15 +862,15 @@ void Key_Event (int key, bool down)
 	/*---------- at this point, we have only down==true events ... -----------*/
 
 	// process key bindings
-	if ((cls.key_dest == key_menu && key >= K_F1 && key <= K_F24) ||	// in menus only Fnn keys used for bindings
-		(cls.key_dest == key_console && key >= FIRST_NONCONSOLE_KEY) ||	// in console
-		(cls.key_dest == key_game && (cls.state == ca_active || key >= FIRST_NONCONSOLE_KEY)))	// in game or non-game console
+	if ((cls.key_dest == key_menu    && key >= K_F1 && key <= K_F24) ||			// in menus only Fnn keys used for bindings
+		(cls.key_dest == key_console && key >= FIRST_NONCONSOLE_KEY) ||			// in console
+		(cls.key_dest == key_game    && (cls.state == ca_active || key >= FIRST_NONCONSOLE_KEY)))	// in game or non-game console
 	{
 		if (kb)
 		{
 			if (kb[0] == '+')
 			{	// button commands add keynum and time as a parm
-				plus_cmd_fired[bindKey] = true;		// signal, that command "+cmd" started (for "-cmd" allowing)
+				plusCmdFired[bindKey] = true;		// signal, that command "+cmd" started (for "-cmd" allowing)
 				Cbuf_AddText (va("%s %d %d\n", kb, bindKey, time));
 			}
 			else

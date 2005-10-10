@@ -293,10 +293,20 @@ Shader system
 - timerefresh:
   - timerefresh <n> -- display n frames (default=256)
   - long measuring may be finished with activating menu or console (i.e. using ESC or ~ key)
-- mouse:
-  - disabled mouse acceleration during game
-  - added mouse support via DirectInput8 (activated with "in_mouse 2", default)
-  - support for 8 mouse buttons
+- input:
+  - removed "move with mouse" stuff:
+    - removed commands: +strafe (now always off), +mlook (now always on), +klook (now always off)
+    - removed cvars: freelook (now always 1), lookstrafe (now always 0), lookspring (no code path),
+      m_forward+m_side (no code path)
+  - mouse:
+    - disabled mouse acceleration during game
+    - added mouse support via DirectInput8 (activated with "in_mouse 2", default)
+    - supported up to 8 mouse buttons
+    - removed cvars m_yaw, m_pitch; added "m_invert": when = 1 - mouse Y axis inverted
+  - joystick:
+    - removed "joy_*threshold" cvars - single "joy_threshold" used instead
+    - removed "joy_name" cvar (useless)
+    - removed "joy_advanced" cvar (always 1); removed command "joy_advancedupdate" - always updated
 - third-person view: activated with "cl_3rd_person 1"
 - intro playback:
   - removed from "toggleconsole" command

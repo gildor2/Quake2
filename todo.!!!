@@ -51,7 +51,7 @@ MOD-DEPENDING UI OPTIONS:
   - idea: save non-quantized+quantized positions (+velocity?); next time find non-quantized by quantized (save for few pmove types
     only to avoid 2 ghosts in one quantized place); may be, if few players in one quantized place - ignore detailed info
   - problem: detect out-of-date positions (player was respawned and its position was changed+snapped))
-! console: use "SetConsoleCtrlHandler()" to hook exit with "x" or Ctrl-C
+! win32 console app: use "SetConsoleCtrlHandler()" to hook exit with "x" or Ctrl-C
 ! command "banchat": disable chat of concrete IP; implementation variants:
   1) disable "cmd say[_team]" etc. for client (will not disable non-"say" chat, when message typed in console)
   2) disable PRINT_CHAT with text "Player: message"
@@ -167,7 +167,7 @@ MODEL SYSTEM:
 ? improve camper detection: track player position every ... 5 sec (??) for a 1+n minute period and set "camper" to true
   if current player position is near (tune this distance !) to history[now-1min .. now-2min]
 - menu option: priority (win_priorityBoost) -- for Win2K+
-- UT2003/UT2004-like light bulbs (flares) near player head for teamplay game (standard Q2 teamplay detects team by skin - it
+- UT2003-like light bulbs (flares) near player head for teamplay game (standard Q2 teamplay detects team by skin - it
   is possible for Q2; but problem to detect flare positions (can find position in idle md2 frame, and project this position
   to another frames using nearest triangle; for md3 - easier, because head is separate model ...))
 
@@ -208,10 +208,10 @@ BSP:
 ? add support for moving ladders: when player on entity with ladder, move player within entity (example: map "mesto", helicopter)
   (seems, this is game code ...)
 ? downloading:
-  - sv_user.c :: SV_NextDownload_f() -- should limit downloading speed when server is on modem
+  ? sv_user.c :: SV_NextDownload_f() -- should limit downloading speed when server is on modem
   - ext protocol:
     - allow downloading of jpg/tga instead of pcx/wal (any suitable image)
-    - download paks (when not very large)
+    - download paks (when not very large - limit max size with cvar)
     * download map levelshot (current: jpg only, no other file types)
     - download player models/skins at game time (and allow download indicator during game)
   - menu: move "download options" to another place (not "player setup", or to upper level: where model selection performed)
@@ -266,8 +266,6 @@ BSP:
 ? add hardware mixing (DirectSound), try DirectSound3D (or OpenAL, or own implementation ??)
   Maps with slow sound fx: beachassault (multiple barrel blast)
 
-? fix stereo sound rotation (bad positioning)
-
 - make camper sounds gender-sensitive; change sounds (get it from Thief II), but let old (current)
   system works with "sv_campersounds 2"
 ? spectator sounds (windy)
@@ -304,7 +302,7 @@ BSP:
 - create tool for automated Little/Big-endian file format conversion (parse C-headers); can create table:
   num_recs * { rec_offset , num_bytes }  (provide table as resource files for big-endian platforms ?)
 
------------ GAME LIB -------------
+-------- GAME LIB / VM -----------
 
 !? add Python or Lua virtual machine (game library, inline map scripts, GUI, map preprocessing)
 ? loading Win32 mods in Linux (Wine-like DLL loading)
@@ -317,6 +315,9 @@ BSP:
 ? cvarclear - clear all archive flags from cvars, which was not created with quake2 (created with "set <var> <value> a" command)
 ?? cvar_mon varname [message]  - monitor cvar on screen (default message = varname)
 ?? cvar_unmon varname  - stop monitor for cvar
+- CVAR_USERINFO, CVAR_SERVERINFO: these lists are static (and same in all mods - no reliable way to extend this list) - remove
+  cvar flags and make static arrays "cvar *userInfo[], *serverInfo[]" for such processing; G_CvarGet(): clean these flags (keep
+  ARCHIVE and GAME_CREATED, may be LATCH - only?)
 - add flags (or explicit command) for:
   - disconnect (game)
   - vid_restart
@@ -340,4 +341,4 @@ BSP:
 ------------- LINUX --------------
 
 ? check all "#pragma pack" places (gcc have ability to compile this -- so, change "#ifdef _WIN32" to "#ifdef PRAGMA_PACK" etc)
-- hardware gamma (see /usr/X11R6/bin/xgamma as example ...)
+- hardware gamma (see /usr/X11R6/bin/xgamma as example ...) -- latest q3linux have this one

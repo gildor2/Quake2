@@ -1,39 +1,42 @@
+"" "^1........... Attack ..........."
 +attack attack
 weapnext "next weapon"
 weapprev "prev weapon"
 
+"" "^1.......... Movement .........."
 +forward "walk forward"
 +back "walk backward"
 +moveleft "step left"
 +moveright "step right"
-+left "turn left"
-+right "turn right"
-+speed run
-+strafe sidestep
-
 +moveup "up / jump"
 +movedown "down / crouch"
++speed run
 
+"" "^1............ Look ............"
 +lookup "look up"
 +lookdown "look down"
++left "turn left"
++right "turn right"
 centerview "center view"
-+mlook "mouse look"
-+klook "keyboard look"
 
-messagemode "send message"
-messagemode2 "send team message"
-
+"" "^1.......... Inventory ........."
 inven inventory
 invuse "use item"
 invdrop "drop item"
 invprev "prev item"
 invnext "next item"
 
+"" "^1......... Singleplayer ......."
 "cmd help" "help computer"
 menu_savegame "save game"
 menu_loadgame "load game"
 menu_quit "quit game"
 
+"" "^1......... Multiplayer ........"
+messagemode "send message"
+messagemode2 "send team message"
+
+"" "^1........ Miscellaneous ......."
 menu_startserver "start server"
 menu_keys "configure keyboard"
 screenshot screenshot

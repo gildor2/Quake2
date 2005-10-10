@@ -10,9 +10,9 @@
 #endif
 
 
-static const char *GetErrorString ()
-{
 #if MAX_DEBUG
+static const char *GetErrorString (int code)
+{
 	static const struct {
 		int		code;
 		char	*str;
@@ -35,7 +35,6 @@ static const char *GetErrorString ()
 #undef ERR
 	};
 
-	int code = WSAGetLastError ();
 	const char *s = NULL;
 	for (int i = 0; i < ARRAY_COUNT(info); i++)
 		if (info[i].code == code)
@@ -47,11 +46,13 @@ static const char *GetErrorString ()
 		return va("WSA%s", s);
 	else
 		return va("WSA_ERR_%d", code);
-#else
-	int code = WSAGetLastError ();
-	return va("WSA_%d: %s", code, appGetSystemErrorMessage (code));
-#endif
 }
+#else
+static const char *GetErrorString (int code)
+{
+	return va("WSA_%d: %s", code, appGetSystemErrorMessage (code));
+}
+#endif // MAX_DEBUG
 
 
 /*-----------------------------------------------------------------------------
@@ -272,13 +273,7 @@ bool NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg)
 		if (err == WSAEMSGSIZE)
 			appWPrintf ("Oversize packet from %s\n", NET_AdrToString(net_from));
 		else
-			Com_DPrintf ("NET_GetPacket(%s): %s\n", NET_AdrToString(net_from), GetErrorString());
-		return false;
-	}
-
-	if (ret >= net_msg->maxsize)
-	{
-		appWPrintf ("Oversize packet from %s\n", NET_AdrToString (net_from));
+			Com_DPrintf ("NET_GetPacket(%s): %s\n", NET_AdrToString(net_from), GetErrorString (err));
 		return false;
 	}
 
@@ -309,7 +304,7 @@ void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
 		if (err == WSAEADDRNOTAVAIL && to.type == NA_BROADCAST)	// broadcast not allowed
 			return;
 
-		Com_DPrintf ("NET_SendPacket(%s,%d): %s\n", NET_AdrToString (&to), length, GetErrorString ());
+		Com_DPrintf ("NET_SendPacket(%s,%d): %s\n", NET_AdrToString (&to), length, GetErrorString (err));
 	}
 }
 
@@ -324,8 +319,9 @@ static int IPSocket (const char *net_interface, int port)
 
 	if ((newsocket = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
 	{
-		if (WSAGetLastError() != WSAEAFNOSUPPORT)
-			appWPrintf ("IPSocket: socket: %s", GetErrorString());
+		int err = WSAGetLastError();
+		if (err != WSAEAFNOSUPPORT)
+			appWPrintf ("IPSocket: socket: %s", GetErrorString (err));
 		return 0;
 	}
 
@@ -333,7 +329,7 @@ static int IPSocket (const char *net_interface, int port)
 	static unsigned long _true = 1;
 	if (ioctlsocket (newsocket, FIONBIO, &_true) == SOCKET_ERROR)
 	{
-		appWPrintf ("IPSocket: nonblocking: %s\n", GetErrorString());
+		appWPrintf ("IPSocket: nonblocking: %s\n", GetErrorString (WSAGetLastError ()));
 		return 0;
 	}
 
@@ -341,7 +337,7 @@ static int IPSocket (const char *net_interface, int port)
 	int i = 1;
 	if (setsockopt(newsocket, SOL_SOCKET, SO_BROADCAST, (char *)&i, sizeof(i)) == SOCKET_ERROR)
 	{
-		appWPrintf ("IPSocket: broadcast: %s\n", GetErrorString());
+		appWPrintf ("IPSocket: broadcast: %s\n", GetErrorString (WSAGetLastError ()));
 		return 0;
 	}
 
@@ -373,7 +369,7 @@ static int IPSocket (const char *net_interface, int port)
 	}
 	// this may happen when no TCP/IP support available, or when running 32 applications with
 	// such port address
-	appWPrintf ("IPSocket: unable to allocate address (%s)\n", GetErrorString ());
+	appWPrintf ("IPSocket: unable to allocate address (%s)\n", GetErrorString (WSAGetLastError ()));
 	closesocket (newsocket);
 	return 0;
 }
@@ -413,7 +409,7 @@ void NET_Init ()
 	//?? may be, non-fatal error; when try to NET_Config(true) -> DropError("no network")
 	WSADATA data;
 	if (int err = WSAStartup (MAKEWORD(1,1), &data))
-		Com_FatalError ("WSAStartup failed: %s", appGetSystemErrorMessage (err));
+		Com_FatalError ("WSAStartup failed: %s", GetErrorString (err));
 
 	appPrintf ("WinSock: version %d.%d (%d.%d)\n",
 		data.wVersion >> 8, data.wVersion & 255,
