@@ -1,0 +1,1912 @@
+# Makefile for VisualC/win32 target
+# This file was automatically generated from "quake2.project": do not edit
+
+#------------------------------------------------------------------------------
+#	Compiler definitions
+#------------------------------------------------------------------------------
+
+CPP  = cl.exe -nologo -c -D WIN32 -D _WINDOWS
+LINK = link.exe -nologo -filealign:512 -incremental:no
+AR   = link.exe -lib -nologo
+
+#------------------------------------------------------------------------------
+#	symbolic targets
+#------------------------------------------------------------------------------
+
+ALL : STATIC DEDICATED TESTAPP
+TESTAPP : TestApp/TestApp.exe
+STATIC : Release/Quake2.exe
+DEDICATED : Release/q2ded.exe
+
+#------------------------------------------------------------------------------
+#	"Release/Quake2.exe" target
+#------------------------------------------------------------------------------
+
+STATIC = \
+	Release/obj-win32/CoreStatic/CoreMain.obj \
+	Release/obj-win32/CoreStatic/DbgSymbols.obj \
+	Release/obj-win32/CoreStatic/Memory.obj \
+	Release/obj-win32/CoreStatic/OutputDevice.obj \
+	Release/obj-win32/CoreStatic/ErrorMgr.obj \
+	Release/obj-win32/CoreStatic/ScriptParser.obj \
+	Release/obj-win32/CoreStatic/Strings.obj \
+	Release/obj-win32/CoreStatic/TextContainer.obj \
+	Release/obj-win32/CoreStatic/FileSystem.obj \
+	Release/obj-win32/CoreStatic/FileContainerArc.obj \
+	Release/obj-win32/CoreStatic/CoreWin32.obj \
+	Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj \
+	Release/obj-win32/CoreStatic/ExceptFilterWin32.obj \
+	Release/obj-win32/CoreStatic/FileSystemWin32.obj \
+	Release/obj-win32/q2stat/cl_cin.obj \
+	Release/obj-win32/q2stat/cl_download.obj \
+	Release/obj-win32/q2stat/cl_ents.obj \
+	Release/obj-win32/q2stat/cl_fx.obj \
+	Release/obj-win32/q2stat/cl_input.obj \
+	Release/obj-win32/q2stat/cl_main.obj \
+	Release/obj-win32/q2stat/cl_parse.obj \
+	Release/obj-win32/q2stat/cl_playermodel.obj \
+	Release/obj-win32/q2stat/cl_pred.obj \
+	Release/obj-win32/q2stat/cl_scrn.obj \
+	Release/obj-win32/q2stat/cl_tent.obj \
+	Release/obj-win32/q2stat/cl_view.obj \
+	Release/obj-win32/q2stat/console.obj \
+	Release/obj-win32/q2stat/keys.obj \
+	Release/obj-win32/q2stat/menu.obj \
+	Release/obj-win32/q2stat/qmenu.obj \
+	Release/obj-win32/q2stat/ref_vars.obj \
+	Release/obj-win32/q2stat/snd_dma.obj \
+	Release/obj-win32/q2stat/snd_mem.obj \
+	Release/obj-win32/q2stat/snd_mix.obj \
+	Release/obj-win32/q2stat/sv_anim.obj \
+	Release/obj-win32/q2stat/sv_ccmds.obj \
+	Release/obj-win32/q2stat/sv_ents.obj \
+	Release/obj-win32/q2stat/sv_game.obj \
+	Release/obj-win32/q2stat/sv_init.obj \
+	Release/obj-win32/q2stat/sv_main.obj \
+	Release/obj-win32/q2stat/sv_send.obj \
+	Release/obj-win32/q2stat/sv_text.obj \
+	Release/obj-win32/q2stat/sv_tokenize.obj \
+	Release/obj-win32/q2stat/sv_user.obj \
+	Release/obj-win32/q2stat/sv_world.obj \
+	Release/obj-win32/q2stat/anorms.obj \
+	Release/obj-win32/q2stat/cmd.obj \
+	Release/obj-win32/q2stat/cmodel.obj \
+	Release/obj-win32/q2stat/common.obj \
+	Release/obj-win32/q2stat/crc.obj \
+	Release/obj-win32/q2stat/cvar.obj \
+	Release/obj-win32/q2stat/entdelta.obj \
+	Release/obj-win32/q2stat/images.obj \
+	Release/obj-win32/q2stat/md4.obj \
+	Release/obj-win32/q2stat/model.obj \
+	Release/obj-win32/q2stat/msg.obj \
+	Release/obj-win32/q2stat/net_chan.obj \
+	Release/obj-win32/q2stat/pmove.obj \
+	Release/obj-win32/q2stat/q_shared2.obj \
+	Release/obj-win32/q2stat/QuakeFileSystem.obj \
+	Release/obj-win32/q2stat/cd_win.obj \
+	Release/obj-win32/q2stat/in_win.obj \
+	Release/obj-win32/q2stat/net_wins.obj \
+	Release/obj-win32/q2stat/snd_win.obj \
+	Release/obj-win32/q2stat/sys_win.obj \
+	Release/obj-win32/q2stat/vid_dll.obj \
+	Release/obj-win32/q2stat/q2.res \
+	Release/obj-win32/q2stat/makeres.obj \
+	Release/obj-win32/q2stat/gl_backend.obj \
+	Release/obj-win32/q2stat/gl_buffers.obj \
+	Release/obj-win32/q2stat/gl_frontend.obj \
+	Release/obj-win32/q2stat/gl_image.obj \
+	Release/obj-win32/q2stat/gl_interface.obj \
+	Release/obj-win32/q2stat/gl_light.obj \
+	Release/obj-win32/q2stat/gl_lightmap.obj \
+	Release/obj-win32/q2stat/gl_main.obj \
+	Release/obj-win32/q2stat/gl_math.obj \
+	Release/obj-win32/q2stat/gl_poly.obj \
+	Release/obj-win32/q2stat/gl_shader.obj \
+	Release/obj-win32/q2stat/gl_sky.obj \
+	Release/obj-win32/q2stat/gl_text.obj \
+	Release/obj-win32/q2stat/gl_model.obj \
+	Release/obj-win32/q2stat/gl_bspmodel.obj \
+	Release/obj-win32/q2stat/gl_trimodel.obj \
+	Release/obj-win32/q2stat/GLBind.obj \
+	Release/obj-win32/q2stat/gl_win.obj
+
+Release/Quake2.exe : DIRS $(STATIC)
+	echo Creating executable "Release/Quake2.exe" ...
+	$(LINK) -out:"Release/Quake2.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs.lib -map:"Release/Quake2.map" $(STATIC) -subsystem:windows
+
+#------------------------------------------------------------------------------
+#	"Release/q2ded.exe" target
+#------------------------------------------------------------------------------
+
+DEDICATED = \
+	Release/obj-win32/CoreStatic/CoreMain.obj \
+	Release/obj-win32/CoreStatic/DbgSymbols.obj \
+	Release/obj-win32/CoreStatic/Memory.obj \
+	Release/obj-win32/CoreStatic/OutputDevice.obj \
+	Release/obj-win32/CoreStatic/ErrorMgr.obj \
+	Release/obj-win32/CoreStatic/ScriptParser.obj \
+	Release/obj-win32/CoreStatic/Strings.obj \
+	Release/obj-win32/CoreStatic/TextContainer.obj \
+	Release/obj-win32/CoreStatic/FileSystem.obj \
+	Release/obj-win32/CoreStatic/FileContainerArc.obj \
+	Release/obj-win32/CoreStatic/CoreWin32.obj \
+	Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj \
+	Release/obj-win32/CoreStatic/ExceptFilterWin32.obj \
+	Release/obj-win32/CoreStatic/FileSystemWin32.obj \
+	Release/obj-win32/dedstat/sv_dedicated.obj \
+	Release/obj-win32/dedstat/sv_anim.obj \
+	Release/obj-win32/dedstat/sv_ccmds.obj \
+	Release/obj-win32/dedstat/sv_ents.obj \
+	Release/obj-win32/dedstat/sv_game.obj \
+	Release/obj-win32/dedstat/sv_init.obj \
+	Release/obj-win32/dedstat/sv_main.obj \
+	Release/obj-win32/dedstat/sv_send.obj \
+	Release/obj-win32/dedstat/sv_text.obj \
+	Release/obj-win32/dedstat/sv_tokenize.obj \
+	Release/obj-win32/dedstat/sv_user.obj \
+	Release/obj-win32/dedstat/sv_world.obj \
+	Release/obj-win32/dedstat/anorms.obj \
+	Release/obj-win32/dedstat/cmd.obj \
+	Release/obj-win32/dedstat/cmodel.obj \
+	Release/obj-win32/dedstat/common.obj \
+	Release/obj-win32/dedstat/crc.obj \
+	Release/obj-win32/dedstat/cvar.obj \
+	Release/obj-win32/dedstat/entdelta.obj \
+	Release/obj-win32/dedstat/images.obj \
+	Release/obj-win32/dedstat/md4.obj \
+	Release/obj-win32/dedstat/model.obj \
+	Release/obj-win32/dedstat/msg.obj \
+	Release/obj-win32/dedstat/net_chan.obj \
+	Release/obj-win32/dedstat/pmove.obj \
+	Release/obj-win32/dedstat/q_shared2.obj \
+	Release/obj-win32/dedstat/QuakeFileSystem.obj \
+	Release/obj-win32/dedstat/net_wins.obj \
+	Release/obj-win32/dedstat/sys_win.obj \
+	Release/obj-win32/dedstat/makeres.obj
+
+Release/q2ded.exe : DIRS $(DEDICATED)
+	echo Creating executable "Release/q2ded.exe" ...
+	$(LINK) -out:"Release/q2ded.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs.lib -map:"Release/q2ded.map" $(DEDICATED) -subsystem:console
+
+#------------------------------------------------------------------------------
+#	"TestApp/TestApp.exe" target
+#------------------------------------------------------------------------------
+
+TEST = \
+	Release/obj-win32/CoreStatic/CoreMain.obj \
+	Release/obj-win32/CoreStatic/DbgSymbols.obj \
+	Release/obj-win32/CoreStatic/Memory.obj \
+	Release/obj-win32/CoreStatic/OutputDevice.obj \
+	Release/obj-win32/CoreStatic/ErrorMgr.obj \
+	Release/obj-win32/CoreStatic/ScriptParser.obj \
+	Release/obj-win32/CoreStatic/Strings.obj \
+	Release/obj-win32/CoreStatic/TextContainer.obj \
+	Release/obj-win32/CoreStatic/FileSystem.obj \
+	Release/obj-win32/CoreStatic/FileContainerArc.obj \
+	Release/obj-win32/CoreStatic/CoreWin32.obj \
+	Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj \
+	Release/obj-win32/CoreStatic/ExceptFilterWin32.obj \
+	Release/obj-win32/CoreStatic/FileSystemWin32.obj \
+	Release/obj-win32/TestApp/TestApp.obj \
+	Release/obj-win32/TestApp/Commands.obj
+
+TestApp/TestApp.exe : DIRS $(TEST)
+	echo Creating executable "TestApp/TestApp.exe" ...
+	$(LINK) -out:"TestApp/TestApp.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs.lib -map:"TestApp/TestApp.map" $(TEST) -subsystem:console
+
+#------------------------------------------------------------------------------
+#	compiling source files
+#------------------------------------------------------------------------------
+
+OPT_STATIC = -W3 -O1 -D MAX_DEBUG=0 -D STATIC_BUILD -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
+
+Release/obj-win32/q2stat/md4.obj : qcommon/md4.cpp
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/md4.obj" qcommon/md4.cpp
+
+OPT_DEDICATED = -W3 -O1 -D MAX_DEBUG=0 -D STATIC_BUILD -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
+
+Release/obj-win32/dedstat/md4.obj : qcommon/md4.cpp
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/md4.obj" qcommon/md4.cpp
+
+Release/obj-win32/q2stat/q2.res : win32/q2.rc
+	rc.exe -l 0x409 -i win32/ -fo"Release/obj-win32/q2stat/q2.res" -dNDEBUG win32/q2.rc
+
+DEPENDS = \
+	Core/../lib/zlib/zlib.h \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileContainerPak.h \
+	Core/Inc/FileContainerZRes.h \
+	Core/Inc/FileContainerZip.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceFile.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
+	lib/zlib/zconf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
+
+Release/obj-win32/dedstat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
+
+OPT_TEST = -W3 -O1 -D MAX_DEBUG=0 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
+
+DEPENDS = \
+	Core/../lib/zlib/zlib.h \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileContainerPak.h \
+	Core/Inc/FileContainerZip.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceFile.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	lib/zlib/zconf.h
+
+Release/obj-win32/TestApp/TestApp.obj : TestApp/TestApp.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/TestApp/TestApp.obj" TestApp/TestApp.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceFile.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Src/CorePrivate.h
+
+Release/obj-win32/CoreStatic/DbgSymbols.obj : Core/Src/DbgSymbols.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/DbgSymbols.obj" Core/Src/DbgSymbols.cpp
+
+Release/obj-win32/CoreStatic/ErrorMgr.obj : Core/Src/ErrorMgr.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ErrorMgr.obj" Core/Src/ErrorMgr.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceFile.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
+	ref_gl/GLBindImpl.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_interface.h \
+	win32/gl_win.h
+
+Release/obj-win32/q2stat/GLBind.obj : ref_gl/GLBind.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/GLBind.obj" ref_gl/GLBind.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceFile.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/keys.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/cl_main.obj : client/cl_main.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_main.obj" client/cl_main.cpp
+
+Release/obj-win32/q2stat/console.obj : client/console.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/console.obj" client/console.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceFile.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/common.obj : qcommon/common.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/common.obj" qcommon/common.cpp
+
+Release/obj-win32/dedstat/common.obj : qcommon/common.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/common.obj" qcommon/common.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceMem.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/keys.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	win32/WinPrivate.h
+
+Release/obj-win32/q2stat/sys_win.obj : win32/sys_win.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sys_win.obj" win32/sys_win.cpp
+
+Release/obj-win32/dedstat/sys_win.obj : win32/sys_win.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sys_win.obj" win32/sys_win.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceMem.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
+	qcommon/cmodel.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	server/game.h \
+	server/server.h
+
+Release/obj-win32/q2stat/sv_main.obj : server/sv_main.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_main.obj" server/sv_main.cpp
+
+Release/obj-win32/dedstat/sv_main.obj : server/sv_main.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_main.obj" server/sv_main.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Src/CorePrivate.h
+
+Release/obj-win32/TestApp/Commands.obj : Core/Src/Commands.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/TestApp/Commands.obj" Core/Src/Commands.cpp
+
+Release/obj-win32/CoreStatic/CoreMain.obj : Core/Src/CoreMain.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/CoreMain.obj" Core/Src/CoreMain.cpp
+
+Release/obj-win32/CoreStatic/CoreWin32.obj : Core/Src/CoreWin32.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/CoreWin32.obj" Core/Src/CoreWin32.cpp
+
+Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj : Core/Src/DbgSymbolsWin32.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj" Core/Src/DbgSymbolsWin32.cpp
+
+Release/obj-win32/CoreStatic/ExceptFilterWin32.obj : Core/Src/ExceptFilterWin32.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ExceptFilterWin32.obj" Core/Src/ExceptFilterWin32.cpp
+
+Release/obj-win32/CoreStatic/FileContainerArc.obj : Core/Src/FileContainerArc.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/FileContainerArc.obj" Core/Src/FileContainerArc.cpp
+
+Release/obj-win32/CoreStatic/FileSystemWin32.obj : Core/Src/FileSystemWin32.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/FileSystemWin32.obj" Core/Src/FileSystemWin32.cpp
+
+Release/obj-win32/CoreStatic/Memory.obj : Core/Src/Memory.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/Memory.obj" Core/Src/Memory.cpp
+
+Release/obj-win32/CoreStatic/OutputDevice.obj : Core/Src/OutputDevice.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/OutputDevice.obj" Core/Src/OutputDevice.cpp
+
+Release/obj-win32/CoreStatic/ScriptParser.obj : Core/Src/ScriptParser.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ScriptParser.obj" Core/Src/ScriptParser.cpp
+
+Release/obj-win32/CoreStatic/Strings.obj : Core/Src/Strings.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/Strings.obj" Core/Src/Strings.cpp
+
+Release/obj-win32/CoreStatic/TextContainer.obj : Core/Src/TextContainer.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/TextContainer.obj" Core/Src/TextContainer.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Src/CorePrivate.h \
+	Core/Src/FileContainerOS.h
+
+Release/obj-win32/CoreStatic/FileSystem.obj : Core/Src/FileSystem.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/FileSystem.obj" Core/Src/FileSystem.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/dinput.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/keys.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	win32/WinPrivate.h
+
+Release/obj-win32/q2stat/in_win.obj : win32/in_win.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/in_win.obj" win32/in_win.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_exp.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_backend.h \
+	ref_gl/gl_buffers.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_math.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h
+
+Release/obj-win32/q2stat/gl_main.obj : ref_gl/gl_main.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_main.obj" ref_gl/gl_main.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_backend.h \
+	ref_gl/gl_buffers.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_lightmap.h \
+	ref_gl/gl_math.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h \
+	ref_gl/gl_sky.h
+
+Release/obj-win32/q2stat/gl_backend.obj : ref_gl/gl_backend.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_backend.obj" ref_gl/gl_backend.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_backend.h \
+	ref_gl/gl_buffers.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_math.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h \
+	ref_gl/gl_sky.h
+
+Release/obj-win32/q2stat/gl_frontend.obj : ref_gl/gl_frontend.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_frontend.obj" ref_gl/gl_frontend.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_backend.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_math.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h
+
+Release/obj-win32/q2stat/gl_light.obj : ref_gl/gl_light.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_light.obj" ref_gl/gl_light.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_backend.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_math.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h
+
+Release/obj-win32/q2stat/gl_text.obj : ref_gl/gl_text.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_text.obj" ref_gl/gl_text.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_backend.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_math.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h \
+	ref_gl/gl_sky.h
+
+Release/obj-win32/q2stat/gl_sky.obj : ref_gl/gl_sky.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_sky.obj" ref_gl/gl_sky.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_backend.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h
+
+Release/obj-win32/q2stat/gl_buffers.obj : ref_gl/gl_buffers.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_buffers.obj" ref_gl/gl_buffers.cpp
+
+Release/obj-win32/q2stat/gl_image.obj : ref_gl/gl_image.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_image.obj" ref_gl/gl_image.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_lightmap.h \
+	ref_gl/gl_math.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_poly.h \
+	ref_gl/gl_shader.h
+
+Release/obj-win32/q2stat/gl_bspmodel.obj : ref_gl/gl_bspmodel.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_bspmodel.obj" ref_gl/gl_bspmodel.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_lightmap.h \
+	ref_gl/gl_math.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h
+
+Release/obj-win32/q2stat/gl_lightmap.obj : ref_gl/gl_lightmap.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_lightmap.obj" ref_gl/gl_lightmap.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_math.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h
+
+Release/obj-win32/q2stat/gl_trimodel.obj : ref_gl/gl_trimodel.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_trimodel.obj" ref_gl/gl_trimodel.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h
+
+Release/obj-win32/q2stat/gl_model.obj : ref_gl/gl_model.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_model.obj" ref_gl/gl_model.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_buffers.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_shader.h \
+	ref_gl/gl_shadersyntax.h
+
+Release/obj-win32/q2stat/gl_shader.obj : ref_gl/gl_shader.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_shader.obj" ref_gl/gl_shader.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_math.h \
+	ref_gl/gl_shader.h
+
+Release/obj-win32/q2stat/gl_math.obj : ref_gl/gl_math.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_math.obj" ref_gl/gl_math.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_shader.h
+
+Release/obj-win32/q2stat/gl_interface.obj : ref_gl/gl_interface.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_interface.obj" ref_gl/gl_interface.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_poly.h
+
+Release/obj-win32/q2stat/gl_poly.obj : ref_gl/gl_poly.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_poly.obj" ref_gl/gl_poly.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_interface.h \
+	win32/gl_win.h
+
+Release/obj-win32/q2stat/gl_win.obj : win32/gl_win.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_win.obj" win32/gl_win.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_exp.h \
+	client/engine_intf.h \
+	client/keys.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	win32/WinPrivate.h \
+	win32/resource.h
+
+Release/obj-win32/q2stat/vid_dll.obj : win32/vid_dll.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/vid_dll.obj" win32/vid_dll.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/keys.h \
+	client/monster_flash.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/cl_fx.obj : client/cl_fx.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_fx.obj" client/cl_fx.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/keys.h \
+	client/qmenu.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/keys.obj : client/keys.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/keys.obj" client/keys.cpp
+
+Release/obj-win32/q2stat/menu.obj : client/menu.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/menu.obj" client/menu.cpp
+
+Release/obj-win32/q2stat/qmenu.obj : client/qmenu.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/qmenu.obj" client/qmenu.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/keys.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/snd_loc.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/cl_tent.obj : client/cl_tent.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_tent.obj" client/cl_tent.cpp
+
+Release/obj-win32/q2stat/snd_dma.obj : client/snd_dma.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/snd_dma.obj" client/snd_dma.cpp
+
+Release/obj-win32/q2stat/snd_mem.obj : client/snd_mem.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/snd_mem.obj" client/snd_mem.cpp
+
+Release/obj-win32/q2stat/snd_mix.obj : client/snd_mix.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/snd_mix.obj" client/snd_mix.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/keys.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/snd_loc.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	win32/WinPrivate.h
+
+Release/obj-win32/q2stat/snd_win.obj : win32/snd_win.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/snd_win.obj" win32/snd_win.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/keys.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/cmodel.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h
+
+Release/obj-win32/q2stat/cl_ents.obj : client/cl_ents.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_ents.obj" client/cl_ents.cpp
+
+Release/obj-win32/q2stat/cl_pred.obj : client/cl_pred.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_pred.obj" client/cl_pred.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/keys.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/cl_cin.obj : client/cl_cin.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_cin.obj" client/cl_cin.cpp
+
+Release/obj-win32/q2stat/cl_input.obj : client/cl_input.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_input.obj" client/cl_input.cpp
+
+Release/obj-win32/q2stat/cl_parse.obj : client/cl_parse.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_parse.obj" client/cl_parse.cpp
+
+Release/obj-win32/q2stat/cl_playermodel.obj : client/cl_playermodel.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_playermodel.obj" client/cl_playermodel.cpp
+
+Release/obj-win32/q2stat/cl_scrn.obj : client/cl_scrn.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_scrn.obj" client/cl_scrn.cpp
+
+Release/obj-win32/q2stat/cl_view.obj : client/cl_view.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_view.obj" client/cl_view.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/keys.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h
+
+Release/obj-win32/q2stat/cl_download.obj : client/cl_download.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_download.obj" client/cl_download.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/keys.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	win32/WinPrivate.h
+
+Release/obj-win32/q2stat/cd_win.obj : win32/cd_win.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cd_win.obj" win32/cd_win.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	server/game.h \
+	server/server.h
+
+Release/obj-win32/q2stat/sv_ccmds.obj : server/sv_ccmds.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_ccmds.obj" server/sv_ccmds.cpp
+
+Release/obj-win32/dedstat/sv_ccmds.obj : server/sv_ccmds.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_ccmds.obj" server/sv_ccmds.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/sv_text.obj : server/sv_text.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_text.obj" server/sv_text.cpp
+
+Release/obj-win32/dedstat/sv_text.obj : server/sv_text.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_text.obj" server/sv_text.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
+	lib/jpeglib/jconfig.h \
+	lib/jpeglib/jerror.h \
+	lib/jpeglib/jmorecfg.h \
+	lib/jpeglib/jpegint.h \
+	lib/jpeglib/jpeglib.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/images.obj : qcommon/images.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/images.obj" qcommon/images.cpp
+
+Release/obj-win32/dedstat/images.obj : qcommon/images.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/images.obj" qcommon/images.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
+	qcommon/cmodel.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	server/game.h \
+	server/server.h
+
+Release/obj-win32/q2stat/sv_game.obj : server/sv_game.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_game.obj" server/sv_game.cpp
+
+Release/obj-win32/dedstat/sv_game.obj : server/sv_game.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_game.obj" server/sv_game.cpp
+
+Release/obj-win32/q2stat/sv_world.obj : server/sv_world.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_world.obj" server/sv_world.cpp
+
+Release/obj-win32/dedstat/sv_world.obj : server/sv_world.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_world.obj" server/sv_world.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
+	qcommon/cmodel.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h
+
+Release/obj-win32/q2stat/cmodel.obj : qcommon/cmodel.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cmodel.obj" qcommon/cmodel.cpp
+
+Release/obj-win32/dedstat/cmodel.obj : qcommon/cmodel.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/cmodel.obj" qcommon/cmodel.cpp
+
+Release/obj-win32/q2stat/model.obj : qcommon/model.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/model.obj" qcommon/model.cpp
+
+Release/obj-win32/dedstat/model.obj : qcommon/model.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/model.obj" qcommon/model.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	server/game.h \
+	server/server.h
+
+Release/obj-win32/q2stat/sv_anim.obj : server/sv_anim.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_anim.obj" server/sv_anim.cpp
+
+Release/obj-win32/dedstat/sv_anim.obj : server/sv_anim.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_anim.obj" server/sv_anim.cpp
+
+Release/obj-win32/q2stat/sv_ents.obj : server/sv_ents.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_ents.obj" server/sv_ents.cpp
+
+Release/obj-win32/dedstat/sv_ents.obj : server/sv_ents.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_ents.obj" server/sv_ents.cpp
+
+Release/obj-win32/q2stat/sv_init.obj : server/sv_init.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_init.obj" server/sv_init.cpp
+
+Release/obj-win32/dedstat/sv_init.obj : server/sv_init.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_init.obj" server/sv_init.cpp
+
+Release/obj-win32/q2stat/sv_send.obj : server/sv_send.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_send.obj" server/sv_send.cpp
+
+Release/obj-win32/dedstat/sv_send.obj : server/sv_send.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_send.obj" server/sv_send.cpp
+
+Release/obj-win32/q2stat/sv_user.obj : server/sv_user.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_user.obj" server/sv_user.cpp
+
+Release/obj-win32/dedstat/sv_user.obj : server/sv_user.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_user.obj" server/sv_user.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/ref_vars.obj : client/ref_vars.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/ref_vars.obj" client/ref_vars.cpp
+
+Release/obj-win32/q2stat/anorms.obj : qcommon/anorms.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/anorms.obj" qcommon/anorms.cpp
+
+Release/obj-win32/dedstat/anorms.obj : qcommon/anorms.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/anorms.obj" qcommon/anorms.cpp
+
+Release/obj-win32/q2stat/cmd.obj : qcommon/cmd.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cmd.obj" qcommon/cmd.cpp
+
+Release/obj-win32/dedstat/cmd.obj : qcommon/cmd.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/cmd.obj" qcommon/cmd.cpp
+
+Release/obj-win32/q2stat/crc.obj : qcommon/crc.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/crc.obj" qcommon/crc.cpp
+
+Release/obj-win32/dedstat/crc.obj : qcommon/crc.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/crc.obj" qcommon/crc.cpp
+
+Release/obj-win32/q2stat/cvar.obj : qcommon/cvar.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cvar.obj" qcommon/cvar.cpp
+
+Release/obj-win32/dedstat/cvar.obj : qcommon/cvar.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/cvar.obj" qcommon/cvar.cpp
+
+Release/obj-win32/q2stat/entdelta.obj : qcommon/entdelta.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/entdelta.obj" qcommon/entdelta.cpp
+
+Release/obj-win32/dedstat/entdelta.obj : qcommon/entdelta.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/entdelta.obj" qcommon/entdelta.cpp
+
+Release/obj-win32/q2stat/msg.obj : qcommon/msg.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/msg.obj" qcommon/msg.cpp
+
+Release/obj-win32/dedstat/msg.obj : qcommon/msg.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/msg.obj" qcommon/msg.cpp
+
+Release/obj-win32/q2stat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/net_chan.obj" qcommon/net_chan.cpp
+
+Release/obj-win32/dedstat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/net_chan.obj" qcommon/net_chan.cpp
+
+Release/obj-win32/q2stat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/pmove.obj" qcommon/pmove.cpp
+
+Release/obj-win32/dedstat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/pmove.obj" qcommon/pmove.cpp
+
+Release/obj-win32/dedstat/sv_dedicated.obj : server/sv_dedicated.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_dedicated.obj" server/sv_dedicated.cpp
+
+Release/obj-win32/q2stat/sv_tokenize.obj : server/sv_tokenize.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_tokenize.obj" server/sv_tokenize.cpp
+
+Release/obj-win32/dedstat/sv_tokenize.obj : server/sv_tokenize.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_tokenize.obj" server/sv_tokenize.cpp
+
+Release/obj-win32/q2stat/net_wins.obj : win32/net_wins.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/net_wins.obj" win32/net_wins.cpp
+
+Release/obj-win32/dedstat/net_wins.obj : win32/net_wins.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/net_wins.obj" win32/net_wins.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	qcommon/q_shared2.h
+
+Release/obj-win32/q2stat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/q_shared2.obj" qcommon/q_shared2.cpp
+
+Release/obj-win32/dedstat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/q_shared2.obj" qcommon/q_shared2.cpp
+
+DEPENDS = \
+	resource/archive.res
+
+Release/obj-win32/q2stat/makeres.obj : resource/makeres.asm $(DEPENDS)
+	nasm.exe -f win32 -i resource/ -o "Release/obj-win32/q2stat/makeres.obj" resource/makeres.asm
+
+Release/obj-win32/dedstat/makeres.obj : resource/makeres.asm $(DEPENDS)
+	nasm.exe -f win32 -i resource/ -o "Release/obj-win32/dedstat/makeres.obj" resource/makeres.asm
+
+#------------------------------------------------------------------------------
+#	creating output directories
+#------------------------------------------------------------------------------
+
+DIRS :
+	if not exist "Release/obj-win32/CoreStatic" mkdir "Release/obj-win32/CoreStatic"
+	if not exist "Release/obj-win32/q2stat" mkdir "Release/obj-win32/q2stat"
+	if not exist "Release/obj-win32/dedstat" mkdir "Release/obj-win32/dedstat"
+	if not exist "Release/obj-win32/TestApp" mkdir "Release/obj-win32/TestApp"
+

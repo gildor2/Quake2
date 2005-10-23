@@ -1,0 +1,285 @@
+GCC options:
+ -c					compile, but don't link
+ -o outfile			place output to outfile
+ -pipe					use pipes to communicate between GCC stages
+ -fms-extensions		allow some MS extensions for .h files
+ -fno-enforce-eh-specs Don't check for violation of exception specifications at runtime. This option violates
+						the C++ standard, but may be useful for reducing code size in production builds, much like
+						defining `NDEBUG'. The compiler will still optimize based on the exception specifications.
+ -ffor-scope
+ -fno-for-scope		If `-ffor-scope' is specified, the scope of variables declared in a for-init-statement is
+						limited to the `for' loop itself, as specified by the C++ standard. Default: -ffor-scope +
+						allow -fno-for-scope with displaying warnings
+ -fno-rtti				Disable generation of RTTI about every class with virtual functions.
+ -b machine			The argument machine specifies the target machine for compilation.
+ -V version			The argument version specifies which version of GCC to run. This is useful when multiple versions
+						are installed. For example, version might be `2.0', meaning to run GCC version 2.0.
+
+
+GCC warning control (additional warnings):
+ -Wabi (C++ only)		Warn when G++ generates code that is probably not compatible with the vendor-neutral C++ ABI.
+ -Wnon-virtual-dtor		Warn when a class appears to be polymorphic, thereby requiring a virtual destructor, yet it
+						declares a non-virtual one. This warning is enabled by `-Wall'.
+ -Weffc++				Warn about violations of the some style guidelines from Scott Meyers' Effective C++ book.
+ -Wold-style-cast		Warn if an old-style (C-style) cast to a non-void type is used within a C++ program.
+ -Woverloaded-virtual	Warn when a function declaration hides virtual functions from a base class.
+ -w						Inhibit all warning messages.
+ -Wformat				Check calls to printf and scanf, etc., to make sure that the arguments supplied have types
+						appropriate to the format string specified, and that the conversions specified in the format
+						string make sense.
+ -Wno-format-extra-args If `-Wformat' is specified, do not warn about excess arguments to a printf or scanf format
+						function. The C standard specifies that such arguments are ignored.
+ -Wimplicit				Same as `-Wimplicit-int' and `-Wimplicit-function-declaration'. (no return type + no prototype)
+ -Wparentheses			Warn if parentheses are omitted in certain contexts, such as when there is an assignment in
+						a context where a truth value is expected, or when operators are nested whose precedence
+						people often get confused about.
+ -Wsequence-point		Warn about code that may have undefined semantics because of violations of sequence point
+						rules in the C standard.
+ -Wreturn-type			Warn whenever a function is defined with a return-type that defaults to int. Also warn about
+						any return statement with no return-value in a function whose return-type is not void.
+						For C++, a function without return type always produces a diagnostic message, even when
+						`-Wno-return-type' is specified. The only exceptions are `main' and functions defined in system
+						headers.
+ -Wswitch				Warn whenever a switch statement has an index of enumerated type and lacks a case for one or
+						more of the named codes of that enumeration. (The presence of a default label prevents this
+						warning.) case labels outside the enumeration range also provoke warnings when this option is used.
+ -Wunused-function		Warn whenever a static function is declared but not defined or a non\-inline static function
+						is unused.
+ -Wunused-label			Warn whenever a label is declared but not used.
+ -Wunused-parameter		Warn whenever a function parameter is unused aside from its declaration.
+ -Wunused-variable		Warn whenever a local variable or non-constant static variable is unused aside from its declaration
+ -Wunused-value			Warn whenever a statement computes a result that is explicitly not used. To suppress this warning
+						cast the expression to `void'.
+ -Wunused				All the above `-Wunused' options combined. In order to get a warning about an unused function
+						parameter, you must either specify `-Wextra -Wunused' (note that `-Wall' implies `-Wunused'), or
+						separately specify `-Wunused-parameter'.
+ -Wuninitialized		Warn if an automatic variable is used without first being initialized or if a variable may be
+						clobbered by a setjmp call.
+ -Wunknown-pragmas		Warn when a #pragma directive is encountered which is not understood by GCC
+ -Wall					All of the above `-W' options combined.
+ Warnings, not turned ON with -Wall:
+ -Wextra				(This option used to be called `-W'. The older name is still supported, but the newer name is
+						more descriptive.) Print extra warning messages for some other events (see GCC doc for details).
+ -Wshadow				Warn whenever a local variable shadows another local variable, parameter or global variable or
+						whenever a built-in function is shadowed.
+ -Wlarger-than-len		Warn whenever an object of larger than len bytes is defined.
+ -Wmissing-noreturn		Warn about functions which might be candidates for attribute noreturn.
+ -Wmissing-format-attribute If `-Wformat' is enabled, also warn about functions which might be candidates for format
+						attributes
+ -Wpacked				Warn if a structure is given the packed attribute, but the packed attribute has no effect on
+						the layout or size of the structure.
+ -Wredundant-decls		Warn if anything is declared more than once in the same scope, even in cases where multiple
+						declaration is valid and changes nothing.
+ -Wunreachable-code		Warn if the compiler detects that code will never be executed.
+ -Winline				Warn if a function can not be inlined and it was declared as inline. Even with this option,
+						the compiler will not warn about failures to inline functions declared in system headers.
+ -Wlong-long			Warn if `long long' type is used. This is default. To inhibit the warning messages, use
+						`-Wno-long-long'. Flags `-Wlong-long' and `-Wno-long-long' are taken into account only when
+						`-pedantic' flag is used.
+
+
+GCC debugging options:
+ -fdump-class-hierarchy (C++ only) Dump a representation of each class's hierarchy and virtual function table layout
+						to a file. The file name is made by appending `.class' to the source file name.
+
+
+GCC optimization control:
+ -O0					Do not optimize. This is the default.
+ -O == -O1				Optimize. Optimizing compilation takes somewhat more time, and a lot more memory for a large
+						function. With `-O', the compiler tries to reduce code size and execution time, without
+						performing any optimizations that take a great deal of compilation time.
+ -O2, -O3				optimize more ...
+ -Os					Optimize for size. `-Os' enables all `-O2' optimizations that do not typically increase code
+						size. It also performs further optimizations designed to reduce code size.
+ -fno-default-inline	Do not assume `inline' for functions defined inside a class scope.
+ -fno-defer-pop		Always pop the arguments to each function call as soon as that function returns. For machines
+						which must pop arguments after a function call, the compiler normally lets arguments accumulate
+						on the stack for several function calls and pops them all at once. Disabled at levels `-O',
+						`-O2', `-O3', `-Os'.
+ -fomit-frame-pointer	Don't keep the frame pointer in a register for functions that don't need one. This avoids the
+						instructions to save, set up and restore frame pointers; it also makes an extra register
+						available in many functions. It also makes debugging impossible on some machines.
+ -foptimize-sibling-calls Optimize sibling and tail recursive calls. Enabled at levels `-O2', `-O3', `-Os'.
+ -finline-functions	Integrate all simple functions into their callers. The compiler heuristically decides which
+						functions are simple enough to be worth integrating in this way. If all calls to a given function
+						are integrated, and the function is declared static, then the function is normally not output as
+						assembler code in its own right. Enabled at level `-O3'.
+ -finline-limit=n		By default, GCC limits the size of functions that can be inlined. This flag allows the control
+						of this limit for functions that are explicitly marked as inline (i.e., marked with the inline
+						keyword or defined within the class definition in c++). n is the size of functions that can be
+						inlined in number of pseudo instructions (not counting parameter handling). The default value
+						of n is 600.
+ -fkeep-static-consts	Emit variables declared static const when optimization isn't turned on, even if the variables
+						aren't referenced. GCC enables this option by default. If you want to force the compiler to
+						check if the variable was referenced, regardless of whether or not optimization is turned on,
+						use the `-fno-keep-static-consts' option.
+ -ffunction-sections
+ -fdata-sections		Place each function or data item into its own section in the output file if the target supports
+						arbitrary sections. The name of the function or the name of the data item determines the
+						section's name in the output file.
+
+
+GCC preprocessor options:
+ -D name				Predefine name as a macro, with definition 1.
+ -D name=definition	Predefine name as a macro, with definition definition. The contents of definition are tokenized
+						and processed as if they appeared during translation phase three in a `#define' directive. In
+						particular, the definition will be truncated by embedded newline characters.
+ -U name				Cancel any previous definition of name, either built in or provided with a `-D' option.
+ -I dir				Add the directory dir to the list of directories to be searched for header files. Directories
+						named by `-I' are searched before the standard system include directories.
+ -Wundef				Warn whenever an identifier which is not a macro is encountered in an `#if' directive, outside
+						of `defined'. Such identifiers are replaced with zero.
+ -I-					Split the include path. Any directories specified with `-I' options before `-I-' are searched
+						only for headers requested with #include "file"; they are not searched for #include <file>.
+						If additional directories are specified with `-I' options after the `-I-', those directories
+						are searched for all `#include' directives. In addition, `-I-' inhibits the use of the directory
+						of the current file directory as the first search directory for #include "file".
+ -include file			Process file as if #include "file" appeared as the first line of the primary source file.
+ -idirafter dir		Search dir for header files, but do it after all directories specified with `-I' and the standard
+						system directories have been exhausted. dir is treated as a system include directory.
+ -ftabstop=width		Set the distance between tab stops. This helps the preprocessor report correct column numbers in
+						warnings or errors, even if tabs appear on the line. If the value is less than 1 or greater than
+						100, the option is ignored. The default is 8.
+ -fno-show-column		Do not print column numbers in diagnostics.
+
+
+GCC Intel 386 and AMD x86-64 Options:
+ -march=cpu-type		choose CPU type; values: i386, i486, i586==pentium, pentium-mmx, i686==pentiumpro, pentium2,
+						pentium3==pentium3m, pentium-m, pentium4==pentium4m, ..., k6, k6-2, k6-3, athlon==athlon-tbird,
+						athlon-4==athlon-xp==athlon-mp, k8==opteron==athlon64==athlon-fx
+ -mtune=cpu-type		Tune to cpu-type everything applicable about the generated code, except for the ABI and the set
+						of available instructions.
+ -fpmath=unit			Generate floating point arithmetics for selected unit unit. The choices for unit are:
+						387, sse (enabled by default for x86-64), `sse,387' (attempt to utilize both instruction sets at
+						once)
+ -mmmx,-mno-mmx,-msse,-mno-sse,-msse2
+ -mno-sse2,-msse3,-mno-sse3,-m3dnow,-mno-3dnow
+						These switches enable or disable the use of built-in functions that allow direct access to the
+						MMX, SSE, SSE2, SSE3 and 3Dnow extensions of the instruction set. To have SSE/SSE2 instructions
+						generated automatically from floating-point code, see `-mfpmath=sse'.
+ -mthreads				Support thread-safe exception handling on `Mingw32'. Code that relies on thread-safe exception
+						handling must compile and link all code with the `-mthreads' option. When compiling, `-mthreads'
+						defines `-D_MT'; when linking, it links in a special thread helper library `-lmingwthrd' which
+						cleans up per thread exception handling data.
+ -mno-align-stringops	Do not align destination of inlined string operations. This switch reduces code size and improves
+						performance in case the destination is already aligned, but GCC doesn't know about it.
+ -minline-all-stringops By default GCC inlines string operations only when destination is known to be aligned at least
+						to 4 byte boundary. This enables more inlining, increase code size, but may improve performance
+						of code that depends on fast memcpy, strlen and memset for short lengths.
+ -momit-leaf-frame-pointer Don't keep the frame pointer in a register for leaf functions. This avoids the instructions
+						to save, set up and restore frame pointers and makes an extra register available in leaf functions.
+						The option `-fomit-frame-pointer' removes the frame pointer for all functions which might make
+						debugging harder.
+
+
+LD options: ld -o output objfiles... [options]
+ -larchive
+ --library=archive		Add archive file archive to the list of files to link. This option may be used any number of times.
+						ld will search its path-list for occurrences of libarchive.a for every archive specified. On
+						systems which support shared libraries, ld may also search for libraries with extensions other
+						than .a. Specifically, on ELF and SunOS systems, ld will search a directory for a library with
+						an extension of .so before searching for one with an extension of .a. By convention, a .so
+						extension indicates a shared library.
+ -M, --print-map		Print a link map to the standard output.
+ -Map mapfile			Print a link map to the file mapfile. See the description of the `-M' option, above.
+ -o output
+ --output=output		Use output as the name for the program produced by ld; if this option is not specified, the
+						name `a.out' is used by default. The script command OUTPUT can also specify the output file name.
+ -O level				If level is a numeric values greater than zero ld optimizes the output. This might take
+						significantly longer and therefore probably should only be enabled for the final binary.
+ -s,--strip-all		Omit all symbol information from the output file.
+ -S,--strip-debug		Omit debugger symbol information (but not all symbols) from the output file.
+ -Bdynamic,-dy,-call_shared Link against dynamic libraries. This is only meaningful on platforms for which shared
+						libraries are supported. This option is normally the default on such platforms. The different
+						variants of this option are for compatibility with various systems. You may use this option
+						multiple times on the command line: it affects library searching for `-l' options which follow it.
+ -Bstatic,-dn,-non_shared,-static Do not link against shared libraries. This is only meaningful on platforms for which
+						shared libraries are supported. The different variants of this option are for compatibility
+						with various systems. You may use this option multiple times on the command line: it affects
+						library searching for `-l' options which follow it. This option also implies
+						`--unresolved-symbols=report-all'.
+ -shared,-Bshareable	Create a shared library. This is currently only supported on ELF, XCOFF and SunOS platforms.
+						On SunOS, the linker will automatically create a shared library if the `-e' option is not used
+						and there are undefined symbols in the link.
+ --demangle[=style]
+ --no-demangle			These options control whether to demangle symbol names in error messages and other output. When
+						the linker is told to demangle, it tries to present symbol names in a readable fashion: it
+						strips leading underscores if they are used by the object file format, and converts C++ mangled
+						symbol names into user readable names. Different compilers have different mangling styles. The
+						optional demangling style argument can be used to choose an appropriate demangling style for
+						your compiler. The linker will demangle by default unless the environment variable
+						`COLLECT_NO_DEMANGLE' is set. These options may be used to override the default.
+ --force-exe-suffix	Make sure that an output file has a .exe suffix. If a successfully built fully linked output file
+						does not have a .exe or .dll suffix, this option forces the linker to copy the output file to
+						one of the same name with a .exe suffix. This option is useful when using unmodified Unix
+						makefiles on a Microsoft Windows host, since some versions of Windows won't run an image unless
+						it ends in a .exe suffix.
+ -nostdlib				Only search library directories explicitly specified on the command line. Library directories
+						specified in linker scripts (including linker scripts specified on the command line) are ignored.
+ --warn-common			Warn when a common symbol is combined with another common symbol or with a symbol definition.
+						Unix linkers allow this somewhat sloppy practise, but linkers on some other operating systems
+						do not. This option allows you to find potential problems from combining global symbols.
+						Unfortunately, some C libraries use this practise, so you may get some warnings about symbols
+						in the libraries as well as in your programs.
+ --warn-once			Only warn once for each undefined symbol, rather than once per module which refers to it.
+ --wrap symbol			Use a wrapper function for symbol. Any undefined reference to symbol will be resolved to
+						__wrap_symbol. Any undefined reference to __real_symbol will be resolved to symbol. This can be
+						used to provide a wrapper for a system function. The wrapper function should be called
+						__wrap_symbol. If it wishes to call the system function, it should call __real_symbol.
+LD options for i386 win32 PE targets:
+ --dll					Create a DLL instead of a regular executable. You may also use `-shared' or specify a LIBRARY
+						in a given .def file.
+ --export-all-symbols	If given, all global symbols in the objects used to build a DLL will be exported by the DLL.
+						Note that this is the default if there otherwise wouldn't be any exported symbols. When symbols
+						are explicitly exported via DEF files or implicitly exported via function attributes, the default
+						is to not export anything else unless this option is given.
+ --exclude-symbols symbol,symbol,...
+						Specifies a list of symbols which should not be automatically exported. The symbol names may be
+						delimited by commas or colons.
+ --exclude-libs lib,lib,...
+						Specifies a list of archive libraries from which symbols should not be automatically exported.
+						The library names may be delimited by commas or colons. Specifying --exclude-libs ALL excludes
+						symbols in all archive libraries from automatic export. Symbols explicitly listed in a .def file
+						are still exported, regardless of this option.
+ --heap reserve
+ --heap reserve,commit	Specify the amount of memory to reserve (and optionally commit) to be used as heap for this
+						program. The default is 1Mb reserved, 4K committed.
+ --stack reserve
+ --stack reserve,commit Specify the amount of memory to reserve (and optionally commit) to be used as stack for this
+						program. The default is 2Mb reserved, 4K committed.
+ --image-base value	Use value as the base address of your program or dll. This is the lowest memory location that
+						will be used when your program or dll is loaded. To reduce the need to relocate and improve
+						performance of your dlls, each should have a unique base address and not overlap any other dlls.
+						The default is 0x400000 for executables, and 0x10000000 for dlls
+ --output-def file		The linker will create the file file which will contain a DEF file corresponding to the DLL
+						the linker is generating.
+ --out-implib file		The linker will create the file file which will contain an import lib corresponding to the DLL
+						the linker is generating. This import lib (which should be called *.dll.a or *.a may be used to
+						link clients against the generated DLL; this behaviour makes it possible to skip a separate
+						dlltool import library creation step.
+
+
+Linker options, when using GCC instead of LD:
+ -llibrary
+ -l library			Search the library named library when linking. (The second alternative with the library as a
+						separate argument is only for POSIX compliance and is not recommended.)
+ -Ldir					Add directory dir to the list of directories to be searched for `-l'.
+ -nostartfiles			Do not use the standard system startup files when linking. The standard system libraries are
+						used normally, unless `-nostdlib' or `-nodefaultlibs' is used.
+ -nodefaultlibs		Do not use the standard system libraries when linking. Only the libraries you specify will be
+						passed to the linker. The standard startup files are used normally, unless `-nostartfiles' is used.
+ -nostdlib				Do not use the standard system startup files or libraries when linking. No startup files and only
+						the libraries you specify will be passed to the linker.
+ -s					Remove all symbol table and relocation information from the executable.
+ -static				On systems that support dynamic linking, this prevents linking with the shared libraries. On
+						other systems, this option has no effect.
+ -shared				Produce a shared object which can then be linked with other objects to form an executable. Not
+						all systems support this option. For predictable results, you must also specify the same set of
+						options that were used to generate code (`-fpic', `-fPIC', or model suboptions) when you specify
+						this option.
+ -shared-libgcc
+ -static-libgcc		On systems that provide `libgcc' as a shared library, these options force the use of either the
+						shared or static version respectively. If no shared version of `libgcc' was built when the
+						compiler was configured, these options have no effect.
+ -Wl,option			Pass option as an option to the linker. If option contains commas, it is split into multiple
+						options at the commas.

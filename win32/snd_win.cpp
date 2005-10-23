@@ -18,11 +18,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-//#define WAVEOUT_DRV -- not works anyway
+//#define WAVEOUT_DRV	1	-- not works anyway
 
 #include "WinPrivate.h"
 #include <mmsystem.h>		// required for dsound.h and for WAVEOUT_DRV
+
+// declaration required for new dsound.h header, used from VC6
+typedef unsigned long DWORD_PTR, *PDWORD_PTR;
 #include <dsound.h>
+
 #include "../client/client.h"
 #include "../client/snd_loc.h"
 
@@ -40,12 +44,11 @@ static bool	primary_format_set;
 // starts at 0 for disabled
 static int	snd_buffer_count = 0;
 static int	sample16;
-static int	snd_sent, snd_completed;
 
 
 //-------------- WaveOut ---------------------
 
-#ifdef WAVEOUT_DRV
+#if WAVEOUT_DRV
 
 static bool			snd_iswave;
 static cvar_t		*s_wavonly;
@@ -55,6 +58,8 @@ static LPWAVEHDR	lpWaveHdr;
 
 static HWAVEOUT		hWaveOut;
 static WAVEOUTCAPS	wavecaps;
+
+static int	snd_sent, snd_completed;
 
 #endif
 
@@ -74,8 +79,8 @@ static DWORD	gSndBufSize;
 static MMTIME	mmstarttime;
 
 
-
-void FreeSound ();
+// forwards
+static void FreeSound ();
 
 static const char *DSoundError (int error)
 {
@@ -94,9 +99,7 @@ static const char *DSoundError (int error)
 	return "unknown";
 }
 
-/*
-** DS_CreateBuffers
-*/
+
 static bool DS_CreateBuffers ()
 {
 	DSBUFFERDESC	dsbuf;
@@ -248,9 +251,7 @@ static bool DS_CreateBuffers ()
 	return true;
 }
 
-/*
-** DS_DestroyBuffers
-*/
+
 static void DS_DestroyBuffers ()
 {
 	Com_DPrintf ("Destroying DS buffers\n");
@@ -279,11 +280,7 @@ static void DS_DestroyBuffers ()
 	dma.buffer = NULL;
 }
 
-/*
-==================
-FreeSound
-==================
-*/
+
 static void FreeSound ()
 {
 	appPrintf ("Shutting down sound system\n");
@@ -291,7 +288,7 @@ static void FreeSound ()
 	if (pDS)
 		DS_DestroyBuffers ();
 
-#ifdef WAVEOUT_DRV
+#if WAVEOUT_DRV
 	if (hWaveOut)
 	{
 		Com_DPrintf ("...resetting waveOut\n");
@@ -327,15 +324,15 @@ static void FreeSound ()
 		hInstDS = NULL;
 	}
 
-	pDS = NULL;
-	pDSBuf = NULL;
-	pDSPBuf = NULL;
+	pDS         = NULL;
+	pDSBuf      = NULL;
+	pDSPBuf     = NULL;
 	dsound_init = false;
-#ifdef WAVEOUT_DRV
-	hWaveOut = 0;
-	lpData = NULL;
+#if WAVEOUT_DRV
+	hWaveOut  = 0;
+	lpData    = NULL;
 	lpWaveHdr = NULL;
-	wav_init = false;
+	wav_init  = false;
 #endif
 }
 
@@ -436,7 +433,7 @@ static bool SNDDMA_InitDirect ()
 }
 
 
-#ifdef WAVEOUT_DRV
+#if WAVEOUT_DRV
 /*
 ==================
 SNDDM_InitWav
@@ -546,14 +543,14 @@ bool SNDDMA_Init ()
 {
 	memset ((void *)&dma, 0, sizeof (dma));
 
-#ifdef WAVEOUT_DRV
+#if WAVEOUT_DRV
 	s_wavonly = Cvar_Get ("s_wavonly", "0");
 #endif
 
 	dsound_init = wav_init = 0;
 
 	/*-------- Init DirectSound ----------*/
-#ifdef WAVEOUT_DRV
+#if WAVEOUT_DRV
 	if (!s_wavonly->integer)
 #endif
 	{
@@ -574,7 +571,7 @@ bool SNDDMA_Init ()
 		}
 	}
 
-#ifdef WAVEOUT_DRV
+#if WAVEOUT_DRV
 	// if DirectSound didn't succeed in initializing, try to initialize
 	// waveOut sound, unless DirectSound failed because the hardware is
 	// already allocated (in which case the user has already chosen not
@@ -600,7 +597,7 @@ bool SNDDMA_Init ()
 
 	snd_buffer_count = 1;
 
-#ifdef WAVEOUT_DRV
+#if WAVEOUT_DRV
 	if (!dsound_init && !wav_init)
 #else
 	if (!dsound_init)
@@ -637,7 +634,7 @@ int SNDDMA_GetDMAPos ()
 		pDSBuf->GetCurrentPosition (&mmtime.u.sample, &dwWrite);
 		s = mmtime.u.sample - mmstarttime.u.sample;
 	}
-#ifdef WAVEOUT_DRV
+#if WAVEOUT_DRV
 	else if (wav_init)
 	{
 		s = snd_sent * WAV_BUFFER_SIZE;
@@ -721,7 +718,7 @@ void SNDDMA_Submit ()
 	if (pDSBuf)
 		pDSBuf->Unlock (dma.buffer, locksize, NULL, 0);
 
-#ifdef WAVEOUT_DRV
+#if WAVEOUT_DRV
 	if (!wav_init)
 		return;
 

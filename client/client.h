@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //=============================================================================
 
-//#define GUN_DEBUG				// uncomment to enable gun_xxx debugging commands
+//#define GUN_DEBUG		1		// uncomment to enable gun_xxx debugging commands
 
 struct frame_t					//?? rename
 {
@@ -267,7 +267,7 @@ void CL_ParseFrame ();
 //
 // cl_main.cpp
 //
-void CL_Init ();
+//void CL_Init (); -- declared in qcommon.h -- init from Com_Init()
 
 void CL_Pause (bool enable);
 void CL_Disconnect ();
@@ -302,7 +302,7 @@ void CL_UpdatePlayerClientInfo ();
 // cl_view.cpp
 //
 extern CBasicImage *railSpiralShader, *railRingsShader, *railBeamShader;
-#ifdef GUN_DEBUG
+#if GUN_DEBUG
 extern int gun_frame;
 extern CRenderModel *gun_model;
 #endif

@@ -1,5 +1,9 @@
 #!/usr/bin/perl -w
 
+# TODO:
+# COMPILER: WatcomC, IntelC
+# CPU specification (+ MMX/SSE etc)
+
 =documentation
 
 FILE FORMAT
@@ -23,7 +27,11 @@ word word word \
 
 !undef var
 !message text
+!dumpvars
 !error text
+
+WARNING: there is a side effect in (perl-expression): this expression can use vars
+	from this (genmake) program (i.e. not defined inside processed script)
 
 2. Variables (bash-like), expressions:
 
@@ -37,19 +45,25 @@ defined(var)         will be replaced with 0 or 1
 
 3. System variables:
 
+platform specification:
+	PLATFORM	= win32 | cygwin | unix
+	COMPILER	= VisualC | GnuC
+	TARGET		= vc-win32 | mingw32 | cygwin | linux
+		When specified TARGET, PLATFORM and COMPILER not needed
+
 global:
-	COMPILER	= VisualC | other
 	MAPFILES	= 1 | 0 == undef
 	PDB			= 1 | 0 == undef (VisualC only)
-	STDLIBS		= list of used libraries
+	STDLIBS		= list of used libraries (for "GNU Make" will append "lib" and will search in paths)
 	LIBRARIES   = path to additional library files
-	LIBC		= static | dynamic == undef
+	LIBC		= static | dynamic == undef (note: mingw32 and cygwin targets have no such capabilities)
 	ALLOW_MISSING_INCLUDES = 1 | 0		when #include "filename" will fail, warning will be generated instead of error
 
 per-target:
-//	CONSOLE		= 1 | 0 == undef		useless for Visual C++ - automatically detected by presence of main() or WinMain()
+	CONSOLE		= 1 | 0 == undef		useless for Visual C++ - automatically detected by presence of main() or WinMain(),
+										but used for Mingw32
 	IMAGEBASE	= base address of executable image
-	LIBS		= list of used libraries
+	LIBS		= list of used libraries (exact name, will not search in paths)
 	IMPLIB		= filename				set filename of import library for "dynamic" target type; if not specified -
 										- will not be created
 
@@ -57,7 +71,7 @@ at a time of registration of source files
 	DEFINES
 	INCLUDES
 	OBJDIR		= directory for obj files (if not specified, obj files will be placed near c/cpp files)
-	WARNLEVEL	= num					compiler warning level
+	WARNLEVEL	= num					compiler warning level (0 - disable; 1 - max; 2+ - less)
 	OPTIMIZE	= size | speed
 	INLINES		= no | explicit | all	expanding inlines: disabled | explicit only | any suitable
 	OPTIONS		= string				compiler-dependent: extra options for command line
@@ -142,7 +156,7 @@ sub Splitter {
 #------------------------------------------------------------------------------
 
 @includes = ();
-%vars = ();
+%vars     = ();
 
 
 sub ExpandVars {
@@ -188,7 +202,7 @@ sub getline0 {
 		# line may be continued with "\"
 		if ($line =~ /.*\\\s*$/) {
 			my ($line2) = $line =~ /\s*(\S+|\S+.*\S+)\s*\\\s*$/;	# remove "\" at end of line and leading/trailing spaces
-			$line1 .= $line2." " if defined $line2;
+			$line1 .= "$line2 " if defined $line2;
 		} else {
 			$line = $line1.$line;
 			# remove leading and trailing spaces (again)
@@ -206,9 +220,9 @@ sub getline0 {
 }
 
 
-$nestedIf = 0;				# number of nested #if's with enabled input
+$nestedIf  = 0;				# number of nested #if's with enabled input
 $nestedIf0 = 0;				# number of nested #if's with disabled input
-$enabled = 1;				# 0 - disabled, 1 - enabled, 2 - waiting "endif" (disabled + ignore "else")
+$enabled   = 1;				# 0 - disabled, 1 - enabled, 2 - waiting "endif" (disabled + ignore "else")
 
 # usage: CheckCondition(cond, expression) -- cond = ""|"def"|"ndef" etc
 sub CheckCondition {
@@ -299,6 +313,10 @@ sub getline {
 					delete $vars{$args};
 				} elsif ($cmd eq "message") {
 					print (STDERR ExpandVars($args)."\n");
+				} elsif ($cmd eq "dumpvars") {
+					for my $key (keys(%vars)) {
+						print (STDERR "var:$key = $vars{$key}\n");
+					}
 				} elsif ($cmd eq "error") {
 					Error (ExpandVars($args));
 				} else {
@@ -328,22 +346,100 @@ sub getline {
 #------------------------------------------------------------------------------
 
 sub InitCompiler {
-	$COMPILER = $vars{"COMPILER"};		# global var
-	Error ("COMPILER is not set") if !defined($COMPILER);
+	# retreive global target configuration
+	$COMPILER = $vars{"COMPILER"};
+	$TARGET   = $vars{"TARGET"};
+	$PLATFORM = $vars{"PLATFORM"};
+
+	# process partial definitions
+	if (defined($TARGET)) {
+		# force COMPILER/PLATFORM
+		if ($TARGET eq "vc-win32") {
+			$COMPILER = "VisualC";
+			$PLATFORM = "win32";
+		} elsif ($TARGET eq "mingw32") {
+			$COMPILER = "GnuC";
+			$PLATFORM = "win32";
+		} elsif ($TARGET eq "cygwin") {
+			$COMPILER = "GnuC";
+			$PLATFORM = "cygwin";
+		} elsif ($TARGET eq "linux") {
+			$COMPILER = "GnuC";
+			$PLATFORM = "unix";
+		} else {
+			Error ("Unknown TARGET: \"$TARGET\"");
+		}
+	} elsif (defined($COMPILER)) {
+		if (defined($PLATFORM)) {
+			#!! let COMPILER+PLATFORM to be specified from cmdline at the same time (no COMPILER=>PLATFORM overrides)
+			Warning ("COMPILER and PLATFORM are both set; PLATFORM overrided\n");
+		}
+		# defaults for COMPILER
+		if ($COMPILER eq "VisualC") {
+			$PLATFORM = "win32";
+		} elsif ($COMPILER eq "GnuC") {
+			$PLATFORM = "unix";
+		} else {
+			Error ("Unknown COMPILER: \"$COMPILER\"");
+		}
+	} elsif (defined($PLATFORM)) {
+		# defaults for PLATFORM
+		if ($PLATFORM eq "win32") {
+			$COMPILER = "VisualC";
+		} elsif ($PLATFORM eq "cygwin") {
+			$COMPILER = "GnuC";
+		} elsif ($PLATFORM eq "unix") {
+			$COMPILER = "GnuC";
+		} else {
+			Error ("Unknown PLATFORM: \"$PLATFORM\"");
+		}
+	} else {
+		Error ("COMPILER/PLATFORM/TARGET is not set");
+	}
+
+	# update @vars hash to allow usage of vars from script
+	$vars{"COMPILER"} = $COMPILER;
+#	$vars{"TARGET"}   = $TARGET;		-- not modified
+	$vars{"PLATFORM"} = $PLATFORM;
+
+	# compiler definitions
 	if ($COMPILER eq "VisualC") {
 		$ObjFileExt = ".obj";
 		$LibFileExt = ".lib";
+	} elsif ($COMPILER eq "GnuC") {
+		$ObjFileExt = ".o";
+		$LibFileExt = ".a";
+	}
+	if ($PLATFORM eq "unix") {
+		$ExeFileExt = "";
+		$DllFileExt = ".so";
+	} elsif ($PLATFORM eq "win32" || $PLATFORM eq "cygwin") {
 		$ExeFileExt = ".exe";
 		$DllFileExt = ".dll";
-#	} elsif ($COMPILER eq "GnuC") {
-#		$ObjFileExt = ".o";
-#		$LibFileExt = ".a";		#?
-#		$ExeFileExt = "";
-#		$DllFileExt = ".so";
-	} else {
-		Error ("unknown compiler: \"$COMPILER\"");
 	}
 }
+
+
+sub EmitCompilerDefs {
+	Splitter ("Compiler definitions");
+	if ($COMPILER eq "VisualC") {
+		print "CPP  = cl.exe -nologo -c -D WIN32 -D _WINDOWS\n";
+		print "LINK = link.exe -nologo -filealign:512 -incremental:no\n";
+		print "AR   = link.exe -lib -nologo\n";		# cannot use "LIB" name
+	} elsif ($COMPILER eq "GnuC") {
+		my $platf = "gcc";
+		if ($PLATFORM eq "win32") {
+			# mingw32
+			$platf .= " -mno-cygwin";
+		}
+		#?? test -pipe under Win9X and Linux (cygwin/winxp - ok)
+		print "CPP  = $platf -pipe -c\n";
+		print "LINK = $platf -pipe -s\n";
+		print "AR   = ar\n";		#?? some "ar" flags
+	}
+	print "\n";
+}
+
 
 #------------------------------------------------------------------------------
 #	Source/object file list
@@ -364,21 +460,19 @@ sub GetSrcOption {
 # usage: AddObjectList (list_name, objects)
 sub AddObjectList {
 	my ($listName, $objs) = @_;
-	my $defines = GetSrcOption ("DEFINES");
+	my $defines  = GetSrcOption ("DEFINES");
 	my $includes = GetSrcOption ("INCLUDES");
-	my $objdir = GetSrcOption ("OBJDIR");
-
-	InitCompiler ();
+	my $objdir   = GetSrcOption ("OBJDIR");
 
 	# add objects
 	ADD: for my $src (split (' ', $objs)) {
 		# get options
 		my $options = GetSrcOption ("OPTIONS");
-		$options = " ".$options if $options ne "";
+		$options = " $options" if $options ne "";
 		if ($COMPILER eq "VisualC") {
 			my $opt = GetSrcOption ("WARNLEVEL");
 			# warning level
-			$options .= " -W".$vars{"WARNLEVEL"} if $opt ne "";
+			$options .= " -W$opt" if $opt ne "";
 			# optimization strategy
 			$opt = GetSrcOption ("OPTIMIZE");
 			if ($opt eq "size") {
@@ -389,7 +483,6 @@ sub AddObjectList {
 				Warning ("unknown OPTIMIZE option: [$opt]");
 			}
 			# inline expansion
-			#!!!! NOTE: can implement this with hashes (for any-compiler support)
 			$opt = GetSrcOption ("INLINES");
 			if ($opt eq "no") {
 				$options .= " -Ob0";
@@ -397,6 +490,38 @@ sub AddObjectList {
 				$options .= " -Ob1";
 			} elsif ($opt eq "all") {
 				$options .= " -Ob2";
+			} elsif ($opt ne "") {
+				Warning ("unknown INLINES option: [$opt]");
+			}
+		} elsif ($COMPILER eq "GnuC") {		#!! GnuC - compiler options
+			my $opt = GetSrcOption ("WARNLEVEL");
+			# warning level: GnuC can disable warnings or enable all warnings
+			if ($opt ne "") {
+				if ($opt eq "0") {
+					$options .= " -w";				# disable warnings
+				} elsif ($opt eq "1") {
+					$options .= " -Wall -Wextra";	# max warning level
+				} else { #if ($opt eq "2")
+					$options .= " -Wall";			# all & !extra ...
+				}
+			}
+			# optimization strategy
+			$opt = GetSrcOption ("OPTIMIZE");
+			if ($opt eq "size") {
+				$options .= " -Os";
+			} elsif ($opt eq "speed") {
+				$options .= " -O3";
+			} elsif ($opt ne "") {
+				Warning ("unknown OPTIMIZE option: [$opt]");
+			}
+			# inline expansion
+			$opt = GetSrcOption ("INLINES");
+			if ($opt eq "no") {
+				$options .= " -fno-inline";
+			} elsif ($opt eq "explicit") {
+				$options .= " -finline-functions";	#??
+			} elsif ($opt eq "all") {
+				$options .= " -finline-functions";
 			} elsif ($opt ne "") {
 				Warning ("unknown INLINES option: [$opt]");
 			}
@@ -552,7 +677,7 @@ sub CollectFileDependencies {
 				$depends{$inc2} = "";
 			}
 			# remember file
-			$dep .= " ".$inc2." ";					# spaces around filename
+			$dep .= " $inc2 ";					# spaces around filename
 		}
 	}
 	close (DEP);
@@ -581,7 +706,7 @@ sub GatherDependInfo {
 			for my $dep (split (" ", $depLine)) {		# single dependant
 				for my $dep2 (split (' ', $depends{$dep})) { # check linked dependencies
 					if ($depLine !~ /\s $dep2 \s/x) {	# this file not yet in list
-						$depLine .= " ".$dep2." ";
+						$depLine .= " $dep2 ";
 						$found++;
 						$found2++;						# flag to update $depLine
 					}
@@ -600,12 +725,12 @@ sub GatherDependInfo {
 }
 
 # usage: GenerateOptions(string_with_spaces, option)
-# will return "option string1 option string2 ..."
+# will return "option string1 option string2 ..." (no spaces between option ans string!)
 sub GenerateOptions {
 	my ($str, $opt) = @_;
 	my $line = "";
 	for my $item (split (" ", $str)) {
-		$line .= " $opt $item";
+		$line .= " $opt$item";
 	}
 	return $line;
 }
@@ -614,28 +739,54 @@ sub GenerateOptions {
 # simple makefile size optimization
 $lastDepends = "";
 $lastOptions = "";
+$dependCount = 0;
+$dependVar   = "";		# current dependency variable
+$optionVar   = "";		# current options variable
+%optionNames = ();		# hash: options -> variable name
+%optionNmCt  = ();		# hash: obj list name -> num (check existence of name)
 
-# usage: FlushObjectFile (src, obj_dir, defines, includes)
+# usage: FlushObjectFile (src, obj_dir, defines, includes, list_name)
 sub FlushObjectFile {
-	my ($srcFile, $objDir, $defines, $includes, $options) = @_;
+	my ($srcFile, $objDir, $defines, $includes, $options, $objListName) = @_;
 	my $objFile = GetObjFilename ($srcFile, $objDir);
 	my ($srcType) = $srcFile =~ /\S+\.(\w+)/;
-	my ($srcDir) = $srcFile =~ /(\S+\/)[\w\.]+/;
+	my ($srcDir)  = $srcFile =~ /(\S+\/)[\w\.]+/;
 
 	# compute additional options (defines and includes)
-	$options .= GenerateOptions ($defines, "-D") if $defines ne "";
-	$options .= GenerateOptions ($includes, "-I") if $includes ne "";
+	$options .= GenerateOptions ($defines, "-D ") if $defines ne "";
+	$options .= GenerateOptions ($includes, "-I ") if $includes ne "";
 	if (($options ne "") && ($lastOptions ne $options)) {
+		# options was changed - update variable
 		$lastOptions = $options;
-		print "OPTIONS =$options\n\n";
+		if (exists($optionNames{$options})) {
+			$optionVar = $optionNames{$options};
+		} else {
+			# these options was already declared before - reuse
+			my $optionCount = 0;
+			$optionCount = $optionNmCt{$objListName} if exists($optionNmCt{$objListName});
+			$optionCount++;
+			$optionVar = "OPT_$objListName";
+			$optionVar .= "_$optionCount" if $optionCount > 1;
+			# remember options
+			$optionNames{$options}    = $optionVar;
+			$optionNmCt{$objListName} = $optionCount;
+			print "$optionVar =$options\n\n";
+		}
 	}
 
 	# flush dependency info
 	my $dep = $depends{$srcFile};
 	if (($dep ne "") && ($lastDepends ne $dep)) {
+		# dependency info was changed - update variable
 		$lastDepends = $dep;
+		$dependCount++;
+		$dependVar = "DEPENDS";
+		if ($COMPILER eq "GnuC") {
+			# Gnu MAKE utility support
+			$dependVar .= "_$dependCount";
+		}
 		# put dependency info
-		print "DEPENDS =";
+		print "$dependVar =";
 		for my $item (split (" ", $dep)) {
 			print " \\\n\t$item";
 		}
@@ -643,7 +794,7 @@ sub FlushObjectFile {
 	}
 
 	print "$objFile : $srcFile";
-	print " \$(DEPENDS)" if $dep ne "";
+	print " \$($dependVar)" if $dep ne "";
 	print "\n";
 
 	my $line = "";
@@ -653,8 +804,9 @@ sub FlushObjectFile {
 		} elsif ($srcType eq "rc") {
 			$line = "rc.exe -l 0x409 -i $srcDir -fo\"$objFile\" -dNDEBUG";
 		} else {
+			# C/C++ file
 			my $crt = GetSrcOption ("LIBC");
-			$line = "cl.exe -nologo -c -D WIN32 -D _WINDOWS";
+			$line = "\$(CPP)";
 			if ($crt eq "static") {
 				$line .= " -MT";	# static multithreaded CRT; use -ML for single-threaded ?
 			} elsif ($crt eq "dynamic" || $crt eq "") {
@@ -663,8 +815,23 @@ sub FlushObjectFile {
 				Error ("unknown LIBC type: $crt");
 			}
 			#?? VC std defines: _LIB, NDEBUG, _DEBUG
-			$line .= " \$(OPTIONS)" if $options ne "";
+			$line .= " \$($optionVar)" if $options ne "";
 			$line .= " -Fo\"$objFile\"";
+		}
+		$line .= " $srcFile";
+	} elsif ($COMPILER eq "GnuC") {	#!! GnuC - other
+		if ($srcType eq "asm") {
+			my $tgt = "elf";		#?? linux: check this
+			$tgt = "coff" if $PLATFORM eq "win32";
+			$line = "nasm -f $tgt -i $srcDir -o \"$objFile\"";
+		} elsif ($srcType eq "rc") {
+			$line .= "windres -O coff -I $srcDir -o $objFile";
+		} else {					#!! GnuC - compiler
+			# C/C++ file
+			#?? GnuC/Linux: static/shared LIBC
+			$line = "\$(CPP)";
+			$line .= " \$($optionVar)" if $options ne "";
+			$line .= " -o $objFile";
 		}
 		$line .= " $srcFile";
 	} else {
@@ -695,7 +862,7 @@ sub SetDefaultExtension {
 	for my $file (split(" ", $names)) {
 		$file .= $ext if $file !~ /[\/\w]+\.\w+/;
 		if ($line ne "") {
-			$line .= " ".$file;
+			$line .= " $file";
 		} else {
 			$line = $file;
 		}
@@ -739,13 +906,18 @@ sub RememberTarget {
 	# remember options
 	SetTargetOption ($n, "MAPFILES");
 	SetTargetOption ($n, "PDB");
-	SetTargetOption ($n, "STDLIBS", 0, $LibFileExt);
+	if ($COMPILER eq "VisualC") {
+		SetTargetOption ($n, "STDLIBS", 0, $LibFileExt);
+	} else {
+		# no lib extension
+		SetTargetOption ($n, "STDLIBS", 0);
+	}
+	SetTargetOption ($n, "LIBS", 1, $LibFileExt);
 	SetTargetOption ($n, "LIBRARIES");
 	# some options will be cleared after checking
-#	SetTargetOption ($n, "CONSOLE", 1);
+	SetTargetOption ($n, "CONSOLE",   1);
 	SetTargetOption ($n, "IMAGEBASE", 1);
-	SetTargetOption ($n, "LIBS", 1, $LibFileExt);
-	SetTargetOption ($n, "IMPLIB", 1, $LibFileExt);
+	SetTargetOption ($n, "IMPLIB",    1, $LibFileExt);
 	# remember target command
 	push @targets, join('%', $symName, $n, $type, $objListName);
 }
@@ -759,13 +931,13 @@ sub FlushTargetText {
 	# cut file extension
 	my ($shortOutName) = $n =~ /^([^\s\.]+)(\.\w+)?$/;
 	# get used libraries
-	my $libs = GetTargetOption ($n, "LIBS");
-	my $stdlibs = GetTargetOption ($n, "STDLIBS");
-	my $libpath = GetTargetOption ($n, "LIBRARIES");
+	my $libs     = GetTargetOption ($n, "LIBS");
+	my $stdlibs  = GetTargetOption ($n, "STDLIBS");
+	my $libpath  = GetTargetOption ($n, "LIBRARIES");
 
 	my $baseaddr = GetTargetOption ($n, "IMAGEBASE");
 
-	my $outdirs = "";
+	my $outdirs  = "";
 	$outdirs = "DIRS " if @outdirs;
 
 	# build target dependency line
@@ -775,7 +947,7 @@ sub FlushTargetText {
 		for my $t (@targets) {
 			my (undef, $file, undef, undef) = split ('%', $t);
 			if (($file eq $lib) || (GetTargetOption ($file, "IMPLIB") eq $lib)) {
-				$prefix .= " ".$file;
+				$prefix .= " $file";
 				Warning ("target \"$n\" depends with library \"$lib\" on self") if $file eq $n;
 			}
 		}
@@ -786,7 +958,7 @@ sub FlushTargetText {
 	#-------------- Visual C++ options --------------------
 	if ($COMPILER eq "VisualC") {
 		$prefix .= "\techo Creating $target \"$n\" ...\n";
-		$line = "\tlink.exe -nologo -filealign:512 -incremental:no -out:\"$n\"";
+		$line = "\t\$(LINK) -out:\"$n\"";
 		$line .= " -libpath:\"$libpath\"" if $libpath ne "";
 		$line .= " $stdlibs" if $stdlibs ne "";
 		$line .= " $libs" if $libs ne "";
@@ -794,11 +966,11 @@ sub FlushTargetText {
 		$line .= " -map:\"$shortOutName.map\"" if GetTargetOption ($n, "MAPFILES") eq "1";
 		$line .= " -debug -pdb:\"$shortOutName.pdb\" -pdbtype:sept -opt:ref -opt:icf" if GetTargetOption ($n, "PDB") eq "1";
 		$line .= " \$($objListName)";
-#		if (GetTargetOption ($n, "CONSOLE") == 1) {
-#			$line .= " -subsystem:console";
-#		} else {
-#			$line .= " -subsystem:windows";
-#		}
+		if (GetTargetOption ($n, "CONSOLE") eq "1") {
+			$line .= " -subsystem:console";
+		} else {
+			$line .= " -subsystem:windows";
+		}
 		if ($target eq "executable") {
 			return $prefix.$line;
 		} elsif ($target eq "shared") {
@@ -813,12 +985,37 @@ sub FlushTargetText {
 			}
 			return $prefix.$line;
 		} elsif ($target eq "static") {
-			return $prefix."\tlink.exe -lib -nologo -out:\"$n\" \$($objListName)";
+			return $prefix."\t\$(AR) -out:\"$n\" \$($objListName)";
+#		} else {
+#			Error ("unknown target: \"$target\"");
+		}
+	#--------------- Gnu C Compiler -----------------------
+	} elsif ($COMPILER eq "GnuC") {		#!! GnuC - linker
+		$prefix .= "\t\@echo Creating $target \"$n\" ...\n";
+		$line = "\t\$(LINK) -o $n";
+		$line .= " \$($objListName)";
+		$line .= " -L$libpath" if $libpath ne "";		#?? what about multiple dirs? use GenerateOptions() (sync with VC!)
+		$line .= GenerateOptions ($stdlibs, "-l") if $stdlibs ne "";
+		$line .= " $libs" if $libs ne "";
+		if ($PLATFORM eq "win32") {
+			my $cons = GetTargetOption ($n, "CONSOLE");
+			$line .= " -mwindows" if ($cons eq "") || ($cons eq "0");
+			# win32-specific options
+			$line .= " -Wl,--image-base,0x$baseaddr" if $baseaddr ne "";
+		}
+		$line .= " -Wl,-Map,$shortOutName.map,--demangle" if GetTargetOption ($n, "MAPFILES") eq "1";
+		if ($target eq "executable") {
+			return $prefix.$line;
+		} elsif ($target eq "shared") {
+			$line .= " -shared";
+			#?? IMPLIB for GnuC
+			return $prefix.$line;
+		} elsif ($target eq "static") {
+			return $prefix."\t\$(AR) rcs $n \$($objListName)";
 #		} else {
 #			Error ("unknown target: \"$target\"");
 		}
 	#--------------- other compilers ----------------------
-#	} elsif ($COMPILER eq "GnuC") {
 	} else {
 		die "unknown compiler";
 	}
@@ -830,7 +1027,7 @@ sub GenMkdir {
 		# Win32 mkdir have no "-p" option
 		return "if not exist \"$dir\" mkdir \"$dir\"";
 	} else {
-		return "mkdir -p $dir";
+		return "\@mkdir -p $dir";
 	}
 }
 
@@ -851,6 +1048,10 @@ for $item (@ARGV) {
 }
 
 print STDERR "Generating makefile from $INNAME ...\n";
+
+# allow script to check platform/compiler variables (but, this will not allow to change
+# this vars from script ...)
+InitCompiler ();
 
 # open source file
 open (IN, $INNAME) || Error ("can't open infile $INNAME");
@@ -879,7 +1080,10 @@ Error ("no targets specified") if !@targets;
 #------------------------------------------------------------------------------
 # makefile generation
 
+print "# Makefile for $COMPILER/$PLATFORM target\n";
 print "# This file was automatically generated from \"$INNAME\": do not edit\n\n";
+
+EmitCompilerDefs ();
 
 %symTargets = ();
 Splitter ("symbolic targets");
@@ -890,7 +1094,7 @@ for $target (@targets) {
 	if ($name ne "") {
 		for $item (split(" ", $name)) {
 			print " $item" if !exists($symTargets{$item});
-			$symTargets{$item} .= " ".$file;
+			$symTargets{$item} .= " $file";
 		}
 	} else {
 		print " $file";
@@ -937,8 +1141,8 @@ GatherDependInfo ();
 #	length($depends{$srcA}) <=> length($depends{$srcB})
 #							||
 			$depends{$srcA} cmp $depends{$srcB}		# sort by dependencies
-							||
-					  $optA cmp $optB				# sort by options
+#							||
+#					  $optA cmp $optB				# sort by options
 							||
 					  $srcA cmp $srcB				# sort by source filename, obj filename
 } @sources;
@@ -947,10 +1151,10 @@ GatherDependInfo ();
 Splitter ("compiling source files");
 %compiled = ();
 for $item (@sources) {
-	my ($src, $objdir, $defines, $includes, $options, undef) = split('%', $item);
+	my ($src, $objdir, $defines, $includes, $options, $objListName) = split('%', $item);
 	if (!exists($compiled{"$src%$objdir"})) {
 		$compiled{"$src%$objdir"} = 1;
-		FlushObjectFile ($src, $objdir, $defines, $includes, $options);
+		FlushObjectFile ($src, $objdir, $defines, $includes, $options, $objListName);
 	}
 }
 

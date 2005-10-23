@@ -10,7 +10,7 @@ int	Cvar_VariableInt (const char *name);
 float Cvar_Clamp (cvar_t *cvar, float low, float high);
 
 //--------- console ---------
-void Com_DPrintf (const char *str, ...);
+void Com_DPrintf (const char *str, ...) PRINTF(1,2);
 
 //---------- files ----------
 const char* FS_Gamedir ();
@@ -40,7 +40,7 @@ int CM_BrushTrace (const CVec3 &start, const CVec3 &end, int *brushes, int maxBr
 int CM_RefineBrushTrace (const CVec3 &start, const CVec3 &end, int *brushes, int numBrushes);
 
 //-- system-dependent code --
-#ifdef _WIN32
+#if _WIN32
 void*	Vid_CreateWindow (int width, int height, bool fullscreen);
 void	Vid_DestroyWindow (bool force);
 #endif

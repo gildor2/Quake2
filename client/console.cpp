@@ -426,12 +426,12 @@ void Con_DrawNotify (bool drawBack)
 }
 
 
-//#define DEBUG_CONSOLE
+//#define DEBUG_CONSOLE		1
 
 void Con_DrawConsole (float frac)
 {
 	int		i, x;
-#ifdef DEBUG_CONSOLE
+#if DEBUG_CONSOLE
 	TString<256> DbgBuf;
 	DbgBuf[0] = 0;
 #define CON_DBG(x)	DbgBuf += x
@@ -455,10 +455,6 @@ void Con_DrawConsole (float frac)
 #endif
 	if (lines < viddef.height)
 		RE_Fill (0, lines - 1, viddef.width, 1, RGBA(0.2,0.2,0.2,0.8));
-
-	// Variables for console-only mode
-	int dx = viddef.width / CHAR_WIDTH;
-	int dy = viddef.height / CHAR_HEIGHT;
 
 	// draw version info
 #if 1
@@ -534,7 +530,7 @@ void Con_DrawConsole (float frac)
 		}
 	}
 	CON_DBG(va(" disp:%d total:%d",con.display,con.totallines));
-#ifdef DEBUG_CONSOLE
+#if DEBUG_CONSOLE
 	i = DbgBuf.len ();
 	for (x = 0; x < i; x++)
 		RE_DrawChar (x*CHAR_WIDTH, lines - 12, DbgBuf[x], C_BLUE);

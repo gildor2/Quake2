@@ -3,9 +3,9 @@
 #include "CorePrivate.h"
 
 
-//#define LOG_FUNCS_ONLY
-#define LOG_STRINGS
-#define UNWIND_EBP_FRAMES
+//#define LOG_FUNCS_ONLY		1
+#define LOG_STRINGS				1
+#define UNWIND_EBP_FRAMES		1
 
 #define STACK_UNWIND_DEPTH		80
 
@@ -34,7 +34,7 @@ static void DumpReg4 (COutputDevice *Out, const char *name, unsigned value)
 		for (i = 0; i < 16; i++)
 		{
 			char c = data[i];
-			if (c < ' ' || c > 0x7F) c = '.';
+			if (c < ' ') c = '.';		// signed char, allowed 32..127
 			Out->Printf ("%c", c);
 		}
 	}
@@ -48,7 +48,7 @@ static void DumpReg2 (COutputDevice *Out, const char *name, DWORD value)
 }
 
 
-#ifdef LOG_STRINGS
+#if LOG_STRINGS
 
 static bool IsString (const char *str)
 {
@@ -58,7 +58,7 @@ static bool IsString (const char *str)
 
 		char c = *str;
 		if (c == 0) return i >= MIN_STRING_WIDTH;
-		if ((c < 32 || c > 127) && c != '\n') return false;
+		if (c < ' ' && c != '\n') return false;		// signed char, allowed 32..127 + '\n'
 	}
 	return true;
 }
@@ -125,7 +125,7 @@ static void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 
 		char symbol[256];
 		if (appSymbolName (*data, ARRAY_ARG(symbol)))
-#ifdef LOG_FUNCS_ONLY
+#if LOG_FUNCS_ONLY
 			if (strchr (symbol, '('))
 #endif
 			{
@@ -133,7 +133,7 @@ static void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 				Out->Printf ("%s%s%08X = %s",
 					n > 0 ? "\n" : "", spaces,
 					*data, symbol);
-#if !defined(LOG_FUNCS_ONLY) && defined(LOG_STRINGS)
+#if !LOG_FUNCS_ONLY && LOG_STRINGS
 				if (!strchr (symbol, '(') && IsString ((char*)*data))	// do not test funcs()
 					DumpString (Out, (char*)*data);
 #endif
@@ -142,7 +142,7 @@ static void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 				continue;
 			}
 
-#ifdef LOG_STRINGS
+#if LOG_STRINGS
 		// try to log as string
 		if (IsString ((char*)*data))
 		{
@@ -167,7 +167,7 @@ static void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 #undef STAT_SPACES
 }
 
-#ifdef UNWIND_EBP_FRAMES
+#if UNWIND_EBP_FRAMES
 static void UnwindEbpFrame (COutputDevice *Out, const unsigned *data)
 {
 	Out->Printf ("  ");
@@ -201,7 +201,7 @@ static void UnwindEbpFrame (COutputDevice *Out, const unsigned *data)
 #endif
 
 
-int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
+long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 {
 	if (GErr.swError) return EXCEPTION_EXECUTE_HANDLER;		// no interest to thread context when software-generated errors
 
@@ -252,7 +252,7 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 		Out->Printf ("\nStack:\n");
 		DumpMem (Out, (unsigned*) ctx->Esp, ctx);
 		Out->Printf ("\n");
-#ifdef UNWIND_EBP_FRAMES
+#if UNWIND_EBP_FRAMES
 		Out->Printf ("\nCall stack trace:\n  ");
 		UnwindEbpFrame (Out, (unsigned*) ctx->Ebp);
 #endif
@@ -266,12 +266,13 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 }
 
 
-__declspec(naked) int win32ExceptFilter2 ()
+#if _MSC_VER
+__declspec(naked) unsigned win32ExceptFilter2 ()
 {
 	__asm {
 		push	[ebp-0x14]
 		call	win32ExceptFilter
-		add		esp,4
 		retn			// return value from win32ExceptFilter()
 	}
 }
+#endif

@@ -551,7 +551,8 @@ const CStringItem *CStringList::Find (const char *name) const
 CStringItem* CStringList::Find (int index)
 {
 	guardSlow(CStringItem::Find(idx));
-	for (CStringItem *item = first; item && index > 0; item = item->next, index--) ;
+	CStringItem *item;
+	for (item = first; item && index > 0; item = item->next, index--) ;
 	return item;
 	unguardSlow;
 }

@@ -679,7 +679,7 @@ static void SV_BanRemove_f (bool usage, int argc, char **argv)
 	{
 		if (str[0] < '0' || str[0] > '9')
 		{
-			appWPrintf ("Bad list index %d\n", str);
+			appWPrintf ("Bad list index %s\n", str);
 			return;
 		}
 		n = atoi (str);

@@ -7,6 +7,7 @@ static dBsp2Hdr_t *header;
 
 
 //?? Should perform SwapBlock() (as in Q3 bsp tools)
+#if !LITTLE_ENDIAN
 static void SwapQ2BspFile (bspfile_t *f)
 {
 	int		i, j;
@@ -164,6 +165,7 @@ static void SwapQ2BspFile (bspfile_t *f)
 		}
 	}
 }
+#endif // LITTLE_ENDIAN
 
 static void ProcessQ2BspFile (bspfile_t *f)
 {
@@ -242,7 +244,7 @@ void LoadQ2BspFile ()
 
 	header = (dBsp2Hdr_t *) bspfile.file;
 
-#ifndef LITTLE_ENDIAN
+#if !LITTLE_ENDIAN
 	// swap the header
 	for (int i = 0; i < sizeof(dBsp2Hdr_t) / 4; i++)
 		((int *)header)[i] = LittleLong (((int *)header)[i]);
@@ -276,7 +278,7 @@ void LoadQ2BspFile ()
 	bspfile.numModels =		CheckLump (LUMP_MODELS, (void**)&models, sizeof(dmodel_t));	// not in bspfile_t struc
 	LoadQ2Submodels (&bspfile, models);
 
-#ifndef LITTLE_ENDIAN
+#if !LITTLE_ENDIAN
 	// swap everything
 	SwapQ2BspFile (&bspfile);
 #endif
@@ -461,7 +463,7 @@ static bool ReadEntity (const char *&src)
 }
 
 
-//#define SHOW_WRITE
+//#define SHOW_WRITE		1
 
 // debug helper
 #define DUMP_ENTITY	\
@@ -474,7 +476,7 @@ static bool ReadEntity (const char *&src)
 static void WriteEntity (char **dst)
 {
 	int		i;
-#ifdef SHOW_WRITE
+#if SHOW_WRITE
 	char	*txt = *dst;
 #endif
 
@@ -496,7 +498,7 @@ static void WriteEntity (char **dst)
 		if (entity[i].name[0])	// may be removed field
 			(*dst) += appSprintf (*dst, 1024, "\"%s\" \"%s\"\n", entity[i].name, entity[i].value);
 	strcpy (*dst, "}\n"); (*dst) += 2;
-#ifdef SHOW_WRITE
+#if SHOW_WRITE
 	appPrintf (S_CYAN"%s", txt);
 #endif
 }

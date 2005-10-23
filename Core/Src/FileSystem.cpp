@@ -4,7 +4,7 @@
 CFileSystem *GFileSystem;
 TString<64> GDefMountPoint;
 
-#define LIST_MOUNT_POINTS						// add mount points to List() output (as directories)
+#define LIST_MOUNT_POINTS		1				// add mount points to List() output (as directories)
 
 
 /*-----------------------------------------------------------------------------
@@ -97,7 +97,7 @@ CFile *appOpenFile (const char *filename)
 }
 
 
-#ifndef LITTLE_ENDIAN
+#if !LITTLE_ENDIAN
 int CFile::ByteOrderRead (void *Buffer, int Size)
 {
 	for (int i = Size - 1; i >= 0; i--)
@@ -353,7 +353,7 @@ CFileList *CFileSystem::List (const char *mask, unsigned flags, CFileList *list)
 		const char *localFilename = SubtractPath (Mask, it->MountPoint);
 		if (localFilename)						// inside this container
 			it->List (*list, localFilename, flags);
-#ifdef LIST_MOUNT_POINTS
+#if LIST_MOUNT_POINTS
 		// may be, add mount point to list
 		if (flags & FS_DIR)
 		{
@@ -463,7 +463,8 @@ void *CFileSystem::LoadFile (const char *filename, unsigned *size)
 	Service console functions
 -----------------------------------------------------------------------------*/
 
-static void cMount (bool usage, int argc, char **argv)
+//?? GCC not allow "static" here
+/*static*/ void cMount (bool usage, int argc, char **argv)
 {
 	if (usage || argc > 3)
 	{
@@ -494,7 +495,8 @@ static void cMount (bool usage, int argc, char **argv)
 	GFileSystem->Mount (argv[1], point);
 }
 
-static void cUmount (bool usage, int argc, char **argv)
+//?? GCC not allow "static" here
+/*static*/ void cUmount (bool usage, int argc, char **argv)
 {
 	if (usage || argc != 2)
 	{

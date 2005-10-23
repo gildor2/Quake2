@@ -33,7 +33,8 @@ void cmd1 (int argc, char **argv)
 	guard(excpt);
 
 	if (argc) appPrintf ("cmd1 - args: %d\n", argc);
-	for (int i = 0; i < argc; i++) appPrintf(".. arg[%d] = <%s>\n", i, argv[i]);
+	int i;
+	for (i = 0; i < argc; i++) appPrintf(".. arg[%d] = <%s>\n", i, argv[i]);
 
 	// absolutely crazy function (does nothing useful but different exception tests)
 	static int a;

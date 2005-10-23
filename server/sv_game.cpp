@@ -1,7 +1,7 @@
 #include "server.h"
 #include "cmodel.h"
 
-#define SV_PROFILE			//?? change
+#define SV_PROFILE	1		//?? change
 
 game_export_t	*ge;
 static bool dummyGame;		// when demomap or cinematic loaded
@@ -235,6 +235,17 @@ static qboolean G_AreasConnected (int area1, int area2)
 }
 
 
+#if _WIN32
+static trace_t* G_Trace (trace_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
+{
+	SV_TraceHook (trace, start, mins, maxs, end, passedict, contentmask);
+	return &trace;
+}
+#else
+	#error trace_t returned -- check calling convention
+#endif
+
+
 /*-------- Wrappers for some system functions ----------------*/
 
 static cvar_t *G_Cvar_Get (const char *name, char *value, int flags)
@@ -306,7 +317,7 @@ static void Z_FreeTags (int tag)
 static void *Z_TagMalloc (int size, int tag)
 {
 	guard(Z_TagMalloc);
-#ifndef SV_PROFILE
+#if !SV_PROFILE
 	MEM_ALLOCATOR(size);
 #endif
 	size += sizeof(zhead_t) + 1;	// reserve 1 byte for buggy mods
@@ -356,7 +367,7 @@ static void GZ_Stats_f ()
 	Server profiling
 -----------------------------------------------------------------------------*/
 
-#ifdef SV_PROFILE
+#if SV_PROFILE
 
 unsigned prof_times[256];
 unsigned prof_counts[256];
@@ -365,20 +376,15 @@ unsigned prof_counts[256];
 #define PROF						\
 	unsigned st_t = appCycles();
 
-#define PROF2(type)					\
-	type res;						\
-	unsigned st_t = appCycles();	\
-	res =
-
 #define EPROF(n) 					\
 	prof_times[n] += appCycles()-st_t; \
 	prof_counts[n]++;
 
-#define EPROF2(n) 					\
-	prof_times[n] += appCycles()-st_t; \
-	prof_counts[n]++;				\
-	return res;
+#define PROF2(type)					\
+	PROF; type res =
 
+#define EPROF2(n) 					\
+	EPROF(n); return res;
 
 static void PSV_LinkEdict(edict_t *e)
 {	PROF; SV_LinkEdict(e); EPROF(0);	}
@@ -392,9 +398,13 @@ static int PSV_AreaEdicts (const CVec3 &mins, const CVec3 &maxs, edict_t **list,
 {	PROF2(int)	SV_AreaEdicts(mins,maxs,list,maxcount,areatype); EPROF2(2);	}
 #define SV_AreaEdicts PSV_AreaEdicts
 
-static trace_t PSV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
-{	PROF2(trace_t)	SV_TraceHook(start,mins,maxs,end,passedict,contentmask); EPROF2(3);	}
-#define SV_TraceHook PSV_TraceHook
+#if _WIN32
+static trace_t* PSV_Trace (trace_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
+{	PROF2(trace_t*) G_Trace(trace,start,mins,maxs,end,passedict,contentmask); EPROF2(3); }
+#define G_Trace PSV_Trace
+#else
+	#error trace_t returned -- check calling convention
+#endif
 
 static int PSV_PointContents (const CVec3 &p)
 {	PROF2(int)	SV_PointContents(p); EPROF2(4);	}
@@ -514,7 +524,7 @@ void SV_InitGameLibrary (bool dummy)
 		G_error,
 		SV_ModelIndex, SV_SoundIndex, SV_ImageIndex,
 		G_setmodel,
-		SV_TraceHook, SV_PointContents,
+		G_Trace, SV_PointContents,
 		G_inPVS, G_inPHS, G_SetAreaPortalState, G_AreasConnected,
 		SV_LinkEdict, SV_UnlinkEdict, SV_AreaEdicts,
 		SV_Pmove,

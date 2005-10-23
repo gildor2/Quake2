@@ -237,7 +237,7 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 }
 
 
-#define TBL_SATURATE		// should be enabled
+#define TBL_SATURATE	1				// should be enabled
 
 static void LightScaleTexture (unsigned *pic, int width, int height)
 {
@@ -245,7 +245,7 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 
 	int		i;
 	byte	*p;
-#ifdef TBL_SATURATE
+#if TBL_SATURATE
 	static float lastSat = 1.0f;		// when sat. == 1 -- pic will not be changed
 	static int sat1[256 * 3];
 	static int sat2[256];
@@ -276,7 +276,7 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 		p = (byte *)pic;
 		for (i = 0; i < c; i++, p+=4)
 		{
-#ifdef TBL_SATURATE
+#if TBL_SATURATE
 			int		r, g, b;
 
 			r = p[0]; g = p[1]; b = p[2];
@@ -428,8 +428,9 @@ static void MipMap (byte *in, int width, int height)
 
 static void GetImageDimensions (int width, int height, int *scaledWidth, int *scaledHeight, bool picmip)
 {
-	for (int sw = 1; sw < width; sw <<= 1) ;
-	for (int sh = 1; sh < height; sh <<= 1) ;
+	int sw, sh;
+	for (sw = 1; sw < width; sw <<= 1) ;
+	for (sh = 1; sh < height; sh <<= 1) ;
 
 	if (gl_roundImagesDown->integer)
 	{	// scale down only when new image dimension is larger than 64 and
@@ -1051,10 +1052,10 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 	const char *mask = (argc == 2) ? argv[1] : NULL;
 
 	appPrintf ("----w----h----a-wr-m-fmt------name----------\n");
-	int idx, texels, n;
+	int i, idx, texels, n;
 	idx = texels = n = 0;
 
-	for (int i = 0; i < MAX_TEXTURES; i++)
+	for (i = 0; i < MAX_TEXTURES; i++)
 	{
 		image_t *img = &imagesArray[i];
 		if (!img->Name[0]) continue;	// free slot

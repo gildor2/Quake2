@@ -1,21 +1,74 @@
 # script file; perl highlighting
 
-NOSHARED=1			#!!!! shared
+# Just keep here:
+# disable all -O1 optimizations
+#   CPP += -fno-defer-pop -fno-merge-constants -fno-thread-jumps -fno-loop-optimize -fno-if-conversion -fno-if-conversion2 \
+#	   -fno-delayed-branch -fno-guess-branch-probability -fno-cprop-registers -fno-omit-frame-pointer
+# disable all -O2 optimizations:
+#   CPP += -fno-force-mem -fno-optimize-sibling-calls -fno-strength-reduce -fno-cse-follow-jumps -fno-cse-skip-blocks \
+#	   -fno-rerun-cse-after-loop -fno-rerun-loop-opt -fno-gcse -fno-gcse-lm -fno-gcse-sm -fno-gcse-las \
+#	   -fno-delete-null-pointer-checks -fno-expensive-optimizations -fno-regmove -fno-schedule-insns -fno-schedule-insns2 \
+#	   -fno-sched-interblock -fno-sched-spec -fno-caller-saves -fno-peephole2 -fno-reorder-blocks -fno-reorder-functions \
+#	   -fno-strict-aliasing -fno-unit-at-a-time -fno-align-functions -fno-align-jumps -fno-align-loops -fno-align-labels -fno-crossjumping
+# optimizations, disabled by -Os:
+#   CPP += -falign-functions -falign-jumps -falign-loops -falign-labels -freorder-blocks -fprefetch-loop-arrays
 
-#!! should be specified with cmdline
-COMPILER = VisualC
 
+NOSHARED  = 1			#!!!! shared; currently, shared build is not possible: Core is not yet finished
+				#!! make only 1 of STATIC/SHARED builds (not both in single makefile) - no problems with filenames etc ...
+				#!! + add "STATIC=1|0" to COM_DEFINES
+
+# compiler options
 !if $COMPILER eq "VisualC"
 	WARNLEVEL = 3
 	OPTIMIZE  = size
-	STDLIBS   = kernel32 user32 gdi32
+	OUT       = Release	# -> COMMON!
 #	INLINES   = explicit
 #	LIBC      = static
 #	PDB       = 1
+!elif $COMPILER eq "GnuC"
+	OPTIMIZE  = size
+	OUT       = Out		# -> COMMON!
+#	INLINES   = explicit	-- not supported?
+	MAX_DEBUG = 1		# currently, in debug stage
+	
+	# compiler bugs: disable some optimizations
+	OPTIONS = -fno-force-mem -fno-schedule-insns2 -fno-unit-at-a-time
+	# warnings
+	OPTIONS += \
+		-Wabi -Wnon-virtual-dtor -Woverloaded-virtual -Wformat -Wimplicit -Wparentheses -Wreturn-type \
+		-Wunused-function -Wunused-variable -Wunused-value \
+		-Wunknown-pragmas -Wmissing-format-attribute -Wredundant-decls \
+		-Waggregate-return -Wno-invalid-offsetof
+	# max warning level
+#	OPTIONS += -Weffc++
+#	OPTIONS += \
+#		-Wshadow -Wlarger-than-131072 -Wpacked -Winline -Wswitch -Wmissing-noreturn -Wunreachable-code \
+#		-Wuninitialized
 !endif
 
-OUT      = Release
+!if $PLATFORM eq "win32"
+	STDLIBS   = kernel32 user32 gdi32
+	!if $COMPILER eq "GnuC"	# i.e. mingw32
+		STDLIBS += winmm wsock32 dinput stdc++
+	!endif
+!endif
+
+
+#------------------------------------------------------------------------------
+# common defines
+
+OBJ = $OUT/obj-$PLATFORM
+
 MAPFILES = 1
+
+!ifndef MAX_DEBUG
+MAX_DEBUG = 0
+!endif
+
+# build common defines string
+COM_DEFINES = MAX_DEBUG=$MAX_DEBUG
+
 
 #------------------------------------------------------------------------------
 
@@ -34,11 +87,14 @@ CORE = \
 #	$D/CommandCompletion.cpp \
 #	$D/Commands.cpp \
 #	$D/Core.cpp
-CORE_WIN32 = \
+
+!if $PLATFORM eq "win32"
+CORE += \
 	$D/CoreWin32.cpp \
 	$D/DbgSymbolsWin32.cpp \
 	$D/ExceptFilterWin32.cpp \
 	$D/FileSystemWin32.cpp
+!endif
 
 D = client
 CLIENT = \
@@ -117,6 +173,10 @@ GL_RENDERER = \
 	$D/gl_trimodel.cpp \
 	$D/GLBind.cpp
 
+!if $PLATFORM eq "win32"
+GL_RENDERER += win32/gl_win.cpp
+!endif
+
 D = win32
 WIN32_FILES = \
 	$D/cd_win.cpp \
@@ -128,9 +188,6 @@ WIN32_FILES = \
 DED_WIN32 = \
 	$D/net_wins.cpp \
 	$D/sys_win.cpp
-
-# Win32 renderer files
-GL_RENDERER  +=  $D/gl_win.cpp
 
 # Win32 resources
 WIN32_FILES += $D/q2.rc
@@ -147,15 +204,15 @@ LIBRARIES = SDK/lib
 #------------------------------------------------------------------------------
 # static build
 
-DEFINES = STATIC_BUILD
-OBJDIR  = $OUT/obj/CoreStatic
-sources(STATIC) = $CORE $CORE_WIN32
+DEFINES = $COM_DEFINES STATIC_BUILD
+OBJDIR  = $OBJ/CoreStatic
+sources(STATIC) = $CORE
 
-DEFINES = STATIC_BUILD SINGLE_RENDERER	#?? SINGLE_RENDERER -- check when will be 2+ renderers
-OBJDIR  = $OUT/obj/q2stat
+DEFINES = $COM_DEFINES STATIC_BUILD SINGLE_RENDERER	#?? SINGLE_RENDERER -- check when will be 2+ renderers
+OBJDIR  = $OBJ/q2stat
 sources(STATIC) = $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES $GL_RENDERER
 
-LIBS = lib/lib
+LIBS = lib/libs
 target(executable, $OUT/Quake2, STATIC, STATIC)
 
 #------------------------------------------------------------------------------
@@ -164,19 +221,19 @@ target(executable, $OUT/Quake2, STATIC, STATIC)
 !ifndef  NOSHARED		#!!!! shared
 
 # !! not works now !!
-DEFINES =
-OBJDIR  = $OUT/obj/CoreShared
-sources(CORE) = $CORE $CORE_WIN32
+DEFINES = $COM_DEFINES
+OBJDIR  = $OBJ/CoreShared
+sources(CORE) = $CORE
 
 IMPLIB = $OUT/Core
 target(shared, $OUT/Core, CORE, DYNAMIC)
 
 #----------------------------
 
-LIBS = lib/lib $OUT/Core
+LIBS = lib/libs $OUT/Core
 
-DEFINES =
-OBJDIR  = $OUT/obj/q2dyn
+DEFINES = $COM_DEFINES
+OBJDIR  = $OBJ/q2dyn
 sources(DYN_EXE) = $CLIENT $SERVER $COMMON $RES_FILES $WIN32_FILES
 
 target(executable, $OUT/quake2_dyn, DYN_EXE, DYNAMIC)
@@ -185,9 +242,8 @@ target(executable, $OUT/quake2_dyn, DYN_EXE, DYNAMIC)
 
 LIBS = $OUT/Core
 
-# we should define DYNAMIC_REF to allow link from renderer to engine functions
-DEFINES = DYNAMIC_REF
-OBJDIR  = $OUT/obj/gldyn
+DEFINES = $COM_DEFINES
+OBJDIR  = $OBJ/gldyn
 sources(DYN_GL) = $GL_RENDERER qcommon/q_shared2.cpp client/ref_vars.cpp
 
 target(shared, $OUT/ref_gl, DYN_GL, DYNAMIC)
@@ -199,32 +255,34 @@ target(shared, $OUT/ref_gl, DYN_GL, DYNAMIC)
 #------------------------------------------------------------------------------
 # dedicated server
 
-DEFINES = STATIC_BUILD
-OBJDIR  = $OUT/obj/CoreStatic
-sources(DEDICATED) = $CORE $CORE_WIN32
+DEFINES = $COM_DEFINES STATIC_BUILD
+OBJDIR  = $OBJ/CoreStatic
+sources(DEDICATED) = $CORE
 
-DEFINES = STATIC_BUILD DEDICATED_ONLY
-OBJDIR  = $OUT/obj/dedstat
+DEFINES = $COM_DEFINES STATIC_BUILD DEDICATED_ONLY
+OBJDIR  = $OBJ/dedstat
 sources(DEDICATED) = $DED_CLIENT $SERVER $COMMON $DED_WIN32 $RES_FILES
 
-LIBS = lib/lib
+LIBS    = lib/libs
+CONSOLE = 1
 target(executable, $OUT/q2ded, DEDICATED, DEDICATED)
 
 #------------------------------------------------------------------------------
 # test application
 
-DEFINES = STATIC_BUILD
-LIBS = lib/lib		# for zlib
+DEFINES = $COM_DEFINES STATIC_BUILD
+LIBS    = lib/libs		# for zlib
 
 #-- Core files
-OBJDIR = $OUT/obj/CoreStatic
-sources(TEST) = $CORE $CORE_WIN32
+OBJDIR  = $OBJ/CoreStatic
+sources(TEST) = $CORE
 
 #-- app files
 TEST_FILES = TestApp/TestApp.cpp
 #-- files, required for Core to be standalone
 TEST_FILES += Core/Src/Commands.cpp
-OBJDIR = $OUT/obj/TestApp
+OBJDIR  = $OBJ/TestApp
 sources(TEST) = $TEST_FILES
 
+CONSOLE = 1
 target(executable, TestApp/TestApp, TEST, TESTAPP)

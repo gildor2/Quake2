@@ -108,15 +108,15 @@ static bool portalopen[MAX_MAP_AREAPORTALS];
 
 static cvar_t	*map_noareas;
 
-void	InitBoxHull ();					// static; forward
-void	FloodAreaConnections ();		// static; forward
+// forwards
+static void InitBoxHull ();
+static void FloodAreaConnections ();
 
 
 
 /* Support for Half-Life maps ?? */
 
 static mapType_t maptype;
-static int firstnode; // 0->firstclipnode, this->firstnode ??
 
 
 /*
@@ -157,7 +157,7 @@ static void ReadSurfMaterials (const char *filename)
 
 	surfMaterialChain = new CMemoryChain;
 	surfMaterial_t *prev = NULL;
-	char *in = file;
+	const char *in = file;
 
 	const char *s;
 	while (s = COM_Parse (in), in)
@@ -260,11 +260,6 @@ static material_t CMod_GetSurfMaterial (const char *name)
 ===============================================================================
 */
 
-/*
-=================
-CMod_LoadSubmodels
-=================
-*/
 inline void CMod_LoadSubmodels (cmodel_t *data, int count)
 {
 	map_cmodels = data;
@@ -273,12 +268,6 @@ inline void CMod_LoadSubmodels (cmodel_t *data, int count)
 		Com_DropError ("map has invalid headnode = %d", map_cmodels[0].headnode);
 }
 
-
-/*
-=================
-CMod_LoadSurfaces
-=================
-*/
 
 static void CMod_LoadSurfaces (texinfo_t *data, int size)
 {
@@ -315,12 +304,6 @@ static void CMod_LoadSurfaces (texinfo_t *data, int size)
 }
 
 
-/*
-=================
-CMod_LoadNodes
-
-=================
-*/
 static void CMod_LoadNodes (dnode_t *data, int size)
 {
 	dnode_t *in = data;
@@ -339,12 +322,7 @@ static void CMod_LoadNodes (dnode_t *data, int size)
 	}
 }
 
-/*
-=================
-CMod_LoadBrushes
 
-=================
-*/
 static void CMod_LoadBrushes (dbrush_t *data, int size)
 {
 	dbrush_t *in = data;
@@ -361,11 +339,7 @@ static void CMod_LoadBrushes (dbrush_t *data, int size)
 	}
 }
 
-/*
-=================
-CMod_LoadLeafs
-=================
-*/
+
 static void CMod_LoadLeafs (dleaf_t *data, int size)
 {
 	int			i;
@@ -399,11 +373,7 @@ static void CMod_LoadLeafs (dleaf_t *data, int size)
 		Com_DropError ("map does not have an empty leaf");
 }
 
-/*
-=================
-CMod_LoadPlanes
-=================
-*/
+
 static void CMod_LoadPlanes (dplane_t *data, int size)
 {
 	dplane_t *in = data;
@@ -423,11 +393,7 @@ static void CMod_LoadPlanes (dplane_t *data, int size)
 	}
 }
 
-/*
-=================
-CMod_LoadLeafBrushes
-=================
-*/
+
 inline void CMod_LoadLeafBrushes (unsigned short *data, int size)
 {
 	if (size < 1) Com_DropError ("Map with no leafbrushes");
@@ -438,11 +404,7 @@ inline void CMod_LoadLeafBrushes (unsigned short *data, int size)
 	memcpy (map_leafBrushes, data, sizeof(*data)*size);
 }
 
-/*
-=================
-CMod_LoadBrushSides
-=================
-*/
+
 static void CMod_LoadBrushSides (dbrushside_t *data, int size)
 {
 	dbrushside_t *in = data;
@@ -461,11 +423,7 @@ static void CMod_LoadBrushSides (dbrushside_t *data, int size)
 	}
 }
 
-/*
-=================
-CMod_LoadAreas
-=================
-*/
+
 static void CMod_LoadAreas (darea_t *data, int size)
 {
 	darea_t *in = data;
@@ -483,22 +441,14 @@ static void CMod_LoadAreas (darea_t *data, int size)
 	}
 }
 
-/*
-=================
-CMod_LoadAreaPortals
-=================
-*/
+
 inline void CMod_LoadAreaPortals (dareaportal_t *data, int size)
 {
 	numareaportals = size;
 	map_areaportals = data;
 }
 
-/*
-=================
-CMod_LoadVisibility
-=================
-*/
+
 inline void CMod_LoadVisibility (dvis_t *data, int size)
 {
 	numvisibility = size;
@@ -506,11 +456,6 @@ inline void CMod_LoadVisibility (dvis_t *data, int size)
 }
 
 
-/*
-=================
-CMod_LoadEntityString
-=================
-*/
 inline void CMod_LoadEntityString (const char *data, int size)
 {
 	numentitychars = size;
@@ -528,6 +473,8 @@ HALF-LIFE map support
 */
 
 #if 0
+
+static int firstnode; // 0->firstclipnode, this->firstnode ??
 
 void CMod_LoadHLSurfaces (lump_t *l)
 {

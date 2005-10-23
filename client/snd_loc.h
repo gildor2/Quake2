@@ -128,10 +128,6 @@ extern	channel_t   channels[MAX_CHANNELS];
 
 extern	int		paintedtime;
 extern	int		s_rawend;
-extern	CVec3	listener_origin;
-extern	CVec3	listener_forward;
-extern	CVec3	listener_right;
-extern	CVec3	listener_up;
 extern	dma_t	dma;
 extern	playsound_t	s_pendingplays;
 
@@ -146,8 +142,6 @@ extern cvar_t	*s_show;
 extern cvar_t	*s_mixahead;
 extern cvar_t	*s_testsound;
 extern cvar_t	*s_primary;
-
-wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength);
 
 void S_InitScaletable (void);
 

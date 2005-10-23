@@ -8,7 +8,7 @@
 	Standard OpenGL stuff
 -----------------------------------------------------------------------------*/
 
-#ifdef _WIN32
+#if _WIN32
 #if 0
 	// include "windows.h" headers
 #	define WIN32_LEAN_AND_MEAN		// exclude rarely-used services from windown headers
@@ -57,6 +57,7 @@
 	Engine includes
 -----------------------------------------------------------------------------*/
 
+#define IS_RENDERER		1			// prevent from including RE_Func()... declarations
 #include "qcommon.h"
 #include "../client/ref.h"
 
@@ -67,6 +68,7 @@
 
 namespace OpenGLDrv {
 
+#include "../client/renderer.h"
 #include "GLBind.h"
 
 bool	QGL_Init (const char *libName);
@@ -206,20 +208,12 @@ void	InitTexts ();
 void	ClearTexts ();
 void	FlushTexts ();
 
-// standard names (renderer interface)
-//void	DrawChar (int x, int y, int c, int color);
-
-//void	DrawTextLeft (const char *text, unsigned rgba);
-//void	DrawTextRight (const char *text, unsigned rgba);
-//void	DrawTextPos (int x, int y, const char *text, unsigned rgba);
-//void	DrawText3D (const CVec3 &pos, const char *text, unsigned rgba);
-
 
 /*------ Platform-specific functions --------*/
 
 bool	GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscreen);
 void	GLimp_Shutdown (bool complete);
-void	AppActivate (bool active);
+//void	AppActivate (bool active); -- interface
 
 bool	GLimp_HasGamma ();
 void	GLimp_SetGamma (float gamma);

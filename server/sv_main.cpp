@@ -59,8 +59,9 @@ static cvar_t	*sv_camperSounds;
 cvar_t			*sv_labels;
 //static cvar_t	*sv_fps;
 
-void Master_Heartbeat (void);
-void Master_Shutdown (void);
+// forwards
+static void Master_Heartbeat ();
+static void Master_Shutdown ();
 
 
 //============================================================================
@@ -558,7 +559,7 @@ Every few frames, gives all clients an allotment of milliseconds
 for their command moves.  If they exceed it, assume cheating.
 ===================
 */
-void SV_GiveMsec (void)
+void SV_GiveMsec ()
 {
 	if (sv.framenum & 15)
 		return;
@@ -574,12 +575,7 @@ void SV_GiveMsec (void)
 }
 
 
-/*
-=================
-SV_ReadPackets
-=================
-*/
-void SV_ReadPackets (void)
+void SV_ReadPackets ()
 {
 	guard(SV_ReadPackets);
 
@@ -1019,12 +1015,12 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 
 extern bool trace_skipAlpha;	//!! hack
 
-trace_t SV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
+void SV_TraceHook (trace_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
 {
 	guard(SV_TraceHook);
 
 	static edict_t *ent;
-#define RESET  { shotLevel = 0; return tr; }
+#define RESET  { shotLevel = 0; return; }
 
 	trace_skipAlpha = true;		//!! hack for kingpin CONTENTS_ALPHA
 	if (mins || maxs) trace_skipAlpha = false;
@@ -1033,10 +1029,9 @@ trace_t SV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, 
 	if (mins) bounds.mins = *mins;		// required for game; may be NULL
 	if (maxs) bounds.maxs = *maxs;
 
-	trace_t	tr;
-	SV_Trace (tr, start, end, bounds, passedict, contentmask);
+	SV_Trace (trace, start, end, bounds, passedict, contentmask);
 	trace_skipAlpha = false;	//!!
-	if (!sv_extProtocol->integer) return tr;
+	if (!sv_extProtocol->integer) return;
 
 	if (mins || maxs) RESET
 
@@ -1047,7 +1042,7 @@ trace_t SV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, 
 			RESET			// shotgun shot
 		shotLevel = 1;
 		shotStart = end;
-		ent = passedict;
+		ent       = passedict;
 	}
 	else if (shotLevel == 1)
 	{
@@ -1064,7 +1059,6 @@ trace_t SV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, 
 	}
 
 #undef RESET
-	return tr;
 
 	unguard;
 }
@@ -1072,15 +1066,6 @@ trace_t SV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, 
 
 //=============================================================================
 
-
-/*
-==================
-SV_Frame
-
-==================
-*/
-
-//void DrawTextLeft(char *fmt, float r, float g, float b);//!!
 
 void SV_Frame (float msec)
 {
@@ -1092,12 +1077,9 @@ void SV_Frame (float msec)
 	if (!svs.initialized)
 		return;
 
-//	DrawTextLeft(va("time: %10d rf: %10.5f d: %10.4f ri:%10d", sv.time, svs.realtimef, msec, svs.realtime),1,1,1);//!!
+//	SV_DrawTextLeft(va("time: %10d rf: %10.5f d: %10.4f ri:%10d", sv.time, svs.realtimef, msec, svs.realtime));//!!
 	svs.realtimef += msec;
 	svs.realtime = appFloor (svs.realtimef);
-
-	// keep the random time dependent (??)
-	rand ();
 
 	if (!sv.attractloop)
 	{
@@ -1153,6 +1135,7 @@ void SV_Frame (float msec)
 		ge->RunFrame ();
 		unguard;
 
+
 		// never get more than one tic behind
 		if (sv.time < svs.realtime)
 		{
@@ -1195,7 +1178,7 @@ let it know we are alive, and log information
 ================
 */
 #define	HEARTBEAT_SECONDS	300
-static void Master_Heartbeat (void)
+static void Master_Heartbeat ()
 {
 	if (!DEDICATED)
 		return;		// only dedicated servers send heartbeats
@@ -1273,7 +1256,7 @@ void SV_UserinfoChanged (client_t *cl)
 	val = Info_ValueForKey (cl->Userinfo, "rate");
 	if (strlen(val))
 	{
-		i = atoi(val);
+		int i = atoi(val);
 		cl->rate = bound(i, 100, 15000);
 	}
 	else

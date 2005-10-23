@@ -5,19 +5,25 @@
 #if 1
 // 3 byte per flash
 #define MONSTER_FLASH_SCALE		(255.0f/128)
-static const char monster_flash_offset[][3] =
+#define TYPE char
+
 #else
+
 // 6 bytes per flash
 #define MONSTER_FLASH_SCALE		(32767.0f/128)
-static const short monster_flash_offset[][3] =
+#define TYPE short
+
 #if 0
 // 12 bytes per flash - original variant
 #define MONSTER_FLASH_SCALE		1
-static const float monster_flash_offset[][3] =
+#define TYPE float
 #endif
+
 #endif
+
+static const TYPE monster_flash_offset[][3] =
 {
-#define F(x,y,z)	{ x*MONSTER_FLASH_SCALE, y*MONSTER_FLASH_SCALE, z*MONSTER_FLASH_SCALE }
+#define F(x,y,z)	{ TYPE(x*MONSTER_FLASH_SCALE), TYPE(y*MONSTER_FLASH_SCALE), TYPE(z*MONSTER_FLASH_SCALE) }
 	// flash 0 is not used
 	F(0.0, 0.0, 0.0),
 
@@ -470,3 +476,4 @@ static const float monster_flash_offset[][3] =
 	F(58.29, 27.11, 92.00)
 };
 #undef F
+#undef TYPE

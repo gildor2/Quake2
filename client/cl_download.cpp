@@ -180,7 +180,7 @@ void CL_ParseDownload ()
 		if (!cls.download)
 		{
 			net_message.readcount += size;
-			appWPrintf ("Failed to open %s\n", cls.DownloadTempName);
+			appWPrintf ("Failed to open %s\n", *cls.DownloadTempName);
 			RequestNextDownload ();
 			return;
 		}

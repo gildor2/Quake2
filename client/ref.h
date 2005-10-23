@@ -204,7 +204,7 @@ extern	cvar_t	*r_fullbright, *r_lightmap;
 
 typedef	bool (*CreateDynRenderer_t) (const refImport_t *, refExport_t *);
 
-#ifndef STATIC_BUILD
+#if !STATIC_BUILD
 
 #define RENDERER_EXPORT		\
 	extern "C" DLL_EXPORT bool CreateRenderer (const refImport_t *rimp, refExport_t *rexp) \

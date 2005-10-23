@@ -2,9 +2,9 @@
 #include "gl_shader.h"
 #include "gl_buffers.h"
 
-//#define DEBUG_SHADERS
+//#define DEBUG_SHADERS		1
 #if MAX_DEBUG
-#define DEBUG_SHADERS
+#define DEBUG_SHADERS		1
 #endif
 
 
@@ -24,7 +24,7 @@ shader_t *gl_detailShader;
 shader_t *gl_skyShader;				// current sky shader (have mapped images)
 shader_t *gl_alphaShader1, *gl_alphaShader2;
 
-#ifdef DEBUG_SHADERS
+#if DEBUG_SHADERS
 static cvar_t *gl_debugShaders;
 #endif
 
@@ -55,9 +55,9 @@ static int ComputeHash (const char *name)
 
 
 // forwards
-void FindShaderScripts ();
-void FreeShaderScripts ();
-bool InitShaderFromScript (const char *srcName, const char *text = NULL);
+static void FindShaderScripts ();
+static void FreeShaderScripts ();
+static bool InitShaderFromScript (const char *srcName, const char *text = NULL);
 
 
 /*-----------------------------------------------------------------------------
@@ -121,7 +121,7 @@ static void Shaderlist_f (bool usage, int argc, char **argv)
 void InitShaders ()
 {
 	RegisterCommand ("shaderlist", Shaderlist_f);
-#ifdef DEBUG_SHADERS
+#if DEBUG_SHADERS
 	gl_debugShaders = Cvar_Get ("gl_debugShaders", "0");
 #endif
 
@@ -294,7 +294,8 @@ static shader_t *FinishShader ()
 		sh.sortParam = SORT_DECAL;
 
 	// enum and count stages
-	for (int numStages = 0; numStages < MAX_SHADER_STAGES; numStages++)
+	int numStages;
+	for (numStages = 0; numStages < MAX_SHADER_STAGES; numStages++)
 	{
 		shaderStage_t *s = &st[numStages];
 		if (!s->numAnimTextures) break;
@@ -926,7 +927,7 @@ static void FindShaderScripts ()
 		char *buf = (char*)GFileSystem->LoadFile (va("scripts/%s", file->name));	//?? FS_PATH_NAMES
 		if (!buf) continue;			// should not happens
 
-#ifdef DEBUG_SHADERS
+#if DEBUG_SHADERS
 		if (gl_debugShaders->integer) appPrintf (S_GREEN"%s\n", file->name);
 #endif
 		CSimpleParser text;
@@ -939,7 +940,7 @@ static void FindShaderScripts ()
 				errMsg = va("unexpected \"%s\"", line);
 				break;
 			}
-#ifdef DEBUG_SHADERS
+#if DEBUG_SHADERS
 			if (gl_debugShaders->integer) appPrintf (S_RED"%s\n", line);
 #endif
 			TString<64> Name;
@@ -976,7 +977,7 @@ static void FindShaderScripts ()
 
 			numScripts++;
 		}
-#ifdef DEBUG_SHADERS
+#if DEBUG_SHADERS
 		if (gl_debugShaders->integer && errMsg) appWPrintf ("ERROR in scripts/%s: %s\n", file->name, errMsg);	//?? FS_PATH_NAMES
 #endif
 
@@ -1034,7 +1035,7 @@ static bool InitShaderFromScript (const char *srcName, const char *text)
 					}
 			if (!scr) return false;
 
-#ifdef DEBUG_SHADERS
+#if DEBUG_SHADERS
 			if (gl_debugShaders->integer) appWPrintf ("found %s in %s %X-%X\n", scr->name, *scr->FileName, scr->start, scr->end);
 #endif
 			// load script file
@@ -1050,7 +1051,7 @@ static bool InitShaderFromScript (const char *srcName, const char *text)
 		}
 	}
 
-#ifdef DEBUG_SHADERS
+#if DEBUG_SHADERS
 	if (gl_debugShaders->integer) appPrintf (S_GREEN"%s:\n-----\n%s\n-----\n", srcName, text);
 #endif
 

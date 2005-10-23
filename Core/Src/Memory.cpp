@@ -96,7 +96,7 @@ void *appMalloc (size_t size, int alignment)
 	if (GCurrentMemAllocator)
 	{
 		hdr->owner = GCurrentMemAllocator;
-		GCurrentMemAllocator = NULL;
+		GCurrentMemAllocator = (address_t)NULL;
 	}
 	else
 		hdr->owner = GET_RETADDR(size);
@@ -267,7 +267,8 @@ static int CompareAllocators (const FAllocatorInfo *a1, const FAllocatorInfo *a2
 
 //?? used "void*" to avoid FAllocatorInfo declaration in MemoryMgr.h (may be, can do this better ?)
 //?? BuildAllocatorsTable declared in MemoryMgr.h as friend of CMemoryChain
-static int BuildAllocatorsTable (void *info1, int maxCount)
+//?? Should be "static", but GCC not allow to use this function as "friend" in header (=> extern) and "static" here ...
+/*static*/ int BuildAllocatorsTable (void *info1, int maxCount)
 {
 	int		i;
 	FAllocatorInfo *p;

@@ -166,14 +166,15 @@ printf ("Found %d engine functions ...\n", Parse ());
 #------------------------------------------------------------------------------
 
 print DEFS <<EOF
-typedef struct {
+struct $typename1
+{
 	int		struc_size;
 EOF
 ;
 Parse ("EmitStruc", "EmitDefsPrep");
 
 print DEFS <<EOF
-} $typename1;
+};
 
 EOF
 ;
@@ -182,9 +183,10 @@ EOF
 #------------------------------------------------------------------------------
 
 print DEFS <<EOF
-#ifndef DYNAMIC_REF
+#if STATIC_BUILD || !IS_RENDERER
+// engine itself or statically linked renderer
 #include "engine.h"
-#else // DYNAMIC_REF
+#else // dynamic renderer -> engine interface
 
 extern $typename1 $strucname;
 
@@ -193,7 +195,7 @@ EOF
 Parse ("EmitDefine", "EmitDefsPrep");
 print DEFS <<EOF
 
-#endif // DYNAMIC_REF
+#endif // renderer -> engine interface
 
 EOF
 ;
@@ -242,13 +244,14 @@ printf ("Found %d renderer functions ...\n", Parse ());
 #------------------------------------------------------------------------------
 
 print DEFS <<EOF
-typedef struct {
+struct $typename2
+{
 	int		struc_size;
 EOF
 ;
 Parse ("EmitStruc", "EmitHdrPrep");
 
-print (DEFS "} $typename2;\n\n");
+print (DEFS "};\n\n");
 
 
 #------------------------------------------------------------------------------
@@ -256,7 +259,8 @@ print (DEFS "} $typename2;\n\n");
 #------------------------------------------------------------------------------
 
 print DEFS <<EOF
-#ifndef SINGLE_RENDERER
+#if !IS_RENDERER
+#	if !SINGLE_RENDERER
 
 extern $typename2 $strucname;
 
@@ -265,7 +269,7 @@ EOF
 Parse ("EmitDefine", "EmitDefsPrep");
 print DEFS <<EOF
 
-#else // SINGLE_RENDERER
+#	else // SINGLE_RENDERER
 
 namespace $rend
 {
@@ -278,7 +282,8 @@ Parse ("EmitDefine2", "EmitDefsPrep");
 
 print DEFS <<EOF
 
-#endif // SINGLE_RENDERER
+#	endif // SINGLE_RENDERER
+#endif // IS_RENDERER
 
 EOF
 ;
@@ -288,7 +293,7 @@ EOF
 #------------------------------------------------------------------------------
 
 print CODE <<EOF
-// don't know why, but VC6 (7-untested) will drop var without following line:
+// don't know why, but VC6 (VC7/GCC-untested) will drop var without following line:
 extern const $typename2 $strucname;
 
 const $typename2 $strucname = {

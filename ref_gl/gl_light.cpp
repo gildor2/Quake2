@@ -245,9 +245,6 @@ static void AddLight (const CAxis &axis, const CVec3 &dir, float scale, const CV
 }
 
 
-static int traces, fasttraces, badtraces;
-
-
 static void AddPointLight (const gl_slight_t *sl, const CVec3 &origin, const CAxis &axis, const byte *vis)
 {
 	if (vis && sl->cluster >= 0)
@@ -441,7 +438,7 @@ static void AddSurfaceLight (const surfLight_t *rl, const CVec3 &origin, const C
 
 static lightCell_t darkCell, outCell;	// zero-initialized
 
-#define NORMALIZE_AXIS
+#define NORMALIZE_AXIS		1
 
 static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 {
@@ -544,7 +541,7 @@ static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 		map.numLightCells++;
 
 		byte *dst;
-#ifdef NORMALIZE_AXIS
+#if NORMALIZE_AXIS
 		// find maximal color
 		float m = 0;
 		for (i = 0, out = entityColorAxis[0].v; i < 6*3; i++, out++)
@@ -754,7 +751,7 @@ void LightForEntity (refEntity_t *ent)
 				entityColorAxis[i][j] = (1 - glow) * entityColorAxis[i][j] + glow * 255;
 	}
 
-#ifdef NORMALIZE_AXIS
+#if NORMALIZE_AXIS
 	{
 		// find maximal color
 		float m = 0;

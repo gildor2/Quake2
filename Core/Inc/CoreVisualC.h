@@ -1,6 +1,6 @@
 /*=============================================================================
 
-	Core definitions for Win32/VisualC++ platform
+	Core definitions for VisualC++ compiler
 
 =============================================================================*/
 
@@ -15,10 +15,10 @@
 
 
 /*-----------------------------------------------------------------------------
-	Platform-specific type defines
+	Type defines
 -----------------------------------------------------------------------------*/
 
-#define LITTLE_ENDIAN
+#define LITTLE_ENDIAN		1
 
 typedef unsigned char		byte;		//?? change name to BYTE etc
 //??typedef unsigned short	word;
@@ -26,13 +26,6 @@ typedef unsigned char		byte;		//?? change name to BYTE etc
 typedef unsigned __int64	int64;		//?? INT64
 
 typedef unsigned int		address_t;
-
-
-// if windows.h is not included ...
-#ifndef _WINDOWS_
-#	define HANDLE		void*
-#	define HINSTANCE	void*
-#endif
 
 
 /*-----------------------------------------------------------------------------
@@ -47,19 +40,11 @@ typedef unsigned int		address_t;
 #define DLL_IMPORT	__declspec(dllimport)
 #define DLL_EXPORT	__declspec(dllexport)
 #define NORETURN	__declspec(noreturn)
+#define PRINTF(n,m)						// no way ...
 
 #define	GET_RETADDR(firstarg)	(* ( ((unsigned*)&firstarg) -1 ) )
 
 #define vsnprintf _vsnprintf
-
-
-// Package implementation
-#define IMPLEMENT_PACKAGE(version,build,date)		\
-	extern const char GPackage[]   = STR(PACKAGE);	\
-	extern const char PkgVersion[] = STR(PACKAGE) " version " STR(version) " build " STR(build) " (" date ")";\
-	HINSTANCE hInstance;							\
-	int __stdcall DllMain (HINSTANCE hInst, int Reason, void *Reserved)	\
-	{ hInstance = hInst; return 1; }
 
 
 // disable some compiler warnings
@@ -78,15 +63,6 @@ typedef unsigned int		address_t;
 		extern int *assert_##name;		\
 		if (!(expr)) assert_##name = 0;	\
 	}
-
-
-/*-----------------------------------------------------------------------------
-	Win32 global variables
------------------------------------------------------------------------------*/
-
-const char *appGetSystemErrorMessage (unsigned code);
-extern bool GIsWinNT, GIsWin2K;
-extern HINSTANCE hInstance;
 
 
 /*-----------------------------------------------------------------------------
@@ -170,50 +146,6 @@ inline float appDeltaCyclesToMsecf (int64 &timeDelta)
 
 
 /*-----------------------------------------------------------------------------
-	Dynamic libraries
------------------------------------------------------------------------------*/
-
-#define DLLEXT		".dll"
-
-// some declarations from kernel32.dll (to avoid use of <windows.h>)
-#ifndef WINAPI
-extern "C" {
-	DLL_IMPORT	HINSTANCE __stdcall LoadLibraryA (const char *name);
-	DLL_IMPORT	void*	__stdcall GetProcAddress (HINSTANCE dllHandle, const char *name);
-	DLL_IMPORT	int		__stdcall FreeLibrary (HINSTANCE dllHandle);
-}
-#endif
-
-// portable wrapped for dynamic libraries
-class CDynamicLib
-{
-private:
-	HINSTANCE hDll;
-public:
-	inline bool Load (const char *name)
-	{
-		hDll = LoadLibraryA (name);
-		return hDll != NULL;
-	}
-	inline void Free ()
-	{
-		if (!hDll) return;			// not loaded
-		FreeLibrary (hDll);
-		hDll = NULL;
-	}
-	inline bool GetProc (const char *name, void *func)
-	{
-		*(address_t*)func = (address_t) GetProcAddress (hDll, name);
-		return (*(address_t*)func != NULL);
-	}
-	inline operator bool ()
-	{
-		return hDll != NULL;
-	}
-};
-
-
-/*-----------------------------------------------------------------------------
 	guard/unguard macros
 -----------------------------------------------------------------------------*/
 
@@ -244,11 +176,11 @@ public:
 
 #if 0
 #include <excpt.h>
-CORE_API int win32ExceptFilter (struct _EXCEPTION_POINTERS *info);
+CORE_API unsigned WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info);
 #define EXCEPT_FILTER	win32ExceptFilter(GetExceptionInformation())
 #else
 // this will allow to produce slightly smaller code, but may not work under non-VC6 compiler
-CORE_API int win32ExceptFilter2 ();
+CORE_API unsigned win32ExceptFilter2 ();
 #define EXCEPT_FILTER	win32ExceptFilter2()
 #endif
 

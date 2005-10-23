@@ -632,8 +632,6 @@ static void ApplyAnimation (clientInfo_t &ci, animState_t &as, entity_t &ent)
 {
 	RunAnimation (ci, as);
 
-	animation_t &anim = ci.animations[as.animNum];
-
 	ent.oldframe = as.oldFrame;
 	ent.frame    = as.frame;
 	ent.backlerp = (as.time > as.oldTime) ? 1.0f - (float)(curTime - as.oldTime) / (as.time - as.oldTime) : 0;

@@ -8,18 +8,21 @@ namespace OpenGLDrv {
 
 static CMemoryChain *subdivPolyChain;
 
+#if MAX_DEBUG
+#define POLY_DEBUG		1
+#endif
 
 struct poly_t
 {
 	int		numIndexes;
 	int		*indexes;
-#ifdef POLY_DEBUG
+#if POLY_DEBUG
 	int		maxIndexes;
 #endif
 	poly_t	*next;
 	void AddPoint (int index)
 	{
-#ifdef POLY_DEBUG
+#if POLY_DEBUG
 		if (numIndexes >= maxIndexes)
 			Com_DropError ("poly_t::AddPoint: index overflow");
 #endif
@@ -31,7 +34,7 @@ struct poly_t
 		// alloc poly
 		indexes    = new (subdivPolyChain) int[numVerts];
 //		numIndexes = 0;
-#ifdef POLY_DEBUG
+#if POLY_DEBUG
 		maxIndexes = numVerts;
 #endif
 //		next       = NULL;
@@ -39,7 +42,6 @@ struct poly_t
 };
 
 
-//#define POLY_DEBUG
 #define SUBDIV_ERROR	0.2					// max deviation from splitting plane
 
 // verts
@@ -53,7 +55,8 @@ static poly_t *subdivPolys;
 
 static int NewVert (float x, float y, float z)
 {
-	for (int i = 0; i < subdivNumVerts; i++)
+	int i;
+	for (i = 0; i < subdivNumVerts; i++)
 	{
 		CVec3 &v = *psubdivVerts[i];
 		if (v[0] == x && v[1] == y && v[2] == z)

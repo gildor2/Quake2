@@ -112,7 +112,11 @@ struct game_import_t
 	void	(*setmodel) (edict_t *ent, char *name);
 
 	// collision detection
-	trace_t	(*trace) (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passent, int contentmask);
+#if _WIN32
+	trace_t* (*trace) (trace_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passent, int contentmask);
+#else
+	#error trace_t returned -- check calling convention
+#endif
 	int		(*pointcontents) (const CVec3 &point);
 	qboolean (*inPVS) (const CVec3 &p1, const CVec3 &p2);
 	qboolean (*inPHS) (const CVec3 &p1, const CVec3 &p2);

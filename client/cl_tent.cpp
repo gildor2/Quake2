@@ -53,11 +53,6 @@ static mBeam_t	cl_mBeams[MAX_BEAMS];
 //PMM - added this for player-linked beams. Currently only used by the plasma beam
 static mBeam_t	cl_mPlayerbeams[MAX_BEAMS];
 
-//?? externs
-void CL_TeleportParticles (const CVec3 &org);
-void CL_ExplosionParticles (const CVec3 &org);
-void CL_BFGExplosionParticles (const CVec3 &org);
-
 
 static sfx_t *cl_sfx_ric[3];
 static sfx_t *cl_sfx_lashit;
@@ -68,8 +63,6 @@ static sfx_t *cl_sfx_railg;
 static sfx_t *cl_sfx_rockexp;
 static sfx_t *cl_sfx_grenexp;
 static sfx_t *cl_sfx_watrexp;
-// XATRIX
-static sfx_t *cl_sfx_plasexp;
 // ROGUE
 static sfx_t *cl_sfx_lightning;
 static sfx_t *cl_sfx_disrexp;
@@ -87,8 +80,6 @@ static CRenderModel *cl_mod_parasite_tip;
 static CRenderModel *cl_mod_explo4;
 static CRenderModel *cl_mod_bfg_explo;
 CRenderModel		*cl_mod_powerscreen;
-// XATRIX
-static CRenderModel *cl_mod_plasmaexplo;
 // ROGUE
 static CRenderModel *cl_mod_lightning;
 static CRenderModel *cl_mod_heatbeam;
@@ -175,8 +166,6 @@ void CL_RegisterTEntSounds (void)
 	cl_sfx_rockexp = S_RegisterSound ("weapons/rocklx1a.wav");
 	cl_sfx_grenexp = S_RegisterSound ("weapons/grenlx1a.wav");
 	cl_sfx_watrexp = S_RegisterSound ("weapons/xpld_wat.wav");
-	// XATRIX
-	// cl_sfx_plasexp = S_RegisterSound ("weapons/plasexpl.wav");
 
 	cl_sfx_fallshort = S_RegisterSound ("player/land1.wav");
 	S_RegisterSound ("player/fall1.wav");

@@ -405,7 +405,7 @@ void NET_Init ()
 {
 	guard(NET_Init);
 
-#ifdef _WIN32
+#if _WIN32
 	//?? may be, non-fatal error; when try to NET_Config(true) -> DropError("no network")
 	WSADATA data;
 	if (int err = WSAStartup (MAKEWORD(1,1), &data))
@@ -424,7 +424,7 @@ void NET_Init ()
 void NET_Shutdown ()
 {
 	NET_Config (false);	// close sockets
-#ifdef _WIN32
+#if _WIN32
 	WSACleanup ();
 #endif
 }

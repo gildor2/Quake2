@@ -369,8 +369,8 @@ static void TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex)
 	Drawing
 -----------------------------------------------------------------------------*/
 
-#define SKY_FRUST_DIST	10			// 1 is not enough - bad FP precision
-//#define VISUALIZE_SKY_FRUSTUM		// NOTE: SKY_FRUST_DIST should be at least gl_znear->value to make rect visible
+#define SKY_FRUST_DIST	10				// 1 is not enough - bad FP precision
+//#define VISUALIZE_SKY_FRUSTUM		1	// NOTE: SKY_FRUST_DIST should be at least gl_znear->value to make rect visible
 
 void DrawSky ()
 {
@@ -383,7 +383,7 @@ void DrawSky ()
 	VectorMA (vp.view.origin, SKY_FRUST_DIST, vp.view.axis[0], tmp);
 	VectorScale (vp.view.axis[1], SKY_FRUST_DIST * vp.t_fov_x * 1.05, right);	// *1.05 -- to avoid FP precision bugs
 	VectorScale (vp.view.axis[2], SKY_FRUST_DIST * vp.t_fov_y * 1.05, up);
-#ifdef VISUALIZE_SKY_FRUSTUM
+#if VISUALIZE_SKY_FRUSTUM
 	right.Scale (0.9);
 	up.Scale (0.9);
 #endif
@@ -465,7 +465,7 @@ void DrawSky ()
 
 	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
 
-#ifdef VISUALIZE_SKY_FRUSTUM
+#if VISUALIZE_SKY_FRUSTUM
 	glPushMatrix ();
 	glLoadMatrixf (&vp.modelMatrix[0][0]);		// world matrix
 	GL_SetMultitexture (0);

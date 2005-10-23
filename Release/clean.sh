@@ -1,4 +1,4 @@
 #!/bin/bash
 
-rm -rf obj ../lib/obj
-rm -f *.log ../lib/*.log *.pdb
+rm -rf obj-* ../Out/obj-* ../lib/obj
+rm -f *.log ../Out/*.log ../lib/*.log *.pdb

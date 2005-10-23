@@ -35,7 +35,7 @@ typedef struct
 
 // Used fields for TexEnv for each function
 static const texEnvInfo_t texEnvInfo[] = {
-	{-1, 0, 0},
+	{(unsigned)-1, 0, 0},
 	{STD_MASK, GL_REPLACE, 0},
 	{STD_MASK, GL_MODULATE, 0},
 	{STD_MASK, GL_ADD, 0},
@@ -47,7 +47,7 @@ static const texEnvInfo_t texEnvInfo[] = {
 };
 
 static const texEnvSource_t texEnvSource[] = {
-	{-1, -1, -1},		// "-1" is differs from "GL_ZERO"
+	{(GLenum)-1, (GLenum)-1, (GLenum)-1},		// "-1" is differs from "GL_ZERO"
 	// texture
 	{GL_TEXTURE, GL_SRC_COLOR, GL_SRC_ALPHA},
 	{GL_TEXTURE, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA},

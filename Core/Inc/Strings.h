@@ -43,8 +43,8 @@ CORE_API int appCStrlen (const char *str);
 // Remove color marks from string
 CORE_API void appUncolorizeString (char *dst, const char *src = NULL);
 
-CORE_API const char *va (const char *format, ...);
-CORE_API int appSprintf (char *dest, int size, const char *fmt, ...);
+CORE_API const char *va (const char *format, ...) PRINTF(1,2);
+CORE_API int appSprintf (char *dest, int size, const char *fmt, ...) PRINTF(3,4);
 
 CORE_API bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase = false);
 CORE_API bool appIsWildcard (const char *string);
@@ -308,7 +308,7 @@ public:
 	void filename (const char *s2)			{ appCopyFilename (str, s2, N); }	//?? rename function
 	void cat (const char *s2)				{ appStrcatn (str, N, s2); }
 	TString<N>& operator+= (const char *s2)	{ appStrcatn (str, N, s2); return *this; }
-	int sprintf (const char *fmt, ...)
+	int sprintf (const char *fmt, ...) PRINTF(2,3)
 	{
 		va_list	argptr;
 		va_start (argptr, fmt);
@@ -318,7 +318,7 @@ public:
 	}
 	// searching
 	char *chr (char c)						{ return strchr (str, c); }
-	const char *chr (char c) const			{ return strchr (srt, c); }
+	const char *chr (char c) const			{ return strchr (str, c); }
 	char *rchr (char c)						{ return strrchr (str, c); }
 	const char *rchr (char c) const			{ return strrchr (str, c); }
 	// lowercasing

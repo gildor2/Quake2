@@ -16,7 +16,8 @@ bool model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagName, 
 bool md3Model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const
 {
 	const char *name = tagNames;
-	for (int i = 0; i < numTags; i++, name += MAX_QPATH)
+	int i;
+	for (i = 0; i < numTags; i++, name += MAX_QPATH)
 		if (!strcmp (name, tagName))
 			break;
 	bool result = true;
@@ -214,9 +215,10 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 		for (j = 0, idx = surf->indexes; j < surf->numTris; j++, idx += 3)
 		{
 			CVec3 vecs[3], n;
+			int k;
 
 			// compute triangle normal
-			for (int k = 0; k < 3; k++)
+			for (k = 0; k < 3; k++)
 			{
 				VectorSubtract2 (verts[idx[k]].xyz, verts[idx[k == 2 ? 0 : k + 1]].xyz, vecs[k]);
 				vecs[k].NormalizeFast ();
@@ -300,7 +302,7 @@ static void SetMd3Skin (const char *name, surfaceMd3_t *surf, int index, const c
 #define MAX_XYZ_INDEXES		4096	// maximum number of verts in loaded md3 model
 
 #if 0
-#define BUILD_SCELETON
+#define BUILD_SCELETON		1
 //???? rename, may be remove
 //???? not works with MD3 (Q3) models
 static void CheckTrisSizes (surfaceMd3_t *surf, dMd2Frame_t *md2Frame = NULL, int md2FrameSize = 0)
@@ -499,7 +501,7 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 	BuildMd2Normals (surf, xyzIndexes, hdr->numXyz);
 	STAT(unclock(gl_ldStats.md2normals));
 
-#ifdef BUILD_SCELETON	//????
+#if BUILD_SCELETON	//????
 	CheckTrisSizes (surf, (dMd2Frame_t*)(buf + hdr->ofsFrames), hdr->frameSize);
 #endif
 
@@ -658,7 +660,7 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 			SetMd3Skin (name, surf, j, ss->name);
 		// next surface
 		ds = OffsetPointer (ds, ds->ofsEnd);
-#ifdef BUILD_SCELETON	//????
+#if BUILD_SCELETON	//????
 		CheckTrisSizes (surf);
 #endif
 	}

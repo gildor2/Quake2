@@ -1,10 +1,10 @@
-#ifdef _WIN32
+#if _WIN32
 #	define WIN32_LEAN_AND_MEAN		// exclude rarely-used services from windown headers
 #	include <windows.h>				// need this include, because have wgl and GDI functions in gl.h
 #endif
 
 #include "OpenGLDrv.h"
-#ifdef _WIN32
+#if _WIN32
 #	include "../win32/gl_win.h"		// for gl_hDC only
 #endif
 
@@ -21,6 +21,15 @@ static CDynamicLib libGL;
 
 GL_t		GL;
 static GL_t	lib;
+
+// access to GL_t functions by index
+//?? rename most things?
+typedef void (APIENTRY * dummyFunc_t) ();
+struct glDummy_t {
+	dummyFunc_t funcs[1];
+};
+#define GlFunc(struc,index)		reinterpret_cast<glDummy_t&>(struc).funcs[index]
+
 
 #if !NO_GL_LOG
 static COutputDeviceFile *LogFile;
@@ -43,7 +52,7 @@ bool QGL_Init (const char *libName)
 
 	for (int i = 0; i < NUM_GLFUNCS; i++)
 	{
-		if (!libGL.GetProc (GLNames[i], &lib.funcs[i]))
+		if (!libGL.GetProc (GLNames[i], &GlFunc(lib, i)))
 		{
 			// free library
 			libGL.Free ();
@@ -51,7 +60,7 @@ bool QGL_Init (const char *libName)
 			return false;
 		}
 	}
-#ifdef _WIN32
+#if _WIN32
 	// detect minidriver OpenGL version
 	if (!gl_driver->IsDefault())			// compare with opengl32.dll
 		appPrintf ("...minidriver detected\n");
@@ -154,7 +163,7 @@ void QGL_InitExtensions ()
 	gl_config.extensions = ext1 = (char*)glGetString (GL_EXTENSIONS);
 
 	ext2 = NULL;
-#ifdef _WIN32
+#if _WIN32
 	//?? from wglext.h -- later, when use this header, remove line
 	typedef const char * (WINAPI * PFNWGLGETEXTENSIONSSTRINGARBPROC) (HDC hdc);
 	PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB =
@@ -188,7 +197,7 @@ void QGL_InitExtensions ()
 				dummyFunc_t func;
 				libGL.GetProc (GLNames[j], &func);
 #endif
-				GL.funcs[j] = lib.funcs[j] = func;
+				GlFunc(GL, j) = GlFunc(lib, j) = func;
 				if (!func)
 				{
 					appWPrintf ("Inconsistent extension %s: function %s is not found\n", ext->name, GLNames[j]);
@@ -203,7 +212,7 @@ void QGL_InitExtensions ()
 		{
 			gl_config.extensionMask &= ~(1 << i);
 			for (j = ext->first; j < ext->first + ext->count; j++)
-				GL.funcs[j] = NULL;
+				GlFunc(GL, j) = NULL;
 		}
 	}
 
@@ -417,7 +426,7 @@ void QGL_LogMessage (const char *text)
 void QGL_SwapBuffers ()
 {
 	LOG_STRING("// QGL_SwapBuffers()\n");
-#ifdef _WIN32
+#if _WIN32
 	// swapinterval stuff
 	if (gl_swapinterval->modified)
 	{

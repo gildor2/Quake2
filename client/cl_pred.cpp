@@ -154,8 +154,28 @@ void CL_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bo
 
 
 //?? same as void CL_PMTrace(&trace, start, ...) -- but called from PMove() ...
-static trace_t CL_PMTrace (const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end)
+#if _WIN32
+static trace_t* CL_PMTrace (trace_t &trace, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end)
 {
+	guard(CL_PMTrace);
+	// check against world
+	CBox bounds;
+	bounds.mins = mins;
+	bounds.maxs = maxs;
+	CM_BoxTrace (trace, start, end, bounds, 0, MASK_PLAYERSOLID);
+	if (trace.fraction < 1.0)
+		trace.ent = (struct edict_s *)1;	//??
+
+	// check all other solid models
+	CL_EntityTrace (trace, start, end, bounds, MASK_PLAYERSOLID);
+
+	return &trace;
+	unguard;
+}
+#else
+	#error trace_t returned -- check calling convention
+#if 0
+{	// original code
 	trace_t	trace;
 
 	guard(CL_PMTrace);
@@ -173,6 +193,8 @@ static trace_t CL_PMTrace (const CVec3 &start, const CVec3 &mins, const CVec3 &m
 	return trace;
 	unguard;
 }
+#endif
+#endif // _WIN32
 
 
 int CL_PMpointcontents (const CVec3 &point)
@@ -223,7 +245,7 @@ int CL_PMpointcontents (const CVec3 &point)
 
 // Sets cl.predicted_origin and cl.predicted_angles
 
-void CL_PredictMovement (void)
+void CL_PredictMovement ()
 {
 	guard(CL_PredictMovement);
 
@@ -258,7 +280,7 @@ void CL_PredictMovement (void)
 	// copy current state to pmove
 	pmove_t	pm;
 	memset (&pm, 0, sizeof(pm));
-	pm.trace = CL_PMTrace;
+	pm.trace         = CL_PMTrace;
 	pm.pointcontents = CL_PMpointcontents;
 
 	pm_airaccelerate = atof (cl.configstrings[CS_AIRACCEL]);

@@ -6,6 +6,8 @@
 	OPTIMIZE  = size
 	INLINES   = all
 #	LIBC      = static	# WARNING: should be synced with main project LIBC
+!elif $COMPILER eq GnuC
+	OPTIMIZE  = size
 !endif
 
 OBJDIR = obj
@@ -22,7 +24,7 @@ DEFINES =			\
 	JDCT_FASTEST=JDCT_FLOAT \
 	NO_GETENV
 
-sources(LIB) = \
+sources(LIBFILES) = \
 	$D/jcapimin.c \
 	$D/jcapistd.c \
 	$D/jccoefct.c \
@@ -88,7 +90,7 @@ DEFINES =			\
 	DYNAMIC_CRC_TABLE	\
 	BUILDFIXED
 
-sources(LIB) = \
+sources(LIBFILES) = \
 	$D/adler32.c \
 	$D/crc32.c \
 	$D/inffast.c \
@@ -102,12 +104,12 @@ sources(LIB) = \
 
 DEFINES =
 
-sources(LIB) = \
+sources(LIBFILES) = \
 	zlib.cpp
 
 #------------------------------------------------------------------------------
 
 target( \
 	static, \	# static library
-	lib, \		# filename
-	LIB)		# name of the list of object files
+	libs, \		# filename
+	LIBFILES)	# name of the list of object files

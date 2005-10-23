@@ -90,7 +90,8 @@ static void InitHuffTable ()
 
 		// build the nodes
 		int *node = cin.huffNodes + prev*256*2;
-		for (int numhnodes = 256; numhnodes < 511; numhnodes++, node += 2)
+		int numhnodes;
+		for (numhnodes = 256; numhnodes < 511; numhnodes++, node += 2)
 		{
 			// pick two lowest counts
 			node[0] = GetSmallestNode (numhnodes, h_used, h_count);

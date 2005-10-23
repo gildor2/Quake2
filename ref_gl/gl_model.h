@@ -90,7 +90,7 @@ public:
 	int		dlightFrame;
 	unsigned dlightMask;
 	inlineModel_t *owner;
-	virtual void Tesselate (refEntity_t &ent) = NULL;
+	virtual void Tesselate (refEntity_t &ent) = 0;
 };
 
 class surfacePlanar_t : public surfaceBase_t

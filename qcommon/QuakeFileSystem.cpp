@@ -336,6 +336,7 @@ void FS_Tick ()
 	// process "game" changes
 	if (fs_game->modified)
 	{
+		//!! WARNING: configuration will be saved even if game is not changed (bad game or "baseq2"->"")
 		if (!stricmp (fs_game->string, BASEDIRNAME))
 			Cvar_ForceSet ("game", "");	// BASEDIRNAME->""
 		CL_WriteConfiguration (fs_configfile->string);
@@ -345,7 +346,7 @@ void FS_Tick ()
 			if (!DEDICATED)
 				Cbuf_AddText ("vid_restart\nsnd_restart\n");
 		}
-		Cvar_ForceSet ("game", (FS.GameDir == BASEDIRNAME) ? "" : FS.GameDir);
+		Cvar_ForceSet ("game", (FS.GameDir == BASEDIRNAME) ? "" : *FS.GameDir);
 		fs_game->modified = false;
 	}
 }

@@ -85,28 +85,28 @@ bool UnregisterCommand (const char *name)
 
 
 static char lineBuffer[MAX_CMDLINE];
-static char *_argv[MAX_ARGS];
-static int  _argc;
+static char *c_argv[MAX_ARGS];
+static int  c_argc;
 
 
 static void GetArgs (const char *str, bool expandVars)
 {
 	guard(GetArgs);
 	// preparing
-	_argc = 0;
+	c_argc = 0;
 	char *d = lineBuffer;
-	for (int i = 0; i < MAX_ARGS; i++) _argv[i] = "";
+	for (int i = 0; i < MAX_ARGS; i++) c_argv[i] = "";
 	// skip leading spaces
 	while (*str == ' ') str++;
 	// parsing line
 	while (char c = *str++)
 	{
-		if (_argc == MAX_ARGS)
+		if (c_argc == MAX_ARGS)
 		{
 			appWPrintf ("GetArgs: MAX_ARGS hit\n");
 			return;
 		}
-		_argv[_argc++] = d;
+		c_argv[c_argc++] = d;
 		//?? need to check lineBuffer overflow
 		//?? need to treat '\t' as ' '
 		if (c == '\"')
@@ -159,9 +159,9 @@ bool ExecuteCommand (const char *str)
 {
 	guard(ExecuteCommand);
 	GetArgs (str, true);
-	if (!_argc) return true;			// empty string
+	if (!c_argc) return true;			// empty string
 
-	CAlias *alias = AliasList.Find (_argv[0]);
+	CAlias *alias = AliasList.Find (c_argv[0]);
 	if (alias && !alias->active)
 	{
 		alias->active = true;
@@ -170,10 +170,10 @@ bool ExecuteCommand (const char *str)
 		return true;	//?? recurse
 	}
 
-	CCommand *cmd = CmdList.Find (_argv[0]);
+	CCommand *cmd = CmdList.Find (c_argv[0]);
 	if (cmd && cmd->func)
 	{
-		bool usage = _argc == 2 && !appStrcmp (_argv[1], "/?");
+		bool usage = c_argc == 2 && !appStrcmp (c_argv[1], "/?");
 		if (!(cmd->flags & COMMAND_USAGE) && usage)
 		{
 			appPrintf ("No usage info for command \"%s\"\n", cmd->name);
@@ -190,10 +190,10 @@ bool ExecuteCommand (const char *str)
 			((void (*) (bool)) cmd->func) (usage);
 			break;
 		case COMMAND_ARGS:
-			((void (*) (int, char**)) cmd->func) (_argc, _argv);
+			((void (*) (int, char**)) cmd->func) (c_argc, c_argv);
 			break;
 		case COMMAND_USAGE|COMMAND_ARGS:
-			((void (*) (bool, int, char**)) cmd->func) (usage, _argc, _argv);
+			((void (*) (bool, int, char**)) cmd->func) (usage, c_argc, c_argv);
 			break;
 		case COMMAND_ARGS2:
 			((void (*) (const char*)) cmd->func) (str);
@@ -216,11 +216,11 @@ bool ExecuteCommand (const char *str, const CSimpleCommand *CmdList, int numComm
 	guard(ExecuteSimpleCommand);
 	GetArgs (str, false);
 	for (int i = 0; i < numCommands; i++, CmdList++)
-		if (!appStricmp (CmdList->name, _argv[0]))
+		if (!appStricmp (CmdList->name, c_argv[0]))
 		{
 			if (!CmdList->func) return true;		// NULL function
 			guard(cmd)
-			CmdList->func (_argc, _argv);
+			CmdList->func (c_argc, c_argv);
 			return true;
 			unguardf(("%s", CmdList->name))
 		}

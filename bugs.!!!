@@ -103,7 +103,7 @@ HARDWARE:
 
 SOURCE FILES (COMPILER):
 ~~~~~~~~~~~~~~~~~~~~~~~~
-- (VisualC++ 6) when compiling renderer with DYNAMIC_REF:
+- (VisualC++ 6) when compiling renderer with !STATIC_BUILD:
   - "unguard" will be linked to "NORETURN struc.appUnwindThrow()"; VC ignores NORETURN here,
     and will display warning C4715 (not all control paths return value)
   - FS_LoadFile(filename, &len) have arg "unsigned *len"; using this via structure will produce warning C4700
@@ -118,3 +118,13 @@ SOURCE FILES (COMPILER):
   - not understand template classes as friends (VC7 - OK)
 - (VisualC++ 7) -- cannot use default arguments for functions, which are part of structure
   Workaround: should use Struc_Func() inline (with default args) instead of struc.Func() call
+- GNU C++ 3.4:
+  - optimization: "-O2"-level:
+    - q_shared.cpp: bugs with movement, light
+      => fix: disable "force-mem"
+    - gl_light.cpp: bad lighting on models
+      => fix: disable "force-mem"
+    - gl_bspmodel.cpp: bad light: (q2dm1) no dlights on walls with normal {-1,0,0}; no lighting for models from this wall's SURF_LIGHT
+      => fix: disable "shedule-insns2"
+    - gl_frontend - crash on 1st world render frame
+      => "unit-at-a-time" ("-Os" only, no with simple "-O2")

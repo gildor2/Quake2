@@ -59,23 +59,25 @@ struct cplane_t;
 //--------------- some constants ------------------------------
 
 // version number
-#define	VERSION			4.14
+#define	VERSION			4.15
 
-#ifdef _WIN32
+#if _WIN32
 
 #define BUILDSTRING		"Win32"
-#ifdef _M_IX86
-#	define	CPUSTRING	"x86"
-#elif defined _M_ALPHA
-#	define	CPUSTRING	"AXP"
+#if _M_IX86				// VisualC std define for x86
+#	define CPUSTRING	"x86"
+#elif _M_ALPHA
+#	define CPUSTRING	"AXP"
+#elif __MINGW32__
+#	define CPUSTRING	"x86"			// CygWin or Mingw32
 #endif
 
-#elif defined __linux__
+#elif __linux__
 
 #define BUILDSTRING		"Linux"
-#ifdef __i386__
+#if __i386__
 #	define CPUSTRING	"i386"
-#elif defined __alpha__
+#elif __alpha__
 #	define CPUSTRING	"axp"
 #else
 #	define CPUSTRING	"Unknown"
@@ -89,9 +91,10 @@ struct cplane_t;
 #endif	// platform
 
 
+
 #define VERSION_STR		STR(VERSION) " " CPUSTRING " " __DATE__ " " BUILDSTRING
 
-#ifndef DEDICATED_ONLY
+#if !DEDICATED_ONLY
 #define DEDICATED		dedicated->integer
 #else
 #define DEDICATED		1
@@ -99,10 +102,10 @@ struct cplane_t;
 
 
 #if NO_DEBUG && !defined(NO_DEVELOPER)
-#define NO_DEVELOPER
+#define NO_DEVELOPER	1
 #endif
 
-#ifndef NO_DEVELOPER
+#if !NO_DEVELOPER
 #define DEVELOPER		developer->integer
 #else
 #define DEVELOPER		0
@@ -158,7 +161,7 @@ public:
 
 	// Functions
 	void Init (void *data, int length);		// setup buffer
-	inline Clear ()							// clear writting
+	inline void Clear ()					// clear writting
 	{
 		cursize = 0;
 		overflowed = false;
@@ -692,7 +695,7 @@ const char *FS_NextPath (const char *prevpath);
 /*------------- Miscellaneous -----------------*/
 
 // debugging
-void DebugPrintf (const char *fmt, ...);
+void DebugPrintf (const char *fmt, ...) PRINTF(1,2);
 
 server_state_t Com_ServerState ();		// this should have just been a cvar...
 void	Com_SetServerState (server_state_t state);
@@ -706,7 +709,7 @@ inline float frand ()
 	return rand() * (1.0f/RAND_MAX);
 }
 
-#ifdef DYNAMIC_REF
+#if !STATIC_BUILD && IS_RENDERER
 // Using inline version will grow executable by ~2Kb (cl_fx.cpp uses a lots of [c|f]rand() calls)
 // BUT: require this for dynamic renderer (or move to "engine.h" or to Core)
 // Most frequent use:

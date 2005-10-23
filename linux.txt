@@ -1,14 +1,52 @@
+FIRST TODO (for crash detection):
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- fast math - make ability to turn off with #define (for debug; may be, GCC optimizes good by self ...)
+- floor/ceil/round: not so fast ... (check GCC FAST_MATH ...); appRound() via lrint() rounds 2.5 and 4.5 to 3 (same as VC ...)
+- assert(cond) or UT-like check() and verify()
+
+
+GCC TODO:
+~~~~~~~~~
+- own directory for output (currently: "Out")
+  ? create from $PLATFORM in script: "out-$PLATFORM" etc (distinguish VC and Mingw32 !? - but
+    different .obj/.o .lib/.a, but same .exe -- may be, place in same dir)
+  - use this dir for .rar packing as ignored -- but store .exe (ignore obj's)
+- may be, access to SDK/includes from src as "#include <>" instead of "#include """
+! compare VC/GCC speed
+- asm constructions:
+  - check floor/ceil/round (implement asm? check mingw math.h header for some details)
+- "build.sh" - should compile using VC or GCC ... (multiplatform)
+! -ffunction-sections and -fdata-sections grow q2 executable size up to 5 Mb ?!
+- structure copy (for CVec3) is per-element (not memcpy())
+? GPF: exception handler is not possible to throw C++ exception (CoreWin32.cpp: ExceptFIlter() is useless)
+! check bugs with GCC ("bugs.!!!" file)
+
+
 To port application to Linux require following steps:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- adapt "genmake" for GCC (G++)
 - port Core/*Win32.cpp
+- exception hook: use signal() functions
 - compile TestApp
 - make net_wins.cpp cross-platform
 - create sys_win.cpp for Linux
 - compile dedicated server
 - verify network compatibility with Win32
+! check compatibility of linux game.so call to trace() with win32 one (may be, require 2 different functions!)
 - ...
 
 
-Functions:
-- strerror(code) -- appGetSystemErrorMessage()
+Notes:
+- appGetSystemErrorMessage() -- strerror(code)
+- #pragma(pack...) -- struct name __attribute__((__packed__)) {}
+  (note: may use __attribute__((packed)) instead
+- function attributes:
+  - warn_usused_result - warning, when result of function ignored
+  - constructor/destructor - call function before main()/exit()
+  - format_arg(index) - arg #index is printf-like format specifier
+- DLL_IMPORT/DLL_EXPORT:
+  - use __attribute__((visibility))
+  - check "dsohowto.pdf" chapter 2.2 (seems, require GCC 4+ or patched compiler)
+  - check misc/compilers/GCC_Visibility.htm
+- varargs in macros (see GCC doc 5.15)
+- type_t varName; "typeof(varName) varName2" == "type_t varName2"
+- __func__ macro: const char name[] of current function

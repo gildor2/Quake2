@@ -254,6 +254,7 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 
 	int pitch = bound(appRound (ps->viewangles[PITCH]), -90, 90);
 
+	//!! granade attack: when crouched -> crattack (normal); when standing -> wave#8->vave#1
 	//!! pain: 54-57,58-61,62-65; crpain: 169-172 -> angles (may be, mix rotate + lean angles?)
 
 	// send

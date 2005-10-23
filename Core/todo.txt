@@ -5,13 +5,37 @@ SOURCE CODE
   - use LITTLE_ENDIAN/BIG_ENDIAN defines (not run-time detection !)
   - use inline overloaded functions: LITTLE(short|ushort|int|uint|float), BIG(...)
 - appStrcpy, strncpy, strcmp, stricmp -> CRT functions (when required, can make #define strcpy appStrcpy ...)
-- GCC: add macros for printf_format-like functions (better control on wrong parameters); check wrong TString<> usage
-  as "Str", not "*Str"
 - VC2003+: compiler option /LTCG - intermodule optimizations ("link-time code generation") + /GL
 
 COMPILER BUGS
 ~~~~~~~~~~~~~
 - guard/unguard [Slow] not always added: not works for strings.cpp :: appStrcmp(), appStrcpy() etc. (small functions)
+- VisualC and GnuC have incompatible cdecl convention for functions, returning a structure: VC on return will keep
+  in stack all variabled, but GCC will use "retn 4" -- e.g. will drop pointer to return value buffer
+  0) original code:
+    strucType Func (arg1, arg2, ...)
+    {
+        strucType var;
+        action(&var);
+        return var;
+    }
+  1) VisualC:
+    -- compiled as following: --
+    strucType* Func (strucType* var, arg1, arg2, ...)
+    {
+        strucType var2;
+        action(&var2);
+        *var = var2;
+        return var;
+    }
+    -- code may be replaced with: --
+    strucType* Func (strucType* var, arg1, arg2, ...)
+    {
+        action(&var);
+        return var;
+    }
+  2) GnuC:
+     *** add details here *** (seems, no compatible replacement -- mixed cdecl+stdcall/pascal)
 
 TOOL:
 ~~~~~

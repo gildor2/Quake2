@@ -1,6 +1,11 @@
 #include "WinPrivate.h"
 #include "../client/client.h"
 
+#if __MINGW32__
+// for VC included automatically
+#include <pbt.h>
+#endif
+
 #include "resource.h"
 
 
@@ -17,7 +22,7 @@ static cvar_t	*vid_xpos;				// X coordinate of window position
 static cvar_t	*vid_ypos;				// Y coordinate of window position
 
 
-#ifndef SINGLE_RENDERER
+#if !SINGLE_RENDERER
 
 static cvar_t	*vid_ref;
 static CDynamicLib refLibrary;			// handle to renderer DLL; rename ??
@@ -519,21 +524,21 @@ static void Vid_UpdateWindowPosAndSize (int x, int y)
 static void FreeRenderer ()
 {
 	refActive = false;
-#ifndef SINGLE_RENDERER
+#if !SINGLE_RENDERER
 	refLibrary.Free ();		// if statically linked, handle = NULL ...
 	memset (&re, 0, sizeof(re));
 #endif
 }
 
 
-#if defined(STATIC_BUILD) && !defined(SINGLE_RENDERER)
+#if STATIC_BUILD && !SINGLE_RENDERER
 // externs
 namespace OpenGLDrv {
 	extern const refExport_t re;
 }
 #endif
 
-#ifndef SINGLE_RENDERER
+#if !SINGLE_RENDERER
 static bool LoadRenderer (const char *name)
 #else
 static bool LoadRenderer ()
@@ -547,11 +552,11 @@ static bool LoadRenderer ()
 		FreeRenderer ();
 	}
 
-#ifndef SINGLE_RENDERER
+#if !SINGLE_RENDERER
 
 	appPrintf ("Loading %s\n", name);
 
-#ifdef STATIC_BUILD
+#if STATIC_BUILD
 	if (!strcmp (name, "gl"))
 		re = OpenGLDrv::re;
 	else
@@ -612,7 +617,7 @@ void Vid_Tick ()
 		win_priorityBoost->modified = false;
 	}
 
-#ifndef SINGLE_RENDERER
+#if !SINGLE_RENDERER
 	if (vid_ref->modified)
 	{
 		needRestart = true;
@@ -627,7 +632,7 @@ void Vid_Tick ()
 		S_StopAllSounds_f ();
 		cl.rendererReady = false;
 
-#ifndef SINGLE_RENDERER
+#if !SINGLE_RENDERER
 		static char lastRenderer[MAX_QPATH];
 
 		bool loaded = LoadRenderer (vid_ref->string);
@@ -663,7 +668,7 @@ void Vid_Tick ()
 void Vid_Init ()
 {
 CVAR_BEGIN(vars)
-#ifndef SINGLE_RENDERER
+#if !SINGLE_RENDERER
 	CVAR_FULL(&vid_ref, "vid_ref", DEFAULT_RENDERER, CVAR_ARCHIVE),
 #endif
 	CVAR_VAR(vid_xpos, 0, CVAR_ARCHIVE),

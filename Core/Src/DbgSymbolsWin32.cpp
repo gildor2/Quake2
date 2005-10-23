@@ -2,6 +2,10 @@
 #include <windows.h>
 #include "CorePrivate.h"
 
+#if __MINGW32__
+//?? incompatibility in headers
+#define IMAGE_OPTIONAL_HEADER32		IMAGE_OPTIONAL_HEADER
+#endif
 
 static char		module[256];
 static HMODULE	hModule;

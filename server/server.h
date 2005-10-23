@@ -216,7 +216,7 @@ void SV_SendServerinfo (client_t *client);
 void SV_UserinfoChanged (client_t *cl);
 
 sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext);
-trace_t SV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask);
+void SV_TraceHook (trace_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask);
 
 
 //
@@ -259,9 +259,9 @@ inline void SV_StartSoundNew (const CVec3 *origin, edict_t *entity, int channel,
 }
 
 
-void SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
-void SV_BroadcastPrintf (int level, const char *fmt, ...);
-void SV_BroadcastCommand (const char *fmt, ...);
+void SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...) PRINTF(3,4);
+void SV_BroadcastPrintf (int level, const char *fmt, ...) PRINTF(2,3);
+void SV_BroadcastCommand (const char *fmt, ...) PRINTF(1,2);
 
 //
 // sv_user.c

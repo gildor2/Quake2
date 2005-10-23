@@ -11,6 +11,9 @@ static int cmdWait;
 static int	aliasCount;		// for detecting runaway loops
 static cvar_t *cmd_debug;
 
+// for Mingw32 compatibility
+#define _argc	cmd_argc
+#define _argv	cmd_argv
 
 static char	*_argv[MAX_STRING_TOKENS];
 static int	_argc;
@@ -351,7 +354,6 @@ static char *MacroExpandString (const char *text)
 
 	for (char *s = buf; *s; s++)
 	{
-		char	*data;
 		const char *token;
 		char	tmp[MAX_STRING_CHARS];
 		int		varLen;
@@ -361,7 +363,7 @@ static char *MacroExpandString (const char *text)
 		if (*s != '$') continue;
 
 		// scan out the complete macro
-		data = s + 1;							// $varname -> varname
+		const char *data = s + 1;				// $varname -> varname
 		token = COM_Parse (data);
 		if (!data) continue;					// null token
 
@@ -429,8 +431,9 @@ Parses the given string into command line tokens.
 */
 static void TokenizeString (const char *text)
 {
+	int i;
 	// clear the args from the last string
-	for (int i = 0; i < _argc; i++)
+	for (i = 0; i < _argc; i++)
 		appFree (_argv[i]);
 	_argc = 0;
 
@@ -508,9 +511,9 @@ ExecuteCommand
 $Cvars will be expanded unless they are in a quoted token
 ============
 */
-//#define RECURCE_CHECK
+//#define RECURCE_CHECK		1
 
-#ifdef RECURCE_CHECK
+#if RECURCE_CHECK
 static int recurseCheck = 0;
 #endif
 
@@ -520,7 +523,7 @@ bool ExecuteCommand (const char *text)
 
 	const char *str = MacroExpandString (text);	// may be used for COMMAND_ARGS2
 	TokenizeString (str);
-#ifdef RECURCE_CHECK
+#if RECURCE_CHECK
 	int check = ++recurseCheck;
 #endif
 
@@ -557,7 +560,7 @@ bool ExecuteCommand (const char *text)
 			((void (*) (bool, const char*)) cmd->func) (usage, str);
 			break;
 		}
-#ifdef RECURCE_CHECK
+#if RECURCE_CHECK
 		if (check != recurseCheck)
 			appWPrintf ("ExecuteCommand: recursion in \"%s\"\n", text);
 #endif
@@ -581,7 +584,7 @@ bool ExecuteCommand (const char *text)
 	// check cvars
 	if (Cvar_Command (_argc, _argv))
 	{
-#ifdef RECURCE_CHECK
+#if RECURCE_CHECK
 		if (check != recurseCheck)
 			appWPrintf ("ExecuteCommand: recursion in \"%s\"\n", text);
 #endif
@@ -598,7 +601,7 @@ bool ExecuteCommand (const char *str, const CSimpleCommand *CmdList, int numComm
 	guard(ExecuteSimpleCommand);
 //	GetArgs (str, false);
 	TokenizeString (str);
-#ifdef RECURCE_CHECK
+#if RECURCE_CHECK
 	int check = ++recurseCheck;
 #endif
 	for (int i = 0; i < numCommands; i++, CmdList++)
@@ -607,7 +610,7 @@ bool ExecuteCommand (const char *str, const CSimpleCommand *CmdList, int numComm
 			if (!CmdList->func) return true;		// NULL function
 			guard(cmd)
 			CmdList->func (_argc, _argv);
-#ifdef RECURCE_CHECK
+#if RECURCE_CHECK
 			if (check != recurseCheck)
 				appWPrintf ("ExecuteCommand: recursion in \"%s\"\n", str);
 #endif

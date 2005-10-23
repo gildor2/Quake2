@@ -51,12 +51,14 @@ void SV_ClearTexts ()
 
 static void DrawSvText (const CSVText *r)
 {
+#if !DEDICATED_ONLY
 	if (r->anchor == 0)
 		RE_DrawTextLeft (r->text, r->c.rgba);
 	else if (r->anchor == 1)
 		RE_DrawTextRight (r->text, r->c.rgba);
 	else
 		RE_DrawText3D (r->pos, r->text, r->c.rgba);
+#endif // DEDICATED_ONLY
 }
 
 

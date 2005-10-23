@@ -18,6 +18,9 @@ template<class T> inline T Bound (const T v, const T minval, const T maxval)
 }
 #endif
 
+#undef min
+#undef max
+
 #define min(a,b)  (((a) < (b)) ? (a) : (b))
 #define max(a,b)  (((a) > (b)) ? (a) : (b))
 #define bound(a,minval,maxval)  ( ((a) > (minval)) ? ( ((a) < (maxval)) ? (a) : (maxval) ) : (minval) )
@@ -39,7 +42,7 @@ template<class T> inline T OffsetPointer (const T ptr, int offset)
 }
 
 //?? make 2 functions: for float and for int; as CORE_API
-template<class T> int Sign (T value)
+template<class T> inline int Sign (T value)
 {
 	if (value < 0) return -1;
 	else if (value > 0) return 1;
@@ -55,7 +58,7 @@ template<class T> inline void Exchange (T& A, T& B)
 }
 
 
-template<class T> T Lerp (const T& A, const T& B, float Alpha)
+template<class T> inline T Lerp (const T& A, const T& B, float Alpha)
 {
 	return A + Alpha * (B-A);
 }
@@ -69,7 +72,7 @@ template<class T> int Cmp (const T& A, const T& B)
 */
 
 
-template<class T> void Zero (T& A)
+template<class T> inline void Zero (T& A)
 {
 	memset (&A, 0, sizeof(T));
 }
@@ -89,8 +92,14 @@ template<class T> void Zero (T& A)
 #define STR(s) STR2(s)
 
 // field offset macros
-#define FIELD2OFS(struc, field)		((unsigned) &((struc *)NULL)->field)		// get offset of the field in struc
-#define OFS2FIELD(struc, ofs, type)	(*(type*) ((byte*)(struc) + ofs))			// get field of type by offset inside struc
+// get offset of the field in struc
+#ifdef offsetof
+#	define FIELD2OFS(struc, field)		(offsetof(struc, field))				// more compatible
+#else
+#	define FIELD2OFS(struc, field)		((unsigned) &((struc *)NULL)->field)	// just in case
+#endif
+// get field of type by offset inside struc
+#define OFS2FIELD(struc, ofs, type)	(*(type*) ((byte*)(struc) + ofs))
 
 #define EXEC_ONCE(code)		\
 	{						\

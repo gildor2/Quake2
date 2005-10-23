@@ -66,7 +66,7 @@ public:
 	TString<64>	Name;			// local name inside owner container
 	CFileContainer *Owner;
 	virtual int Read (void *Buffer, int Size) = 0;
-#ifdef LITTLE_ENDIAN
+#if LITTLE_ENDIAN
 	inline int ByteOrderRead (void *Buffer, int Size)
 	{
 		return Read (Buffer, Size);
@@ -96,7 +96,7 @@ public:
 // all file conainer functions called with normalized filenames (appCopyFilename())
 class CFileContainer : public CStringItem
 {
-	friend CFileSystem;
+	friend class CFileSystem;
 	friend void cMount(bool,int,char**);
 	friend void cUmount(bool,int,char**);
 protected:

@@ -9,7 +9,7 @@ cvar_t	*timescale;
 cvar_t	*timedemo;
 cvar_t	*sv_cheats;
 
-#ifndef DEDICATED_ONLY
+#if !DEDICATED_ONLY
 static cvar_t dummyDedicated;
 cvar_t	*dedicated = &dummyDedicated;
 	// dummy cvar; may be used before initialized - when error happens before
@@ -27,7 +27,7 @@ static server_state_t server_state;
 unsigned time_before_game, time_after_game, time_before_ref, time_after_ref;
 
 
-#ifndef NO_DEVELOPER
+#if !NO_DEVELOPER
 /*
 ================
 Com_DPrintf
@@ -461,7 +461,7 @@ void Com_Init (const char *cmdline)
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(com_speeds, 0, 0),
-#ifndef NO_DEVELOPER
+#if !NO_DEVELOPER
 	CVAR_VAR(developer, 0, 0),
 #else
 	CVAR_VAR(developer, 0, CVAR_NOSET),
@@ -471,7 +471,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(nointro, 0, CVAR_NOSET),
 	CVAR_FULL(&logfile_active, "logfile", "0", 0),
 	CVAR_FULL(&sv_cheats, "cheats", "0", CVAR_SERVERINFO|CVAR_LATCH),
-#ifdef DEDICATED_ONLY
+#if DEDICATED_ONLY
 	CVAR_VAR(dedicated, 1, CVAR_NOSET)
 #else
 	CVAR_VAR(dedicated, 0, CVAR_NOSET)
@@ -536,7 +536,7 @@ CVAR_END
 extern	int	c_traces, c_pointcontents;
 
 
-#define SV_PROFILE		//?????
+#define SV_PROFILE		1	//?????
 
 void Com_Frame (float msec)
 {
@@ -637,7 +637,7 @@ void Com_Frame (float msec)
 									c_traces, old_tr, c_pointcontents, old_pc),
 									RGB(1, 0.8, 0.3));
 
-#ifdef SV_PROFILE
+#if SV_PROFILE
 			if (1)	//?? cvar; com_speeds==2 ? g_speeds ?
 			{
 				extern unsigned prof_times[256];

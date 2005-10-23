@@ -81,7 +81,7 @@ void Key_SetBinding (int keynum, const char *binding);
 int Key_FindBinding (const char *str, int *keys, int maxKeys);
 void Key_WriteBindings (COutputDevice *Out);
 
-void Key_Init (void);
+//void Key_Init (); -- declared in qcommon.h (init from Com_Init())
 void Key_Event (int key, bool down);
 void Key_ClearStates (void);
 

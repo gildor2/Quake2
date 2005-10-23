@@ -11,9 +11,9 @@
 namespace OpenGLDrv {
 
 
-//#define SPY_SHADER		// comment line to disable gl_spyShader stuff
+//#define SPY_SHADER	1	// comment line to disable gl_spyShader stuff
 #if MAX_DEBUG
-#define SPY_SHADER
+#define SPY_SHADER		1
 #endif
 
 
@@ -26,7 +26,7 @@ static cvar_t	*gl_finish;			// debug ? (can be a situation, when gl_finish==1 is
 #if !NO_DEBUG
 static cvar_t	*gl_showbboxes, *gl_showTris, *gl_showNormals;
 #endif
-#ifdef SPY_SHADER
+#if SPY_SHADER
 static cvar_t	*gl_spyShader;
 #endif
 
@@ -705,12 +705,12 @@ static int			numRenderPasses;
 //#define LOG_PP(x) DrawTextLeft(x,RGB(0.3,0.6,0.6))
 
 #ifndef LOG_PP
-#	ifdef SPY_SHADER
+#	if SPY_SHADER
 #		define LOG_PP(x)	if (spy) DrawTextLeft(x,RGB(0.3,0.6,0.6));
 		// NOTE: when LOG_PP() placed inside "if" operator, we should use {} around LOG_PP() (because LOG_PP have own "if")
 #	else
 #		define LOG_PP(x)
-#		define NO_LOG_PP
+#		define NO_LOG_PP	1
 #	endif
 #endif
 
@@ -722,7 +722,7 @@ static void PreprocessShader (shader_t *sh)
 	shaderStage_t *stage;
 	tempStage_t *st;
 
-#ifdef SPY_SHADER
+#if SPY_SHADER
 	bool spy = false;
 	const char *mask = gl_spyShader->string;
 	if ((mask[0] && mask[1]) || mask[0] == '*')		// string >= 2 chars or "*"
@@ -846,7 +846,7 @@ static void PreprocessShader (shader_t *sh)
 		if (debugMode == DEBUG_FULLBRIGHT && glState != -1)
 		{
 			st->glState = glState;
-			glState = -1;
+			glState = 0xFFFFFFFF;
 		}
 		if (debugMode == (DEBUG_LIGHTMAP|DEBUG_FULLBRIGHT) && !gl_state.is2dMode)
 			st->glState |= GLSTATE_POLYGON_LINE;
@@ -1191,7 +1191,7 @@ static void PreprocessShader (shader_t *sh)
 			// combine stages ...
 			if (combine)
 			{
-#ifndef NO_LOG_PP
+#if !NO_LOG_PP
 				//?? move to gl_interface.cpp for logging
 				static const char *envNames[] = {
 					// corresponds to TEXENV_XXX const (used with TEXENV_SRCx_SHIFT)
@@ -1409,7 +1409,7 @@ static void CheckDynamicLightmap (surfacePlanar_t *surf)
 	if (updateType)
 	{
 		// require to update lightmap
-		for (i = 0; i < dl->numStyles; i++)
+		for (int i = 0; i < dl->numStyles; i++)
 			dl->modulate[i] = vp.lightStyles[dl->style[i]].value;
 		if (dlightUpdate) dl->modulate[0]--;	// force to update vertex lightmap when dlight disappear
 
@@ -1442,9 +1442,10 @@ void surfacePlanar_t::Tesselate (refEntity_t &ent)
 	bufTexCoordSrc_t *t = &srcTexCoord[firstVert];
 	unsigned *c = &srcVertexColor[firstVert].rgba;
 
+	int i;
 	// copy vertexes
 	vertex_t *vs = verts;
-	for (int i = 0; i < numVerts; i++, vs++, v++, t++, c++)
+	for (i = 0; i < numVerts; i++, vs++, v++, t++, c++)
 	{
 		v->xyz = vs->xyz;			// copy vertex
 		t->tex[0] = vs->st[0];		// copy texture coords
@@ -2200,7 +2201,7 @@ void BK_EndFrame ()
 void BK_Init ()
 {
 CVAR_BEGIN(vars)
-#ifdef SPY_SHADER
+#if SPY_SHADER
 	CVAR_VAR(gl_spyShader, 0, 0),
 #endif
 #if !NO_DEBUG

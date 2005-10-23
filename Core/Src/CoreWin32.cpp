@@ -71,6 +71,7 @@ static unsigned cpuidRegs[4];
 
 void cpuid (unsigned code)
 {
+#if _MSC_VER
 	__asm {
 		mov		eax,code
 		cpuid
@@ -79,9 +80,15 @@ void cpuid (unsigned code)
 		mov		cpuidRegs+8,ecx
 		mov		cpuidRegs+12,edx
 	}
+#else
+	__asm __volatile__
+	("cpuid"
+	: "=a" (cpuidRegs[0]), "=b" (cpuidRegs[1]), "=c" (cpuidRegs[2]), "=d" (cpuidRegs[3])
+	: "a" (code));
+#endif
 }
 
-#if 1
+#if _MSC_VER
 
 #pragma warning(push)
 #pragma warning(disable : 4035)		// "no return value"
@@ -254,19 +261,19 @@ static void DetectOs ()
 		const char *name;
 	};
 	static const osInfo_t table[] = {
-#define WIN9X	VER_PLATFORM_WIN32_WINDOWS
-#define WINNT	VER_PLATFORM_WIN32_NT
+#define W9X		VER_PLATFORM_WIN32_WINDOWS
+#define WNT		VER_PLATFORM_WIN32_NT
 		// Win9X
-		{	4,0,	WIN9X,	"95"	},
-		{	4,10,	WIN9X,	"98"	},
-		{	4,90,	WIN9X,	"Me"	},
+		{	4,0,	W9X,	"95"	},
+		{	4,10,	W9X,	"98"	},
+		{	4,90,	W9X,	"Me"	},
 		// WinNT
-		{	3,51,	WINNT,	"NT 3.51"},
-		{	4,0,	WINNT,	"NT 4.0"},
-		{	5,0,	WINNT,	"2000"	},
-		{	5,1,	WINNT,	"XP"	},
-		{	5,2,	WINNT,	"2003"	},
-		{	6,0,	WINNT,	"Vista"	}
+		{	3,51,	WNT,	"NT 3.51"},
+		{	4,0,	WNT,	"NT 4.0"},
+		{	5,0,	WNT,	"2000"	},
+		{	5,1,	WNT,	"XP"	},
+		{	5,2,	WNT,	"2003"	},
+		{	6,0,	WNT,	"Vista"	}
 	};
 	OSVERSIONINFO ver;
 	ver.dwOSVersionInfoSize = sizeof(ver);
@@ -364,8 +371,21 @@ void appDisplayError ()
 	Initialization/finalization
 -----------------------------------------------------------------------------*/
 
+#if __MINGW32__
+long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info);
+
+long WINAPI mingw32ExceptFilter (struct _EXCEPTION_POINTERS *info)
+{
+	win32ExceptFilter (info);
+	throw 1;		// OS exception -> C++ exception
+}
+#endif
+
 void appInitPlatform ()
 {
+#if __MINGW32__
+	SetUnhandledExceptionFilter (mingw32ExceptFilter);
+#endif
 	hInstance = GetModuleHandle (NULL);
 	// gather system information
 	CheckCpuModel ();

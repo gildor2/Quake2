@@ -67,7 +67,7 @@ image_t *CreateImage (const char *name, void *pic, int width, int height, unsign
 image_t *FindImage (const char *name, unsigned flags);
 
 // video support
-void	DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette);
+//void	DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette); -- interface
 
 void	ShowImages ();
 

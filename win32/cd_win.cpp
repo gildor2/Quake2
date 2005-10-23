@@ -29,7 +29,6 @@ static bool	initialized = false;
 static bool	enabled     = false;
 static bool playLooping = false;
 static byte remap[100];
-static byte	cdrom;
 static byte	playTrack;
 static byte	maxTrack;
 
@@ -41,14 +40,14 @@ static UINT	wDeviceID;
 static int	loopcounter;
 
 // forwards
-void CDAudio_Pause ();
+static void CDAudio_Pause ();
 
 
 static void mciCommand (DWORD cmd, DWORD arg, const char *str = NULL)
 {
 	if (DWORD dwReturn = mciSendCommand(wDeviceID, cmd, arg, (DWORD)NULL))
 	{
-		if (str) Com_DPrintf ("CDAudio: %s failed (%d)\n", str, dwReturn);
+		if (str) Com_DPrintf ("CDAudio: %s failed (%u)\n", str, dwReturn);
 	}
 }
 
@@ -56,7 +55,7 @@ static bool mciStatus (DWORD arg, MCI_STATUS_PARMS &parm)
 {
 	if (DWORD dwReturn = mciSendCommand (wDeviceID, MCI_STATUS, arg, (DWORD)&parm))
 	{
-		Com_DPrintf ("CDAudio: STATUS failed (%d)\n", dwReturn);
+		Com_DPrintf ("CDAudio: STATUS failed (%u)\n", dwReturn);
 		return false;
 	}
 	return true;

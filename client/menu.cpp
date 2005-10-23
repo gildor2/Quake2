@@ -63,7 +63,7 @@ static const char *yesno_names[] = {
 
 
 // forward declarations
-void Menu_DMOptions_f (void);
+static void Menu_DMOptions_f ();
 
 /*---------- Support Routines ------------*/
 
@@ -636,7 +636,8 @@ struct optionsMenu_t : menuFramework_t
 	static void ScanCrosshairs ()
 	{
 		crosshair_names[0] = S_RED"(none)";
-		for (int i = 1; i <= MAX_CROSSHAIRS; i++)	// item [0] is "none"
+		int i;
+		for (i = 1; i <= MAX_CROSSHAIRS; i++)	// item [0] is "none"
 		{
 			if (!ImageExists (va("pics/ch%d", i), IMAGE_ANY))
 			{
@@ -803,7 +804,8 @@ struct creditsMenu_t : menuFramework_t
 		creditsBuffer = (char*) GFileSystem->LoadFile ("credits", &count);
 		// file always present - have inline file
 		char *p = creditsBuffer;
-		for (int n = 0; n < ARRAY_COUNT(credits)-1; n++)
+		int n;
+		for (n = 0; n < ARRAY_COUNT(credits)-1; n++)
 		{
 			credits[n] = p;
 			while (*p != '\r' && *p != '\n')
@@ -881,10 +883,6 @@ struct gameMenu_t : menuFramework_t
 
 	bool Init ()
 	{
-		static const char *difficulty_names[] = {
-			"easy", "medium", "hard", NULL
-		};
-
 		x = viddef.width / 2;
 		nitems = 0;
 		banner = "game";
@@ -1377,7 +1375,7 @@ struct startserverMenu_t : menuFramework_t
 
 				appStrncpylwr (name, COM_Parse (s, true), sizeof(name));
 				if (!name[0]) break;
-				CStringItem *item = mapNames.CreateAndInsert (va("%s\n%s", COM_Parse (s, false), name), mapNamesChain);
+				/*CStringItem *item =*/ mapNames.CreateAndInsert (va("%s\n%s", COM_Parse (s, false), name), mapNamesChain);
 
 				numMaps++;
 			}
@@ -1740,7 +1738,7 @@ menuList_t	dmoptionsMenu_t::stack_double_box;
 menuList_t	dmoptionsMenu_t::no_spheres_box;
 
 
-static void Menu_DMOptions_f (void)
+static void Menu_DMOptions_f ()
 {
 	dmoptionsMenu.Push ();
 }
@@ -1959,7 +1957,7 @@ struct playerConfigMenu_t : menuFramework_t
 
 	bool Init ()
 	{
-		extern cvar_t *name, *team, *skin;
+		extern cvar_t *name, *skin;
 		char	currentModel[MAX_QPATH], currentSkin[MAX_QPATH], *path;
 
 		static const char *handedness[] = {"right", "left", "center", NULL};
@@ -2104,7 +2102,8 @@ struct playerConfigMenu_t : menuFramework_t
 		AddItem (&handedness_box);
 
 		// rate
-		for (int i = 0; i < ARRAY_COUNT(rate_tbl) - 1; i++)
+		int i;
+		for (i = 0; i < ARRAY_COUNT(rate_tbl) - 1; i++)
 			if (Cvar_VariableInt ("rate") == rate_tbl[i])
 				break;
 
@@ -2848,7 +2847,7 @@ TEST MENU
 
 =======================================================================
 */
-#define REGISTER_TEST
+#define REGISTER_TEST		1
 
 void attach (const entity_t &e1, entity_t &e2, const char *tag)
 {
@@ -2965,7 +2964,7 @@ void M_Init (void)
 	RegisterCommand ("menu_options", Menu_Options_f);
 		RegisterCommand ("menu_keys", Menu_Keys_f);
 	RegisterCommand ("menu_quit", Menu_Quit_f);
-#ifdef REGISTER_TEST
+#if REGISTER_TEST
 	RegisterCommand ("menu_test", Menu_Test_f);
 #endif
 }

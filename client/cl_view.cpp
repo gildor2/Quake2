@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "client.h"
 
-#ifdef GUN_DEBUG
+#if GUN_DEBUG
 // development tools for weapons
 int		gun_frame;
 CRenderModel *gun_model;
@@ -327,7 +327,8 @@ void V_InitRenderer ()
 	{
 		char name[MAX_QPATH];
 		strcpy (name, cl.configstrings[CS_MODELS+i]);
-		name[GScreenWidth-1] = 0;				// never go beyond one line (for correct '\r' erasing)
+		if (GScreenWidth < ARRAY_COUNT(name))
+			name[GScreenWidth-1] = 0;			// never go beyond one line (for correct '\r' erasing)
 		if (name[0] != '*')
 			appPrintf ("%s\r", name);
 		SCR_UpdateScreen ();
@@ -344,17 +345,17 @@ void V_InitRenderer ()
 			const char *mdl = cl.configstrings[CS_MODELS + i];
 			const char *ext = strrchr (name, '.');
 			if (!ext || stricmp (ext, ".bsp"))
-				cl.model_draw[i] = RE_RegisterModel (cl.configstrings[CS_MODELS+i]);
+				cl.model_draw[i] = RE_RegisterModel (mdl);
 			else
 				cl.model_draw[i] = NULL;	// do not reload BSP file
 			if (name[0] == '*')
-				cl.model_clip[i] = CM_InlineModel (cl.configstrings[CS_MODELS+i]);
+				cl.model_clip[i] = CM_InlineModel (mdl);
 			else
 				cl.model_clip[i] = NULL;
 		}
 	}
 
-	appPrintf ("images\r", i);
+	appPrintf ("images\r");
 	SCR_UpdateScreen ();
 	for (i = 1; i < MAX_IMAGES && cl.configstrings[CS_IMAGES+i][0]; i++)
 	{
@@ -379,7 +380,7 @@ void V_InitRenderer ()
 	}
 
 	// set sky textures and speed
-	appPrintf ("sky\r", i);
+	appPrintf ("sky\r");
 	SCR_UpdateScreen ();
 	float rotate = atof (cl.configstrings[CS_SKYROTATE]);
 	CVec3 axis;
@@ -463,7 +464,7 @@ float CalcFov (float fov_x, float width, float height)
 
 //============================================================================
 
-#ifdef GUN_DEBUG
+#if GUN_DEBUG
 
 // gun frame debugging functions
 void V_Gun_Next_f (void)
@@ -695,7 +696,7 @@ static void DrawOriginInfo (void)
 
 #endif // NO_DEBUG
 
-//#define FILTER_FPS_COUNTER
+//#define FILTER_FPS_COUNTER		1
 
 static void DrawFpsInfo (void)
 {
@@ -716,7 +717,7 @@ static void DrawFpsInfo (void)
 
 	// update min/max stats
 	float tmpFps = (time == lastFrameTime) ? 1000 : 1000.0f / (time - lastFrameTime);
-#ifdef FILTER_FPS_COUNTER
+#if FILTER_FPS_COUNTER
 	// median filter
 	static float values[3];
 	if (minFps > maxFps)
@@ -965,9 +966,9 @@ CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 
-#ifdef GUN_DEBUG
-	RegisterCommand ("gun_next", V_Gun_Next_f);
-	RegisterCommand ("gun_prev", V_Gun_Prev_f);
+#if GUN_DEBUG
+	RegisterCommand ("gun_next",  V_Gun_Next_f);
+	RegisterCommand ("gun_prev",  V_Gun_Prev_f);
 	RegisterCommand ("gun_model", V_Gun_Model_f);
 #endif
 	RegisterCommand ("sky", Sky_f);

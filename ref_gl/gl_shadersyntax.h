@@ -41,7 +41,8 @@ static void GetWave (int argc, char **argv, int pos, waveParams_t &wave)
 		inv = true;
 		func += 7;		// skip "inverse"
 	}
-	for (int i = 0; i < ARRAY_COUNT(waveNames); i++)
+	int i;
+	for (i = 0; i < ARRAY_COUNT(waveNames); i++)
 		if (!stricmp (func, waveNames[i])) break;
 	if (i == ARRAY_COUNT(waveNames)) ERROR_IN_SHADER(va("bad wave func: %s", argv[pos]));
 	wave.type  = (waveFunc_t) i;
@@ -167,7 +168,8 @@ FUNC(deformVertexes)
 		//!! other
 	};
 	deformType_t type;
-	for (int i = 0; i < ARRAY_COUNT(deformNames); i++)
+	int i;
+	for (i = 0; i < ARRAY_COUNT(deformNames); i++)
 		if (IS(1, deformNames[i].name))
 		{
 			type = deformNames[i].type;
@@ -394,11 +396,13 @@ FUNC(blendfunc)
 		blend = BLEND(0, S_COLOR);
 	else
 	{
-		for (int i = 0; i < ARRAY_COUNT(blendNames); i++)
+		int i;
+		for (i = 0; i < ARRAY_COUNT(blendNames); i++)
 			if (IS(1, blendNames[i])) break;
 		if (i == ARRAY_COUNT(blendNames))
 			ERROR_IN_SHADER(va("bad blend arg: %s", argv[1]));
-		for (int j = 0; j < ARRAY_COUNT(blendNames); j++)
+		int j;
+		for (j = 0; j < ARRAY_COUNT(blendNames); j++)
 			if (IS(2, blendNames[j])) break;
 		if (j == ARRAY_COUNT(blendNames))
 			ERROR_IN_SHADER(va("bad blend arg: %s", argv[2]));
@@ -514,7 +518,8 @@ FUNC(alphaGen)
 		{"oneMinusDot",	ALPHAGEN_ONE_MINUS_DOT}
 	};
 	alphaGenType_t alpha;
-	for (int i = 0; i < ARRAY_COUNT(alphaNames); i++)
+	int i;
+	for (i = 0; i < ARRAY_COUNT(alphaNames); i++)
 		if (IS(1, alphaNames[i].name))
 		{
 			alpha = alphaNames[i].alpha;
@@ -563,7 +568,8 @@ FUNC(tcGen)
 		{"vector",		TCGEN_VECTOR	}
 	};
 	tcGenType_t tcGen = TCGEN_NONE;
-	for (int i = 0; i < ARRAY_COUNT(tcNames); i++)
+	int i;
+	for (i = 0; i < ARRAY_COUNT(tcNames); i++)
 		if (IS(1, tcNames[i].name))
 		{
 			tcGen = tcNames[i].tcGen;
@@ -601,7 +607,8 @@ FUNC(tcMod)
 		{"warp",		TCMOD_WARP,		0}
 	};
 	tcModType_t tcModType;
-	for (int i = 0; i < ARRAY_COUNT(tcModNames); i++)
+	int i;
+	for (i = 0; i < ARRAY_COUNT(tcModNames); i++)
 		if (IS(1, tcModNames[i].name))
 		{
 			if (tcModNames[i].numArgs + 2 < argc)

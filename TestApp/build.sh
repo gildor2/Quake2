@@ -2,14 +2,14 @@
 
 if [ -z "$target" ]; then
 	# default target
-	target="static"
+	target="STATIC"
 fi
 
 cd ..
 
-if ! [ -f "lib/lib.lib" ]; then	#?? integrate lib.prj into quake2.prj
+if ! [ -f "lib/libs.lib" ]; then	#?? integrate lib.project into quake2.project
 	cd lib
-	vc32tools --make lib
+	vc32tools --make libs-vc-win32
 	cd ..
 fi
 
@@ -17,7 +17,7 @@ export logfile="TestApp/build.log"
 rm -f $logfile
 
 TIMEFORMAT="Total time: %1R sec"
-time vc32tools --make quake2 TestApp
+time vc32tools --make makefile-vc-win32 TestApp
 
 Tools/SymInfoBuilder/work.pl TestApp
 

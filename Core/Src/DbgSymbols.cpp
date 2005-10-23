@@ -103,7 +103,8 @@ bool appSymbolName (address_t addr, char *buffer, int size)
 
 	// find info for our packages
 	CSymbol *sym = NULL;
-	for (int i = 0; i < dbgPackages; i++)
+	int i;
+	for (i = 0; i < dbgPackages; i++)
 	{
 		CPackageSymbols *pkg = pkgDebugInfo[i];
 		if (!appStricmp (pkg->Name, package))

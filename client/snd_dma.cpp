@@ -22,10 +22,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 #include "snd_loc.h"
 
-void S_Play_f (int argc, char **argv);
-void S_SoundList_f (bool usage, int argc, char **argv);
+static void S_Play_f (int argc, char **argv);
+static void S_SoundList_f (bool usage, int argc, char **argv);
 void S_Update_();
-void S_StopAllSounds_f (void);
 
 
 /* NOTES:
@@ -104,7 +103,6 @@ void S_SoundInfo_f(void)
     appPrintf("%5d samplebits\n", dma.samplebits);
     appPrintf("%5d submission_chunk\n", dma.submission_chunk);
     appPrintf("%5d speed\n", dma.speed);
-    appPrintf("0x%X dma buffer\n", dma.buffer);
 }
 
 
@@ -718,9 +716,8 @@ void S_StartSound (const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, 
 		ps->begin = appRound (start + timeofs * dma.speed);
 
 	// sort into the pending sound list
-	for (playsound_t *sort = s_pendingplays.next;
-		 sort != &s_pendingplays && sort->begin < ps->begin;
-		 sort = sort->next)
+	playsound_t *sort;
+	for (sort = s_pendingplays.next; sort != &s_pendingplays && sort->begin < ps->begin; sort = sort->next)
 		; // empty
 
 	ps->next = sort;
@@ -992,8 +989,6 @@ void S_Update(const CVec3 &origin, const CVec3 &right)
 
 	listener_origin = origin;
 	listener_right = right;
-
-	channel_t *combine = NULL;
 
 	// update spatialization for dynamic sounds
 	channel_t *ch = channels;

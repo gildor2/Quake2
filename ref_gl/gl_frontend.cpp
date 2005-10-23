@@ -946,11 +946,11 @@ bool md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 }
 
 
-//#define SHOW_MD3_SURFS
+//#define SHOW_MD3_SURFS	1
 
 void md3Model_t::AddSurfaces (refEntity_t *e)
 {
-#ifdef SHOW_MD3_SURFS
+#if SHOW_MD3_SURFS
 	DrawTextLeft(va("%s: custSh=%s skin=%X skinNum=%d", *Name, e->customShader ? *e->customShader->Name : "NULL", e->skin, e->skinNum));
 	if (e->skin)
 		for (int k = 0; k < e->skin->numSurfs; k++)
@@ -970,7 +970,7 @@ void md3Model_t::AddSurfaces (refEntity_t *e)
 				if (e->skin->surf[j].Name == s->Name)
 				{
 					shader = static_cast<shader_t*>(e->skin->surf[j].shader);
-#ifdef SHOW_MD3_SURFS
+#if SHOW_MD3_SURFS
 					DrawTextLeft (va("  %s for %s", *shader->Name, *s->Name));
 #endif
 					break;
@@ -978,7 +978,7 @@ void md3Model_t::AddSurfaces (refEntity_t *e)
 			if (!shader)
 			{
 				// it seems, this surface not listed (or "nodraw" shader used) -- skip it
-#ifdef SHOW_MD3_SURFS
+#if SHOW_MD3_SURFS
 				DrawTextLeft (va("  skip: %s", *s->Name));
 #endif
 				continue;
@@ -1133,7 +1133,7 @@ static void AddBeamSurfaces (const beam_t *b)
 
 
 #define CYLINDER_PARTS	16		// should be even number
-#define CYLINDER_FIX_ALPHA
+#define CYLINDER_FIX_ALPHA		1
 #define MIN_FIXED_ALPHA			0.2f
 
 static void AddCylinderSurfaces (const beam_t *b)
@@ -1152,7 +1152,7 @@ static void AddCylinderSurfaces (const beam_t *b)
 
 	float st0 = VectorDistance (b->drawEnd, b->end);
 
-#ifdef CYLINDER_FIX_ALPHA
+#if CYLINDER_FIX_ALPHA
 	// compute minimal distance to beam
 	float f = dot (viewDir, axis[0]);
 	CVec3 v;
@@ -1172,7 +1172,7 @@ static void AddCylinderSurfaces (const beam_t *b)
 
 #endif
 
-	float	angle, anglePrev, angleStep;
+	float angle, anglePrev, angleStep;
 	for (int i = 0; i < CYLINDER_PARTS; i++)
 	{
 		// cylinder will be drawn with 2 passes, from far to near
@@ -1228,7 +1228,7 @@ static void AddCylinderSurfaces (const beam_t *b)
 		p->verts[2].st[0] = p->verts[3].st[0] = angle;
 
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = b->color.rgba;
-#ifdef CYLINDER_FIX_ALPHA
+#if CYLINDER_FIX_ALPHA
 		// fix alpha: make it depends on angle (better image quality)
 		if (fixAngle >= 0)
 		{
@@ -1963,7 +1963,7 @@ void AddEntity (entity_t *ent)
 	out->time  = vp.time - ent->time;
 	if (out->time < 0)
 	{
-		RE_DrawTextLeft (va("ent.time > time for %s\n", ent->model ? *ent->model->Name : "(no model)"));
+		DrawTextLeft (va("ent.time > time for %s\n", ent->model ? *ent->model->Name : "(no model)"));
 		out->time = 0;
 	}
 

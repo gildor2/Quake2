@@ -837,7 +837,6 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			for (i2 = i + 1; i2 < map.numFaces; i2++)
 				if (sortedSurfaces[i2]->shader != shader) break;
 
-			int numShaderSurfs = i2 - i;
 			int nextIndex = i2;
 
 			// try to allocate all surfaces in a single lightmap block

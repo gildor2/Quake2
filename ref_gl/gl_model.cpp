@@ -1,7 +1,7 @@
 #include "OpenGLDrv.h"
 #include "gl_model.h"
 
-//#define TEST_LOAD	// will add command "loadmodel <filename>"; may implement this in client (not renderer)
+//#define TEST_LOAD		1	// will add command "loadmodel <filename>"; may implement this in client (not renderer)
 
 namespace OpenGLDrv {
 
@@ -80,7 +80,7 @@ model_t	*FindModel (const char *name)
 		break;
 	default:
 		// no error here: simply ignore unknown model formats
-		appWPrintf ("R_FindModel: unknown ID 0x%X in %s", LittleLong (*file), name);
+		appWPrintf ("R_FindModel: unknown ID 0x%X in %s", (unsigned)LittleLong(*file), name);
 		m = NULL;
 	}
 	if (m) modelsArray[modelCount++] = m;
@@ -139,7 +139,7 @@ static void Modellist_f (bool usage, int argc, char **argv)
 }
 
 
-#ifdef TEST_LOAD
+#if TEST_LOAD
 static void LoadModel_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
@@ -157,7 +157,7 @@ void InitModels ()
 	memset (&map, 0, sizeof(map));
 
 	RegisterCommand ("modellist", Modellist_f);
-#ifdef TEST_LOAD
+#if TEST_LOAD
 	RegisterCommand ("loadmodel", LoadModel_f);
 #endif
 }
@@ -168,7 +168,7 @@ void ShutdownModels ()
 	FreeModels ();
 
 	UnregisterCommand ("modellist");
-#ifdef TEST_LOAD
+#if TEST_LOAD
 	UnregisterCommand ("loadmodel");
 #endif
 }

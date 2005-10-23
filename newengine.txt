@@ -2,6 +2,16 @@
   - Commands.cpp -- require alias, cvar + command buffer support
     ? make as CCommandSource -- file, mem (+alias) etc; command buffer - in game (not Core)
 
+--------------- OpenAL sound system -------------------
+- from UT/ALSound:
+    FLOAT SoundPriority( UViewport* Viewport, FVector Location, FLOAT Volume, FLOAT Radius )
+    {
+	return Volume * (1.0 - (Location - (Viewport->Actor->ViewTarget
+		? Viewport->Actor->ViewTarget
+		: Viewport->Actor)->Location).Size()/Radius);
+    }
+
+
 --------------- image/shader usage --------------------
 - CBasicImage:
   * name, width, height, alphaBits (?)

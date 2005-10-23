@@ -18,7 +18,7 @@ public:
 	~COutputDeviceFile ()
 	{
 		Unregister ();
-		if (log) fclose (log);
+		Close ();
 	}
 	void Write (const char *str)
 	{

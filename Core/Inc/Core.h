@@ -15,7 +15,7 @@
 
 
 // static/dynamic build macros
-#ifndef STATIC_BUILD
+#if !STATIC_BUILD
 #	define PACKAGE_IMPORT	DLL_IMPORT
 #	define PACKAGE_EXPORT	DLL_EXPORT
 #else
@@ -28,17 +28,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <string.h>
 #include <math.h>
 
 // Build options
 #include "Build.h"
 
-// Platform/compiler-specific code
-#ifdef _MSC_VER
-#	include "VcWin32.h"
+// Compiler-specific code
+#if _MSC_VER
+#	include "CoreVisualC.h"
+#elif __GNUC__
+#	include "CoreGnuC.h"
 #else
 #	error Unknown compiler
+#endif
+
+// Platform-specific code
+#if _WIN32
+#	include "CoreWin32.h"
+#else
+#	include "CoreUnix.h"
 #endif
 
 
@@ -63,6 +73,32 @@
 #endif
 
 
+//?? generalize these macros, separate header; GCC only?
+#if 0
+//?? debugging -- useful, when guard/unguard does not works
+#undef guard
+#undef unguard
+#undef unguardf
+void DebugPrintf (const char *str, ...) PRINTF(1,2);
+#define guard(func)				DebugPrintf("> %s : %s\n", __func__, #func);
+#define unguard					DebugPrintf("< %s\n", __func__);
+#define unguardf(msg)			DebugPrintf("< %s : %s\n", __func__, va msg);
+#endif
+
+#if 0
+extern float *GGuardVar;
+extern float GGuardValue;
+#undef guard
+#undef unguard
+#undef unguardf
+#define guard(func)				{if (GGuardVar && (GGuardValue!=*GGuardVar)) \
+								{ GGuardValue=*GGuardVar; appPrintf(">%s: %g (r:%X)\n",__func__,GGuardValue,GET_RETADDR(nn)); }}
+#define unguard					{if (GGuardVar && (GGuardValue!=*GGuardVar)) \
+								{ GGuardValue=*GGuardVar; appPrintf("<%s: %g (r:%X)\n",__func__,GGuardValue,GET_RETADDR(nn)); }}
+#define unguardf(msg)			unguard
+#endif
+
+
 // Static assertion: some assertions are compile-time, but preprocessor not allows
 // using in "#if (condition)" something, other than #define'd consts. Use staticAssert()
 // for this purpose. If compiler have ability to check this at compile-time, should be
@@ -78,7 +114,6 @@
 #define staticAssert(expr,name)
 #endif
 
-
 // profiling
 inline void clock (unsigned &time)		{ time -= appCycles(); }
 inline void unclock (unsigned &time)	{ time += appCycles(); }
@@ -90,11 +125,6 @@ inline void unclock (int64 &time)		{ time += appCycles64(); }
 #	define STAT(x)				x
 #else
 #	define STAT(x)
-#endif
-
-
-#ifndef NULL
-#	define NULL ((void *)0)
 #endif
 
 
@@ -110,7 +140,7 @@ inline void unclock (int64 &time)		{ time += appCycles64(); }
 #define MAX_PKG_NAME	32
 
 // package variables
-#ifdef STATIC_BUILD
+#if STATIC_BUILD
 #	undef IMPLEMENT_PACKAGE
 #	define IMPLEMENT_PACKAGE(version,build,date)	\
 	namespace PACKAGE {								\
@@ -177,6 +207,10 @@ class CMemoryChain;
 #define S_WHITE			"^7"
 
 
+CORE_API void appPrintf (const char *fmt, ...) PRINTF(1,2);
+CORE_API void appWPrintf (const char *fmt, ...) PRINTF(1,2);
+
+
 // Output device
 class CORE_API COutputDevice
 {
@@ -186,18 +220,14 @@ public:
 	COutputDevice ()
 	:	NoColors(false), FlushEveryTime(false)
 	{}
-#if 0
 	virtual ~COutputDevice ()
-	{
-		Unregister ();
-	}
-#endif
+	{}
 	virtual void Write (const char *str) = 0;
 	virtual void Flush ()
 	{ /* empty */ }
 	virtual void Close ()		// may be used instead of destructor
 	{ /* empty */ }
-	void Printf (const char *fmt, ...);
+	void Printf (const char *fmt, ...) PRINTF(2,3);
 	void Register ();
 	void Unregister ();
 };
@@ -212,10 +242,6 @@ public:
 
 #define UnhookOutput					\
 	GLogHook = _OldHook;
-
-
-CORE_API void appPrintf (const char *fmt, ...);
-CORE_API void appWPrintf (const char *fmt, ...);
 
 
 /*-----------------------------------------------------------------------------
@@ -234,13 +260,13 @@ public:
 	bool	nonFatalError;		// when false, app can try to recover from error (and swError will be true)
 };
 
-CORE_API NORETURN void appFatalError (const char *fmt, ...);
+CORE_API NORETURN void appFatalError (const char *fmt, ...) PRINTF(1,2);
 #define appError	appFatalError
-CORE_API NORETURN void appNonFatalError (const char *fmt, ...);
+CORE_API NORETURN void appNonFatalError (const char *fmt, ...) PRINTF(1,2);
 
 
 CORE_API void appUnwindPrefix (const char *fmt);		// not vararg (will display function name for unguardf only)
-CORE_API NORETURN void appUnwindThrow (const char *fmt, ...);
+CORE_API NORETURN void appUnwindThrow (const char *fmt, ...) PRINTF(1,2);
 
 // will return correct value even when log cannot be opened
 CORE_API COutputDevice *appGetErrorLog ();

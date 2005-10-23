@@ -7,10 +7,10 @@ bool		ActiveApp, MinimizedApp, FullscreenApp;
 
 unsigned	sys_frame_time;			//?? used in cl_input.cpp only
 
-//#define IS_CONSOLE_APP
+//#define IS_CONSOLE_APP	1
 
-#if !defined(IS_CONSOLE_APP) && defined(DEDICATED_ONLY)
-#define IS_CONSOLE_APP
+#if !defined(IS_CONSOLE_APP) && DEDICATED_ONLY
+#define IS_CONSOLE_APP		1
 #endif
 
 
@@ -59,7 +59,7 @@ protected:
 public:
 	void Init ()
 	{
-#ifndef IS_CONSOLE_APP
+#if !IS_CONSOLE_APP
 		AllocConsole ();
 #endif
 		hConInput  = GetStdHandle (STD_INPUT_HANDLE);		//?? not OutputDevice-stuff
@@ -211,7 +211,7 @@ char *Sys_ConsoleInput ()
 
 void Sys_ProcessMessages ()
 {
-#ifndef DEDICATED_ONLY
+#if !DEDICATED_ONLY
 	guard(Sys_ProcessMessages);
 	MSG		msg;
 	while (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
@@ -242,8 +242,9 @@ void Sys_ProcessMessages ()
 -----------------------------------------------------------------------------*/
 
 //extern COutputDevice *debugLog;
+extern "C" _CRTIMP unsigned int _controlfp (unsigned int unNew, unsigned int unMask);
 
-#ifndef IS_CONSOLE_APP
+#if !IS_CONSOLE_APP
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 #else
 int main (int argc, const char **argv) // force to link as console application
@@ -265,7 +266,7 @@ int main (int argc, const char **argv) // force to link as console application
 			Cvar_Set ("cddir", cddir);
 #endif
 
-#ifndef IS_CONSOLE_APP
+#if !IS_CONSOLE_APP
 		// init-time output
 		COutputDeviceMem *TempLog = new COutputDeviceMem (16384);
 		TempLog->Register ();
@@ -276,12 +277,12 @@ int main (int argc, const char **argv) // force to link as console application
 		appInit ();		//!! cmdline should be used here
 		Com_Init (cmdline);
 
-#ifndef IS_CONSOLE_APP
+#if !IS_CONSOLE_APP
 		COutputDeviceCon ConLog;
 		if (DEDICATED)
 			Win32Log.Init ();
 		else
-			ConLog.Init ();
+			ConLog.Register ();
 		// flush init-time log
 		TempLog->Unregister ();
 		appPrintf (TempLog->GetText ());
@@ -294,6 +295,12 @@ int main (int argc, const char **argv) // force to link as console application
 		guard(MainLoop);
 		while (!GIsRequestingExit)
 		{
+#if __MINGW32__ && MAX_DEBUG
+			// reinstall exception handler in a case of someone (ATI's OpenGL.dll) replaced it
+			long WINAPI mingw32ExceptFilter (struct _EXCEPTION_POINTERS *info);
+			SetUnhandledExceptionFilter (mingw32ExceptFilter);
+#endif
+
 			if (DEDICATED)
 				Sleep (10);
 			else
@@ -339,15 +346,18 @@ int main (int argc, const char **argv) // force to link as console application
 		unguard;
 	} CATCH {
 		GIsFatalError = true;
-//		if (debugLog)
-//			debugLog->Printf ("***** CRASH *****\n%s\nHistory: %s\n*****************\n", *GErr.Message, *GErr.History);
+#if 0
+		extern COutputDevice *debugLog;
+		if (debugLog)
+			debugLog->Printf ("***** CRASH *****\n%s\nHistory: %s\n*****************\n", *GErr.Message, *GErr.History);
+#endif
 	}
 
 	// shutdown all systems
 	TRY {
 		SV_Shutdown (GIsFatalError ? va("Server fatal crashed: %s\n", *GErr.Message) : "Server quit\n");
 		CL_Shutdown ();
-#ifndef IS_CONSOLE_APP
+#if !IS_CONSOLE_APP
 		if (DEDICATED) FreeConsole ();
 #endif
 	}

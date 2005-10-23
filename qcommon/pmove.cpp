@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "qcommon.h"
 
 
+//#define OLD_PMOVE	1
 #define	STEPSIZE	18
 
 // all of the locals will be zeroed before each
@@ -51,14 +52,25 @@ static pmove_t	*pm;
 
 // movement parameters
 static float pm_stopspeed = 100;
-static float pm_maxspeed = 300;
+static float pm_maxspeed  = 300;
 static float pm_duckspeed = 100;
-static float pm_accelerate = 10;
-float		 pm_airaccelerate = 0;		// really, default value is 1.0f
+static float pm_accelerate      = 10;
+float		 pm_airaccelerate   = 0;		// really, default value is 1.0f
 static float pm_wateraccelerate = 10;
-static float pm_friction = 6;
+static float pm_friction      = 6;
 static float pm_waterfriction = 1;
 static float pm_waterspeed = 400;
+
+
+inline void PM_Trace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds)
+{
+#if _WIN32
+	pm->trace (trace, start, bounds.mins, bounds.maxs, end);
+#else
+	#error trace_t returned -- check calling convention
+//--	trace = pm->trace (pml.origin, bounds.mins, bounds.maxs, end);
+#endif
+}
 
 
 /*
@@ -104,8 +116,7 @@ static bool SlideMove ()
 	CVec3 planes[MAX_CLIP_PLANES];
 	CVec3 primal_velocity = pml.velocity;
 	int numplanes;
-#if 0
-	//!! OLD
+#if OLD_PMOVE
 	numplanes = 0;
 #else
 	if (pm->s.pm_flags & PMF_ON_GROUND)
@@ -120,11 +131,12 @@ static bool SlideMove ()
 	float time_left = pml.frametime;
 	trace_t trace;
 
-	for (int bumpcount = 0; bumpcount < 4; bumpcount++)
+	int bumpcount;
+	for (bumpcount = 0; bumpcount < 4; bumpcount++)
 	{
 		CVec3 end;
 		VectorMA (pml.origin, time_left, pml.velocity, end);
-		trace = pm->trace (pml.origin, pm->bounds.mins, pm->bounds.maxs, end);
+		PM_Trace (trace, pml.origin, end, pm->bounds);
 
 		if (trace.allsolid)
 		{	// entity is trapped in another solid
@@ -157,39 +169,14 @@ static bool SlideMove ()
 		planes[numplanes] = trace.plane.normal;
 		numplanes++;
 
-#if 1
-		// modify original velocity so it parallels all of the clip planes
-		for (int i = 0; i < numplanes; i++)
-		{
-			if (dot (pml.velocity, planes[i]) >= 0) continue;
-			ClipVelocity (pml.velocity, planes[i], pml.velocity, OVERBOUNCE);
-
-			for (int j = 0; j < numplanes; j++)
-			{
-				if (j == i) continue;
-				if (dot (pml.velocity, planes[j]) >= 0) continue;
-
-				ClipVelocity (pml.velocity, planes[j], pml.velocity, OVERBOUNCE);
-				// check for reentering plane[i] after clip against plane[j]
-				if (dot (pml.velocity, planes[i]) >= 0) continue;
-
-				// go along the crease
-				CVec3 dir;
-				cross (planes[i], planes[j], dir);
-				dir.NormalizeFast ();
-				float d = dot (dir, pml.velocity);
-				VectorScale (dir, d, pml.velocity);
-			}
-
-			break;
-		}
-#else
-		//!! OLD
+#if OLD_PMOVE
 		// modify original_velocity so it parallels all of the clip planes
-		for (int i = 0; i < numplanes; i++)
+		int i;
+		for (i = 0; i < numplanes; i++)
 		{
 			ClipVelocity (pml.velocity, planes[i], pml.velocity, 1.01);
-			for (int j = 0; j < numplanes; j++)
+			int j;
+			for (j = 0; j < numplanes; j++)
 				if (j != i)
 				{
 					if (dot (pml.velocity, planes[j]) < 0)
@@ -215,6 +202,31 @@ static bool SlideMove ()
 			float d = dot (dir, pml.velocity);
 			VectorScale (dir, d, pml.velocity);
 		}
+#else
+		// modify original velocity so it parallels all of the clip planes
+		for (int i = 0; i < numplanes; i++)
+		{
+			if (dot (pml.velocity, planes[i]) >= 0) continue;
+			ClipVelocity (pml.velocity, planes[i], pml.velocity, OVERBOUNCE);
+
+			for (int j = 0; j < numplanes; j++)
+			{
+				if (j == i) continue;
+				if (dot (pml.velocity, planes[j]) >= 0) continue;
+
+				ClipVelocity (pml.velocity, planes[j], pml.velocity, OVERBOUNCE);
+				// check for reentering plane[i] after clip against plane[j]
+				if (dot (pml.velocity, planes[i]) >= 0) continue;
+
+				// go along the crease
+				CVec3 dir;
+				cross (planes[i], planes[j], dir);
+				dir.NormalizeFast ();
+				float d = dot (dir, pml.velocity);
+				VectorScale (dir, d, pml.velocity);
+			}
+			break;
+		}
 #endif
 
 		// if velocity is against the original velocity, stop dead
@@ -233,17 +245,12 @@ static bool SlideMove ()
 }
 
 
-/*
-==================
-StepSlideMove
-==================
-*/
 static void StepSlideMove ()
 {
 	CVec3 start_o = pml.origin;
 	CVec3 start_v = pml.velocity;
 
-#if 0
+#if OLD_PMOVE
 	if (!SlideMove ()) return;
 #else
 	SlideMove ();
@@ -255,8 +262,18 @@ static void StepSlideMove ()
 	CVec3 up = start_o;
 	up[2] += STEPSIZE;
 
-#if 1
-	trace_t trace = pm->trace (start_o, pm->bounds.mins, pm->bounds.maxs, up);
+#if OLD_PMOVE
+	trace_t trace;
+	PM_Trace (trace, up, up, pm->bounds);
+	if (trace.allsolid)
+		return;		// can't step up
+
+	float stepHeight = STEPSIZE;
+	pml.origin = up;
+	pml.velocity = start_v;
+#else
+	trace_t trace;
+	PM_Trace (trace, start_o, up, pm->bounds);
 	if (trace.allsolid)
 	{
 //		appPrintf("no up\n");//!!
@@ -267,15 +284,6 @@ static void StepSlideMove ()
 	float stepHeight = trace.endpos[2] - start_o[2];
 	pml.origin = trace.endpos;
 	pml.velocity = start_v;
-#else
-	//!! OLD
-	trace_t trace = pm->trace (up, pm->bounds.mins, pm->bounds.maxs, up);
-	if (trace.allsolid)
-		return;		// can't step up
-
-	float stepHeight = STEPSIZE;
-	pml.origin = up;
-	pml.velocity = start_v;
 #endif
 
 //appPrintf(S_GREEN" up ");//!!
@@ -284,7 +292,7 @@ static void StepSlideMove ()
 	// push down the final amount
 	CVec3 down = pml.origin;
 	down[2] -= stepHeight;
-	trace = pm->trace (pml.origin, pm->bounds.mins, pm->bounds.maxs, down);
+	PM_Trace (trace, pml.origin, down, pm->bounds);
 	if (!trace.allsolid)
 		pml.origin = trace.endpos;
 
@@ -310,13 +318,7 @@ static void StepSlideMove ()
 }
 
 
-/*
-==================
-Friction
-
-Handles both ground friction and water friction
-==================
-*/
+// Handles both ground friction and water friction
 static void Friction ()
 {
 	CVec3 &vel = pml.velocity;
@@ -377,11 +379,6 @@ static void Accelerate (const CVec3 &wishdir, float wishspeed, float accel)
 }
 
 
-/*
-=============
-AddCurrents
-=============
-*/
 static void AddCurrents (CVec3 &wishvel)
 {
 	CVec3	v;
@@ -469,11 +466,6 @@ static void AddCurrents (CVec3 &wishvel)
 }
 
 
-/*
-===================
-WaterMove
-===================
-*/
 static void WaterMove ()
 {
 	CVec3	wishvel;
@@ -503,11 +495,6 @@ static void WaterMove ()
 }
 
 
-/*
-===================
-AirMove
-===================
-*/
 static void AirMove ()
 {
 	float fmove = pm->cmd.forwardmove;
@@ -578,11 +565,6 @@ static void AirMove ()
 
 
 
-/*
-=============
-CatagorizePosition
-=============
-*/
 static void CatagorizePosition ()
 {
 	// if the player hull point one unit down is solid, the player
@@ -601,7 +583,8 @@ static void CatagorizePosition ()
 	}
 	else
 	{
-		trace_t trace = pm->trace (pml.origin, pm->bounds.mins, pm->bounds.maxs, point);
+		trace_t trace;
+		PM_Trace (trace, pml.origin, point, pm->bounds);
 		pml.groundplane = trace.plane;
 		pml.groundsurface = trace.surface;
 		pml.groundcontents = trace.contents;
@@ -679,11 +662,6 @@ static void CatagorizePosition ()
 }
 
 
-/*
-=============
-CheckJump
-=============
-*/
 static void CheckJump ()
 {
 	if (pm->s.pm_flags & PMF_TIME_LAND)
@@ -734,11 +712,6 @@ static void CheckJump ()
 }
 
 
-/*
-=============
-CheckSpecialMovement
-=============
-*/
 static void CheckSpecialMovement ()
 {
 	if (pm->s.pm_time) return;
@@ -759,7 +732,8 @@ static void CheckSpecialMovement ()
 		dist = 1;
 	CVec3 spot;
 	VectorMA (pml.origin, dist, flatforward, spot);
-	trace_t trace = pm->trace (pml.origin, pm->bounds.mins, pm->bounds.maxs, spot);
+	trace_t trace;
+	PM_Trace (trace, pml.origin, spot, pm->bounds);
 	if ((trace.fraction < 1) && (trace.contents & CONTENTS_LADDER))
 	{
 		pml.ladder = true;
@@ -787,11 +761,6 @@ static void CheckSpecialMovement ()
 }
 
 
-/*
-===============
-FlyMove
-===============
-*/
 static void FlyMove (bool doclip)
 {
 	int		i;
@@ -857,7 +826,8 @@ static void FlyMove (bool doclip)
 		CVec3 end;
 		for (i = 0; i < 3; i++)
 			end[i] = pml.origin[i] + pml.frametime * pml.velocity[i];
-		trace_t trace = pm->trace (pml.origin, pm->bounds.mins, pm->bounds.maxs, end);
+		trace_t trace;
+		PM_Trace (trace, pml.origin, end, pm->bounds);
 		pml.origin = trace.endpos;
 	}
 	else
@@ -914,7 +884,8 @@ static void CheckDuck ()
 		{
 			// try to stand up
 			pm->bounds.maxs[2] = 32;
-			trace_t trace = pm->trace (pml.origin, pm->bounds.mins, pm->bounds.maxs, pml.origin);
+			trace_t trace;
+			PM_Trace (trace, pml.origin, pml.origin, pm->bounds);
 			if (!trace.allsolid)
 				pm->s.pm_flags &= ~PMF_DUCKED;
 		}
@@ -953,9 +924,10 @@ static bool GoodPosition ()
 	CVec3	v;
 	for (int i = 0; i < 3; i++)
 		v[i] = pm->s.origin[i] / 8.0f;
-	trace_t tr = pm->trace (v, pm->bounds.mins, pm->bounds.maxs, v);
+	trace_t trace;
+	PM_Trace (trace, v, v, pm->bounds);
 
-	return !tr.allsolid;
+	return !trace.allsolid;
 }
 
 /*
@@ -968,54 +940,7 @@ precision of the network channel and in a valid position.
 */
 static void SnapPosition ()
 {
-#if 1
-	int		i, j;
-	CVec3	v;
-
-	for (i = 0; i < 3; i++)
-	{
-		pm->s.origin[i] = appRound (pml.origin[i] * 8);
-		pm->s.velocity[i] = appRound (pml.velocity[i] * 8);
-	}
-	if (pm->s.pm_type == PM_SPECTATOR) return;
-
-//if (pml.velocity[0] || pml.velocity[1] || pml.velocity[2])//!!
-//appPrintf("g:%d org: %g %g %g (pr: %d %d %d)  sp: %g %g %g\n", (pm->s.pm_flags & PMF_ON_GROUND) != 0,
-//VECTOR_ARG(pml.origin),VECTOR_ARG(pml.previous_origin),VECTOR_ARG(pml.velocity));//!!
-
-	int delta[3];
-	delta[0] = delta[1] = delta[2] = 0;
-	for (i = 0; i < 5; i++)
-	{
-		for (j = 0; j < 3; j++) v[j] = pm->s.origin[j] / 8.0f;
-		trace_t tr = pm->trace (v, pm->bounds.mins, pm->bounds.maxs, v);
-		if (!tr.allsolid)
-		{
-			for (j = 0; j < 3; j++)
-			{
-				if (!delta[j]) continue;
-				if (pm->s.origin[j] != pml.previous_origin[j]) continue;
-				if ((delta[j] > 0 && pm->s.velocity[j] > 0) ||
-					(delta[j] < 0 && pm->s.velocity[j] < 0)) continue;
-				pm->s.velocity[j] = 0;
-			}
-			return;
-		}
-#define STEP(n)								\
-		if (tr.plane.normal[n] < -0.2) {	\
-			pm->s.origin[n]--;				\
-			delta[n]--;						\
-		} else if (tr.plane.normal[n] > 0.2) {\
-			pm->s.origin[n]++;				\
-			delta[n]++;						\
-		}
-		STEP(0); STEP(1); STEP(2);
-//		appPrintf("#%d(%g %g %g)->(%d %d %d)\n",i,VECTOR_ARG(tr.plane.normal),VECTOR_ARG(pm->s.origin));//!!
-	}
-//	appPrintf(S_RED"***\n");//!!
-
-#else
-	//!! OLD
+#if OLD_PMOVE
 	int		sign[3];
 	int		i, j, bits;
 	short	base[3];
@@ -1050,6 +975,53 @@ static void SnapPosition ()
 		if (GoodPosition ())
 			return;
 	}
+#else
+	int		i, j;
+	CVec3	v;
+
+	for (i = 0; i < 3; i++)
+	{
+		pm->s.origin[i] = appRound (pml.origin[i] * 8);
+		pm->s.velocity[i] = appRound (pml.velocity[i] * 8);
+	}
+	if (pm->s.pm_type == PM_SPECTATOR) return;
+
+//if (pml.velocity[0] || pml.velocity[1] || pml.velocity[2])//!!
+//appPrintf("g:%d org: %g %g %g (pr: %d %d %d)  sp: %g %g %g\n", (pm->s.pm_flags & PMF_ON_GROUND) != 0,
+//VECTOR_ARG(pml.origin),VECTOR_ARG(pml.previous_origin),VECTOR_ARG(pml.velocity));//!!
+
+	int delta[3];
+	delta[0] = delta[1] = delta[2] = 0;
+	for (i = 0; i < 5; i++)
+	{
+		for (j = 0; j < 3; j++) v[j] = pm->s.origin[j] / 8.0f;
+		trace_t trace;
+		PM_Trace (trace, v, v, pm->bounds);
+		if (!trace.allsolid)
+		{
+			for (j = 0; j < 3; j++)
+			{
+				if (!delta[j]) continue;
+				if (pm->s.origin[j] != pml.previous_origin[j]) continue;
+				if ((delta[j] > 0 && pm->s.velocity[j] > 0) ||
+					(delta[j] < 0 && pm->s.velocity[j] < 0)) continue;
+				pm->s.velocity[j] = 0;
+			}
+			return;
+		}
+#define STEP(n)								\
+		if (trace.plane.normal[n] < -0.2) {	\
+			pm->s.origin[n]--;				\
+			delta[n]--;						\
+		} else if (trace.plane.normal[n] > 0.2) {\
+			pm->s.origin[n]++;				\
+			delta[n]++;						\
+		}
+		STEP(0); STEP(1); STEP(2);
+//		appPrintf("#%d(%g %g %g)->(%d %d %d)\n",i,VECTOR_ARG(tr.plane.normal),VECTOR_ARG(pm->s.origin));//!!
+	}
+//	appPrintf(S_RED"***\n");//!!
+
 #endif
 
 //	appPrintf("BAD!\n");//!!
@@ -1123,13 +1095,8 @@ static void ClampAngles ()
 	AngleVectors (pm->viewangles, &pml.forward, &pml.right, &pml.up);
 }
 
-/*
-================
-Pmove
 
-Can be called by either the server or the client
-================
-*/
+// Can be called by either the server or the client
 void Pmove (pmove_t *pmove)
 {
 	guard(Pmove);

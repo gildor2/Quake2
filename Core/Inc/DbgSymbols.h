@@ -5,7 +5,7 @@ CORE_API const char *appSymbolName (address_t addr);
 
 #else // DBG_SYMBOLS
 
-inline appSymbolName (address_t, char*, int)
+inline bool appSymbolName (address_t, char*, int)
 {
 	return false;
 }

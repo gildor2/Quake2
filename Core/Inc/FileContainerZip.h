@@ -15,10 +15,10 @@ typedef unsigned long   ulg;		// 4-byte unsigned
 #define END_HDR_MAGIC		BYTES4('P','K',5,6)
 
 
-//#define ZLIB_DEBUG
+//#define ZLIB_DEBUG		1
 
 
-#ifdef _WIN32
+#if _WIN32
 #pragma pack(push,1)
 #else
 #error Adapt for non-Win32 platform!!!
@@ -68,7 +68,7 @@ struct cdirFileHdr_t
 	ulg		relativeOffsetLocalHeader;
 };
 
-#ifdef _WIN32
+#if _WIN32
 #pragma pack(pop)
 #endif
 
@@ -105,7 +105,7 @@ protected:
 		{
 			if (info.method != Z_DEFLATED) return;
 			// init decompression
-#ifndef ZLIB_DEBUG
+#if !ZLIB_DEBUG
 			inflateInit2 (&s, -MAX_WBITS);
 #else
 			if (inflateInit2 (&s, -MAX_WBITS) != Z_OK)
@@ -128,7 +128,7 @@ protected:
 			// verify crc (when file completely read)
 			if (readPos >= info.size && crc != info.crc32)
 				appWPrintf ("zip \"%s\": \"%s\" have wrong CRC\n", Owner->name, *Name);
-#ifdef ZLIB_DEBUG
+#if ZLIB_DEBUG
 			else
 				appPrintf ("file %s: crc = %X\n", *Name, crc);
 #endif
@@ -170,7 +170,7 @@ protected:
 						break;
 					}
 					// here: error occured
-#ifdef ZLIB_DEBUG
+#if ZLIB_DEBUG
 					appWPrintf ("ZLIB: inflate() err=%d\n", ret);
 #endif
 					return 0;
@@ -227,7 +227,7 @@ protected:
 public:
 	static CFileContainer *Create (const char *filename, FILE *f)
 	{
-#if 0
+#if ZLIB_DEBUG
 		// can disable this code to allow zip files, attached to another file (sfx archives etc)
 		unsigned signature;
 		if (fread (&signature, 4, 1, f) != 1 || signature != LOCAL_HDR_MAGIC)

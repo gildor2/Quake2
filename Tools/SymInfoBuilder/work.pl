@@ -40,7 +40,7 @@ sub ProcessMap {
 		($_) = $_ =~ /^\s*(\S.*\S)\s*$/;
 		next if !defined($_);
 #		print "LINE: $_\n";	#!!!
-		($addr, $name, undef, $args) = / \s* (\S+) \s+ ([\w<>:*,~\s]+) \s* (\( (.*) \))? /x;
+		($addr, $name, undef, $args) = / \s* (\S+) \s+ ([\w\.<>:*,~\s]+) \s* (\( (.*) \))? /x;
 		my $curr = hex($addr);
 		next if $name =~ /^__/;						# do not include in list names, started with double underscore
 		# process return type
@@ -78,7 +78,7 @@ sub ProcessMap {
 				$arg = ProcessType ($arg);
 #				$arg =~ s/\b\w+\:\://;				# remove namespace qualifier from argument type
 #				$arg =~ s/\b(struct|class)\s+//;	# remove struct/class qualifier from type name
-#				($arg) = $arg =~ /\s*(\S.*\S)\s*/;	# remove leading/trailing spaces (may left after previous processing)
+				($arg) = $arg =~ /\s*(\S.*\S)\s*/;	# remove leading/trailing spaces (for GCC map)
 				$name .= $arg;
 				$i++;
 			}
@@ -100,17 +100,15 @@ sub ProcessMap {
 	syswrite (DBG, "\0\0\0\0");
 }
 
-# cvt_tool placed in a directory of this script
-($tmp) = $0 =~ /(.*\/)[^\/]+/;						# extract path
-$cvt_tool = $tmp.$cvt_tool;							# append filename
+# usage information
+die "Generate symbols.dbg\nUsage: work.pl workdir compiler\n" if $#ARGV != 1;
 
-if ($#ARGV == 0) {
-	$workdir = $ARGV[0];
-} elsif ($#ARGV == -1) {
-	$workdir = ".";
-} elsif ($#ARGV > 0) {
-	die "Generate symbols.dbg\nUsage: work.pl [workdir]\n";
-}
+# cvt_tool placed in a directory of this script
+($tmp) = $0 =~ /(.*\/)[^\/]+/ ;						# extract path
+$tmp = "./" if !defined($tmp);
+$cvt_tool = $tmp.$cvt_tool."-".$ARGV[1];			# append filename and compiler
+
+$workdir = $ARGV[0];
 # read output directory
 opendir (DIR, $workdir) or die "cannot open dir \"$workdir\"\n";
 @filelist = readdir (DIR);

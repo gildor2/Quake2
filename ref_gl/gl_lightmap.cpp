@@ -293,7 +293,8 @@ void LM_SortLightStyles (dynamicLightmap_t *dl)
 	for (int i = 0; i < dl->numStyles - 1; i++)	// at iteration "i == dl->numStyles-1" all already will be sorted
 	{
 		int min = i;
-		for (int j = i + 1; j < dl->numStyles; j++)
+		int j;
+		for (j = i + 1; j < dl->numStyles; j++)
 			if (dl->style[j] < dl->style[i]) min = j;
 		if (min == i) continue;		// in place
 		// exchange styles [i] and [j]

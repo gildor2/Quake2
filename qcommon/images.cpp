@@ -100,7 +100,7 @@ void LoadPCX (const char *name, byte *&pic, byte *&palette, int &width, int &hei
 #define TGA_TOPLEFT			0x20
 #define TGA_TOPRIGHT		0x30					// unused
 
-#ifdef _WIN32
+#if _WIN32
 #pragma pack(push,1)
 #else
 #error Adapt for non-Win32 platform!!!
@@ -116,7 +116,7 @@ struct tgaHdr_t
 	byte	pixel_size, attributes;
 };
 
-#ifdef _WIN32
+#if _WIN32
 #pragma pack(pop)
 #endif
 
@@ -260,7 +260,7 @@ METHODDEF(void) J_TermSource (j_decompress_ptr cinfo)
 
 METHODDEF(void) J_ErrorExit (j_common_ptr cinfo)
 {
-	Com_DropError ("JPEG error");
+	Com_DropError ("JPEG error %d", cinfo->err->msg_code);
 }
 
 METHODDEF(void) J_EmitMessage (j_common_ptr cinfo, int msg_level)

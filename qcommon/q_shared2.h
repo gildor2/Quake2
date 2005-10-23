@@ -441,7 +441,7 @@ float ClampColor255 (const CVec3 &in, CVec3 &out);
 	Text parser
 -----------------------------------------------------------------------------*/
 
-char *COM_Parse (const char *&data_p, bool allowLineBreaks = true);
+char *COM_Parse (const char * &data_p, bool allowLineBreaks = true);
 const char *COM_QuoteString (const char *str, bool alwaysQuote);
 // data is an in/out parm, returns a parsed out token
 
@@ -449,7 +449,7 @@ const char *COM_QuoteString (const char *str, bool alwaysQuote);
 	Byte-order functions
 -----------------------------------------------------------------------------*/
 
-#ifdef LITTLE_ENDIAN
+#if LITTLE_ENDIAN
 
 #define LittleShort(n)	((short)n)
 #define LittleLong(n)	((long)n)
@@ -582,7 +582,11 @@ struct pmove_t
 	int			waterlevel;
 
 	// callbacks to test the world
-	trace_t		(*trace) (const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end);
+#if _WIN32
+	trace_t*	(*trace) (trace_t &trace, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end);
+#else
+	#error trace_t returned -- check calling convention
+#endif
 	int			(*pointcontents) (const CVec3 &point);
 };
 

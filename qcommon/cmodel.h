@@ -71,7 +71,7 @@ typedef enum {fog_no, fog_linear, fog_exp, fog_exp2} fogMode_t;
 struct bspfile_t
 {
 	char		name[MAX_QPATH];		// mapname
-	void		*file;					// buffer, returned by FS_LoadFile()
+	byte		*file;					// buffer, returned by FS_LoadFile()
 	mapType_t	type;
 	unsigned	checksum;
 	unsigned	length;

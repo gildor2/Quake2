@@ -1100,7 +1100,6 @@ void CL_Frame (float msec, float realMsec)
 	// send a new command message to the server
 	CL_SendCmd ();					// send intentions now (IN_Tick()?)
 	CL_InitiateConnection ();		// resend a connection request if necessary
-
 	// predict all unacknowledged movements
 	CL_PredictMovement ();
 

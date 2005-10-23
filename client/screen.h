@@ -6,7 +6,7 @@ void SCR_CenterPrint (const char *str);
 //void SCR_BeginLoadingPlaque (void); -- declared in qcommon.h
 void SCR_EndLoadingPlaque (bool force);	//?? is "force" needed ?
 
-void SCR_DebugGraph (float value, int color);
+//void SCR_DebugGraph (float value, int color); -- declared in qcommon.h (for server)
 
 void SCR_TouchPics ();
 

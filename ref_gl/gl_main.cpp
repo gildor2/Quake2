@@ -18,7 +18,7 @@ FLoadStats	gl_ldStats;
 cvar_t		*r_stats;
 #endif
 
-#ifndef STATIC_BUILD
+#if !STATIC_BUILD
 refImport_t	ri;
 #endif
 
@@ -175,10 +175,10 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_znear, 4, 0),
 	CVAR_VAR(gl_swapinterval, 0, CVAR_ARCHIVE|CVAR_UPDATE),
 
-#ifdef _WIN32
+#if _WIN32
 	CVAR_VAR(gl_driver, opengl32, CVAR_ARCHIVE),
 #else
-	CVAR_VAR(gl_driver, libGL.so, CVAR_ARCHIVE),
+	CVAR_VAR(gl_driver, libGL.so.1, CVAR_ARCHIVE),
 #endif
 	CVAR_VAR(gl_mode, 3, CVAR_ARCHIVE),
 
@@ -952,7 +952,7 @@ float GetClientLight ()
 	Renderer interface
 -----------------------------------------------------------------------------*/
 
-#ifndef SINGLE_RENDERER
+#if !SINGLE_RENDERER
 #	include "../client/rexp_exp.h"
 RENDERER_EXPORT
 #endif

@@ -24,13 +24,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 int			cache_full_cycle;
 
-byte *S_Alloc (int size);
+// forwards
+static void GetWavinfo (wavinfo_t &info, char *name, byte *wav, int wavlength);
 
-/*
-================
-ResampleSfx
-================
-*/
+
 void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
 {
 	int		outcount;
@@ -99,7 +96,6 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 {
 	char		namebuffer[MAX_QPATH], *name;
 	byte		*data;
-	wavinfo_t	info;
 	int			len;
 	unsigned	size;
 	float		stepscale;
@@ -133,7 +129,8 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 		return NULL;
 	}
 
-	info = GetWavinfo (s->Name, data, size);
+	wavinfo_t info;
+	GetWavinfo (info, s->Name, data, size);
 	if (info.channels != 1)
 	{
 		appPrintf ("%s is a stereo sample\n", *s->Name);
@@ -238,6 +235,7 @@ static void FindChunk(char *name)
 }
 
 
+#if 0
 static void DumpChunks(void)
 {
 	char	str[5];
@@ -249,27 +247,20 @@ static void DumpChunks(void)
 		memcpy (str, data_p, 4);
 		data_p += 4;
 		iff_chunk_len = GetLittleLong();
-		appPrintf ("0x%x : %s (%d)\n", (int)(data_p - 4), str, iff_chunk_len);
+		appPrintf ("0x%X : %s (%d)\n", (int)(data_p - 4), str, iff_chunk_len);
 		data_p += Align (iff_chunk_len, 2);
 	} while (data_p < iff_end);
 }
+#endif
 
-/*
-============
-GetWavinfo
-============
-*/
-wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
+static void GetWavinfo (wavinfo_t &info, char *name, byte *wav, int wavlength)
 {
-	wavinfo_t	info;
 	int     i;
 	int     format;
 	int		samples;
 
 	memset (&info, 0, sizeof(info));
-
-	if (!wav)
-		return info;
+	if (!wav) return;
 
 	iff_data = wav;
 	iff_end = wav + wavlength;
@@ -279,7 +270,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	if (!(data_p && !memcmp (data_p+8, "WAVE", 4)))
 	{
 		appWPrintf("Missing RIFF/WAVE chunks\n");
-		return info;
+		return;
 	}
 
 // get "fmt " chunk
@@ -290,14 +281,14 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	if (!data_p)
 	{
 		appWPrintf("Missing fmt chunk\n");
-		return info;
+		return;
 	}
 	data_p += 8;
 	format = GetLittleShort();
 	if (format != 1)
 	{
 		appWPrintf("Microsoft PCM format only\n");
-		return info;
+		return;
 	}
 
 	info.channels = GetLittleShort();
@@ -334,7 +325,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	if (!data_p)
 	{
 		appWPrintf("Missing data chunk\n");
-		return info;
+		return;
 	}
 
 	data_p += 4;
@@ -349,6 +340,4 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 		info.samples = samples;
 
 	info.dataofs = data_p - wav;
-
-	return info;
 }

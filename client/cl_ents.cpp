@@ -468,7 +468,7 @@ static void AddViewWeapon (int renderfx)
 	entity_t gun;		// view model
 	memset (&gun, 0, sizeof(gun));
 
-#ifdef GUN_DEBUG
+#if GUN_DEBUG
 	if (gun_model)
 		gun.model = gun_model;
 	else
@@ -483,7 +483,7 @@ static void AddViewWeapon (int renderfx)
 		gun.angles[i] = cl.refdef.viewangles[i] + LerpAngle (ops->gunangles[i], ps->gunangles[i], cl.lerpfrac);
 	}
 
-#ifdef GUN_DEBUG
+#if GUN_DEBUG
 	if (gun_frame)
 		gun.frame = gun.oldframe = gun_frame;
 	else
@@ -854,17 +854,17 @@ static void CL_AddPacketEntities (void)
 
 #define CAMERA_MINIMUM_DISTANCE	40
 
-//#define FIXED_VIEW		// for debug purposes
+//#define FIXED_VIEW	1		// for debug purposes
 
 void CL_OffsetThirdPersonView ()
 {
 	CVec3	forward, pos;
 	trace_t	trace;
-	float	camDist;//, dist;
+	float	camDist;
 
 	// algorithm was taken from FAKK2
 	camDist = max(cl_cameraDist->value, CAMERA_MINIMUM_DISTANCE);
-#ifdef FIXED_VIEW
+#if FIXED_VIEW
 	sscanf (Cvar_VariableString("3rd"), "%f %f %f", VECTOR_ARG(&cl.refdef.viewangles));
 #endif
 	CVec3 angles = cl.refdef.viewangles;
@@ -879,7 +879,7 @@ void CL_OffsetThirdPersonView ()
 	if (trace.fraction < 1)
 		pos = trace.endpos;
 #if 0
-	dist = VectorDistance (pos, cl.refdef.vieworg);
+	float dist = VectorDistance (pos, cl.refdef.vieworg);
 
 	if (dist < CAMERA_MINIMUM_DISTANCE)
 	{

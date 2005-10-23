@@ -145,8 +145,8 @@ CHANNEL MIXING
 ===============================================================================
 */
 
-void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int endtime, int offset);
-void S_PaintChannelFrom16 (channel_t *ch, sfxcache_t *sc, int endtime, int offset);
+static void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int endtime, int offset);
+static void S_PaintChannelFrom16 (channel_t *ch, sfxcache_t *sc, int endtime, int offset);
 
 void S_PaintChannels (int endtime)
 {
@@ -245,7 +245,7 @@ void S_PaintChannels (int endtime)
 						S_PaintChannelFrom8 (ch, sc, count,  ltime - paintedtime);
 					else
 						S_PaintChannelFrom16 (ch, sc, count, ltime - paintedtime);
-					unguardf(("snd=%s", ch->sfx));
+					unguardf(("snd=%s", *ch->sfx->Name));
 
 					ltime += count;
 				}

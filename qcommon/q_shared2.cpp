@@ -265,6 +265,8 @@ float VectorNormalize (const CVec3 &v, CVec3 &out)
 		float ilength = 1.0f / length;
 		VectorScale (v, ilength, out);
 	}
+	else
+		out.Set (0, 0, 0);
 	return length;
 }
 
@@ -492,7 +494,7 @@ void UnTransformPoint (const CVec3 &origin, const CAxis &axis, const CVec3 &src,
 ============================================================================
 */
 
-#ifndef LITTLE_ENDIAN
+#if !LITTLE_ENDIAN
 
 short LittleShort (short l)
 {

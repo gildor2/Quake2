@@ -60,10 +60,10 @@ bool in_needRestart;
 -----------------------------------------------------------------------------*/
 
 // forwards
-void MouseEvent (unsigned buttons);
+static void MouseEvent (unsigned buttons);
 
 // buffered DirectInput mouse
-#define BUFFERED_MOUSE
+#define BUFFERED_MOUSE		1
 
 // mouse variables
 static cvar_t	*in_mouse;
@@ -72,7 +72,7 @@ static cvar_t	*m_filter;
 cvar_t			*sensitivity;
 cvar_t			*m_invert;
 
-#define MOUSE_SCALE		0.022
+#define MOUSE_SCALE			0.022
 
 
 /*-----------------------------------------------------------------------------
@@ -187,7 +187,7 @@ static bool DXMouse_Init ()
 		DXMouse_Free ();
 		return false;
 	}
-#ifdef BUFFERED_MOUSE
+#if BUFFERED_MOUSE
 	DIPROPDWORD dipdw;
 	// the header
 	dipdw.diph.dwSize		= sizeof(DIPROPDWORD);
@@ -223,7 +223,7 @@ static bool DXMouse_Init ()
 static void DXMouse_Frame (int &move_x, int &move_y)
 {
 	// poll DirectInput mouse
-#ifdef BUFFERED_MOUSE
+#if BUFFERED_MOUSE
 	move_x = move_y = 0;
 	while (true)
 	{
@@ -238,7 +238,7 @@ static void DXMouse_Frame (int &move_x, int &move_y)
 		}
 		if FAILED(res)
 		{
-			appWPrintf ("Error %X on DI mouse.GetData()\n", res);
+			appWPrintf ("Error %X on DI mouse.GetData()\n", (unsigned)res);
 			return;
 		}
 		if (dwElements == 0) return;	// no data available

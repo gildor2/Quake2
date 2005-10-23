@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "cmodel.h"
 
 
-//#define AREA_EDICTS_OPT		-- not works:
+//#define AREA_EDICTS_OPT	1	-- not works:
 	// in some circusmances, it is possible, that UnlinkEdict()
 	// will set numSolidEdicts<0 or numTrigEdicts<0, and AreaEdicts() will work
 	// incorrectly (if exists, demo of "effect" is "baseq2/buggy1.dm2"; recorded
@@ -390,14 +390,14 @@ static void SV_AreaEdicts_r (areanode_t *node)
 	// touch linked edicts
 	if (area_type == AREA_SOLID)
 	{
-#ifdef AREA_EDICTS_OPT
+#if AREA_EDICTS_OPT
 		if (!node->numSolidEdicts) return;
 #endif
 		start = &node->solidEdicts;
 	}
 	else // AREA_TRIGGERS
 	{
-#ifdef AREA_EDICTS_OPT
+#if AREA_EDICTS_OPT
 		if (!node->numTrigEdicts) return;
 #endif
 		start = &node->trigEdicts;

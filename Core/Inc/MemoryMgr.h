@@ -74,6 +74,31 @@ inline void *operator new (size_t size, CMemoryChain *chain, int alignment = DEF
 	return chain->Alloc (size, alignment);
 };
 
+#if __GNUC__
+// for GCC: operator new[]/delete[]
+// exact copy of non-[] operators ...
+
+inline void *operator new[] (size_t size)
+{
+	return appMalloc (size, 1);
+}
+
+inline void *operator new[] (size_t size, int alignment)
+{
+	return appMalloc (size, alignment);
+}
+
+inline void operator delete[] (void *ptr)
+{
+	appFree (ptr);
+}
+
+inline void *operator new[] (size_t size, CMemoryChain *chain, int alignment = DEFAULT_ALIGNMENT)
+{
+	return chain->Alloc (size, alignment);
+};
+
+#endif
 
 // hack to initialize VMT for objects, created without using "operator new"
 inline void *operator new (unsigned size, char *buffer)

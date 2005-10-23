@@ -201,7 +201,6 @@ static void ClearParticles ()
 
 static void AddParticleTraces (float timeDelta)
 {
-	static int oldTime;
 	int		i;
 	particleTrace_t *p;
 	float	fovScale;
@@ -641,7 +640,7 @@ void CL_ParseMuzzleFlash ()
 		const char *sound2;
 	} mzTable_t;
 	static const mzTable_t mzTable[] = {
-#define F(r,g,b,sil,snd1,snd2)		{ r*255.0f,g*255.0f,b*255.0f,sil,snd1,snd2 }
+#define F(r,g,b,sil,snd1,snd2)		{ byte(r*255.0f),byte(g*255.0f),byte(b*255.0f),sil,snd1,snd2 }
 	F(1,1,0,	true,	"blastf1a", NULL),			// MZ_BLASTER
 	F(1,1,0,	true,	"machgf%db", NULL),			// MZ_MACHINEGUN
 	F(1,1,0,	true,	"shotgf1b", "shotgr1b"),	// MZ_SHOTGUN

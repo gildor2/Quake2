@@ -1,0 +1,197 @@
+#!/usr/bin/perl -w
+
+sub getline {
+	while ($line = <IN>)
+	{
+		# remove CR/LF
+		$line =~ s/\r//;
+		$line =~ s/\n//;
+		return 1;
+	}
+	return 0;
+}
+
+sub WaitLine {
+	my $pattern = $_[0];
+	while (getline ()) {
+		return if $line =~ /$pattern/;
+	}
+	die "DUMPMAP: unexpected end of file (waiting for [$pattern])\n";
+}
+
+$lastSymAddr = undef;
+$lastSymName = "";
+sub DumpSymbol {
+	my ($hexAddr, $name, $force) = @_;
+	my $addr = hex($hexAddr) - $base;
+
+	if ($lastSymName ne "") {
+		if ($lastSymAddr != $addr) {
+			printf ("%08X   %s\n", $lastSymAddr, $lastSymName);
+		}
+		# else -- address is the same as previous - keep current one ...
+		$lastSymName = "";
+	}
+	if ($name ne "") {
+		if ($force) {
+			printf ("%08X   %s\n", $addr, $name);
+		} else {
+			$lastSymName = $name;
+			$lastSymAddr = $addr;
+		}
+	}
+}
+
+
+die "Usage: dumpmap <map_file>\n" if $#ARGV != 0;
+
+open (IN, $ARGV[0]) or die "Cannot open \"".$ARGV[0]."\"\n";
+
+# get base address
+WaitLine ("Linker script and memory map");
+WaitLine ('__image_base__ = ');
+($baseHex) = $line =~ /__image_base__ = 0x(\w+)\s*$/;
+$base = hex($baseHex);
+#print "[$line]\n";
+# skip until any section description
+WaitLine ('^\s*\*\(\.\w+\)$');
+#print "[$line]\n";
+
+($section) = $line =~ /^\s*\*\( \. ([^)]+) \)$/x;
+while (getline ())
+{
+	# OUTPUT(filename format)  => end of section description
+	last if $line =~ /^OUTPUT\(.*\)$/;
+	# check for new section
+	($sec2) = $line =~ /^ \s* \*\( ([^)]+) \) $/x;
+	($sec2) = $line =~ /^ \s* \*\(SORT\( ([^)]+) \)\) $/x if !defined($sec2);
+	if (defined($sec2)) {
+		$sec2 =~ s/^\.//;
+		$section = $sec2;
+#		print "*** $section ***\n";			###
+		next;			# no further processing for this line
+	}
+
+	# refine known sections
+	if ($section !~ /^(text.*|ctors|dtors|data.*|rdata.*|bss|gcc_except_table|COMMON)$/) {
+#		print "[$section] -- $line\n";
+		next;
+	}
+#	print STDERR "[$section]\n";
+
+	next if $line =~ /^\s*\.\S+$/;			# .section_name
+	next if $line =~ /^\s*\*fill\*\s+/;		# *fill* <address> ...
+
+	# catch: .section_name 0x<address> 0x<seg_size> ObjFile.o(LibFIle.a)
+	($addr, undef, $obj)       = $line =~ /^\s* \S+ \s+ 0x(\w+) \s+ 0x\w+ \s+ (\S+\/)?([^\/]+)\.o $/x;
+	($addr, undef, $lib, $obj) = $line =~ /^\s* \S+ \s+ 0x(\w+) \s+ 0x\w+ \s+ (\S+\/)?([^\/]+)\.a \( (\S+)\.o \) $/x
+		if !defined($addr);
+
+	if (defined($addr)) {
+		$obj = "$lib:$obj" if defined($lib);
+		$obj .= ".$section";
+#		print ">> $addr:$obj\n";			###
+		# generate symbol
+		DumpSymbol ($addr, $obj, 0);
+	} else {
+		($addr, $name) = $line =~ /^\s* 0x(\w+) \s+ ([^0\s].*\S) \s* $/x;
+		if (defined($name)) {
+			# "__cxxabiv1::" => ""
+			$name =~ s/\b__cxxabiv1::\b//g;
+			# special names
+			if ($name =~ /^typeinfo for /) {
+				($name2) = $name =~ /^typeinfo \s+ for \s+ (\S.*\S) $/x;
+				$name = "type($name2)";
+			} elsif ($name =~ /^typeinfo name for /) {
+				($name2) = $name =~ /^typeinfo \s+ name \s+ for \s+ (\S.*\S) $/x;
+				$name = "typename($name2)";
+			} elsif ($name =~ /^vtable for /) {
+				($name2) = $name =~ /^vtable \s+ for \s+ (\S.*\S) $/x;
+				$name = "vmt($name2)";
+			} elsif ($name =~ /^ \S+ \s* = \s+ \. \s* $/x) {
+				($name2) = $name =~ /^ (\S+) \s* = /x;
+				$name = $name2;
+			}
+#			print ".. $addr $name\n";		###
+			# generate symbol
+			DumpSymbol ($addr, $name, 1);
+		} else {
+#			print "$line\n";				###
+		}
+	}
+}
+
+# close map file
+close (IN);
+# flush symbol
+DumpSymbol ("", "", 0);
+
+
+# lines:
+
+#        0xADDRESS  VARIABLE = VALUE      -- ignore
+# *fill* 0xADDRESS  0xSEG_SIZE 00         -- ignore
+# .sec   0xADDRESS  0xSEG_SIZE            -- ignore (no objfile specified)
+# OUTPUT(Path/ExeName pormat)             -- ignore (last line in .map file)
+
+# code:
+# *(.text)          << first line
+# .text  0xADDRESS  0xSEG_SIZE  Path/ObjFile.o
+#        0xADDRESS    FunctionOrVar
+# .text  0xADDRESS  0xSEG_SIZE Path/LibFile.a(InternalObj.o)
+
+# templates and not-inlined-inlines:
+# (*SORT(.text$*))  << first line
+# repeat following 3 lines:
+# 1) .text$something_long
+# 2)     0xADDRESS  0xSEG_SIZE  Path/ObjFile.o
+# 3)     0xADDRESS    FuncName
+# NOTE: 2) and 3) 0xADDRESS is the same!
+
+# constructors/destructors:
+# *(.ctors)
+# .ctors 0xADDRESS  0xSEG_SIZE  Parh/ObjFile.o
+# *(.dtors)
+# .dtors 0xADDRESS  0xSEG_SIZE  Parh/ObjFile.o
+
+# exception tables:
+# *(.gcc_except_table)
+# .gcc_except_table
+#        0xADDRESS  0xSEG_SIZE  Path/ObjFile.o
+
+# data:
+# *(.data)
+# .data  0xADDRESS  0xSEG_SIZE  Path/ObjFile.o
+#        0xADDRESS    VarName
+
+# class data?:
+# *(SORT(.data$*))
+# .data$something_long
+#        0xADDRESS  0xSEG_SIZE  Path/ObjFile.o
+#        0xADDRESS  0xSEG_SIZE  SomeLongNameWithInit
+
+# constants:
+# *(.rdata)
+# .rdata 0xADDRESS  0xSEG_SIZE  Path/ObjFile.o
+#        0xADDRESS    ConstName
+
+# typeinfos:
+# *(SORT(.rdata$*))
+# .rdata$something_long
+#        0xADDRESS  0xSEG_SIZE  Path/ObjFile.o
+#        0xADDRESS    typeinfo for <something>
+#        0xADDRESS    typeinfo name for <something>
+#        0xADDRESS    vtable for <something>
+
+# uninitialized section:
+# *(.bss)
+# .bss   0xADDRESS  0xSEG_SIZE  Path/ObjFile.o
+#        0xADDRESS    VarName
+
+# common:
+# *(COMMON)
+# COMMON 0xADDRESS  0xSEG_SIZE  Path/ObjFile.o
+#        0xADDRESS    VarName
+
+# imported symbols (WinAPI) FuncName@NUM
+# long libstdc++ typeinfo symbols: __cxxabiv1::.... -- remove namespaces?

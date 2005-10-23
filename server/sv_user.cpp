@@ -423,7 +423,9 @@ void SV_ClientThink (client_t *cl, usercmd_t *cmd)
 		return;
 	}
 
+	guard(ge.ClientThink);
 	ge->ClientThink (cl->edict, cmd);
+	unguard;
 }
 
 
@@ -493,15 +495,13 @@ static void SV_MoveClient (client_t *cl)
 
 
 #define	MAX_STRINGCMDS	8
-/*
-===================
-SV_ExecuteClientMessage
 
-The current net_message is parsed for the given client
-===================
-*/
+// The current net_message is parsed for the given client
 void SV_ExecuteClientMessage (client_t *cl)
 {
+	int c = -1;
+	guard(SV_ExecuteClientMessage);
+
 	sv_client = cl;
 	sv_player = sv_client->edict;
 
@@ -518,7 +518,7 @@ void SV_ExecuteClientMessage (client_t *cl)
 			return;
 		}
 
-		int c = MSG_ReadByte (&net_message);
+		c = MSG_ReadByte (&net_message);
 		if (c == -1) break;
 
 		switch (c)
@@ -550,9 +550,10 @@ void SV_ExecuteClientMessage (client_t *cl)
 			break;
 
 		default:
-			appPrintf ("SV_ReadClientMessage: unknown command char\n");
+			appPrintf ("SV_ExecuteClientMessage: unknown command char\n");
 			SV_DropClient (cl, NULL);
 			return;
 		}
 	}
+	unguardf(("%d", c));
 }

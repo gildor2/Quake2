@@ -109,40 +109,48 @@ EOF
 #------------------------------------------------------------------------------
 
 
+sub EmitPlatform {
+	my $file = $_[0];
+	if ($oldPlatform && !$platform) {
+		print ($file "\n#endif\n\n");
+	} elsif (!$oldPlatform) {
+		# !old && new
+		printf ($file "\n#if %s\n\n", PlatformDefine ($platform));
+	} else {
+		# old & new
+		printf ($file "\n#elif %s\n", PlatformDefine ($platform));
+	}
+}
+
 sub EmitPlatformHDR {
-	print (HDR "#endif\n") if $oldPlatform != 0;
-	printf (HDR "\n#ifdef %s\n", PlatformDefine ($platform)) if $platform != 0;
+	EmitPlatform (HDR);
 }
 
 sub EmitPlatformHDR_EXT {
 	if ($isExt)
 	{
-		print (HDR "#endif\n") if $oldPlatform != 0;
-		printf (HDR "\n#ifdef %s\n", PlatformDefine ($platform)) if $platform != 0;
+		EmitPlatform (HDR);
 	}
 }
 
 sub EmitPlatformCODE {
-	print (CODE "\n#endif\n\n") if $oldPlatform != 0;
-	printf (CODE "\n#ifdef %s\n\n", PlatformDefine ($platform)) if $platform != 0;
+	EmitPlatform (CODE);
 }
 
 sub EmitPlatformCODE2 {
-	print (CODE "\n#endif\n") if $oldPlatform != 0;
-	printf (CODE "\n#ifdef %s\n", PlatformDefine ($platform)) if $platform != 0;
+	EmitPlatform (CODE);
 }
 
 sub EmitPlatformCODE_EXT {
 	if ($isExt)
 	{
-		print (CODE "\n#endif\n") if $oldPlatform != 0;
-		printf (CODE "\n#ifdef %s\n", PlatformDefine ($platform)) if $platform != 0;
+		EmitPlatform (CODE);
 	}
 }
 
 sub EmitStruc {
 	print (HDR <<EOF
-		$type	(APIENTRY * $func) ($args);
+	$type	(APIENTRY * $func) ($args);
 EOF
 	);
 }
@@ -200,7 +208,7 @@ EOF
 				#............... log with parsing params ........................
 				die ("Array used for ", $s, " in func ", $func) if $arr[$i] ne "";
 				if ($s =~ /.*\*/) {
-					$fmt = "\$%X";
+					$fmt = "\$%X";		# pointer
 				} elsif ($s =~ /\w*(int|sizei|byte|boolean)/) {
 					$fmt = "%d";
 				} elsif ($s =~ /\w*(float|double|clampd|clampf)/) {
@@ -220,6 +228,9 @@ EOF
 			{
 				if ($atype[$i] =~ /\w*(enum)/) {
 					print (CODE ", EnumName($s)");
+				} elsif ($atype[$i] =~ /.*\*/) {
+					# pointer: cast to unsigned to avoid warning in GCC
+					print (CODE ", (unsigned)$s");
 				} else {
 	                print (CODE ", $s");
 				}
@@ -298,19 +309,22 @@ sub CloseExtension {
 
 # Close opened platform-depended code
 sub ClosePlatform {
+	my $lazy = $_[0];
 	CloseExtension ();
 	$firstExtFunc = 0;
 	if ($platform != 0 && defined $subPlatform)
 	{
 		$oldPlatform = $platform;
-		$platform = 0;		# base
-		&$subPlatform ();
+		if (!$lazy) {
+			$platform = 0;		# base
+			&$subPlatform ();
+		}
 	}
 }
 
 # Change work platform
 sub OpenPlatform {
-	ClosePlatform ();
+	ClosePlatform (1);
 	$oldPlatform = $platform;
 	$platform = PlatformIndex ($_[0]);
 	&$subPlatform () if defined $subPlatform;
@@ -354,7 +368,7 @@ sub Parse {
 		if ($cmd eq "platform") {
 			OpenPlatform ($cmda);
 		} elsif ($cmd eq "extensions") {
-			ClosePlatform ();
+			ClosePlatform (0);
 			$isExt = 1;
 			$platform = 0;
 		} elsif ($cmd eq "name") {
@@ -409,7 +423,7 @@ sub Parse {
 			$num++;
 		}
 	}
-	ClosePlatform ();
+	ClosePlatform (0);
 
 	close (IN);
 }
@@ -439,17 +453,12 @@ for $ct (@numBase)
 #------------------------------------------------------------------------------
 
 print (HDR <<EOF
-typedef void (APIENTRY * dummyFunc_t) ();
-
-union ${strucname}_t
+struct ${strucname}_t
 {
-	struct {
 EOF
 );
 Parse ("EmitStruc", "EmitPlatformHDR");
 print (HDR <<EOF
-	};
-	dummyFunc_t funcs[1];
 };
 
 extern ${strucname}_t $strucname;
@@ -469,9 +478,9 @@ $i = 1;
 while ($i <= $#numBase)
 {
 	if ($i == 1) {
-		print (CODE "#if defined(", PlatformDefine ($i), ")\n");
+		printf (CODE "#if %s\n", PlatformDefine ($i));
 	} else {
-		print (CODE "#elif defined(", PlatformDefine ($i), ")\n");
+		printf (CODE "#elif %s\n", PlatformDefine ($i));
 	}
 	printf (CODE <<EOF
 #	define $constname	%d

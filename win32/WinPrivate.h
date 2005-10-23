@@ -3,17 +3,17 @@
 #include <windows.h>
 
 // stuff from Win98+ and Win2k+
-
 #define SPI_GETMOUSESPEED		0x0070
 #define SPI_SETMOUSESPEED		0x0071
+#ifndef WM_MOUSEWHEEL
 #define WM_MOUSEWHEEL			0x020A
+#endif
 
-// X button (Win2k+)
+// X mouse button (Win2k+)
 #define WM_XBUTTONDOWN			0x020B
 #define WM_XBUTTONUP			0x020C
 #define MK_XBUTTON1				0x0020
 #define MK_XBUTTON2				0x0040
-
 
 // Remove some MS defines from <windows.h>
 
@@ -26,9 +26,7 @@ extern HWND cl_hwnd;
 extern bool	ActiveApp, MinimizedApp, FullscreenApp;
 
 // in_win.cpp
-void IN_Activate (bool active);	//?? declared in cl_input.h too
 extern bool in_needRestart;		//?? used from vid_dll.c::Vid_NewVindow()
-
 
 // message hooks
 typedef bool (*MSGHOOK_FUNC) (UINT uMsg, WPARAM wParam, LPARAM lParam);

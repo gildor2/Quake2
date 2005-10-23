@@ -31,7 +31,7 @@ static const refImport_t ri = {
 	CM_TransformedBoxTrace,
 	CM_BrushTrace,
 	CM_RefineBrushTrace
-#ifdef _WIN32
+#if _WIN32
 ,
 	Vid_CreateWindow,
 	Vid_DestroyWindow

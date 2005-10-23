@@ -555,7 +555,8 @@ static void Slider_Draw (menuSlider_t *s)
 	s->range = bound(s->range, 0, 1);
 
 	RE_DrawChar (s->x + s->parent->x + RCOLUMN_OFFSET, s->y + s->parent->y, 128);
-	for (int i = 0; i < SLIDER_RANGE; i++)
+	int i;
+	for (i = 0; i < SLIDER_RANGE; i++)
 		RE_DrawChar (RCOLUMN_OFFSET + s->x + i*8 + s->parent->x + 8, s->y + s->parent->y, 129);
 	RE_DrawChar (RCOLUMN_OFFSET + s->x + i*8 + s->parent->x + 8, s->y + s->parent->y, 130);
 	RE_DrawChar (appRound (8 + RCOLUMN_OFFSET + s->parent->x + s->x + (SLIDER_RANGE-1)*8 * s->range),

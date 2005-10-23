@@ -147,7 +147,8 @@ static void DrawCenterString ()
 	while (true)
 	{
 		// scan the width of the line
-		for (int len = 0; len < 40; len++)
+		int len;
+		for (len = 0; len < 40; len++)
 			if (start[len] == '\n' || !start[len])
 				break;
 		int x = (viddef.width - len * CHAR_WIDTH) / 2;
@@ -574,7 +575,7 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 #define	HUDCHAR_WIDTH	16
 #define	ICON_SPACE		8
 
-
+#if 0
 static void SizeHUDString (const char *string, int *w, int *h)
 {
 	int lines = 1;
@@ -598,6 +599,7 @@ static void SizeHUDString (const char *string, int *w, int *h)
 	*w = width * CHAR_WIDTH;
 	*h = lines * CHAR_HEIGHT;
 }
+#endif
 
 static void DrawHUDString (char *string, int x0, int y, int centerwidth, int color)
 {
