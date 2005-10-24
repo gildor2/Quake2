@@ -3,6 +3,10 @@ FIRST TODO (for crash detection):
 - fast math - make ability to turn off with #define (for debug; may be, GCC optimizes good by self ...)
 - floor/ceil/round: not so fast ... (check GCC FAST_MATH ...); appRound() via lrint() rounds 2.5 and 4.5 to 3 (same as VC ...)
 - assert(cond) or UT-like check() and verify()
+- use _controlfp() for MAX_DEBUG (mingw/vc - both!) to enable FPU exceptions (bad numbers, FP zero divide, NAN ...)
+  ! warning: /usr/include/mingw <float.h> not included for unknown reason
+- special code to test fast math functions (appRsqrt, appFloor, IsNegative, FAbsSign, ...) -- exec function + compare with non-fast
+  equalent; allow small error; exec inside loop to disallow compile-time computations (either iterate values, or use table ...)
 
 
 GCC TODO:
@@ -50,3 +54,4 @@ Notes:
 - varargs in macros (see GCC doc 5.15)
 - type_t varName; "typeof(varName) varName2" == "type_t varName2"
 - __func__ macro: const char name[] of current function
+- i386 type attribute: ms_struct, gcc_struct

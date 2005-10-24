@@ -536,10 +536,10 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 			//?? s->plane.SetSignbits ();
 			s->plane.SetType ();
 		}
-		s->numVerts = numVerts;
-		s->verts = (vertex_t *) (s+1);	//!!! allocate verts separately (for fast draw - in AGP memory)
+		s->numVerts   = numVerts;
+		s->verts      = (vertex_t *) (s+1);	//!!! allocate verts separately (for fast draw - in AGP memory)
 		s->numIndexes = numIndexes;
-		s->indexes = (int *) (s->verts+numVerts);
+		s->indexes    = (int *) (s->verts+numVerts);
 
 		/*-------------- Generate indexes ----------------------*/
 		int *pindex = s->indexes;

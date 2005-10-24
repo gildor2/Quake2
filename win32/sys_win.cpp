@@ -1,5 +1,6 @@
 #include "WinPrivate.h"
 #include "../client/client.h"		//!! for editLine[], CompleteCommand() + COutputDeviceCon
+#include <float.h>					// for _controlfp()
 
 #include "OutputDeviceMem.h"
 
@@ -241,9 +242,6 @@ void Sys_ProcessMessages ()
 	Program startup, main loop and exception handling
 -----------------------------------------------------------------------------*/
 
-//extern COutputDevice *debugLog;
-extern "C" _CRTIMP unsigned int _controlfp (unsigned int unNew, unsigned int unMask);
-
 #if !IS_CONSOLE_APP
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 #else
@@ -257,7 +255,7 @@ int main (int argc, const char **argv) // force to link as console application
 		const char *cmdline = GetCommandLine ();
 		// skip executable name (argv[0])
 		//?? NOTE: Linux/Unix have no ability to get full command line - argc/argv[] only!
-		cmdline = strchr (cmdline, (cmdline[0] == '\"') ? '\"' : ' ');
+		cmdline = strchr (cmdline+1, (cmdline[0] == '\"') ? '\"' : ' ');
 		if (!cmdline) cmdline = "";
 		else cmdline++;
 
@@ -295,11 +293,18 @@ int main (int argc, const char **argv) // force to link as console application
 		guard(MainLoop);
 		while (!GIsRequestingExit)
 		{
-#if __MINGW32__ && MAX_DEBUG
+#if MAX_DEBUG
+#	if __MINGW32__
 			// reinstall exception handler in a case of someone (ATI's OpenGL.dll) replaced it
 			long WINAPI mingw32ExceptFilter (struct _EXCEPTION_POINTERS *info);
 			SetUnhandledExceptionFilter (mingw32ExceptFilter);
+#	endif
+#if 0
+			// allow exceptions from FPU
+			-- not works: check "bugs.txt" (crash on any loading of 0.0f to FPU)
+			_controlfp (~(_EM_ZERODIVIDE|_EM_INVALID), _MCW_EM);	// _EM_INVALID -- handle invalid (NAN) data
 #endif
+#endif // MAX_DEBUG
 
 			if (DEDICATED)
 				Sleep (10);

@@ -6,13 +6,19 @@
 
 #include "CorePrivate.h"
 
+#define MMTIMERS		0			// use mmsystem timers for global timings
 
 double GSecondsPerCycle;			// really, should use GCyclesPerSecond, but this will require divide operation every
 									// time we use this, so GSecondsPerCycle=1/GCyclesPerSecond
 double GMSecondsPerCycle;			// == 1000*GSecondsPerCycle
 static unsigned timeBase;
 
-static bool IsMMX, IsSSE, IsRDTSC, Is3DNow;
+static bool IsMMX, IsSSE, Is3DNow;
+#if !MMTIMERS
+static bool IsRDTSC;
+#else
+#define IsRDTSC			0
+#endif
 
 char GMachineOS[64]  = "Unknown Windows variant";
 char GMachineCPU[64] = "Unknown 386/486 CPU";
@@ -179,7 +185,9 @@ static void CheckCpuModel ()
 	if (tmp & 0x00000010)
 	{
 		appPrintf ("RDTSC ");
+#if !MMTIMERS
 		IsRDTSC = true;
+#endif
 	}
 	//!! NOTE: if planning to use MMX/SSE/SSE2/3DNow! - should check OS support for this tech
 	if (tmp & 0x00800000)
@@ -393,16 +401,14 @@ void appInitPlatform ()
 	DetectOs ();
 	// setup current directory
 	SetDefaultDirectory ();
-#if 0
-	// DEBUG: force mmsystem timing functions
-	IsRDTSC = false;
+#if MMTIMERS
 	appWPrintf ("DEBUG: force mmsystem time measuring\n");
 #endif
 	// NOTE: under WinXP (Win2k too?) without timeBeginPeriod(1) Sleep() (and some another time-related
 	//	functions too) will work in bad resolution; so, we should use timeBeginPeriod(1) even if don't
 	//	use timeGetTime()
 	timeBeginPeriod (1);
-	if (!IsRDTSC) timeBase = timeGetTime ();
+	timeBase = timeGetTime ();
 }
 
 

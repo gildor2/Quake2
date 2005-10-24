@@ -1,3 +1,17 @@
+- FPU exception detection bugs:
+  CODE:  float sss; uint_cast(sss)=0xFF800000; appPrintf("sss=%g\n",sss);
+  - message will be "float zero divide" (error is different! (but FPU too)) -> display all FPU errors -> "FPU exception" ?
+  - error even when loading 0 into FPU register! (appMillisecondsf() not works with this ...)
+  - no exceptions at all, when sound system used (DirectX ?)
+  - test in pmove.cpp: NAN (was a bug, long time to detect); is it possible to detect it now ?! :
+    static void AirMove ()  // to activate -- simply jump
+    {
+	....
+    	AddCurrents (wishvel);
+    	float wishspeed = VectorNormalize (wishvel, wishdir);
+	uint_cast(wishdir[2])=0xFF800000; //!! added -- will set to NAN
+	....
+
 - a bug with collision detection against moving/rotating brushes (move through model with collision INSIDE model)
   - appeared after sv_world.cpp::LinkEdict/UnlinkEdict/AreaEdicts uses num[Solid|Trig]Edicts; sometimes this var becomes <0 ...
   - seems, this is a bug in game source
@@ -118,13 +132,27 @@ SOURCE FILES (COMPILER):
   - not understand template classes as friends (VC7 - OK)
 - (VisualC++ 7) -- cannot use default arguments for functions, which are part of structure
   Workaround: should use Struc_Func() inline (with default args) instead of struc.Func() call
-- GNU C++ 3.4:
-  - optimization: "-O2"-level:
-    - q_shared.cpp: bugs with movement, light
-      => fix: disable "force-mem"
-    - gl_light.cpp: bad lighting on models
-      => fix: disable "force-mem"
-    - gl_bspmodel.cpp: bad light: (q2dm1) no dlights on walls with normal {-1,0,0}; no lighting for models from this wall's SURF_LIGHT
-      => fix: disable "shedule-insns2"
-    - gl_frontend - crash on 1st world render frame
-      => "unit-at-a-time" ("-Os" only, no with simple "-O2")
+- GNU C++ 3.4: optimization: "-O2"-level: (all bugs - from FP hacks!?)
+    - "force-mem" optimization: incorrect code, when use uint_cast():
+	float appRsqrt (float number)
+	{
+		float x2 = number * 0.5f;
+		uint_cast(number) = 0x5F3759DF - (uint_cast(number) >> 1);  //!! this line will be ignored with this optimization!
+		number = number * (1.5f - (x2 * number * number));
+		return number;
+	}
+      (appearance): bugs with movement, light; when adapt appRsqrt(), movement will be correct, but lighting - not
+    - "shedule-insns2" optimization: incorrect code: (gl_bspmodel.cpp, LoadSurfaces2())
+	if (surfs->side)
+	{
+		s->plane.normal.Negate ();       // -> FNegate() *3 times -- FP hack
+		s->plane.dist = -s->plane.dist;
+		s->plane.SetType ();             // here: few "if (normal[] == 1|-1)" ...
+	}
+      Bug: normal.Negate() is not finished, but already analyzed in SetType(): normal==(1,0,0)=>(-1,0,0) will be analyzed as (1,0,0)
+      (appearance): bad light: no dlights on walls with normal {-1,0,0}; no lighting for models from this wall's SURF_LIGHT
+    ! both of these bugs are covered with "strict-aliasing" optimization; can use "-fno-strict-aliasing" to allow FP-hack constructions.
+      Also, check GCC manual:
+       - "3.8  Options to Request or Suppress Warnings" : '-Wstrict-aliasing' to detect possible errors -- our situations was not detected!
+       - "5.33 Specifying Attributes of Types" : 'may_alias' attribute
+       - "6.3  Restricted Pointer Aliasing": '__restrict__' keyword

@@ -71,8 +71,9 @@ inline int appCeil (float f)
 inline unsigned appCycles ()
 {
 	unsigned r;
+	unsigned r2;			// this value is not used, but signal to GCC, that EDX will be modified too
 	__asm __volatile__
-	("rdtsc" : "=a" (r));
+	("rdtsc" : "=a" (r), "=d" (r2));
 	return r;
 }
 

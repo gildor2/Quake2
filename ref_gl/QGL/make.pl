@@ -557,13 +557,13 @@ print (CODE "#endif // NO_GL_LOG\n\n");
 #------------------------------------------------------------------------------
 
 print (CODE <<EOF
-typedef struct {
+struct ${extArrName}_t {
 	const char *names;				// "alias1\\0alias2\\0...\\0" or "name\\0\\0"
 	const char *name;				// current name (points to a primary name or to any alias)
 	const char *cvar;				// name of cvar to disable extension
 	short	first, count;			// positions of provided functions in name table
 	unsigned require, deprecate;	// dependent extensions
-} ${extArrName}_t;
+};
 
 EOF
 );

@@ -1,5 +1,6 @@
 #define WIN32_LEAN_AND_MEAN		// exclude rarely-used services from windown headers
 #include <windows.h>
+#include <float.h>				// for _clearfp()
 #include "CorePrivate.h"
 
 
@@ -220,7 +221,15 @@ long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 			excName = "Access violation";
 			break;
 		case EXCEPTION_FLT_DIVIDE_BY_ZERO:
-			excName = "Float zero divide";
+		case EXCEPTION_FLT_INEXACT_RESULT:
+		case EXCEPTION_FLT_INVALID_OPERATION:
+		case EXCEPTION_FLT_OVERFLOW:
+		case EXCEPTION_FLT_STACK_CHECK:
+		case EXCEPTION_FLT_UNDERFLOW:
+		case EXCEPTION_FLT_DENORMAL_OPERAND:
+			// if FPU exception occured, _clearfp() is required (otherwise, exception will be re-raised again)
+			_clearfp ();
+			excName = "FPU exception";
 			break;
 		case EXCEPTION_INT_DIVIDE_BY_ZERO:
 			excName = "Integer zero divide";
@@ -241,6 +250,7 @@ long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 		GErr.Message.sprintf ("%s in \"%s\"", excName, appSymbolName (ctx->Eip));
 		COutputDevice *Out = appGetErrorLog ();
 
+		Out->Printf ("Exception code: %08X\n\n", info->ExceptionRecord->ExceptionCode);
 		Out->Write ("Registers:\n");
 		int j;
 		for (j = 0; j < ARRAY_COUNT(regData); j++)

@@ -1528,6 +1528,8 @@ static node_t *WalkBspTree ()
 
 static void DrawEntities (int firstEntity, int numEntities)
 {
+	guard(DrawEntities);
+
 	int		i;
 	refEntity_t	*e;
 	for (i = 0, e = gl_entities + firstEntity; i < numEntities; i++, e++)
@@ -1610,6 +1612,8 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 		if (e->model) SetupModelMatrix (e);
 	}
+
+	unguard;
 }
 
 
@@ -2043,6 +2047,7 @@ void AddDlight (dlight_t *dl)
 
 void DrawPortal ()
 {
+	guardSlow(DrawPortal);
 	int		i;
 	refEntity_t *e;
 
@@ -2081,6 +2086,7 @@ void DrawPortal ()
 				e->model->AddSurfaces (e);
 			}
 		}
+	unguardSlow;
 }
 
 

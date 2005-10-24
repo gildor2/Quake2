@@ -888,13 +888,13 @@ static const GL_t logFuncs = {
 
 #endif // NO_GL_LOG
 
-typedef struct {
+struct extInfo_t {
 	const char *names;				// "alias1\0alias2\0...\0" or "name\0\0"
 	const char *name;				// current name (points to a primary name or to any alias)
 	const char *cvar;				// name of cvar to disable extension
 	short	first, count;			// positions of provided functions in name table
 	unsigned require, deprecate;	// dependent extensions
-} extInfo_t;
+};
 
 static extInfo_t extInfo[NUM_EXTENSIONS] = {
 	{"GL_SGIS_multitexture\0", NULL, "gl_ext_multitexture", NUM_GLFUNCS+0, 2, 0, QGL_ARB_MULTITEXTURE},

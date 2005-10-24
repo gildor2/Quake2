@@ -69,6 +69,7 @@ float ClampColor255 (const CVec3 &in, CVec3 &out)
 }
 
 
+#if 1
 float appRsqrt (float number)
 {
 	float x2 = number * 0.5f;
@@ -77,6 +78,17 @@ float appRsqrt (float number)
 //	number = number * (1.5f - (x2 * number * number));	// 2nd iteration, this can be removed
 	return number;
 }
+#else
+// GCC with "-force-mem" optimization will produce incorrect code for previous variant; this is a fix:
+float appRsqrt (float number)
+{
+	float x2 = number * 0.5f;
+	float number2; // intermediate variable
+	uint_cast(number2) = 0x5F3759DF - (uint_cast(number) >> 1);
+	number2 = number2 * (1.5f - (x2 * number2 * number2));
+	return number2;
+}
+#endif
 
 
 //?? rename to EulerToAxis etc
