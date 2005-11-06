@@ -1,4 +1,4 @@
 #!/bin/bash
 
-target="ALL"
+TARGET="ALL"
 source ./build.sh

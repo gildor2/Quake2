@@ -112,11 +112,15 @@ struct game_import_t
 	void	(*setmodel) (edict_t *ent, char *name);
 
 	// collision detection
-#if _WIN32
+	// A few notes about calling convention for next function.
+	// Originally, this functions has following arguments: "trace_t trace(start,mins,maxs,end,passent,contentmask)". GCC 3.0+ (?) produces
+	// code for this function, incompatible with previous versions: function will exit with "retn 4" asm command, instead of "retn" (i.e.
+	// will automatically pop pointer to buffer for return arg). id's linux quake 3.20 uses "retn" (pre-GCC 3 convention) [checked with
+	// disassembly], which can be replaced with safe and compatible construction "trace_t *trace(trace& trace, mins, ...)". Visual C++ uses
+	// this convention too. So, following construction will be incompatible with linux q2 mods, compiled using GCC 3.0+, and this will be
+	// incompatible with id's linux quake2 ...
 	trace_t* (*trace) (trace_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passent, int contentmask);
-#else
-	#error trace_t returned -- check calling convention
-#endif
+
 	int		(*pointcontents) (const CVec3 &point);
 	qboolean (*inPVS) (const CVec3 &p1, const CVec3 &p2);
 	qboolean (*inPHS) (const CVec3 &p1, const CVec3 &p2);

@@ -6,7 +6,7 @@
 
 #include "CorePrivate.h"
 
-#define MMTIMERS		0			// use mmsystem timers for global timings
+//#define MMTIMERS		1			// use mmsystem timers for global timings
 
 double GSecondsPerCycle;			// really, should use GCyclesPerSecond, but this will require divide operation every
 									// time we use this, so GSecondsPerCycle=1/GCyclesPerSecond
@@ -15,7 +15,7 @@ static unsigned timeBase;
 
 static bool IsMMX, IsSSE, Is3DNow;
 #if !MMTIMERS
-static bool IsRDTSC;
+static bool IsRDTSC;				// is there any Pentium-class CPU w/o RDTSC support?
 #else
 #define IsRDTSC			0
 #endif
@@ -75,7 +75,7 @@ unsigned appMilliseconds ()
 
 static unsigned cpuidRegs[4];
 
-void cpuid (unsigned code)
+static void cpuid (unsigned code)
 {
 #if _MSC_VER
 	__asm {
@@ -116,19 +116,37 @@ inline unsigned cpuid3 (unsigned code)
 }
 #pragma warning(pop)
 
-#else
+#else // _MSC_VER
 
 inline unsigned cpuid0 (unsigned code)
 {
+#if 0
 	cpuid (code);
 	return cpuidRegs[0];
+#else
+	unsigned r0, r1, r2, r3;
+	__asm __volatile__
+	("cpuid"
+	: "=a" (r0), "=b" (r1), "=c" (r2), "=d" (r3)
+	: "a" (code));
+	return r0;
+#endif
 }
 inline unsigned cpuid3 (unsigned code)
 {
+#if 0
 	cpuid (code);
 	return cpuidRegs[3];
-}
+#else
+	unsigned r0, r1, r2, r3;
+	__asm __volatile__
+	("cpuid"
+	: "=a" (r0), "=b" (r1), "=c" (r2), "=d" (r3)
+	: "a" (code));
+	return r3;
 #endif
+}
+#endif // _MSC_VER
 
 static void CheckCpuModel ()
 {
@@ -140,16 +158,13 @@ static void CheckCpuModel ()
 
 	// cpuid presence
 	unsigned cpu0;
-	__try
-	{
+	TRY {
 		cpu0 = cpuid0 (0x80000000);
-	}
-	__except(EXCEPTION_EXECUTE_HANDLER)
-	{
+	} CATCH {
 		// no CPUID available
 		appPrintf ("CPU: %s\n", GMachineCPU);
 		return;
-	}
+	} END_CATCH
 
 	// CPU name
 	if (cpu0 >= 0x80000004)		// extended vendor string available
@@ -368,10 +383,6 @@ void appDisplayError ()
 		GErr.Message,
 #endif
 		va("%s: fatal error", appPackage ()), MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
-	// add CR/LF to error log and close it
-	COutputDevice *ErrLog = appGetErrorLog ();
-	ErrLog->Write ("\n\n");
-	ErrLog->Close ();
 }
 
 
@@ -385,7 +396,7 @@ long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info);
 long WINAPI mingw32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 {
 	win32ExceptFilter (info);
-	throw 1;		// OS exception -> C++ exception
+	THROW;			// OS exception -> C++ exception
 }
 #endif
 

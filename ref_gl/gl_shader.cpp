@@ -999,7 +999,6 @@ static void FreeShaderScripts ()
 
 static const char *shaderError;	// for script commands
 #define ERROR_IN_SHADER(msg)	{ shaderError = msg; return; }
-//?? use throw "message" ?
 #include "gl_shadersyntax.h"
 
 

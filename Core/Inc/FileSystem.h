@@ -208,6 +208,9 @@ CORE_API CFile *appOpenFile (const char *filename);
 CORE_API void appListDirectoryOS (const char *dir, CFileList &List, unsigned flags);
 // Create directory; supports multiple nested dirs creation
 CORE_API void appMakeDirectory (const char *dirname);
+// Verify file type: return FS_FILE|FS_DIR; if file does not exists (or special Unix file) - return 0
+CORE_API unsigned appFileType (const char *filename);
+
 // Create directory, which can hold filename
 //?? may be, integrate this function into fopen(name,"w") analog (appOpenFileWrite() etc)
 CORE_API void appMakeDirectoryForFile (const char *filename);

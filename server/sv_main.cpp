@@ -450,8 +450,8 @@ static void cRemoteCommand (int argc, char **argv)
 		} CATCH {
 			UnhookOutput;
 			delete Mem;
-			throw;
-		}
+			THROW_AGAIN;
+		} END_CATCH
 		UnhookOutput;
 		delete Mem;
 	}

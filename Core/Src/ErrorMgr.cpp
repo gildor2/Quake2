@@ -2,13 +2,16 @@
 #include "OutputDeviceFile.h"
 
 
+//?? add "bool GSilentErrors": when true, appError() etc will not set GErr.swError/GIsFatalError +
+//??  appGetErrorLog() will return GNull (incorrect: should avoid ErrLog places at all to allow use of
+//??  logging in a case of later error with GSilentErrors==false)
+//?? use GSilentErrors=1 with some TRY/CATCH blocks; Win32 analog:
+//?? "__try { /*code1*/ } __except(1) { /*code2*/ }" =>
+//?? "GSilentErrors=true;TRY { /*code1*/ } CATCH { /*code2*/ } END_CATCH GSilentErrors=false;"
+
+
 #define CRASH_LOG		"crash.log"
 
-
-/* NOTE:
- *	for error throwing, we use "throw 1" operator; "1" is required for WIN32_USE_SEH=0 compilation
- *	for appError()/appNonFatalError() (otherwise, unhandled GPF will be generated)
- */
 
 bool			GIsFatalError;
 CErrorHandler	GErr;
@@ -33,7 +36,7 @@ COutputDevice *appGetErrorLog ()
 		ErrLog.Printf ("-------------------------------------------\n");
 		ErrLog.Printf ("%s crash, %s\n", appPackage (), appTimestamp ());
 		ErrLog.Printf ("-------------------------------------------\n");
-		ErrLog.Printf ("OS: %s\nCPU: %s\n", GMachineOS, GMachineCPU);
+		ErrLog.Printf ("OS:  %s\nCPU: %s\n", GMachineOS, GMachineCPU);
 		ErrLog.Printf ("\nERROR: %s\n\n", *GErr.Message);
 	}
 	return &ErrLog;
@@ -68,6 +71,52 @@ static void LogHistory (const char *part)
 	Error throwing
 -----------------------------------------------------------------------------*/
 
+#if SETJMP_GUARD
+
+//?? when detect numContexts>sizeof(array), should add to history "(overflow)..." in appUnwind...()
+static CGuardContext *contexts[1024];
+static int numContexts = 0;
+
+
+CGuardContext::CGuardContext (const char *msg)
+: text(msg)
+, jumped(false)
+{
+//	printf("%d-> %s\n", numContexts, msg);//!!
+	// register context
+	if (numContexts < ARRAY_COUNT(contexts))
+		contexts[numContexts] = this;
+	numContexts++;
+}
+
+
+CGuardContext::~CGuardContext ()
+{
+	if (jumped) return;
+	// unregister context
+	numContexts--;
+//	printf("...(%d) %s\n", numContexts, text);
+}
+
+
+void appThrowException ()
+{
+	if (!numContexts)
+	{
+		// no guard/unguard or TRY/CATCH blocks
+		appGetErrorLog ();			// force open
+		ErrLog.Printf ("\n\nUncatched appThrowException()\n");
+		abort ();
+	}
+//	printf ("#%d  %s\n", numContexts-1, contexts[numContexts-1]->text);
+	CGuardContext *ctx = contexts[numContexts-1];
+	numContexts--;
+	ctx->jumped = true;
+	longjmp (ctx->jmp, 1);
+}
+
+#endif
+
 void appFatalError (const char *fmt, ...)
 {
 	GErr.swError  = true;
@@ -96,7 +145,7 @@ void appFatalError (const char *fmt, ...)
 		GErr.wasError = false;
 	}
 
-	throw 1;
+	THROW;
 }
 
 
@@ -118,7 +167,7 @@ void appNonFatalError (const char *fmt, ...)
 	else
 		GErr.Message[0] = 0;	// no message at all
 
-	throw 1;
+	THROW;
 }
 
 
@@ -154,7 +203,7 @@ void appUnwindThrow (const char *fmt, ...)
 	if (!GErr.nonFatalError)
 		GIsFatalError = true;
 
-	throw 1;
+	THROW;
 }
 
 #endif
@@ -183,7 +232,7 @@ static void Cmd_Error (int argc, char **argv)
 	else if (!stricmp (argv[1], "-stack"))
 		Cmd_Error (argc, argv);					// infinite recurse
 	else if (!stricmp (argv[1], "-throw"))
-		throw 1;
+		THROW;									//?? use C++ throw?
 	appFatalError ("%s", argv[1]);
 	unguard;
 }

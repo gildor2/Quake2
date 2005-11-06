@@ -115,6 +115,7 @@ HARDWARE:
 ? notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move
   crouched)
 
+(?? place this section to separate file ??)
 SOURCE FILES (COMPILER):
 ~~~~~~~~~~~~~~~~~~~~~~~~
 - (VisualC++ 6) when compiling renderer with !STATIC_BUILD:

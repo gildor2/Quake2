@@ -474,7 +474,7 @@ static void RequestNextDownload ()
 
 		if (allow_download->integer && allow_download_maps->integer)
 			while (precache_tex < numTexinfo)
-				if (!CheckOrDownloadFile("textures/%s.wal", map_surfaces[precache_tex++].fullName))	//??? WAL
+				if (!CheckOrDownloadFile("textures/%s.wal", map_surfaces[precache_tex++].fullName))	//??? WAL -- more complex, may be shader ...
 					return; // started a download
 		precache_check = DCS_SKIP_ALL;
 	}

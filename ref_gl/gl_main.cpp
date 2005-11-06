@@ -364,8 +364,8 @@ bool Init ()
 	} CATCH {
 		GLimp_Shutdown (true);
 		QGL_Shutdown ();
-		throw;	//?? or return "false" ?
-	}
+		THROW_AGAIN;	//?? or return "false" ?
+	} END_CATCH
 
 	forceVisMap = true;				// force update visinfo for map:
 

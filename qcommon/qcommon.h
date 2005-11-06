@@ -69,7 +69,7 @@ struct cplane_t;
 #elif _M_ALPHA
 #	define CPUSTRING	"AXP"
 #elif __MINGW32__
-#	define CPUSTRING	"x86"			// CygWin or Mingw32
+#	define CPUSTRING	"x86"
 #endif
 
 #elif __linux__
@@ -79,17 +79,27 @@ struct cplane_t;
 #	define CPUSTRING	"i386"
 #elif __alpha__
 #	define CPUSTRING	"axp"
-#else
-#	define CPUSTRING	"Unknown"
 #endif
+
+#elif __CYGWIN__
+
+#define BUILDSTRING		"Cygwin"
+#define CPUSTRING		"x86"
+
+#elif __UNIX__
+
+#define BUILDSTRING		"*nix"
 
 #else	// unknown platform
 
 #define BUILDSTRING		"Unknown"
-#define	CPUSTRING		"Unknown"
 
 #endif	// platform
 
+// default CPUSTRING
+#ifndef CPUSTRING
+#define	CPUSTRING		"Unknown"
+#endif
 
 
 #define VERSION_STR		STR(VERSION) " " CPUSTRING " " __DATE__ " " BUILDSTRING

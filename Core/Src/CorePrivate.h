@@ -31,11 +31,22 @@ void appShutdownPlatform ();
 void appLoadDebugSymbols ();
 
 // platform-specific code
-bool osAddressInfo (address_t address, char *pkgName, int bufSize, int *offset);
-bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset);
+bool osGetAddressPackage (address_t address, char *pkgName, int bufSize, int &offset);
+bool osGetAddressSymbol (address_t address, char *exportName, int bufSize, int &offset);
 
 #else
 
 #define appLoadDebugSymbols()
 
 #endif
+
+
+/*-----------------------------------------------------------------------------
+	Unix private stuff
+-----------------------------------------------------------------------------*/
+
+#if __UNIX__
+
+void appHookExceptions ();
+
+#endif // __UNIX__

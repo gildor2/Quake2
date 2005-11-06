@@ -7,11 +7,12 @@ SOURCE CODE
 - appStrcpy, strncpy, strcmp, stricmp -> CRT functions (when required, can make #define strcpy appStrcpy ...)
 - VC2003+: compiler option /LTCG - intermodule optimizations ("link-time code generation") + /GL
 
-COMPILER BUGS
-~~~~~~~~~~~~~
-- guard/unguard [Slow] not always added: not works for strings.cpp :: appStrcmp(), appStrcpy() etc. (small functions)
-- VisualC and GnuC have incompatible cdecl convention for functions, returning a structure: VC on return will keep
-  in stack all variabled, but GCC will use "retn 4" -- e.g. will drop pointer to return value buffer
+(?? place this section to separate file ??)
+COMPILER BUGS/INCOMPATIBILITIES
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- VisualC: guard/unguard [Slow] not always added: not works for strings.cpp :: appStrcmp(), appStrcpy() etc. (small functions)
+- VisualC and GnuC 3+ have incompatible cdecl convention for functions, returning a structure: VC on return will keep
+  in stack all variables, but GCC will use "retn 4" -- e.g. will drop pointer to return value buffer
   0) original code:
     strucType Func (arg1, arg2, ...)
     {
@@ -35,7 +36,9 @@ COMPILER BUGS
         return var;
     }
   2) GnuC:
-     *** add details here *** (seems, no compatible replacement -- mixed cdecl+stdcall/pascal)
+    - pre-GCC 3 (?) will create construction, compatible with VisualC
+    - GCC 3.0+ will create incompatible construction: function will return using "retn 4" instead of "retn" (will pop pointer
+      to buffer for returned "var")
 
 TOOL:
 ~~~~~

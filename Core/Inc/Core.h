@@ -133,11 +133,11 @@ inline void unclock (int64 &time)		{ time += appCycles64(); }
 -----------------------------------------------------------------------------*/
 
 #ifndef PACKAGE
-#define PACKAGE			Main
+#define PACKAGE					Main
 #endif
 
-#define MAX_PACKAGES	32
-#define MAX_PKG_NAME	32
+#define MAX_PACKAGES			32
+#define MAX_PKG_NAME			32
 
 // package variables
 #if STATIC_BUILD
@@ -153,13 +153,13 @@ namespace PACKAGE {
 	extern const char PkgVersion[];
 }
 
-#define GPackage		PACKAGE.PkgName
-#define GPkgVersion		PACKAGE.PkgVersion
+#define GPackage				PACKAGE.PkgName
+#define GPkgVersion				PACKAGE.PkgVersion
 
 #else // STATIC_BUILD
 
-extern const char	GPackage[];
-extern const char	PkgVersion[];
+extern const char GPackage[];
+extern const char PkgVersion[];
 
 #endif // STATIC_BUILD
 
@@ -173,7 +173,7 @@ class CMemoryChain;
 
 //----- miscellaneous ?
 
-#define BIG_NUMBER		0x1000000
+#define BIG_NUMBER				0x1000000
 
 
 #include "Macro.h"
@@ -195,7 +195,7 @@ class CMemoryChain;
 #define C_CYAN			6
 #define C_WHITE			7
 
-#define COLOR_ESCAPE	'^'			// may be used for quick location of color-processing code
+#define COLOR_ESCAPE	'^'		// may be used for quick location of color-processing code
 
 #define S_BLACK			"^0"
 #define S_RED			"^1"
@@ -218,7 +218,8 @@ public:
 	bool	NoColors;			// when true, color codes will be removed from output
 	bool	FlushEveryTime;		// when true, Flush() will be called after every Write()
 	COutputDevice ()
-	:	NoColors(false), FlushEveryTime(false)
+	:	NoColors(false)
+	,	FlushEveryTime(false)
 	{}
 	virtual ~COutputDevice ()
 	{}

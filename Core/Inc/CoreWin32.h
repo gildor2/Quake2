@@ -43,9 +43,9 @@ extern HINSTANCE hInstance;
 // some declarations from kernel32.dll (to avoid use of <windows.h>)
 #ifndef WINAPI
 extern "C" {
-	DLL_IMPORT	HINSTANCE __stdcall LoadLibraryA (const char *name);
-	DLL_IMPORT	void*	__stdcall GetProcAddress (HINSTANCE dllHandle, const char *name);
-	DLL_IMPORT	int		__stdcall FreeLibrary (HINSTANCE dllHandle);
+	DLL_IMPORT HINSTANCE __stdcall LoadLibraryA (const char *name);
+	DLL_IMPORT void*	 __stdcall GetProcAddress (HINSTANCE dllHandle, const char *name);
+	DLL_IMPORT int		 __stdcall FreeLibrary (HINSTANCE dllHandle);
 }
 #endif
 

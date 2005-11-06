@@ -21,7 +21,7 @@ void crash(char *b)
 	z = f;
 	if (strlen (b) > 0) z = 0;
 	appPrintf ("%s %f\n", b, z);
-	f = f / z;
+	f = f / z;		// should be "float zero divide" ... (not works for win32)
 	appPrintf ("f=%g\n", f);
 	*(byte*)NULL = 0;
 	unguard;
@@ -41,7 +41,7 @@ void cmd1 (int argc, char **argv)
 	char c = argc > 0 ? argv[1][0] : '0';
 	switch (c)
 	{
-#define TEST(seq)	appPrintf ("Testing: \"" STR(seq) "\"\n"); seq;
+#define TEST(seq)	appPrintf ("%s", "Testing: \"" STR(seq) "\"\n"); seq;
 	case '1':
 		TEST(a = i / (argc - 2));				// zero divide
 		break;
@@ -61,7 +61,11 @@ void cmd1 (int argc, char **argv)
 		TEST(sprintf ((char*)1, "%s", tests));	// crash in kernel
 		break;
 	case '7':
+#if 0
 		TEST(throw "exception");				// software exception
+#else
+		appPrintf ("... disabled\n");
+#endif
 		break;
 	case '8':
 		{
@@ -216,7 +220,7 @@ int main (int argc, char** argv)
 		unguard;
 	} CATCH {
 		GIsFatalError = true;
-	}
+	} END_CATCH
 
 	appExit ();
 	return 0;

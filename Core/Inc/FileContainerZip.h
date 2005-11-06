@@ -18,13 +18,11 @@ typedef unsigned long   ulg;		// 4-byte unsigned
 //#define ZLIB_DEBUG		1
 
 
-#if _WIN32
+#if _MSC_VER
 #pragma pack(push,1)
-#else
-#error Adapt for non-Win32 platform!!!
 #endif
 
-struct localFileHdr_t
+struct GCC_PACK localFileHdr_t
 {
 	// LOCAL_HDR_MAGIC
 	uch		versionNeededToExtract[2];
@@ -38,7 +36,7 @@ struct localFileHdr_t
 	ush		extraFieldLength;
 };
 
-struct endOfCentralDir_t
+struct GCC_PACK endOfCentralDir_t
 {
 	// END_HDR_MAGIC
 	ush		diskNumber, cdirDiskNumber;
@@ -48,7 +46,7 @@ struct endOfCentralDir_t
 	ush		commentSize;
 };
 
-struct cdirFileHdr_t
+struct GCC_PACK cdirFileHdr_t
 {
 	// CENTRAL_HDR_MAGIC
 	uch		versionMadeBy[2];
@@ -68,7 +66,7 @@ struct cdirFileHdr_t
 	ulg		relativeOffsetLocalHeader;
 };
 
-#if _WIN32
+#if _MSC_VER
 #pragma pack(pop)
 #endif
 

@@ -220,6 +220,7 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 			// compute triangle normal
 			for (k = 0; k < 3; k++)
 			{
+				// short[3] -> CVec3 (don't need to scale: will be normalized anyway)
 				VectorSubtract2 (verts[idx[k]].xyz, verts[idx[k == 2 ? 0 : k + 1]].xyz, vecs[k]);
 				vecs[k].NormalizeFast ();
 			}

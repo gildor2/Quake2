@@ -87,7 +87,9 @@ COMMAND SYSTEM
 COMMON
 ~~~~~~
 - extend TList with item count (different base class + new InsertItem(), change constructor)
-? console window: set title to appPackage()
+? console window:
+  - set title to appPackage()
+  - hook Ctrl-C etc
 ? iterators: make template, not based on any class (base is not needed?!), and iterate any class, containing field "next",
   pointed to the same data type
 - wildcards for filenames: make something like "path/filename.#pcx,jpg,tga" to work - find all images, started with "filename"

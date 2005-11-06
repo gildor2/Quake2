@@ -336,7 +336,7 @@ int main (int argc, const char **argv) // force to link as console application
 			TRY {
 				Com_Frame (timeDelta);
 			} CATCH {
-				if (!GErr.nonFatalError) throw;		// go to outer CATCH{}, outside of MainLoop
+				if (!GErr.nonFatalError) THROW_AGAIN;						// go to outer CATCH{}, outside of MainLoop
 				// process DropError()
 				// shutdown server
 				SV_Shutdown (va("Server crashed: %s\n", *GErr.Message));	// message
@@ -345,7 +345,7 @@ int main (int argc, const char **argv) // force to link as console application
 				if (!DEDICATED) CL_Drop (true);
 				// and continue execution ...
 				GErr.Reset ();
-			}
+			} END_CATCH
 			oldtime = newtime;
 		}
 		unguard;
@@ -356,7 +356,7 @@ int main (int argc, const char **argv) // force to link as console application
 		if (debugLog)
 			debugLog->Printf ("***** CRASH *****\n%s\nHistory: %s\n*****************\n", *GErr.Message, *GErr.History);
 #endif
-	}
+	} END_CATCH
 
 	// shutdown all systems
 	TRY {
@@ -365,8 +365,9 @@ int main (int argc, const char **argv) // force to link as console application
 #if !IS_CONSOLE_APP
 		if (DEDICATED) FreeConsole ();
 #endif
-	}
-	CATCH {}	// nothing ...
+	} CATCH {
+		// nothing ...
+	} END_CATCH
 
 	appExit ();
 	return 0;

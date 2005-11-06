@@ -99,8 +99,9 @@ static const struct {
 
 static void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 {
-#define STAT_SPACES		"     "
 	//!! should try to use address as a symbol
+#define STAT_SPACES		"     "
+#define WRAP			{ Out->Printf("\n"); n = 0; }
 	int n = 0;
 	for (int i = 0; i < STACK_UNWIND_DEPTH; i++, data++)
 	{
@@ -114,11 +115,7 @@ static void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 		for (int j = 0; j < ARRAY_COUNT(regData); j++)
 			if (OFS2FIELD(ctx, regData[j].ofs, unsigned*) == data)
 			{
-				if (n)
-				{
-					Out->Printf ("\n");
-					n = 0;
-				}
+				if (n) WRAP;
 				Out->Printf ("%s->", regData[j].name);
 				spaces = "";
 				break;
@@ -138,8 +135,7 @@ static void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 				if (!strchr (symbol, '(') && IsString ((char*)*data))	// do not test funcs()
 					DumpString (Out, (char*)*data);
 #endif
-				Out->Printf ("\n");
-				n = 0;
+				WRAP;
 				continue;
 			}
 
@@ -149,23 +145,19 @@ static void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 		{
 			Out->Printf ("%s%08X", n > 0 ? "\n" STAT_SPACES : spaces, *data);
 			DumpString (Out, (char*)*data);
-			Out->Printf ("\n");
-			n = 0;
+			WRAP;
 			continue;
 		}
 #endif
 
 		// log as simple number
 		Out->Printf ("%s%08X", n > 0 ? "  " : spaces, *data);
-		if (++n >= 8)
-		{
-			Out->Printf ("\n");
-			n = 0;
-		}
+		if (++n >= 8) WRAP;
 	}
 	Out->Printf ("\n");
 	return;
 #undef STAT_SPACES
+#undef WRAP
 }
 
 #if UNWIND_EBP_FRAMES
@@ -212,8 +204,7 @@ long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 	// If we will disable line above, will be dumped context for each appUnwind() entry
 	dumped = true;
 
-	__try
-	{
+	TRY {
 		const char *excName = "Exception";
 		switch (info->ExceptionRecord->ExceptionCode)
 		{
@@ -263,14 +254,12 @@ long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 		DumpMem (Out, (unsigned*) ctx->Esp, ctx);
 		Out->Printf ("\n");
 #if UNWIND_EBP_FRAMES
-		Out->Printf ("\nCall stack trace:\n  ");
+		Out->Printf ("\nCall stack trace:\n");
 		UnwindEbpFrame (Out, (unsigned*) ctx->Ebp);
 #endif
-	}
-	__except (EXCEPTION_EXECUTE_HANDLER)
-	{
+	} CATCH {
 		// do nothing
-	}
+	} END_CATCH
 
 	return EXCEPTION_EXECUTE_HANDLER;
 }

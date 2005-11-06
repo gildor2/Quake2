@@ -64,12 +64,8 @@ static float pm_waterspeed = 400;
 
 inline void PM_Trace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds)
 {
-#if _WIN32
+	// original: trace = pm->trace (pml.origin, bounds.mins, bounds.maxs, end);
 	pm->trace (trace, start, bounds.mins, bounds.maxs, end);
-#else
-	#error trace_t returned -- check calling convention
-//--	trace = pm->trace (pml.origin, bounds.mins, bounds.maxs, end);
-#endif
 }
 
 

@@ -582,11 +582,7 @@ struct pmove_t
 	int			waterlevel;
 
 	// callbacks to test the world
-#if _WIN32
 	trace_t*	(*trace) (trace_t &trace, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end);
-#else
-	#error trace_t returned -- check calling convention
-#endif
 	int			(*pointcontents) (const CVec3 &point);
 };
 

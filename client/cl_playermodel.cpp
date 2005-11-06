@@ -763,7 +763,7 @@ static bool TryQuake2Model (clientInfo_t &ci, const char *modelName, const char 
 	ci.IconName.sprintf ("players/%s/%s_i", modelName, skinName);
 	ci.icon = RE_RegisterPic (ci.IconName);
 
-	ci.isQ3model = false;
+	ci.isQ3model    = false;
 	ci.isValidModel = true;
 	return true;
 
@@ -833,7 +833,7 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 			{
 				ci.weaponModel[i].model = FindQ2Model (ModelName, cl_weaponmodels[i]);
 #if 0
-				// HACK: cyborg have the weapon same models, as male model
+				// HACK: cyborg have the same weapon models, as male model
 				if (!ci.weaponModel[i].model && ModelName == "cyborg")
 					ci.weaponModel[i].model = FindQ2Model ("male", cl_weaponmodels[i]);
 #endif
@@ -867,7 +867,7 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 	if (!ci.icon)
 	{
 		ci.IconName = "pics/default_icon";
-		ci.icon = RE_RegisterPic (ci.IconName);
+		ci.icon     = RE_RegisterPic (ci.IconName);
 	}
 
 	cl.forceViewFrame = true;	// when paused, force to update scene
@@ -890,7 +890,8 @@ static bool attach (const entity_t &e1, entity_t &e2, const char *tag, const CVe
 		return false;	// no such tag
 	}
 	// some player models (at least, "dangergirl") have lerped origin set very far from base model
-	// to hide attached model (this hack used, because quake3 cgame code not allows to remove most tags)
+	// to hide attached model (this hack was used by model developer, because quake3 cgame code not
+	// allows to remove most tags)
 	if (fabs (lerped.origin[0]) > 1000 || fabs (lerped.origin[1]) > 1000 || fabs (lerped.origin[2]) > 1000)
 	{
 		if (DEVELOPER)
@@ -932,7 +933,7 @@ static void SwingAngle (float dst, float tolerance, float clamp, float speed, fl
 	else
 		scale = 2.0f;
 	// swing
-	float move = cls.frametime * 1000 /*sec->msec*/ * scale * speed;
+	float move = cls.frametime * 1000 * scale * speed;
 	if (move >= absSwing)
 	{
 		// moved to destination
@@ -998,7 +999,7 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, c
 	if (!ci.isQ3model)
 	{
 		if (maxEnts < 1) return 0;
-		buf[0] = ent;
+		buf[0]       = ent;
 		buf[0].skin  = &ci.md2skin;
 		buf[0].model = ci.md2model;
 		buf[0].pos.axis.FromAngles (ent.angles);

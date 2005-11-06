@@ -41,6 +41,8 @@ typedef unsigned int		address_t;
 #define DLL_EXPORT	__declspec(dllexport)
 #define NORETURN	__declspec(noreturn)
 #define PRINTF(n,m)						// no way ...
+#define GCC_PACK						// VC uses #pragma pack()
+
 
 #define	GET_RETADDR(firstarg)	(* ( ((unsigned*)&firstarg) -1 ) )
 
@@ -149,6 +151,12 @@ inline float appDeltaCyclesToMsecf (int64 &timeDelta)
 	guard/unguard macros
 -----------------------------------------------------------------------------*/
 
+/* NOTE:
+ *	for error throwing, we use "throw 1" operator; "1" is required for WIN32_USE_SEH=0 compilation
+ *	for appError()/appNonFatalError() (otherwise, unhandled GPF will be generated)
+ */
+
+
 #if !WIN32_USE_SEH
 
 #define guard(func)						\
@@ -169,8 +177,11 @@ inline float appDeltaCyclesToMsecf (int64 &timeDelta)
 		}								\
 	}
 
-#define TRY		try
-#define CATCH	catch (...)
+#define TRY			try
+#define CATCH		catch (...)
+#define END_CATCH
+#define	THROW_AGAIN	throw
+#define THROW		throw 1
 
 #else // WIN32_USE_SEH
 
@@ -203,7 +214,10 @@ CORE_API unsigned win32ExceptFilter2 ();
 		}								\
 	}
 
-#define TRY		__try
-#define CATCH	__except (EXCEPT_FILTER)
+#define TRY			__try
+#define CATCH		__except(EXCEPT_FILTER)
+#define END_CATCH
+#define THROW_AGAIN	throw
+#define THROW		throw 1
 
 #endif // WIN32_USE_SEH

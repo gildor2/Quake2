@@ -40,8 +40,8 @@ void CL_CheckPredictionError (void)
 	VectorSubtract2 (cl.frame.playerstate.pmove.origin, cl.predicted_origins[frame], delta);
 
 	// save the prediction error for interpolation
-	int len = abs(delta[0]) + abs(delta[1]) + abs(delta[2]);	//?? VectorLength()
-	if (len > 640)	// 80 world units
+	int len = abs(delta[0]) + abs(delta[1]) + abs(delta[2]);	// VectorLength() ?
+	if (len > 80 * 8)	// 80 world units (float->int scale is 8 ...)
 	{	// a teleport or something
 		cl.prediction_error.Zero();
 	}
@@ -153,8 +153,6 @@ void CL_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bo
 }
 
 
-//?? same as void CL_PMTrace(&trace, start, ...) -- but called from PMove() ...
-#if _WIN32
 static trace_t* CL_PMTrace (trace_t &trace, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end)
 {
 	guard(CL_PMTrace);
@@ -172,29 +170,6 @@ static trace_t* CL_PMTrace (trace_t &trace, const CVec3 &start, const CVec3 &min
 	return &trace;
 	unguard;
 }
-#else
-	#error trace_t returned -- check calling convention
-#if 0
-{	// original code
-	trace_t	trace;
-
-	guard(CL_PMTrace);
-	// check against world
-	CBox bounds;
-	bounds.mins = mins;
-	bounds.maxs = maxs;
-	CM_BoxTrace (trace, start, end, bounds, 0, MASK_PLAYERSOLID);
-	if (trace.fraction < 1.0)
-		trace.ent = (struct edict_s *)1;	//??
-
-	// check all other solid models
-	CL_EntityTrace (trace, start, end, bounds, MASK_PLAYERSOLID);
-
-	return trace;
-	unguard;
-}
-#endif
-#endif // _WIN32
 
 
 int CL_PMpointcontents (const CVec3 &point)
@@ -282,10 +257,9 @@ void CL_PredictMovement ()
 	memset (&pm, 0, sizeof(pm));
 	pm.trace         = CL_PMTrace;
 	pm.pointcontents = CL_PMpointcontents;
+	pm.s             = cl.frame.playerstate.pmove;
 
 	pm_airaccelerate = atof (cl.configstrings[CS_AIRACCEL]);
-
-	pm.s = cl.frame.playerstate.pmove;
 
 	// immediately after server frame, there will be 1 Pmove() cycle; till next server frame this
 	// number will be incremented up to (FPS / sv_fps)

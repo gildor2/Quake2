@@ -38,6 +38,11 @@ WARNING: there is a side effect in (perl-expression): this expression can use va
 assignment:
 	var = value
 	var += value     same as [var = $var value]
+multi-line assignment:
+	var = {
+		... text ... (many lines)
+	}
+	or "var += {" ....
 substitution (r-value):
 	$var
 	${var}
@@ -56,7 +61,7 @@ global:
 	PDB			= 1 | 0 == undef (VisualC only)
 	STDLIBS		= list of used libraries (for "GNU Make" will append "lib" and will search in paths)
 	LIBRARIES   = path to additional library files
-	LIBC		= static | dynamic == undef (note: mingw32 and cygwin targets have no such capabilities)
+	LIBC		= static | shared == undef
 	ALLOW_MISSING_INCLUDES = 1 | 0		when #include "filename" will fail, warning will be generated instead of error
 
 per-target:
@@ -78,7 +83,7 @@ at a time of registration of source files
 
 4. Commands:
 	sources(NAME) = source files		add source files to list <NAME> with flags DEFINES,INCLUDES,OBJDIR
-	target(type, outfile, NAME, sym)	build target with type=={executable,dynamic (dll,so), static (lib)}
+	target(type, outfile, NAME[, sym])	build target with type=={executable,dynamic (dll,so), static (lib,a)}
 										from objects, specified in list sources(NAME); if sym specified,
 										will be added symbolic name for a target; may specify few symbolic
 										targets, separated with spaces
@@ -108,14 +113,19 @@ $COMMENT = '\#';
 #	Service output functions
 #------------------------------------------------------------------------------
 
-$S_RED="\033[1;31m";
-$S_YELLOW="\033[1;33m";
-$S_WHITE="\033[0;37m";
+$S_RED    ="\033[1;31m";
+$S_YELLOW ="\033[1;33m";
+$S_WHITE  ="\033[0;37m";
 
 sub Error {
 	# add error text to generated makefile to prevent compilation
 	print "#----------------------------------------\n";
-	print "!error [GENMAKE ERROR] $_[0]\n";
+	if (defined ($COMPILER) && $COMPILER eq "VisualC") {
+		print "!error [GENMAKE ERROR] $_[0]\n";
+	} else {
+		# GNU make
+		print "\$(error [GENMAKE ERROR] $_[0])\n";
+	}
 	print "#----------------------------------------\n\n";
 	# log text to stderr
 	die "${S_RED}ERROR: $_[0]${S_WHITE}\n";
@@ -179,6 +189,7 @@ sub ExpandVars {
 }
 
 
+# preprocessor layer 0 -- comments, line continuation; will never return empty line
 sub getline0 {
 	my $line1 = "";
 	while ($line = <IN>)
@@ -208,7 +219,7 @@ sub getline0 {
 			# remove leading and trailing spaces (again)
 			$line =~ s/^\s*//;
 			$line =~ s/\s*$//;
-			# change all multiple spaces to a single one (??)
+			# replace all multiple spaces with a single one
 			$line =~ s/\s\s+/ /g;
 			# ignore empty lines
 			next if $line eq "";
@@ -244,9 +255,92 @@ sub CheckCondition {
 	return $cond;
 }
 
+# preprocessor layer 1 -- conditional parsing
+sub getline1 {
+	while (1) {
+		# acquire line from the lower preprocessor level
+		return 0 if !getline0();
+		# analyze ...
+		if ($line =~ /^$PREPROC\s*\w+/) {			# preprocessor directive
+			# parse preprocessor
+			my ($cmd, undef, $args) = $line =~ /^ $PREPROC\s*(\w+) (\s+ (\S+ (\s+ \S+)*)?)? \s* $/x;
+
+			#-------- conditional directives ------------
+			if ($cmd =~ /^if\w*/) {
+				my ($type) = $cmd =~ /^if(\w+)$/;
+				my $cond = CheckCondition ($type, $args, $cmd);
+				$nestedIf++;						# count of nested if's
+				if ($enabled != 1) {
+					$nestedIf0++;					# count of disabled if's
+				} elsif ($cond == 0) {
+					$enabled = 0;
+				}
+			} elsif ($cmd =~ /^elif\w*/) {
+				Error ("$cmd without if") if $nestedIf == 0;
+				my ($type) = $cmd =~ /^elif(\w+)$/;
+				my $cond = CheckCondition ($type, $args, $cmd);
+
+				if ($nestedIf0 == 0) {
+					if ($enabled == 1) {
+						$enabled = 2;				# enabled -> wait endif
+					} elsif ($enabled == 0 && $cond != 0) {
+						$enabled = 1;				# disabled -> enabled when cond<>0
+					}
+				}
+			} elsif ($cmd eq "else") {
+				Error ("else without if") if $nestedIf == 0;
+				if ($nestedIf0 == 0) {
+					if ($enabled == 1) {
+						$enabled = 2;				# enabled -> wait endif
+					} elsif ($enabled == 0) {
+						$enabled = 1;				# disabled -> enabled
+					}
+				}
+			} elsif ($cmd eq "endif") {
+				Error ("endif without if") if $nestedIf == 0;
+				$nestedIf--;
+				if ($nestedIf0 > 0) {
+					$nestedIf0--;
+				} else {
+					$enabled = 1;
+				}
+			} elsif ($enabled == 1) {				# 0 or 2 - disabled
+				# send line to next preprocessor level
+				return 1;
+			}
+		} elsif ($enabled == 1) {
+			# send line to next preprocessor level
+			return 1;
+		}
+	}
+}
+
+
+# read lines until "}"
+sub GetMultiLine {
+	my $result = "";
+	while (1) {
+		if (!getline1 ()) {
+			Warning ("opened \"{ ...\" multiline assignment");
+			return $result;
+		}
+		# closing bracket
+		return $result if $line eq "}";
+		# append line
+		next if $line eq "";						# avoid requirement of squeezing spaces
+		if ($result eq "") {
+			$result = $line;
+		} else {
+			$result .= " $line";
+		}
+	}
+}
+
+
+# preprocessor layer 2 (upper) -- other directives (incluse's, assignments etc)
 sub getline {
 	while (1) {
-		if (!getline0 ()) {
+		if (!getline1 ()) {
 			# return from included file
 			if (!@includes) {
 				# @includes array is empty
@@ -255,87 +349,46 @@ sub getline {
 			}
 			close (IN);
 			*IN = pop @includes;
-		} else {
-			if ($line =~ /^$PREPROC\s*\w+/) {		# preprocessor directive
-				# parse preprocessor
-				my ($cmd, undef, $args) = $line =~ /^ $PREPROC\s*(\w+) (\s+ (\S+ (\s+ \S+)*)?)? \s* $/x;
+			next;
+		}
 
-				#-------- conditional directives first ------------
-				if ($cmd =~ /^if\w*/) {
-					my ($type) = $cmd =~ /^if(\w+)$/;
-					my $cond = CheckCondition ($type, $args, $cmd);
-					$nestedIf++;					# count of nested if's
-					if ($enabled != 1) {
-						$nestedIf0++;				# count of disabled if's
-					} elsif ($cond == 0) {
-						$enabled = 0;
-					}
-				} elsif ($cmd =~ /^elif\w*/) {
-					Error ("$cmd without if") if $nestedIf == 0;
-					my ($type) = $cmd =~ /^elif(\w+)$/;
-					my $cond = CheckCondition ($type, $args, $cmd);
-
-					if ($nestedIf0 == 0) {
-						if ($enabled == 1) {
-							$enabled = 2;			# enabled -> wait endif
-						} elsif ($enabled == 0 && $cond != 0) {
-							$enabled = 1;			# disabled -> enabled when cond<>0
-						}
-					}
-				} elsif ($cmd eq "else") {
-					Error ("else without if") if $nestedIf == 0;
-					if ($nestedIf0 == 0) {
-						if ($enabled == 1) {
-							$enabled = 2;			# enabled -> wait endif
-						} elsif ($enabled == 0) {
-							$enabled = 1;			# disabled -> enabled
-						}
-					}
-				} elsif ($cmd eq "endif") {
-					Error ("endif without if") if $nestedIf == 0;
-					$nestedIf--;
-					if ($nestedIf0 > 0) {
-						$nestedIf0--;
-					} else {
-						$enabled = 1;
-					}
-				} elsif ($enabled != 1) {			# 0 or 2 - disabled
-					next;
-				#-------------- other directives ------------------
-				} elsif ($cmd eq "include") {
-					# limit nested includes (and stop infinite recursion)
-					Error ("too much nested includes") if $#includes > 16;
-					push @includes, *IN;
-					local *IN2;						# NOTE: "local", not "my"
-					open (IN2, $args) || Error ("cannot open include file \"$args\"");
-					*IN = *IN2;
-				} elsif ($cmd eq "undef") {
-					delete $vars{$args};
-				} elsif ($cmd eq "message") {
-					print (STDERR ExpandVars($args)."\n");
-				} elsif ($cmd eq "dumpvars") {
-					for my $key (keys(%vars)) {
-						print (STDERR "var:$key = $vars{$key}\n");
-					}
-				} elsif ($cmd eq "error") {
-					Error (ExpandVars($args));
-				} else {
-					Error ("unknown preprocessor directive \"$cmd\" in line [$line]");
+		if ($line =~ /^$PREPROC\s*\w+/) {			# preprocessor directive
+			# parse preprocessor
+			my ($cmd, undef, $args) = $line =~ /^ $PREPROC\s*(\w+) (\s+ (\S+ (\s+ \S+)*)?)? \s* $/x;
+			#-------------- other directives ------------------
+			if ($cmd eq "include") {
+				# limit nested includes (and stop infinite recursion)
+				Error ("too much nested includes") if $#includes > 16;
+				push @includes, *IN;
+				local *IN2;							# NOTE: "local", not "my"
+				open (IN2, $args) || Error ("cannot open include file \"$args\"");
+				*IN = *IN2;
+			} elsif ($cmd eq "undef") {
+				delete $vars{$args};
+			} elsif ($cmd eq "message") {
+				print (STDERR ExpandVars($args)."\n");
+			} elsif ($cmd eq "dumpvars") {
+				for my $key (keys(%vars)) {
+					print (STDERR "var:$key = $vars{$key}\n");
 				}
-			} elsif ($enabled != 1) {				# 0 or 2 - disabled
-				next;								# conditional compilation
-			} elsif ($line =~ /^\w+\s*\=/) {
-				# var = value
-				my ($var, $value) = $line =~ /^\s*(\w+)\s*\=\s*(\S+.*)?/;
-				$vars{$var} = ExpandVars($value);	# can be "= eval $value" to evaluate arithmetic expression
-			} elsif ($line =~ /^\w+\s*\+\=/) {
-				# var += value
-				my ($var, $value) = $line =~ /^\s*(\w+)\s*\+\=\s*(\S+.*)/;
-				$vars{$var} = "$vars{$var} ".ExpandVars($value);
+			} elsif ($cmd eq "error") {
+				Error (ExpandVars($args));
 			} else {
-				# ordinary line
-				return 1;
+				Error ("unknown preprocessor directive \"$cmd\" in line [$line]");
 			}
+		} elsif ($line =~ /^\w+\s*\=/) {
+			# var = value
+			my ($var, $value) = $line =~ /^\s*(\w+)\s*\=\s*(\S+.*)?/;
+			$value = GetMultiLine() if defined($value) && $value eq "{";
+			$vars{$var} = ExpandVars($value);		# can be "= eval $value" to evaluate arithmetic expression
+		} elsif ($line =~ /^\w+\s*\+\=/) {
+			# var += value
+			my ($var, $value) = $line =~ /^\s*(\w+)\s*\+\=\s*(\S+.*)/;
+			$value = GetMultiLine() if defined($value) && $value eq "{";
+			$vars{$var} = "$vars{$var} ".ExpandVars($value);
+		} else {
+			# ordinary line
+			return 1;
 		}
 	}
 }
@@ -435,7 +488,7 @@ sub EmitCompilerDefs {
 		#?? test -pipe under Win9X and Linux (cygwin/winxp - ok)
 		print "CPP  = $platf -pipe -c\n";
 		print "LINK = $platf -pipe -s\n";
-		print "AR   = ar\n";		#?? some "ar" flags
+		print "AR   = ar -rcs\n";					# r=(replace files), c=(create archive), s=(write object file index)
 	}
 	print "\n";
 }
@@ -560,8 +613,8 @@ sub GetObjFilename {
 	my ($src, $objdir) = @_;
 	my $ext = $ObjFileExt;
 	# replace source extension
-	my ($srcType) = $src =~ /\S+\.(\w+)$/;
-	$ext = ".res" if $srcType eq "rc";		# .rc -> .res file (for Win32 only ??)
+	my ($srcType) = $src =~ /\S+\.([^\.\s]+)$/;
+	$ext = ".res" if $srcType eq "rc" && $COMPILER eq "VisualC"; # .rc -> .res file (for VisualC only)
 	my ($obj) = ($src =~ /^(\S+)\.\w+$/)[0].$ext;
 	# replace output directory
 	if ($objdir ne "") {
@@ -662,9 +715,9 @@ sub CollectFileDependencies {
 		if (!$found) {
 			my $doWarn = $vars{"ALLOW_MISSING_INCLUDES"};
 			if (defined($doWarn) && $doWarn) {
-				Warning ("cannot find file \"$inc\" included from \"$file\"; directories used: [$includes]") unless $found;
+				Warning ("cannot find file \"$inc\" included from \"$file\", directories used: [$includes]") unless $found;
 			} else {
-				Error ("cannot find file \"$inc\" included from \"$file\"; directories used: [$includes]") unless $found;
+				Error ("cannot find file \"$inc\" included from \"$file\", directories used: [$includes]") unless $found;
 			}
 		} else {
 			# check file presense
@@ -809,7 +862,7 @@ sub FlushObjectFile {
 			$line = "\$(CPP)";
 			if ($crt eq "static") {
 				$line .= " -MT";	# static multithreaded CRT; use -ML for single-threaded ?
-			} elsif ($crt eq "dynamic" || $crt eq "") {
+			} elsif ($crt eq "shared" || $crt eq "") {
 				$line .= " -MD";
 			} else {
 				Error ("unknown LIBC type: $crt");
@@ -954,7 +1007,7 @@ sub FlushTargetText {
 	}
 	$prefix .= "\n";
 
-	#!! NOTE: this logic may be implemented with our preprocessor (exec some script for each target)
+	# NOTE: this logic may be implemented with our preprocessor (exec some script for each target)
 	#-------------- Visual C++ options --------------------
 	if ($COMPILER eq "VisualC") {
 		$prefix .= "\techo Creating $target \"$n\" ...\n";
@@ -994,6 +1047,15 @@ sub FlushTargetText {
 		$prefix .= "\t\@echo Creating $target \"$n\" ...\n";
 		$line = "\t\$(LINK) -o $n";
 		$line .= " \$($objListName)";
+		# static/shared libgcc
+		my $crt = GetSrcOption ("LIBC");
+		if ($crt eq "static") {
+			$line .= " -static-libgcc";
+		} elsif ($crt eq "shared" || $crt eq "") {
+			$line .= " -shared-libgcc";
+		} else {
+			Error ("unknown LIBC type: $crt");
+		}
 		$line .= " -L$libpath" if $libpath ne "";		#?? what about multiple dirs? use GenerateOptions() (sync with VC!)
 		$line .= GenerateOptions ($stdlibs, "-l") if $stdlibs ne "";
 		$line .= " $libs" if $libs ne "";
@@ -1011,7 +1073,7 @@ sub FlushTargetText {
 			#?? IMPLIB for GnuC
 			return $prefix.$line;
 		} elsif ($target eq "static") {
-			return $prefix."\t\$(AR) rcs $n \$($objListName)";
+			return $prefix."\t\$(AR) $n \$($objListName)";
 #		} else {
 #			Error ("unknown target: \"$target\"");
 		}

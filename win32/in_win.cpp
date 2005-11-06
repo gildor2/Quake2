@@ -18,6 +18,7 @@
 -----------------------------------------------------------------------------*/
 
 // library used for c_dfDI* variables (DirectInput format)
+// NOTE: can simply use highest available .lib version
 #if DIRECTINPUT_VERSION < 0x0800
 #pragma comment (lib, "dinput.lib")
 #else

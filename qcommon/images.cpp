@@ -100,13 +100,11 @@ void LoadPCX (const char *name, byte *&pic, byte *&palette, int &width, int &hei
 #define TGA_TOPLEFT			0x20
 #define TGA_TOPRIGHT		0x30					// unused
 
-#if _WIN32
+#if _MSC_VER
 #pragma pack(push,1)
-#else
-#error Adapt for non-Win32 platform!!!
 #endif
 
-struct tgaHdr_t
+struct GCC_PACK tgaHdr_t
 {
 	byte 	id_length, colormap_type, image_type;
 	unsigned short colormap_index, colormap_length;	// unused
@@ -116,7 +114,7 @@ struct tgaHdr_t
 	byte	pixel_size, attributes;
 };
 
-#if _WIN32
+#if _MSC_VER
 #pragma pack(pop)
 #endif
 

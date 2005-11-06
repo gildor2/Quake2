@@ -49,8 +49,12 @@ open (IN, $ARGV[0]) or die "Cannot open \"".$ARGV[0]."\"\n";
 
 # get base address
 WaitLine ("Linker script and memory map");
-WaitLine ('__image_base__ = ');
+# GCC/win32 sets image base as "__image_base__ = value"
+# GCC/linux sets image base as "PROVIDE (__executable_start, value)"
+WaitLine ('__image_base__ = |PROVIDE \(__executable_start,');
 ($baseHex) = $line =~ /__image_base__ = 0x(\w+)\s*$/;
+($baseHex) = $line =~ /__executable_start, 0x(\w+)\)\s*$/ if !defined($baseHex);	# if previous line does not works ...
+
 $base = hex($baseHex);
 #print "[$line]\n";
 # skip until any section description
@@ -81,6 +85,7 @@ while (getline ())
 
 	next if $line =~ /^\s*\.\S+$/;			# .section_name
 	next if $line =~ /^\s*\*fill\*\s+/;		# *fill* <address> ...
+	next if $line =~ /^\s*0x\w+\s+PROVIDE\s*\(.*\)\s*$/;	# PROVIDE()
 
 	# catch: .section_name 0x<address> 0x<seg_size> ObjFile.o(LibFIle.a)
 	($addr, undef, $obj)       = $line =~ /^\s* \S+ \s+ 0x(\w+) \s+ 0x\w+ \s+ (\S+\/)?([^\/]+)\.o $/x;
@@ -133,6 +138,7 @@ DumpSymbol ("", "", 0);
 # *fill* 0xADDRESS  0xSEG_SIZE 00         -- ignore
 # .sec   0xADDRESS  0xSEG_SIZE            -- ignore (no objfile specified)
 # OUTPUT(Path/ExeName pormat)             -- ignore (last line in .map file)
+#        0xADDR     PROVIDE (symbol, address) -- ignore
 
 # code:
 # *(.text)          << first line

@@ -53,11 +53,7 @@ public:
 	}
 	bool FileExists (const char *filename)
 	{
-		FILE *f = fopen (va("%s/%s", name, filename), "rb");
-		if (!f)
-			return false;
-		fclose (f);
-		return true;
+		return appFileType (va("%s/%s", name, filename)) == FS_FILE;
 	}
 	CFile *OpenFile (const char *filename)
 	{

@@ -1,13 +1,13 @@
-# Makefile for VisualC/win32 target
+# Makefile for GnuC/cygwin target
 # This file was automatically generated from "quake2.project": do not edit
 
 #------------------------------------------------------------------------------
 #	Compiler definitions
 #------------------------------------------------------------------------------
 
-CPP  = cl.exe -nologo -c -D WIN32 -D _WINDOWS
-LINK = link.exe -nologo -filealign:512 -incremental:no
-AR   = link.exe -lib -nologo
+CPP  = gcc -pipe -c
+LINK = gcc -pipe -s
+AR   = ar -rcs
 
 #------------------------------------------------------------------------------
 #	symbolic targets
@@ -23,194 +23,193 @@ DEDICATED : Release/q2ded.exe
 #------------------------------------------------------------------------------
 
 STATIC = \
-	Release/obj-win32/CoreStatic/CoreMain.obj \
-	Release/obj-win32/CoreStatic/CoreWin32.obj \
-	Release/obj-win32/CoreStatic/DbgSymbols.obj \
-	Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj \
-	Release/obj-win32/CoreStatic/Memory.obj \
-	Release/obj-win32/CoreStatic/OutputDevice.obj \
-	Release/obj-win32/CoreStatic/ErrorMgr.obj \
-	Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj \
-	Release/obj-win32/CoreStatic/ScriptParser.obj \
-	Release/obj-win32/CoreStatic/Strings.obj \
-	Release/obj-win32/CoreStatic/TextContainer.obj \
-	Release/obj-win32/CoreStatic/FileSystem.obj \
-	Release/obj-win32/CoreStatic/FileSystemWin32.obj \
-	Release/obj-win32/CoreStatic/FileContainerArc.obj \
-	Release/obj-win32/q2stat/cl_cin.obj \
-	Release/obj-win32/q2stat/cl_download.obj \
-	Release/obj-win32/q2stat/cl_ents.obj \
-	Release/obj-win32/q2stat/cl_fx.obj \
-	Release/obj-win32/q2stat/cl_input.obj \
-	Release/obj-win32/q2stat/cl_main.obj \
-	Release/obj-win32/q2stat/cl_parse.obj \
-	Release/obj-win32/q2stat/cl_playermodel.obj \
-	Release/obj-win32/q2stat/cl_pred.obj \
-	Release/obj-win32/q2stat/cl_scrn.obj \
-	Release/obj-win32/q2stat/cl_tent.obj \
-	Release/obj-win32/q2stat/cl_view.obj \
-	Release/obj-win32/q2stat/console.obj \
-	Release/obj-win32/q2stat/keys.obj \
-	Release/obj-win32/q2stat/menu.obj \
-	Release/obj-win32/q2stat/qmenu.obj \
-	Release/obj-win32/q2stat/ref_vars.obj \
-	Release/obj-win32/q2stat/snd_dma.obj \
-	Release/obj-win32/q2stat/snd_mem.obj \
-	Release/obj-win32/q2stat/snd_mix.obj \
-	Release/obj-win32/q2stat/sv_anim.obj \
-	Release/obj-win32/q2stat/sv_ccmds.obj \
-	Release/obj-win32/q2stat/sv_ents.obj \
-	Release/obj-win32/q2stat/sv_game.obj \
-	Release/obj-win32/q2stat/sv_init.obj \
-	Release/obj-win32/q2stat/sv_main.obj \
-	Release/obj-win32/q2stat/sv_send.obj \
-	Release/obj-win32/q2stat/sv_text.obj \
-	Release/obj-win32/q2stat/sv_tokenize.obj \
-	Release/obj-win32/q2stat/sv_user.obj \
-	Release/obj-win32/q2stat/sv_world.obj \
-	Release/obj-win32/q2stat/anorms.obj \
-	Release/obj-win32/q2stat/cmd.obj \
-	Release/obj-win32/q2stat/cmodel.obj \
-	Release/obj-win32/q2stat/common.obj \
-	Release/obj-win32/q2stat/crc.obj \
-	Release/obj-win32/q2stat/cvar.obj \
-	Release/obj-win32/q2stat/entdelta.obj \
-	Release/obj-win32/q2stat/images.obj \
-	Release/obj-win32/q2stat/md4.obj \
-	Release/obj-win32/q2stat/model.obj \
-	Release/obj-win32/q2stat/msg.obj \
-	Release/obj-win32/q2stat/net_chan.obj \
-	Release/obj-win32/q2stat/pmove.obj \
-	Release/obj-win32/q2stat/q_shared2.obj \
-	Release/obj-win32/q2stat/QuakeFileSystem.obj \
-	Release/obj-win32/q2stat/cd_win.obj \
-	Release/obj-win32/q2stat/in_win.obj \
-	Release/obj-win32/q2stat/net_wins.obj \
-	Release/obj-win32/q2stat/snd_win.obj \
-	Release/obj-win32/q2stat/sys_win.obj \
-	Release/obj-win32/q2stat/vid_dll.obj \
-	Release/obj-win32/q2stat/q2.res \
-	Release/obj-win32/q2stat/makeres.obj \
-	Release/obj-win32/q2stat/gl_backend.obj \
-	Release/obj-win32/q2stat/gl_buffers.obj \
-	Release/obj-win32/q2stat/gl_frontend.obj \
-	Release/obj-win32/q2stat/gl_image.obj \
-	Release/obj-win32/q2stat/gl_interface.obj \
-	Release/obj-win32/q2stat/gl_light.obj \
-	Release/obj-win32/q2stat/gl_lightmap.obj \
-	Release/obj-win32/q2stat/gl_main.obj \
-	Release/obj-win32/q2stat/gl_math.obj \
-	Release/obj-win32/q2stat/gl_poly.obj \
-	Release/obj-win32/q2stat/gl_shader.obj \
-	Release/obj-win32/q2stat/gl_sky.obj \
-	Release/obj-win32/q2stat/gl_text.obj \
-	Release/obj-win32/q2stat/gl_model.obj \
-	Release/obj-win32/q2stat/gl_bspmodel.obj \
-	Release/obj-win32/q2stat/gl_trimodel.obj \
-	Release/obj-win32/q2stat/GLBind.obj \
-	Release/obj-win32/q2stat/gl_win.obj
+	Release/obj-cygwin/CoreStatic/CoreMain.o \
+	Release/obj-cygwin/CoreStatic/CoreUnix.o \
+	Release/obj-cygwin/CoreStatic/DbgSymbols.o \
+	Release/obj-cygwin/CoreStatic/DbgSymbolsUnix.o \
+	Release/obj-cygwin/CoreStatic/Memory.o \
+	Release/obj-cygwin/CoreStatic/OutputDevice.o \
+	Release/obj-cygwin/CoreStatic/ErrorMgr.o \
+	Release/obj-cygwin/CoreStatic/ExceptHandlerUnix.o \
+	Release/obj-cygwin/CoreStatic/ScriptParser.o \
+	Release/obj-cygwin/CoreStatic/Strings.o \
+	Release/obj-cygwin/CoreStatic/TextContainer.o \
+	Release/obj-cygwin/CoreStatic/FileSystem.o \
+	Release/obj-cygwin/CoreStatic/FileSystemUnix.o \
+	Release/obj-cygwin/CoreStatic/FileContainerArc.o \
+	Release/obj-cygwin/q2stat/cl_cin.o \
+	Release/obj-cygwin/q2stat/cl_download.o \
+	Release/obj-cygwin/q2stat/cl_ents.o \
+	Release/obj-cygwin/q2stat/cl_fx.o \
+	Release/obj-cygwin/q2stat/cl_input.o \
+	Release/obj-cygwin/q2stat/cl_main.o \
+	Release/obj-cygwin/q2stat/cl_parse.o \
+	Release/obj-cygwin/q2stat/cl_playermodel.o \
+	Release/obj-cygwin/q2stat/cl_pred.o \
+	Release/obj-cygwin/q2stat/cl_scrn.o \
+	Release/obj-cygwin/q2stat/cl_tent.o \
+	Release/obj-cygwin/q2stat/cl_view.o \
+	Release/obj-cygwin/q2stat/console.o \
+	Release/obj-cygwin/q2stat/keys.o \
+	Release/obj-cygwin/q2stat/menu.o \
+	Release/obj-cygwin/q2stat/qmenu.o \
+	Release/obj-cygwin/q2stat/ref_vars.o \
+	Release/obj-cygwin/q2stat/snd_dma.o \
+	Release/obj-cygwin/q2stat/snd_mem.o \
+	Release/obj-cygwin/q2stat/snd_mix.o \
+	Release/obj-cygwin/q2stat/sv_anim.o \
+	Release/obj-cygwin/q2stat/sv_ccmds.o \
+	Release/obj-cygwin/q2stat/sv_ents.o \
+	Release/obj-cygwin/q2stat/sv_game.o \
+	Release/obj-cygwin/q2stat/sv_init.o \
+	Release/obj-cygwin/q2stat/sv_main.o \
+	Release/obj-cygwin/q2stat/sv_send.o \
+	Release/obj-cygwin/q2stat/sv_text.o \
+	Release/obj-cygwin/q2stat/sv_tokenize.o \
+	Release/obj-cygwin/q2stat/sv_user.o \
+	Release/obj-cygwin/q2stat/sv_world.o \
+	Release/obj-cygwin/q2stat/anorms.o \
+	Release/obj-cygwin/q2stat/cmd.o \
+	Release/obj-cygwin/q2stat/cmodel.o \
+	Release/obj-cygwin/q2stat/common.o \
+	Release/obj-cygwin/q2stat/crc.o \
+	Release/obj-cygwin/q2stat/cvar.o \
+	Release/obj-cygwin/q2stat/entdelta.o \
+	Release/obj-cygwin/q2stat/images.o \
+	Release/obj-cygwin/q2stat/md4.o \
+	Release/obj-cygwin/q2stat/model.o \
+	Release/obj-cygwin/q2stat/msg.o \
+	Release/obj-cygwin/q2stat/net_chan.o \
+	Release/obj-cygwin/q2stat/pmove.o \
+	Release/obj-cygwin/q2stat/q_shared2.o \
+	Release/obj-cygwin/q2stat/QuakeFileSystem.o \
+	Release/obj-cygwin/q2stat/cd_win.o \
+	Release/obj-cygwin/q2stat/in_win.o \
+	Release/obj-cygwin/q2stat/net_wins.o \
+	Release/obj-cygwin/q2stat/snd_win.o \
+	Release/obj-cygwin/q2stat/sys_win.o \
+	Release/obj-cygwin/q2stat/vid_dll.o \
+	Release/obj-cygwin/q2stat/q2.o \
+	Release/obj-cygwin/q2stat/makeres.o \
+	Release/obj-cygwin/q2stat/gl_backend.o \
+	Release/obj-cygwin/q2stat/gl_buffers.o \
+	Release/obj-cygwin/q2stat/gl_frontend.o \
+	Release/obj-cygwin/q2stat/gl_image.o \
+	Release/obj-cygwin/q2stat/gl_interface.o \
+	Release/obj-cygwin/q2stat/gl_light.o \
+	Release/obj-cygwin/q2stat/gl_lightmap.o \
+	Release/obj-cygwin/q2stat/gl_main.o \
+	Release/obj-cygwin/q2stat/gl_math.o \
+	Release/obj-cygwin/q2stat/gl_poly.o \
+	Release/obj-cygwin/q2stat/gl_shader.o \
+	Release/obj-cygwin/q2stat/gl_sky.o \
+	Release/obj-cygwin/q2stat/gl_text.o \
+	Release/obj-cygwin/q2stat/gl_model.o \
+	Release/obj-cygwin/q2stat/gl_bspmodel.o \
+	Release/obj-cygwin/q2stat/gl_trimodel.o \
+	Release/obj-cygwin/q2stat/GLBind.o
 
 Release/Quake2.exe : DIRS $(STATIC)
-	echo Creating executable "Release/Quake2.exe" ...
-	$(LINK) -out:"Release/Quake2.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs.lib -map:"Release/Quake2.map" $(STATIC) -subsystem:windows
+	@echo Creating executable "Release/Quake2.exe" ...
+	$(LINK) -o Release/Quake2.exe $(STATIC) -shared-libgcc -LSDK/lib -lstdc++ lib/libs.a -Wl,-Map,Release/Quake2.map,--demangle
 
 #------------------------------------------------------------------------------
 #	"Release/q2ded.exe" target
 #------------------------------------------------------------------------------
 
 DEDICATED = \
-	Release/obj-win32/CoreStatic/CoreMain.obj \
-	Release/obj-win32/CoreStatic/CoreWin32.obj \
-	Release/obj-win32/CoreStatic/DbgSymbols.obj \
-	Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj \
-	Release/obj-win32/CoreStatic/Memory.obj \
-	Release/obj-win32/CoreStatic/OutputDevice.obj \
-	Release/obj-win32/CoreStatic/ErrorMgr.obj \
-	Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj \
-	Release/obj-win32/CoreStatic/ScriptParser.obj \
-	Release/obj-win32/CoreStatic/Strings.obj \
-	Release/obj-win32/CoreStatic/TextContainer.obj \
-	Release/obj-win32/CoreStatic/FileSystem.obj \
-	Release/obj-win32/CoreStatic/FileSystemWin32.obj \
-	Release/obj-win32/CoreStatic/FileContainerArc.obj \
-	Release/obj-win32/dedstat/sv_dedicated.obj \
-	Release/obj-win32/dedstat/sv_anim.obj \
-	Release/obj-win32/dedstat/sv_ccmds.obj \
-	Release/obj-win32/dedstat/sv_ents.obj \
-	Release/obj-win32/dedstat/sv_game.obj \
-	Release/obj-win32/dedstat/sv_init.obj \
-	Release/obj-win32/dedstat/sv_main.obj \
-	Release/obj-win32/dedstat/sv_send.obj \
-	Release/obj-win32/dedstat/sv_text.obj \
-	Release/obj-win32/dedstat/sv_tokenize.obj \
-	Release/obj-win32/dedstat/sv_user.obj \
-	Release/obj-win32/dedstat/sv_world.obj \
-	Release/obj-win32/dedstat/anorms.obj \
-	Release/obj-win32/dedstat/cmd.obj \
-	Release/obj-win32/dedstat/cmodel.obj \
-	Release/obj-win32/dedstat/common.obj \
-	Release/obj-win32/dedstat/crc.obj \
-	Release/obj-win32/dedstat/cvar.obj \
-	Release/obj-win32/dedstat/entdelta.obj \
-	Release/obj-win32/dedstat/images.obj \
-	Release/obj-win32/dedstat/md4.obj \
-	Release/obj-win32/dedstat/model.obj \
-	Release/obj-win32/dedstat/msg.obj \
-	Release/obj-win32/dedstat/net_chan.obj \
-	Release/obj-win32/dedstat/pmove.obj \
-	Release/obj-win32/dedstat/q_shared2.obj \
-	Release/obj-win32/dedstat/QuakeFileSystem.obj \
-	Release/obj-win32/dedstat/net_wins.obj \
-	Release/obj-win32/dedstat/sys_win.obj
+	Release/obj-cygwin/CoreStatic/CoreMain.o \
+	Release/obj-cygwin/CoreStatic/CoreUnix.o \
+	Release/obj-cygwin/CoreStatic/DbgSymbols.o \
+	Release/obj-cygwin/CoreStatic/DbgSymbolsUnix.o \
+	Release/obj-cygwin/CoreStatic/Memory.o \
+	Release/obj-cygwin/CoreStatic/OutputDevice.o \
+	Release/obj-cygwin/CoreStatic/ErrorMgr.o \
+	Release/obj-cygwin/CoreStatic/ExceptHandlerUnix.o \
+	Release/obj-cygwin/CoreStatic/ScriptParser.o \
+	Release/obj-cygwin/CoreStatic/Strings.o \
+	Release/obj-cygwin/CoreStatic/TextContainer.o \
+	Release/obj-cygwin/CoreStatic/FileSystem.o \
+	Release/obj-cygwin/CoreStatic/FileSystemUnix.o \
+	Release/obj-cygwin/CoreStatic/FileContainerArc.o \
+	Release/obj-cygwin/dedstat/sv_dedicated.o \
+	Release/obj-cygwin/dedstat/sv_anim.o \
+	Release/obj-cygwin/dedstat/sv_ccmds.o \
+	Release/obj-cygwin/dedstat/sv_ents.o \
+	Release/obj-cygwin/dedstat/sv_game.o \
+	Release/obj-cygwin/dedstat/sv_init.o \
+	Release/obj-cygwin/dedstat/sv_main.o \
+	Release/obj-cygwin/dedstat/sv_send.o \
+	Release/obj-cygwin/dedstat/sv_text.o \
+	Release/obj-cygwin/dedstat/sv_tokenize.o \
+	Release/obj-cygwin/dedstat/sv_user.o \
+	Release/obj-cygwin/dedstat/sv_world.o \
+	Release/obj-cygwin/dedstat/anorms.o \
+	Release/obj-cygwin/dedstat/cmd.o \
+	Release/obj-cygwin/dedstat/cmodel.o \
+	Release/obj-cygwin/dedstat/common.o \
+	Release/obj-cygwin/dedstat/crc.o \
+	Release/obj-cygwin/dedstat/cvar.o \
+	Release/obj-cygwin/dedstat/entdelta.o \
+	Release/obj-cygwin/dedstat/images.o \
+	Release/obj-cygwin/dedstat/md4.o \
+	Release/obj-cygwin/dedstat/model.o \
+	Release/obj-cygwin/dedstat/msg.o \
+	Release/obj-cygwin/dedstat/net_chan.o \
+	Release/obj-cygwin/dedstat/pmove.o \
+	Release/obj-cygwin/dedstat/q_shared2.o \
+	Release/obj-cygwin/dedstat/QuakeFileSystem.o \
+	Release/obj-cygwin/dedstat/net_wins.o \
+	Release/obj-cygwin/dedstat/sys_win.o
 
 Release/q2ded.exe : DIRS $(DEDICATED)
-	echo Creating executable "Release/q2ded.exe" ...
-	$(LINK) -out:"Release/q2ded.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs.lib -map:"Release/q2ded.map" $(DEDICATED) -subsystem:console
+	@echo Creating executable "Release/q2ded.exe" ...
+	$(LINK) -o Release/q2ded.exe $(DEDICATED) -shared-libgcc -LSDK/lib -lstdc++ lib/libs.a -Wl,-Map,Release/q2ded.map,--demangle
 
 #------------------------------------------------------------------------------
 #	"TestApp/TestApp.exe" target
 #------------------------------------------------------------------------------
 
 TEST = \
-	Release/obj-win32/CoreStatic/CoreMain.obj \
-	Release/obj-win32/CoreStatic/CoreWin32.obj \
-	Release/obj-win32/CoreStatic/DbgSymbols.obj \
-	Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj \
-	Release/obj-win32/CoreStatic/Memory.obj \
-	Release/obj-win32/CoreStatic/OutputDevice.obj \
-	Release/obj-win32/CoreStatic/ErrorMgr.obj \
-	Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj \
-	Release/obj-win32/CoreStatic/ScriptParser.obj \
-	Release/obj-win32/CoreStatic/Strings.obj \
-	Release/obj-win32/CoreStatic/TextContainer.obj \
-	Release/obj-win32/CoreStatic/FileSystem.obj \
-	Release/obj-win32/CoreStatic/FileSystemWin32.obj \
-	Release/obj-win32/CoreStatic/FileContainerArc.obj \
-	Release/obj-win32/TestApp/TestApp.obj \
-	Release/obj-win32/TestApp/Commands.obj
+	Release/obj-cygwin/CoreStatic/CoreMain.o \
+	Release/obj-cygwin/CoreStatic/CoreUnix.o \
+	Release/obj-cygwin/CoreStatic/DbgSymbols.o \
+	Release/obj-cygwin/CoreStatic/DbgSymbolsUnix.o \
+	Release/obj-cygwin/CoreStatic/Memory.o \
+	Release/obj-cygwin/CoreStatic/OutputDevice.o \
+	Release/obj-cygwin/CoreStatic/ErrorMgr.o \
+	Release/obj-cygwin/CoreStatic/ExceptHandlerUnix.o \
+	Release/obj-cygwin/CoreStatic/ScriptParser.o \
+	Release/obj-cygwin/CoreStatic/Strings.o \
+	Release/obj-cygwin/CoreStatic/TextContainer.o \
+	Release/obj-cygwin/CoreStatic/FileSystem.o \
+	Release/obj-cygwin/CoreStatic/FileSystemUnix.o \
+	Release/obj-cygwin/CoreStatic/FileContainerArc.o \
+	Release/obj-cygwin/TestApp/TestApp.o \
+	Release/obj-cygwin/TestApp/Commands.o
 
 TestApp/TestApp.exe : DIRS $(TEST)
-	echo Creating executable "TestApp/TestApp.exe" ...
-	$(LINK) -out:"TestApp/TestApp.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs.lib -map:"TestApp/TestApp.map" $(TEST) -subsystem:console
+	@echo Creating executable "TestApp/TestApp.exe" ...
+	$(LINK) -o TestApp/TestApp.exe $(TEST) -shared-libgcc -LSDK/lib -lstdc++ lib/libs.a -Wl,-Map,TestApp/TestApp.map,--demangle
 
 #------------------------------------------------------------------------------
 #	compiling source files
 #------------------------------------------------------------------------------
 
-OPT_STATIC = -W3 -O1 -D MAX_DEBUG=0 -D STATIC_BUILD -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
+OPT_STATIC = -fno-strict-aliasing -fno-rtti -fno-enforce-eh-specs -fno-exceptions -Wno-invalid-offsetof -Wabi -Wnon-virtual-dtor -Woverloaded-virtual -Wformat -Wimplicit -Wparentheses -Wreturn-type -Wunused-function -Wunused-variable -Wunused-value -Wunknown-pragmas -Wmissing-format-attribute -Wredundant-decls -Waggregate-return -Wstrict-aliasing -Os -D MAX_DEBUG=1 -D STATIC_BUILD -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
 
-Release/obj-win32/q2stat/md4.obj : qcommon/md4.cpp
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/md4.obj" qcommon/md4.cpp
+Release/obj-cygwin/q2stat/md4.o : qcommon/md4.cpp
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/md4.o qcommon/md4.cpp
 
-OPT_DEDICATED = -W3 -O1 -D MAX_DEBUG=0 -D STATIC_BUILD -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
+OPT_DEDICATED = -fno-strict-aliasing -fno-rtti -fno-enforce-eh-specs -fno-exceptions -Wno-invalid-offsetof -Wabi -Wnon-virtual-dtor -Woverloaded-virtual -Wformat -Wimplicit -Wparentheses -Wreturn-type -Wunused-function -Wunused-variable -Wunused-value -Wunknown-pragmas -Wmissing-format-attribute -Wredundant-decls -Waggregate-return -Wstrict-aliasing -Os -D MAX_DEBUG=1 -D STATIC_BUILD -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
 
-Release/obj-win32/dedstat/md4.obj : qcommon/md4.cpp
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/md4.obj" qcommon/md4.cpp
+Release/obj-cygwin/dedstat/md4.o : qcommon/md4.cpp
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/md4.o qcommon/md4.cpp
 
-Release/obj-win32/q2stat/q2.res : win32/q2.rc
-	rc.exe -l 0x409 -i win32/ -fo"Release/obj-win32/q2stat/q2.res" -dNDEBUG win32/q2.rc
+Release/obj-cygwin/q2stat/q2.o : win32/q2.rc
+	windres -O coff -I win32/ -o Release/obj-cygwin/q2stat/q2.o win32/q2.rc
 
-DEPENDS = \
+DEPENDS_1 = \
 	Core/../lib/zlib/zlib.h \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
@@ -236,15 +235,15 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-win32/q2stat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
+Release/obj-cygwin/q2stat/QuakeFileSystem.o : qcommon/QuakeFileSystem.cpp $(DEPENDS_1)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/QuakeFileSystem.o qcommon/QuakeFileSystem.cpp
 
-Release/obj-win32/dedstat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
+Release/obj-cygwin/dedstat/QuakeFileSystem.o : qcommon/QuakeFileSystem.cpp $(DEPENDS_1)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/QuakeFileSystem.o qcommon/QuakeFileSystem.cpp
 
-OPT_TEST = -W3 -O1 -D MAX_DEBUG=0 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
+OPT_TEST = -fno-strict-aliasing -fno-rtti -fno-enforce-eh-specs -fno-exceptions -Wno-invalid-offsetof -Wabi -Wnon-virtual-dtor -Woverloaded-virtual -Wformat -Wimplicit -Wparentheses -Wreturn-type -Wunused-function -Wunused-variable -Wunused-value -Wunknown-pragmas -Wmissing-format-attribute -Wredundant-decls -Waggregate-return -Wstrict-aliasing -Os -D MAX_DEBUG=1 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
 
-DEPENDS = \
+DEPENDS_2 = \
 	Core/../lib/zlib/zlib.h \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
@@ -265,10 +264,10 @@ DEPENDS = \
 	Core/Inc/TextContainer.h \
 	lib/zlib/zconf.h
 
-Release/obj-win32/TestApp/TestApp.obj : TestApp/TestApp.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/TestApp/TestApp.obj" TestApp/TestApp.cpp
+Release/obj-cygwin/TestApp/TestApp.o : TestApp/TestApp.cpp $(DEPENDS_2)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/TestApp/TestApp.o TestApp/TestApp.cpp
 
-DEPENDS = \
+DEPENDS_3 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -286,13 +285,13 @@ DEPENDS = \
 	Core/Inc/TextContainer.h \
 	Core/Src/CorePrivate.h
 
-Release/obj-win32/CoreStatic/DbgSymbols.obj : Core/Src/DbgSymbols.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/DbgSymbols.obj" Core/Src/DbgSymbols.cpp
+Release/obj-cygwin/CoreStatic/DbgSymbols.o : Core/Src/DbgSymbols.cpp $(DEPENDS_3)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/DbgSymbols.o Core/Src/DbgSymbols.cpp
 
-Release/obj-win32/CoreStatic/ErrorMgr.obj : Core/Src/ErrorMgr.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ErrorMgr.obj" Core/Src/ErrorMgr.cpp
+Release/obj-cygwin/CoreStatic/ErrorMgr.o : Core/Src/ErrorMgr.cpp $(DEPENDS_3)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/ErrorMgr.o Core/Src/ErrorMgr.cpp
 
-DEPENDS = \
+DEPENDS_4 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -322,10 +321,10 @@ DEPENDS = \
 	ref_gl/gl_interface.h \
 	win32/gl_win.h
 
-Release/obj-win32/q2stat/GLBind.obj : ref_gl/GLBind.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/GLBind.obj" ref_gl/GLBind.cpp
+Release/obj-cygwin/q2stat/GLBind.o : ref_gl/GLBind.cpp $(DEPENDS_4)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/GLBind.o ref_gl/GLBind.cpp
 
-DEPENDS = \
+DEPENDS_5 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -360,13 +359,13 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-win32/q2stat/cl_main.obj : client/cl_main.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_main.obj" client/cl_main.cpp
+Release/obj-cygwin/q2stat/cl_main.o : client/cl_main.cpp $(DEPENDS_5)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_main.o client/cl_main.cpp
 
-Release/obj-win32/q2stat/console.obj : client/console.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/console.obj" client/console.cpp
+Release/obj-cygwin/q2stat/console.o : client/console.cpp $(DEPENDS_5)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/console.o client/console.cpp
 
-DEPENDS = \
+DEPENDS_6 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -390,13 +389,13 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-win32/q2stat/common.obj : qcommon/common.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/common.obj" qcommon/common.cpp
+Release/obj-cygwin/q2stat/common.o : qcommon/common.cpp $(DEPENDS_6)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/common.o qcommon/common.cpp
 
-Release/obj-win32/dedstat/common.obj : qcommon/common.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/common.obj" qcommon/common.cpp
+Release/obj-cygwin/dedstat/common.o : qcommon/common.cpp $(DEPENDS_6)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/common.o qcommon/common.cpp
 
-DEPENDS = \
+DEPENDS_7 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -432,13 +431,13 @@ DEPENDS = \
 	qcommon/qcommon.h \
 	win32/WinPrivate.h
 
-Release/obj-win32/q2stat/sys_win.obj : win32/sys_win.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sys_win.obj" win32/sys_win.cpp
+Release/obj-cygwin/q2stat/sys_win.o : win32/sys_win.cpp $(DEPENDS_7)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sys_win.o win32/sys_win.cpp
 
-Release/obj-win32/dedstat/sys_win.obj : win32/sys_win.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sys_win.obj" win32/sys_win.cpp
+Release/obj-cygwin/dedstat/sys_win.o : win32/sys_win.cpp $(DEPENDS_7)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sys_win.o win32/sys_win.cpp
 
-DEPENDS = \
+DEPENDS_8 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -464,13 +463,13 @@ DEPENDS = \
 	server/game.h \
 	server/server.h
 
-Release/obj-win32/q2stat/sv_main.obj : server/sv_main.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_main.obj" server/sv_main.cpp
+Release/obj-cygwin/q2stat/sv_main.o : server/sv_main.cpp $(DEPENDS_8)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_main.o server/sv_main.cpp
 
-Release/obj-win32/dedstat/sv_main.obj : server/sv_main.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_main.obj" server/sv_main.cpp
+Release/obj-cygwin/dedstat/sv_main.o : server/sv_main.cpp $(DEPENDS_8)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_main.o server/sv_main.cpp
 
-DEPENDS = \
+DEPENDS_9 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -487,43 +486,61 @@ DEPENDS = \
 	Core/Inc/TextContainer.h \
 	Core/Src/CorePrivate.h
 
-Release/obj-win32/TestApp/Commands.obj : Core/Src/Commands.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/TestApp/Commands.obj" Core/Src/Commands.cpp
+Release/obj-cygwin/TestApp/Commands.o : Core/Src/Commands.cpp $(DEPENDS_9)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/TestApp/Commands.o Core/Src/Commands.cpp
 
-Release/obj-win32/CoreStatic/CoreMain.obj : Core/Src/CoreMain.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/CoreMain.obj" Core/Src/CoreMain.cpp
+Release/obj-cygwin/CoreStatic/CoreMain.o : Core/Src/CoreMain.cpp $(DEPENDS_9)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/CoreMain.o Core/Src/CoreMain.cpp
 
-Release/obj-win32/CoreStatic/CoreWin32.obj : Core/Src/CoreWin32.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/CoreWin32.obj" Core/Src/CoreWin32.cpp
+Release/obj-cygwin/CoreStatic/CoreUnix.o : Core/Src/CoreUnix.cpp $(DEPENDS_9)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/CoreUnix.o Core/Src/CoreUnix.cpp
 
-Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj : Core/Src/DbgSymbolsWin32.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj" Core/Src/DbgSymbolsWin32.cpp
+Release/obj-cygwin/CoreStatic/DbgSymbolsUnix.o : Core/Src/DbgSymbolsUnix.cpp $(DEPENDS_9)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/DbgSymbolsUnix.o Core/Src/DbgSymbolsUnix.cpp
 
-Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj : Core/Src/ExceptHandlerWin32.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj" Core/Src/ExceptHandlerWin32.cpp
+Release/obj-cygwin/CoreStatic/FileContainerArc.o : Core/Src/FileContainerArc.cpp $(DEPENDS_9)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/FileContainerArc.o Core/Src/FileContainerArc.cpp
 
-Release/obj-win32/CoreStatic/FileContainerArc.obj : Core/Src/FileContainerArc.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/FileContainerArc.obj" Core/Src/FileContainerArc.cpp
+Release/obj-cygwin/CoreStatic/FileSystemUnix.o : Core/Src/FileSystemUnix.cpp $(DEPENDS_9)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/FileSystemUnix.o Core/Src/FileSystemUnix.cpp
 
-Release/obj-win32/CoreStatic/FileSystemWin32.obj : Core/Src/FileSystemWin32.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/FileSystemWin32.obj" Core/Src/FileSystemWin32.cpp
+Release/obj-cygwin/CoreStatic/Memory.o : Core/Src/Memory.cpp $(DEPENDS_9)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/Memory.o Core/Src/Memory.cpp
 
-Release/obj-win32/CoreStatic/Memory.obj : Core/Src/Memory.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/Memory.obj" Core/Src/Memory.cpp
+Release/obj-cygwin/CoreStatic/OutputDevice.o : Core/Src/OutputDevice.cpp $(DEPENDS_9)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/OutputDevice.o Core/Src/OutputDevice.cpp
 
-Release/obj-win32/CoreStatic/OutputDevice.obj : Core/Src/OutputDevice.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/OutputDevice.obj" Core/Src/OutputDevice.cpp
+Release/obj-cygwin/CoreStatic/ScriptParser.o : Core/Src/ScriptParser.cpp $(DEPENDS_9)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/ScriptParser.o Core/Src/ScriptParser.cpp
 
-Release/obj-win32/CoreStatic/ScriptParser.obj : Core/Src/ScriptParser.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ScriptParser.obj" Core/Src/ScriptParser.cpp
+Release/obj-cygwin/CoreStatic/Strings.o : Core/Src/Strings.cpp $(DEPENDS_9)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/Strings.o Core/Src/Strings.cpp
 
-Release/obj-win32/CoreStatic/Strings.obj : Core/Src/Strings.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/Strings.obj" Core/Src/Strings.cpp
+Release/obj-cygwin/CoreStatic/TextContainer.o : Core/Src/TextContainer.cpp $(DEPENDS_9)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/TextContainer.o Core/Src/TextContainer.cpp
 
-Release/obj-win32/CoreStatic/TextContainer.obj : Core/Src/TextContainer.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/TextContainer.obj" Core/Src/TextContainer.cpp
+DEPENDS_10 = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Src/CorePrivate.h \
+	Core/Src/ExceptInfoLinux.h
 
-DEPENDS = \
+Release/obj-cygwin/CoreStatic/ExceptHandlerUnix.o : Core/Src/ExceptHandlerUnix.cpp $(DEPENDS_10)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/ExceptHandlerUnix.o Core/Src/ExceptHandlerUnix.cpp
+
+DEPENDS_11 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -541,10 +558,10 @@ DEPENDS = \
 	Core/Src/CorePrivate.h \
 	Core/Src/FileContainerOS.h
 
-Release/obj-win32/CoreStatic/FileSystem.obj : Core/Src/FileSystem.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/FileSystem.obj" Core/Src/FileSystem.cpp
+Release/obj-cygwin/CoreStatic/FileSystem.o : Core/Src/FileSystem.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/FileSystem.o Core/Src/FileSystem.cpp
 
-DEPENDS = \
+DEPENDS_12 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -580,10 +597,10 @@ DEPENDS = \
 	qcommon/qcommon.h \
 	win32/WinPrivate.h
 
-Release/obj-win32/q2stat/in_win.obj : win32/in_win.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/in_win.obj" win32/in_win.cpp
+Release/obj-cygwin/q2stat/in_win.o : win32/in_win.cpp $(DEPENDS_12)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/in_win.o win32/in_win.cpp
 
-DEPENDS = \
+DEPENDS_13 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -621,10 +638,10 @@ DEPENDS = \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h
 
-Release/obj-win32/q2stat/gl_main.obj : ref_gl/gl_main.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_main.obj" ref_gl/gl_main.cpp
+Release/obj-cygwin/q2stat/gl_main.o : ref_gl/gl_main.cpp $(DEPENDS_13)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_main.o ref_gl/gl_main.cpp
 
-DEPENDS = \
+DEPENDS_14 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -664,10 +681,10 @@ DEPENDS = \
 	ref_gl/gl_shader.h \
 	ref_gl/gl_sky.h
 
-Release/obj-win32/q2stat/gl_backend.obj : ref_gl/gl_backend.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_backend.obj" ref_gl/gl_backend.cpp
+Release/obj-cygwin/q2stat/gl_backend.o : ref_gl/gl_backend.cpp $(DEPENDS_14)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_backend.o ref_gl/gl_backend.cpp
 
-DEPENDS = \
+DEPENDS_15 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -706,10 +723,10 @@ DEPENDS = \
 	ref_gl/gl_shader.h \
 	ref_gl/gl_sky.h
 
-Release/obj-win32/q2stat/gl_frontend.obj : ref_gl/gl_frontend.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_frontend.obj" ref_gl/gl_frontend.cpp
+Release/obj-cygwin/q2stat/gl_frontend.o : ref_gl/gl_frontend.cpp $(DEPENDS_15)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_frontend.o ref_gl/gl_frontend.cpp
 
-DEPENDS = \
+DEPENDS_16 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -746,10 +763,10 @@ DEPENDS = \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h
 
-Release/obj-win32/q2stat/gl_light.obj : ref_gl/gl_light.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_light.obj" ref_gl/gl_light.cpp
+Release/obj-cygwin/q2stat/gl_light.o : ref_gl/gl_light.cpp $(DEPENDS_16)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_light.o ref_gl/gl_light.cpp
 
-DEPENDS = \
+DEPENDS_17 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -785,10 +802,10 @@ DEPENDS = \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h
 
-Release/obj-win32/q2stat/gl_text.obj : ref_gl/gl_text.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_text.obj" ref_gl/gl_text.cpp
+Release/obj-cygwin/q2stat/gl_text.o : ref_gl/gl_text.cpp $(DEPENDS_17)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_text.o ref_gl/gl_text.cpp
 
-DEPENDS = \
+DEPENDS_18 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -825,10 +842,10 @@ DEPENDS = \
 	ref_gl/gl_shader.h \
 	ref_gl/gl_sky.h
 
-Release/obj-win32/q2stat/gl_sky.obj : ref_gl/gl_sky.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_sky.obj" ref_gl/gl_sky.cpp
+Release/obj-cygwin/q2stat/gl_sky.o : ref_gl/gl_sky.cpp $(DEPENDS_18)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_sky.o ref_gl/gl_sky.cpp
 
-DEPENDS = \
+DEPENDS_19 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -863,13 +880,13 @@ DEPENDS = \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h
 
-Release/obj-win32/q2stat/gl_buffers.obj : ref_gl/gl_buffers.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_buffers.obj" ref_gl/gl_buffers.cpp
+Release/obj-cygwin/q2stat/gl_buffers.o : ref_gl/gl_buffers.cpp $(DEPENDS_19)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_buffers.o ref_gl/gl_buffers.cpp
 
-Release/obj-win32/q2stat/gl_image.obj : ref_gl/gl_image.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_image.obj" ref_gl/gl_image.cpp
+Release/obj-cygwin/q2stat/gl_image.o : ref_gl/gl_image.cpp $(DEPENDS_19)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_image.o ref_gl/gl_image.cpp
 
-DEPENDS = \
+DEPENDS_20 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -906,10 +923,10 @@ DEPENDS = \
 	ref_gl/gl_poly.h \
 	ref_gl/gl_shader.h
 
-Release/obj-win32/q2stat/gl_bspmodel.obj : ref_gl/gl_bspmodel.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_bspmodel.obj" ref_gl/gl_bspmodel.cpp
+Release/obj-cygwin/q2stat/gl_bspmodel.o : ref_gl/gl_bspmodel.cpp $(DEPENDS_20)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_bspmodel.o ref_gl/gl_bspmodel.cpp
 
-DEPENDS = \
+DEPENDS_21 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -945,10 +962,10 @@ DEPENDS = \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h
 
-Release/obj-win32/q2stat/gl_lightmap.obj : ref_gl/gl_lightmap.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_lightmap.obj" ref_gl/gl_lightmap.cpp
+Release/obj-cygwin/q2stat/gl_lightmap.o : ref_gl/gl_lightmap.cpp $(DEPENDS_21)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_lightmap.o ref_gl/gl_lightmap.cpp
 
-DEPENDS = \
+DEPENDS_22 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -983,10 +1000,10 @@ DEPENDS = \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h
 
-Release/obj-win32/q2stat/gl_trimodel.obj : ref_gl/gl_trimodel.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_trimodel.obj" ref_gl/gl_trimodel.cpp
+Release/obj-cygwin/q2stat/gl_trimodel.o : ref_gl/gl_trimodel.cpp $(DEPENDS_22)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_trimodel.o ref_gl/gl_trimodel.cpp
 
-DEPENDS = \
+DEPENDS_23 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1020,10 +1037,10 @@ DEPENDS = \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h
 
-Release/obj-win32/q2stat/gl_model.obj : ref_gl/gl_model.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_model.obj" ref_gl/gl_model.cpp
+Release/obj-cygwin/q2stat/gl_model.o : ref_gl/gl_model.cpp $(DEPENDS_23)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_model.o ref_gl/gl_model.cpp
 
-DEPENDS = \
+DEPENDS_24 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1055,10 +1072,10 @@ DEPENDS = \
 	ref_gl/gl_shader.h \
 	ref_gl/gl_shadersyntax.h
 
-Release/obj-win32/q2stat/gl_shader.obj : ref_gl/gl_shader.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_shader.obj" ref_gl/gl_shader.cpp
+Release/obj-cygwin/q2stat/gl_shader.o : ref_gl/gl_shader.cpp $(DEPENDS_24)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_shader.o ref_gl/gl_shader.cpp
 
-DEPENDS = \
+DEPENDS_25 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1089,10 +1106,10 @@ DEPENDS = \
 	ref_gl/gl_math.h \
 	ref_gl/gl_shader.h
 
-Release/obj-win32/q2stat/gl_math.obj : ref_gl/gl_math.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_math.obj" ref_gl/gl_math.cpp
+Release/obj-cygwin/q2stat/gl_math.o : ref_gl/gl_math.cpp $(DEPENDS_25)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_math.o ref_gl/gl_math.cpp
 
-DEPENDS = \
+DEPENDS_26 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1122,10 +1139,10 @@ DEPENDS = \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_shader.h
 
-Release/obj-win32/q2stat/gl_interface.obj : ref_gl/gl_interface.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_interface.obj" ref_gl/gl_interface.cpp
+Release/obj-cygwin/q2stat/gl_interface.o : ref_gl/gl_interface.cpp $(DEPENDS_26)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_interface.o ref_gl/gl_interface.cpp
 
-DEPENDS = \
+DEPENDS_27 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1153,41 +1170,10 @@ DEPENDS = \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_poly.h
 
-Release/obj-win32/q2stat/gl_poly.obj : ref_gl/gl_poly.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_poly.obj" ref_gl/gl_poly.cpp
+Release/obj-cygwin/q2stat/gl_poly.o : ref_gl/gl_poly.cpp $(DEPENDS_27)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_poly.o ref_gl/gl_poly.cpp
 
-DEPENDS = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/CoreGnuC.h \
-	Core/Inc/CoreUnix.h \
-	Core/Inc/CoreVisualC.h \
-	Core/Inc/CoreWin32.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/FileSystem.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	SDK/include/glext.h \
-	client/engine.h \
-	client/engine_intf.h \
-	client/ref.h \
-	client/renderer.h \
-	client/rexp_intf.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h \
-	ref_gl/GLBind.h \
-	ref_gl/OpenGLDrv.h \
-	ref_gl/gl_interface.h \
-	win32/gl_win.h
-
-Release/obj-win32/q2stat/gl_win.obj : win32/gl_win.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_win.obj" win32/gl_win.cpp
-
-DEPENDS = \
+DEPENDS_28 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1224,10 +1210,10 @@ DEPENDS = \
 	win32/WinPrivate.h \
 	win32/resource.h
 
-Release/obj-win32/q2stat/vid_dll.obj : win32/vid_dll.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/vid_dll.obj" win32/vid_dll.cpp
+Release/obj-cygwin/q2stat/vid_dll.o : win32/vid_dll.cpp $(DEPENDS_28)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/vid_dll.o win32/vid_dll.cpp
 
-DEPENDS = \
+DEPENDS_29 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1262,10 +1248,10 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-win32/q2stat/cl_fx.obj : client/cl_fx.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_fx.obj" client/cl_fx.cpp
+Release/obj-cygwin/q2stat/cl_fx.o : client/cl_fx.cpp $(DEPENDS_29)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_fx.o client/cl_fx.cpp
 
-DEPENDS = \
+DEPENDS_30 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1300,16 +1286,16 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-win32/q2stat/keys.obj : client/keys.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/keys.obj" client/keys.cpp
+Release/obj-cygwin/q2stat/keys.o : client/keys.cpp $(DEPENDS_30)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/keys.o client/keys.cpp
 
-Release/obj-win32/q2stat/menu.obj : client/menu.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/menu.obj" client/menu.cpp
+Release/obj-cygwin/q2stat/menu.o : client/menu.cpp $(DEPENDS_30)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/menu.o client/menu.cpp
 
-Release/obj-win32/q2stat/qmenu.obj : client/qmenu.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/qmenu.obj" client/qmenu.cpp
+Release/obj-cygwin/q2stat/qmenu.o : client/qmenu.cpp $(DEPENDS_30)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/qmenu.o client/qmenu.cpp
 
-DEPENDS = \
+DEPENDS_31 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1344,19 +1330,19 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-win32/q2stat/cl_tent.obj : client/cl_tent.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_tent.obj" client/cl_tent.cpp
+Release/obj-cygwin/q2stat/cl_tent.o : client/cl_tent.cpp $(DEPENDS_31)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_tent.o client/cl_tent.cpp
 
-Release/obj-win32/q2stat/snd_dma.obj : client/snd_dma.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/snd_dma.obj" client/snd_dma.cpp
+Release/obj-cygwin/q2stat/snd_dma.o : client/snd_dma.cpp $(DEPENDS_31)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/snd_dma.o client/snd_dma.cpp
 
-Release/obj-win32/q2stat/snd_mem.obj : client/snd_mem.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/snd_mem.obj" client/snd_mem.cpp
+Release/obj-cygwin/q2stat/snd_mem.o : client/snd_mem.cpp $(DEPENDS_31)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/snd_mem.o client/snd_mem.cpp
 
-Release/obj-win32/q2stat/snd_mix.obj : client/snd_mix.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/snd_mix.obj" client/snd_mix.cpp
+Release/obj-cygwin/q2stat/snd_mix.o : client/snd_mix.cpp $(DEPENDS_31)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/snd_mix.o client/snd_mix.cpp
 
-DEPENDS = \
+DEPENDS_32 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1392,10 +1378,10 @@ DEPENDS = \
 	qcommon/qcommon.h \
 	win32/WinPrivate.h
 
-Release/obj-win32/q2stat/snd_win.obj : win32/snd_win.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/snd_win.obj" win32/snd_win.cpp
+Release/obj-cygwin/q2stat/snd_win.o : win32/snd_win.cpp $(DEPENDS_32)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/snd_win.o win32/snd_win.cpp
 
-DEPENDS = \
+DEPENDS_33 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1431,13 +1417,13 @@ DEPENDS = \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
 
-Release/obj-win32/q2stat/cl_ents.obj : client/cl_ents.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_ents.obj" client/cl_ents.cpp
+Release/obj-cygwin/q2stat/cl_ents.o : client/cl_ents.cpp $(DEPENDS_33)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_ents.o client/cl_ents.cpp
 
-Release/obj-win32/q2stat/cl_pred.obj : client/cl_pred.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_pred.obj" client/cl_pred.cpp
+Release/obj-cygwin/q2stat/cl_pred.o : client/cl_pred.cpp $(DEPENDS_33)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_pred.o client/cl_pred.cpp
 
-DEPENDS = \
+DEPENDS_34 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1471,25 +1457,25 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-win32/q2stat/cl_cin.obj : client/cl_cin.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_cin.obj" client/cl_cin.cpp
+Release/obj-cygwin/q2stat/cl_cin.o : client/cl_cin.cpp $(DEPENDS_34)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_cin.o client/cl_cin.cpp
 
-Release/obj-win32/q2stat/cl_input.obj : client/cl_input.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_input.obj" client/cl_input.cpp
+Release/obj-cygwin/q2stat/cl_input.o : client/cl_input.cpp $(DEPENDS_34)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_input.o client/cl_input.cpp
 
-Release/obj-win32/q2stat/cl_parse.obj : client/cl_parse.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_parse.obj" client/cl_parse.cpp
+Release/obj-cygwin/q2stat/cl_parse.o : client/cl_parse.cpp $(DEPENDS_34)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_parse.o client/cl_parse.cpp
 
-Release/obj-win32/q2stat/cl_playermodel.obj : client/cl_playermodel.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_playermodel.obj" client/cl_playermodel.cpp
+Release/obj-cygwin/q2stat/cl_playermodel.o : client/cl_playermodel.cpp $(DEPENDS_34)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_playermodel.o client/cl_playermodel.cpp
 
-Release/obj-win32/q2stat/cl_scrn.obj : client/cl_scrn.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_scrn.obj" client/cl_scrn.cpp
+Release/obj-cygwin/q2stat/cl_scrn.o : client/cl_scrn.cpp $(DEPENDS_34)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_scrn.o client/cl_scrn.cpp
 
-Release/obj-win32/q2stat/cl_view.obj : client/cl_view.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_view.obj" client/cl_view.cpp
+Release/obj-cygwin/q2stat/cl_view.o : client/cl_view.cpp $(DEPENDS_34)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_view.o client/cl_view.cpp
 
-DEPENDS = \
+DEPENDS_35 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1524,10 +1510,10 @@ DEPENDS = \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
 
-Release/obj-win32/q2stat/cl_download.obj : client/cl_download.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_download.obj" client/cl_download.cpp
+Release/obj-cygwin/q2stat/cl_download.o : client/cl_download.cpp $(DEPENDS_35)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_download.o client/cl_download.cpp
 
-DEPENDS = \
+DEPENDS_36 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1562,10 +1548,10 @@ DEPENDS = \
 	qcommon/qcommon.h \
 	win32/WinPrivate.h
 
-Release/obj-win32/q2stat/cd_win.obj : win32/cd_win.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cd_win.obj" win32/cd_win.cpp
+Release/obj-cygwin/q2stat/cd_win.o : win32/cd_win.cpp $(DEPENDS_36)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cd_win.o win32/cd_win.cpp
 
-DEPENDS = \
+DEPENDS_37 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1591,13 +1577,13 @@ DEPENDS = \
 	server/game.h \
 	server/server.h
 
-Release/obj-win32/q2stat/sv_ccmds.obj : server/sv_ccmds.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_ccmds.obj" server/sv_ccmds.cpp
+Release/obj-cygwin/q2stat/sv_ccmds.o : server/sv_ccmds.cpp $(DEPENDS_37)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_ccmds.o server/sv_ccmds.cpp
 
-Release/obj-win32/dedstat/sv_ccmds.obj : server/sv_ccmds.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_ccmds.obj" server/sv_ccmds.cpp
+Release/obj-cygwin/dedstat/sv_ccmds.o : server/sv_ccmds.cpp $(DEPENDS_37)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_ccmds.o server/sv_ccmds.cpp
 
-DEPENDS = \
+DEPENDS_38 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1620,13 +1606,13 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-win32/q2stat/sv_text.obj : server/sv_text.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_text.obj" server/sv_text.cpp
+Release/obj-cygwin/q2stat/sv_text.o : server/sv_text.cpp $(DEPENDS_38)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_text.o server/sv_text.cpp
 
-Release/obj-win32/dedstat/sv_text.obj : server/sv_text.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_text.obj" server/sv_text.cpp
+Release/obj-cygwin/dedstat/sv_text.o : server/sv_text.cpp $(DEPENDS_38)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_text.o server/sv_text.cpp
 
-DEPENDS = \
+DEPENDS_39 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1651,13 +1637,13 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-win32/q2stat/images.obj : qcommon/images.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/images.obj" qcommon/images.cpp
+Release/obj-cygwin/q2stat/images.o : qcommon/images.cpp $(DEPENDS_39)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/images.o qcommon/images.cpp
 
-Release/obj-win32/dedstat/images.obj : qcommon/images.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/images.obj" qcommon/images.cpp
+Release/obj-cygwin/dedstat/images.o : qcommon/images.cpp $(DEPENDS_39)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/images.o qcommon/images.cpp
 
-DEPENDS = \
+DEPENDS_40 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1682,19 +1668,19 @@ DEPENDS = \
 	server/game.h \
 	server/server.h
 
-Release/obj-win32/q2stat/sv_game.obj : server/sv_game.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_game.obj" server/sv_game.cpp
+Release/obj-cygwin/q2stat/sv_game.o : server/sv_game.cpp $(DEPENDS_40)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_game.o server/sv_game.cpp
 
-Release/obj-win32/dedstat/sv_game.obj : server/sv_game.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_game.obj" server/sv_game.cpp
+Release/obj-cygwin/dedstat/sv_game.o : server/sv_game.cpp $(DEPENDS_40)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_game.o server/sv_game.cpp
 
-Release/obj-win32/q2stat/sv_world.obj : server/sv_world.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_world.obj" server/sv_world.cpp
+Release/obj-cygwin/q2stat/sv_world.o : server/sv_world.cpp $(DEPENDS_40)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_world.o server/sv_world.cpp
 
-Release/obj-win32/dedstat/sv_world.obj : server/sv_world.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_world.obj" server/sv_world.cpp
+Release/obj-cygwin/dedstat/sv_world.o : server/sv_world.cpp $(DEPENDS_40)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_world.o server/sv_world.cpp
 
-DEPENDS = \
+DEPENDS_41 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1716,19 +1702,19 @@ DEPENDS = \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
 
-Release/obj-win32/q2stat/cmodel.obj : qcommon/cmodel.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cmodel.obj" qcommon/cmodel.cpp
+Release/obj-cygwin/q2stat/cmodel.o : qcommon/cmodel.cpp $(DEPENDS_41)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cmodel.o qcommon/cmodel.cpp
 
-Release/obj-win32/dedstat/cmodel.obj : qcommon/cmodel.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/cmodel.obj" qcommon/cmodel.cpp
+Release/obj-cygwin/dedstat/cmodel.o : qcommon/cmodel.cpp $(DEPENDS_41)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/cmodel.o qcommon/cmodel.cpp
 
-Release/obj-win32/q2stat/model.obj : qcommon/model.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/model.obj" qcommon/model.cpp
+Release/obj-cygwin/q2stat/model.o : qcommon/model.cpp $(DEPENDS_41)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/model.o qcommon/model.cpp
 
-Release/obj-win32/dedstat/model.obj : qcommon/model.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/model.obj" qcommon/model.cpp
+Release/obj-cygwin/dedstat/model.o : qcommon/model.cpp $(DEPENDS_41)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/model.o qcommon/model.cpp
 
-DEPENDS = \
+DEPENDS_42 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1751,37 +1737,37 @@ DEPENDS = \
 	server/game.h \
 	server/server.h
 
-Release/obj-win32/q2stat/sv_anim.obj : server/sv_anim.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_anim.obj" server/sv_anim.cpp
+Release/obj-cygwin/q2stat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_anim.o server/sv_anim.cpp
 
-Release/obj-win32/dedstat/sv_anim.obj : server/sv_anim.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_anim.obj" server/sv_anim.cpp
+Release/obj-cygwin/dedstat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_anim.o server/sv_anim.cpp
 
-Release/obj-win32/q2stat/sv_ents.obj : server/sv_ents.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_ents.obj" server/sv_ents.cpp
+Release/obj-cygwin/q2stat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_ents.o server/sv_ents.cpp
 
-Release/obj-win32/dedstat/sv_ents.obj : server/sv_ents.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_ents.obj" server/sv_ents.cpp
+Release/obj-cygwin/dedstat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_ents.o server/sv_ents.cpp
 
-Release/obj-win32/q2stat/sv_init.obj : server/sv_init.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_init.obj" server/sv_init.cpp
+Release/obj-cygwin/q2stat/sv_init.o : server/sv_init.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_init.o server/sv_init.cpp
 
-Release/obj-win32/dedstat/sv_init.obj : server/sv_init.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_init.obj" server/sv_init.cpp
+Release/obj-cygwin/dedstat/sv_init.o : server/sv_init.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_init.o server/sv_init.cpp
 
-Release/obj-win32/q2stat/sv_send.obj : server/sv_send.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_send.obj" server/sv_send.cpp
+Release/obj-cygwin/q2stat/sv_send.o : server/sv_send.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_send.o server/sv_send.cpp
 
-Release/obj-win32/dedstat/sv_send.obj : server/sv_send.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_send.obj" server/sv_send.cpp
+Release/obj-cygwin/dedstat/sv_send.o : server/sv_send.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_send.o server/sv_send.cpp
 
-Release/obj-win32/q2stat/sv_user.obj : server/sv_user.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_user.obj" server/sv_user.cpp
+Release/obj-cygwin/q2stat/sv_user.o : server/sv_user.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_user.o server/sv_user.cpp
 
-Release/obj-win32/dedstat/sv_user.obj : server/sv_user.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_user.obj" server/sv_user.cpp
+Release/obj-cygwin/dedstat/sv_user.o : server/sv_user.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_user.o server/sv_user.cpp
 
-DEPENDS = \
+DEPENDS_43 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1801,73 +1787,73 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-win32/q2stat/ref_vars.obj : client/ref_vars.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/ref_vars.obj" client/ref_vars.cpp
+Release/obj-cygwin/q2stat/ref_vars.o : client/ref_vars.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/ref_vars.o client/ref_vars.cpp
 
-Release/obj-win32/q2stat/anorms.obj : qcommon/anorms.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/anorms.obj" qcommon/anorms.cpp
+Release/obj-cygwin/q2stat/anorms.o : qcommon/anorms.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/anorms.o qcommon/anorms.cpp
 
-Release/obj-win32/dedstat/anorms.obj : qcommon/anorms.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/anorms.obj" qcommon/anorms.cpp
+Release/obj-cygwin/dedstat/anorms.o : qcommon/anorms.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/anorms.o qcommon/anorms.cpp
 
-Release/obj-win32/q2stat/cmd.obj : qcommon/cmd.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cmd.obj" qcommon/cmd.cpp
+Release/obj-cygwin/q2stat/cmd.o : qcommon/cmd.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cmd.o qcommon/cmd.cpp
 
-Release/obj-win32/dedstat/cmd.obj : qcommon/cmd.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/cmd.obj" qcommon/cmd.cpp
+Release/obj-cygwin/dedstat/cmd.o : qcommon/cmd.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/cmd.o qcommon/cmd.cpp
 
-Release/obj-win32/q2stat/crc.obj : qcommon/crc.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/crc.obj" qcommon/crc.cpp
+Release/obj-cygwin/q2stat/crc.o : qcommon/crc.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/crc.o qcommon/crc.cpp
 
-Release/obj-win32/dedstat/crc.obj : qcommon/crc.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/crc.obj" qcommon/crc.cpp
+Release/obj-cygwin/dedstat/crc.o : qcommon/crc.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/crc.o qcommon/crc.cpp
 
-Release/obj-win32/q2stat/cvar.obj : qcommon/cvar.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cvar.obj" qcommon/cvar.cpp
+Release/obj-cygwin/q2stat/cvar.o : qcommon/cvar.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cvar.o qcommon/cvar.cpp
 
-Release/obj-win32/dedstat/cvar.obj : qcommon/cvar.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/cvar.obj" qcommon/cvar.cpp
+Release/obj-cygwin/dedstat/cvar.o : qcommon/cvar.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/cvar.o qcommon/cvar.cpp
 
-Release/obj-win32/q2stat/entdelta.obj : qcommon/entdelta.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/entdelta.obj" qcommon/entdelta.cpp
+Release/obj-cygwin/q2stat/entdelta.o : qcommon/entdelta.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/entdelta.o qcommon/entdelta.cpp
 
-Release/obj-win32/dedstat/entdelta.obj : qcommon/entdelta.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/entdelta.obj" qcommon/entdelta.cpp
+Release/obj-cygwin/dedstat/entdelta.o : qcommon/entdelta.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/entdelta.o qcommon/entdelta.cpp
 
-Release/obj-win32/q2stat/msg.obj : qcommon/msg.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/msg.obj" qcommon/msg.cpp
+Release/obj-cygwin/q2stat/msg.o : qcommon/msg.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/msg.o qcommon/msg.cpp
 
-Release/obj-win32/dedstat/msg.obj : qcommon/msg.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/msg.obj" qcommon/msg.cpp
+Release/obj-cygwin/dedstat/msg.o : qcommon/msg.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/msg.o qcommon/msg.cpp
 
-Release/obj-win32/q2stat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/net_chan.obj" qcommon/net_chan.cpp
+Release/obj-cygwin/q2stat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/net_chan.o qcommon/net_chan.cpp
 
-Release/obj-win32/dedstat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/net_chan.obj" qcommon/net_chan.cpp
+Release/obj-cygwin/dedstat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/net_chan.o qcommon/net_chan.cpp
 
-Release/obj-win32/q2stat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/pmove.obj" qcommon/pmove.cpp
+Release/obj-cygwin/q2stat/pmove.o : qcommon/pmove.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/pmove.o qcommon/pmove.cpp
 
-Release/obj-win32/dedstat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/pmove.obj" qcommon/pmove.cpp
+Release/obj-cygwin/dedstat/pmove.o : qcommon/pmove.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/pmove.o qcommon/pmove.cpp
 
-Release/obj-win32/dedstat/sv_dedicated.obj : server/sv_dedicated.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_dedicated.obj" server/sv_dedicated.cpp
+Release/obj-cygwin/dedstat/sv_dedicated.o : server/sv_dedicated.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_dedicated.o server/sv_dedicated.cpp
 
-Release/obj-win32/q2stat/sv_tokenize.obj : server/sv_tokenize.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_tokenize.obj" server/sv_tokenize.cpp
+Release/obj-cygwin/q2stat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_tokenize.o server/sv_tokenize.cpp
 
-Release/obj-win32/dedstat/sv_tokenize.obj : server/sv_tokenize.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_tokenize.obj" server/sv_tokenize.cpp
+Release/obj-cygwin/dedstat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_tokenize.o server/sv_tokenize.cpp
 
-Release/obj-win32/q2stat/net_wins.obj : win32/net_wins.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/net_wins.obj" win32/net_wins.cpp
+Release/obj-cygwin/q2stat/net_wins.o : win32/net_wins.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/net_wins.o win32/net_wins.cpp
 
-Release/obj-win32/dedstat/net_wins.obj : win32/net_wins.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/net_wins.obj" win32/net_wins.cpp
+Release/obj-cygwin/dedstat/net_wins.o : win32/net_wins.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/net_wins.o win32/net_wins.cpp
 
-DEPENDS = \
+DEPENDS_44 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1884,25 +1870,25 @@ DEPENDS = \
 	Core/Inc/TextContainer.h \
 	qcommon/q_shared2.h
 
-Release/obj-win32/q2stat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/q_shared2.obj" qcommon/q_shared2.cpp
+Release/obj-cygwin/q2stat/q_shared2.o : qcommon/q_shared2.cpp $(DEPENDS_44)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/q_shared2.o qcommon/q_shared2.cpp
 
-Release/obj-win32/dedstat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/q_shared2.obj" qcommon/q_shared2.cpp
+Release/obj-cygwin/dedstat/q_shared2.o : qcommon/q_shared2.cpp $(DEPENDS_44)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/q_shared2.o qcommon/q_shared2.cpp
 
-DEPENDS = \
+DEPENDS_45 = \
 	resource/archive.res
 
-Release/obj-win32/q2stat/makeres.obj : resource/makeres.asm $(DEPENDS)
-	nasm.exe -f win32 -i resource/ -o "Release/obj-win32/q2stat/makeres.obj" resource/makeres.asm
+Release/obj-cygwin/q2stat/makeres.o : resource/makeres.asm $(DEPENDS_45)
+	nasm -f elf -i resource/ -o "Release/obj-cygwin/q2stat/makeres.o" resource/makeres.asm
 
 #------------------------------------------------------------------------------
 #	creating output directories
 #------------------------------------------------------------------------------
 
 DIRS :
-	if not exist "Release/obj-win32/CoreStatic" mkdir "Release/obj-win32/CoreStatic"
-	if not exist "Release/obj-win32/q2stat" mkdir "Release/obj-win32/q2stat"
-	if not exist "Release/obj-win32/dedstat" mkdir "Release/obj-win32/dedstat"
-	if not exist "Release/obj-win32/TestApp" mkdir "Release/obj-win32/TestApp"
+	@mkdir -p Release/obj-cygwin/CoreStatic
+	@mkdir -p Release/obj-cygwin/q2stat
+	@mkdir -p Release/obj-cygwin/dedstat
+	@mkdir -p Release/obj-cygwin/TestApp
 

@@ -235,15 +235,11 @@ static qboolean G_AreasConnected (int area1, int area2)
 }
 
 
-#if _WIN32
 static trace_t* G_Trace (trace_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
 {
 	SV_TraceHook (trace, start, mins, maxs, end, passedict, contentmask);
 	return &trace;
 }
-#else
-	#error trace_t returned -- check calling convention
-#endif
 
 
 /*-------- Wrappers for some system functions ----------------*/
@@ -398,13 +394,9 @@ static int PSV_AreaEdicts (const CVec3 &mins, const CVec3 &maxs, edict_t **list,
 {	PROF2(int)	SV_AreaEdicts(mins,maxs,list,maxcount,areatype); EPROF2(2);	}
 #define SV_AreaEdicts PSV_AreaEdicts
 
-#if _WIN32
 static trace_t* PSV_Trace (trace_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
 {	PROF2(trace_t*) G_Trace(trace,start,mins,maxs,end,passedict,contentmask); EPROF2(3); }
 #define G_Trace PSV_Trace
-#else
-	#error trace_t returned -- check calling convention
-#endif
 
 static int PSV_PointContents (const CVec3 &p)
 {	PROF2(int)	SV_PointContents(p); EPROF2(4);	}

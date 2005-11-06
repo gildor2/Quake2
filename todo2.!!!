@@ -1,0 +1,75 @@
+- check misc/ut/network.htm
+- try LZMA decoder for resources and for .7z
+
+
+- create numeric strcmp
+- TListI<> -- case-insens
+- special List class with ability to setup FOFS(name), FOFS(next); ability to
+  make hashes; for cvar_t, shader_t etc -- TListEx<class T, int nameOfs, int nextOfs>
+- change q2 player default_icon
+- tex resampler: use:  color=(c1*frac1*a1+...+c4*frac4*a4)/(a1+...+a4)
+                                         alpha = (a1*frac1+...a4*frac4)/4
+ Now: frac1==...==frac4==1.0  !!! ?
+
+--------------------------------------------
+BFG:
+- try to improve bfg beams - don't jump, lerp
+  - TE_BFG_LASER: should hook multicast, find TE_BFG_LASER, and find endpos entity
+    (use absBounds); send different temp ent, unt # instead of entity; may be, do this
+    in client?
+  - can use BEAM_FLAT (unimplemented) with different shader
+--------------------------------------------
+md3 todo:
+- pain animation
+* temp_models.pak -> q3models
+--------------------------------------------
+? move CopyFiles()/RemoveFiles() to Core (CFileSystem? - no, either global, or CFileContainer)
+! implement name completion interface (in Commands.cpp + copy to cmd.cpp, or as separate
+  CommandCompletion.cpp)
+--------------------------------------------
+CWriteStream, CReadStream
+  -- or -- may be, CStream - both read/write
+  - enum direction; void Serialize(data)
+CFile - derive, replace most fopen(name,"wb") with "CFile *appOpenFileWrite(name)"
+  - will auto create dir
+COutputDeviceFile constr (filename)
+  - will auto create dir too
+msg_t: -> CMemStream
+--------------------------------------------
+* ScriptParser.cpp:: quoted strings
+- implement aliases in Commands.cpp; parser should use such quoted strings
+? MacroExpandString() -- in cmd buf
+- cmd.cpp: remove commands, implement cmd buffer => Command.cpp
+- replace cmdline parser - - can't - needs cvars
+- replace most Com_Parse() with Script
+--------------------------------------------
+- CWindow: base, win32, glwin32 OnMin, Act,Deact/Destroy,Create (lots of vid_dll
+  and glw_imp glob funcs -> virtual); MinimizedApp etc, viddef -> here
+- fast vid_restart (gl_mode, r_fullscreen, r_saturation change): build/upload lightmaps,
+  update gamma, upload images, build sys images
+- CWinSubsystem: depends on cl_hwnd;
+  virtual: Init,Shutdown,NewWnd,Activate;
+  systems: sound, input, gl (?); auto-register/unreg.; call all Actiate(), Shutdown()
+  etc automatically
+--------------------------------------------
+Win32 CDS (ChangeDisplaySettings()):
+- disable CDS on minimization in Win9x:
+  1) TNT2 - taskbar appears until vid_restart (SetForegroundWindow will not
+     help)
+  2) Blade3D - same + sometimes cannot restore res (CDS(game) + CDS(0) -!)
+- Vid_DestroyWindow(): ShowWindow(wnd,SW_HIDE) before destroying will
+  prevent from appearing empty button on taskbar (Win9x), but will deactivate
+  window when Vid_DestroyWindow(force=false) because of hiding (and GL will call
+  CDS(0))
+- when recreating glContext on the same window (force=false), some videocards
+  (at least, Blade3D) will not be able to create new context (try GetLastError()
+   -- what is it ??!!)
+  TO FIX: try to create context; when failed, and window has context before
+    (Vid_DestroyWindow(false) -> wnd.isLazy=true) -- DestroyWindow(true)+
+     CreateWindow() -- i.e. completely recreate window; then - try to create
+     context again
+- Win9x: vid_restart will restore resolution (via WM_SIZE+MINIMIZE)
+! should centralize resolution changes: do not restore desktop res when not
+  minimized (check WM_SIZE correctness ?)
+  ? place to GLimp_Activate(), call CDS simputaneously with minimize/restore
+? try TNT with 16 <-> 32 bit change with "force=false"

@@ -236,16 +236,26 @@ void CFileSystem::Mount (const char *mask, const char *point)
 	// if Path is not wildcard - mount it implicitly
 	if (!appIsWildcard (Path))
 	{
-		// check for file
-		FILE *f = fopen (Path, "rb");
-		if (f)
+		switch (appFileType (Path))
 		{
-			GFileSystem->MountArchive (Path, point);
-			fclose (f);
-			return;
+		case FS_FILE:
+			{
+				if (FILE *f = fopen (Path, "rb"))
+				{
+					GFileSystem->MountArchive (Path, point);
+					fclose (f);
+				}
+				else
+					appWPrintf ("Mount(%s): cannot open file\n", *Path);
+			}
+			break;
+		case FS_DIR:
+			// check for dir: sometimes impossible, so - mount directory, even if it is not exists
+			GFileSystem->MountDirectory (Path, point);
+			break;
+		default: // case 0
+			appWPrintf ("Mount(%s): file or dir does not exists\n", *Path);
 		}
-		// check for dir: sometimes impossible, so - mount directory, even if it is not exists
-		GFileSystem->MountDirectory (Path, point);
 		return;
 	}
 

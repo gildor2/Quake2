@@ -2,15 +2,10 @@
 #include <windows.h>
 #include "CorePrivate.h"
 
-#if __MINGW32__
-//?? incompatibility in headers
-#define IMAGE_OPTIONAL_HEADER32		IMAGE_OPTIONAL_HEADER
-#endif
-
 static char		module[256];
 static HMODULE	hModule;
 
-bool osAddressInfo (address_t address, char *pkgName, int bufSize, int *offset)
+bool osGetAddressPackage (address_t address, char *pkgName, int bufSize, int &offset)
 {
 	hModule = NULL;
 
@@ -22,32 +17,30 @@ bool osAddressInfo (address_t address, char *pkgName, int bufSize, int *offset)
 	if (!GetModuleFileName (hModule, ARRAY_ARG(module)))
 		return false;
 
-	char	*s;
-	if (s = strrchr (module, '.')) *s = 0;
-	if (!(s = strrchr (module, '\\')))
-		s = module;
-	else
-		appStrcpy (module, s+1);	// remove "path\" part
+	char *s;
+	if (s = strrchr (module, '.'))
+		*s = 0;
+	if (s = strrchr (module, '\\'))
+		strcpy (module, s+1);		// remove "path\" part
 
-	*offset = address - (unsigned)hModule;
+	offset = address - (unsigned)hModule;
 	appStrncpyz (pkgName, module, bufSize);
 
 	return true;
 }
 
 
-bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset)
+bool osGetAddressSymbol (address_t address, char *exportName, int bufSize, int &offset)
 {
-	if (!hModule) return false;		// there was no osAddressInfo() call before this
+	if (!hModule) return false;		// there was no osGetAddressPackage() call before this
 
 	TString<256> Func;
-	__try
-	{
+	TRY {							// should use IsBadReadPtr() instead of SEH for correct work under mingw32
 		// we want to walk system memory -- not very safe action
 		if (*(WORD*)hModule != 'M'+('Z'<<8)) return false;		// bad MZ header
 		const WORD* tmp = (WORD*) (*(DWORD*) OffsetPointer (hModule, 0x3C) + (char*)hModule);
 		if (*tmp != 'P'+('E'<<8)) return false;					// non-PE executable
-		IMAGE_OPTIONAL_HEADER32 *hdr = (IMAGE_OPTIONAL_HEADER32*) OffsetPointer (tmp, 4 + sizeof(IMAGE_FILE_HEADER));
+		IMAGE_OPTIONAL_HEADER *hdr = (IMAGE_OPTIONAL_HEADER*) OffsetPointer (tmp, 4 + sizeof(IMAGE_FILE_HEADER));
 		// check export directory
 		if (hdr->DataDirectory[0].VirtualAddress == 0 || hdr->DataDirectory[0].Size == 0)
 			return false;
@@ -73,15 +66,13 @@ bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset
 			else
 				Func.sprintf ("#%d", exp->Base +		// ordinal base
 					((WORD*) OffsetPointer (hModule, exp->AddressOfNameOrdinals))[bestIndex]);
-			*offset = RVA - bestRVA;
+			offset = RVA - bestRVA;
 		}
 		else
 			return false;			// when 0 < RVA < firstFuncRVA (should not happens)
-	}
-	__except(EXCEPTION_EXECUTE_HANDLER)
-	{
+	} CATCH {
 		return false;
-	}
+	} END_CATCH
 
 	appSprintf (exportName, bufSize, "%s!%s", module, *Func);
 

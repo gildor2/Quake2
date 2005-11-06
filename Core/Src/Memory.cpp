@@ -301,7 +301,7 @@ static int CompareAllocators (const FAllocatorInfo *a1, const FAllocatorInfo *a2
 		}
 	} CATCH {
 		appWPrintf ("BuildAllocatorsTable: error in memory blocks\n");
-	}
+	} END_CATCH
 	// enumerate memory chains
 	TRY {
 		for (CMemoryChain *ch = CMemoryChain::first; ch; ch = ch->dNext)
@@ -328,7 +328,7 @@ static int CompareAllocators (const FAllocatorInfo *a1, const FAllocatorInfo *a2
 		}
 	} CATCH {
 		appWPrintf ("BuildAllocatorsTable: error in memory chains\n");
-	}
+	} END_CATCH
 
 	if (numAllocators == maxCount)
 		appWPrintf ("maxCount hit\n");

@@ -256,7 +256,6 @@ const char *va (const char *format, ...)
 	static char buf[VA_BUFSIZE];
 	static int bufPos = 0;
 	// wrap buffer
-//	if (bufPos >= VA_BUFSIZE - VA_GOODSIZE) appWPrintf("va:wrap\n-- %s\n", appSymbolName (GET_RETADDR(format)));
 	if (bufPos >= VA_BUFSIZE - VA_GOODSIZE) bufPos = 0;
 
 	va_list argptr;
@@ -292,6 +291,7 @@ const char *va (const char *format, ...)
 int appSprintf (char *dest, int size, const char *fmt, ...)
 {
 	guardSlow(appSprintf);
+
 	va_list	argptr;
 	va_start (argptr, fmt);
 	int len = vsnprintf (dest, size, fmt, argptr);
@@ -300,6 +300,7 @@ int appSprintf (char *dest, int size, const char *fmt, ...)
 		appWPrintf ("appSprintf: overflow of %d (called by \"%s\")\n", size, appSymbolName (GET_RETADDR(dest)));
 
 	return len;
+
 	unguardSlow;
 }
 
@@ -454,7 +455,7 @@ void* CStringItem::operator new (size_t size, const char *str)
 	int len = strlen (str) + 1;
 	CStringItem *item = (CStringItem*) appMalloc (size + len);
 #ifndef STRING_ITEM_TRICK
-	item->name = (char*) OffsetPointer (item, size);
+	item->name    = (char*) OffsetPointer (item, size);
 	memcpy (item->name, str, len);			// may be faster than strcpy()
 #else
 	AllocatedName = (char*) OffsetPointer (item, size);
@@ -479,7 +480,7 @@ void* CStringItem::operator new (size_t size, const char *str, CMemoryChain *cha
 	// 2 separate blocks: may be more effective memory usage
 	CStringItem *item = (CStringItem*) chain->Alloc (size);
   #ifndef STRING_ITEM_TRICK
-	item->name = CopyString (str, chain);
+	item->name    = CopyString (str, chain);
   #else
 	AllocatedName = CopyString (str, chain);
   #endif

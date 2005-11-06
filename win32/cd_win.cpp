@@ -47,7 +47,7 @@ static void mciCommand (DWORD cmd, DWORD arg, const char *str = NULL)
 {
 	if (DWORD dwReturn = mciSendCommand(wDeviceID, cmd, arg, (DWORD)NULL))
 	{
-		if (str) Com_DPrintf ("CDAudio: %s failed (%u)\n", str, dwReturn);
+		if (str) Com_DPrintf ("CDAudio: %s failed (%d)\n", str, dwReturn);
 	}
 }
 
@@ -55,7 +55,7 @@ static bool mciStatus (DWORD arg, MCI_STATUS_PARMS &parm)
 {
 	if (DWORD dwReturn = mciSendCommand (wDeviceID, MCI_STATUS, arg, (DWORD)&parm))
 	{
-		Com_DPrintf ("CDAudio: STATUS failed (%u)\n", dwReturn);
+		Com_DPrintf ("CDAudio: STATUS failed (%d)\n", dwReturn);
 		return false;
 	}
 	return true;

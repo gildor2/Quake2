@@ -1,6 +1,3 @@
-- check misc/ut/network.htm
-- try LZMA decoder for resources and for .7z
-
 BUGS:
 ~~~~~
 - com_speeds: currently, displays some server stats - can use sv_texts.cpp funcs for this; and - separate cvar for this
@@ -337,8 +334,3 @@ BSP:
 ? make completion "dir"-like formatting + colorizing against char-marks (types)
 ? add "Cmd_AddHidden()" - for server commands (cannot be completed/listed, but accessible)
   (or just implement with Cmd_AddCommand(), but use name prefix, which will be ignored for seaching, but disables completion)
-
-------------- LINUX --------------
-
-? check all "#pragma pack" places (gcc have ability to compile this -- so, change "#ifdef _WIN32" to "#ifdef PRAGMA_PACK" etc)
-- hardware gamma (see /usr/X11R6/bin/xgamma as example ...) -- latest q3linux have this one

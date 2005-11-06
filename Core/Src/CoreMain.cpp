@@ -66,6 +66,10 @@ void appExit ()
 #endif
 		// popup
 		appDisplayError ();
+		// add CR/LF to error log and close it
+		COutputDevice *ErrLog = appGetErrorLog ();
+		ErrLog->Write ("\n\n");
+		ErrLog->Close ();
 	}
 	appShutdownPlatform ();
 }

@@ -98,7 +98,7 @@ bool appSymbolName (address_t addr, char *buffer, int size)
 {
 	char	package[256];
 	int		offset;
-	if (!osAddressInfo (addr, ARRAY_ARG(package), &offset))
+	if (!osGetAddressPackage (addr, ARRAY_ARG(package), offset))
 		return false;
 
 	// find info for our packages
@@ -122,8 +122,8 @@ bool appSymbolName (address_t addr, char *buffer, int size)
 	if (i == dbgPackages)
 	{
 		// symbol belongs to a system library
-		if (osModuleInfo (addr, ARRAY_ARG(package), &offset))
-			name = package;
+		// if function success, package[] will be modified
+		osGetAddressSymbol (addr, ARRAY_ARG(package), offset);
 	}
 
 	if (sym)
