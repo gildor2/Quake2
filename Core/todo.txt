@@ -2,7 +2,7 @@ SOURCE CODE
 ~~~~~~~~~~~
 - Core/Build.h contains non-core consts (game-related stuff)
 - Little/Big-Endian
-  - use LITTLE_ENDIAN/BIG_ENDIAN defines (not run-time detection !)
+  * use LITTLE_ENDIAN/BIG_ENDIAN defines (not run-time detection !)
   - use inline overloaded functions: LITTLE(short|ushort|int|uint|float), BIG(...)
 - appStrcpy, strncpy, strcmp, stricmp -> CRT functions (when required, can make #define strcpy appStrcpy ...)
 - VC2003+: compiler option /LTCG - intermodule optimizations ("link-time code generation") + /GL

@@ -1,15 +1,17 @@
+
 //!! call Flush() when buffer filled (by 1/2 ?); if not flushed (memory-only) -- do not try again??
 //!! bool: flushOnFull, flushOnHalf ...
 
 class COutputDeviceMem : public COutputDevice
 {
-private:
+protected:
 	char	*buffer;
 	int		used;
 	int		size;
 public:
 	COutputDeviceMem (int bufSize = 4096)
-	:	size(bufSize), used(0)
+	:	size(bufSize)
+	,	used(0)
 	{
 		buffer = new char [bufSize];
 //		buffer[0] = 0;

@@ -23,7 +23,7 @@
 typedef unsigned char		byte;		//?? change name to BYTE etc
 //??typedef unsigned short	word;
 //??typedef unsigned int	dword;
-typedef unsigned __int64	int64;		//?? INT64
+typedef __int64				int64;		//?? INT64
 
 typedef unsigned int		address_t;
 
@@ -141,8 +141,7 @@ inline float appDeltaCyclesToMsecf (unsigned timeDelta)
 
 inline float appDeltaCyclesToMsecf (int64 &timeDelta)
 {
-	// no "64-bit unsigned => double" conversion allowed ... use as signed
-	double v = reinterpret_cast<__int64&>(timeDelta);
+	double v = timeDelta;
 	return v * GMSecondsPerCycle;
 }
 
@@ -151,13 +150,20 @@ inline float appDeltaCyclesToMsecf (int64 &timeDelta)
 	guard/unguard macros
 -----------------------------------------------------------------------------*/
 
-/* NOTE:
- *	for error throwing, we use "throw 1" operator; "1" is required for WIN32_USE_SEH=0 compilation
- *	for appError()/appNonFatalError() (otherwise, unhandled GPF will be generated)
+/* NOTES:
+ *	- for error throwing, we use "throw 1" operator; "1" is required for WIN32_USE_SEH=0 compilation
+ *	  for appError()/appNonFatalError() (otherwise, unhandled GPF will be generated)
+ *	- for win32+VC we should use WIN32_USE_SEH=1; ==0 works too, but for VisualC exception system only
+ *	  (GnuC/mingw32 have completely different exception system: OS exceptions are not converted to C++
+ *	  exceptions)
+ *	- major difference between SEH/C++ exception tracking: for SEH, when we entering CATCH{} block,
+ *	  GIsFatalError=true and exception context already dumped; for C++ system, GIsFatalError=false and
+ *	  nothing dumped ...
  */
 
 
 #if !WIN32_USE_SEH
+// really, this should not be used ...
 
 #define guard(func)						\
 	{									\
@@ -217,6 +223,10 @@ CORE_API unsigned win32ExceptFilter2 ();
 #define TRY			__try
 #define CATCH		__except(EXCEPT_FILTER)
 #define END_CATCH
+
+#define TRY_S		__try
+#define CATCH_S		__except(1)			// 1==EXCEPTION_EXECUTE_HANDLER
+
 #define THROW_AGAIN	throw
 #define THROW		throw 1
 

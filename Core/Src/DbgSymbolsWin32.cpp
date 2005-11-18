@@ -35,7 +35,7 @@ bool osGetAddressSymbol (address_t address, char *exportName, int bufSize, int &
 	if (!hModule) return false;		// there was no osGetAddressPackage() call before this
 
 	TString<256> Func;
-	TRY {							// should use IsBadReadPtr() instead of SEH for correct work under mingw32
+	TRY_S {							// should use IsBadReadPtr() instead of SEH for correct work under mingw32
 		// we want to walk system memory -- not very safe action
 		if (*(WORD*)hModule != 'M'+('Z'<<8)) return false;		// bad MZ header
 		const WORD* tmp = (WORD*) (*(DWORD*) OffsetPointer (hModule, 0x3C) + (char*)hModule);
@@ -70,7 +70,7 @@ bool osGetAddressSymbol (address_t address, char *exportName, int bufSize, int &
 		}
 		else
 			return false;			// when 0 < RVA < firstFuncRVA (should not happens)
-	} CATCH {
+	} CATCH_S {
 		return false;
 	} END_CATCH
 

@@ -416,7 +416,7 @@ static bool RateDrop (client_t *c)
 }
 
 
-void SV_SendClientMessages (void)
+void SV_SendClientMessages ()
 {
 	int msglen = 0;
 	byte msgbuf[MAX_MSGLEN];
@@ -442,9 +442,9 @@ void SV_SendClientMessages (void)
 	}
 
 	// send a message to each connected client
-	int curtime = appMilliseconds ();
-	int			i;
-	client_t	*c;
+	unsigned curtime = appMilliseconds ();
+	int i;
+	client_t *c;
 	for (i = 0, c = svs.clients ; i < sv_maxclients->integer; i++, c++)
 	{
 		if (!c->state) continue;

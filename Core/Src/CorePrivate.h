@@ -20,6 +20,25 @@ void appInitError ();
 void appInitPlatform ();
 
 void appShutdownPlatform ();
+void appShutdownError ();
+
+void appDetectCPU ();
+
+
+/*-----------------------------------------------------------------------------
+	Error management
+-----------------------------------------------------------------------------*/
+
+// initiate error (will set GErr.Message and GIsFatalError + start logging)
+COutputDevice *appBeginError (const char *msg);
+// will return correct value even when log cannot be opened; should be called after GErr.Message is
+// set, otherwise log file will contain "General Protection Fault" string!
+COutputDevice *appGetErrorLog ();
+#if SETJMP_GUARD
+// when > 0, throwing exceptions will not produce application error
+// (used for 'signal()+setjmp()'-driven exception handler only)
+extern int GNumDisabledContexts;
+#endif
 
 
 /*-----------------------------------------------------------------------------

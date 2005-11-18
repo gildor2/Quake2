@@ -9,8 +9,10 @@ FILE SYSTEM
 - DeleteDirectory():
    ? with files
    ? should process directory trees
-- flag "bool fs_modified": when user was unlinked some TAG_BASE paks, this flag is set to true and when game is changed, should
-  completely unlink all files and relink base files again
+* flag "bool fs_modified":
+  -> CFileSystem::modifyCount
+  ? when user was unlinked some TAG_BASE paks, this flag is set to true and when game is changed, should completely unlink all
+    files and relink base files again
 - reading files:
    - GZip files (can auto-detect); can create such files too (special flag for FS_CreateFile() function)
    - text files (remove CR ('\r') from stream)
@@ -89,7 +91,7 @@ COMMON
 - extend TList with item count (different base class + new InsertItem(), change constructor)
 ? console window:
   - set title to appPackage()
-  - hook Ctrl-C etc
+  - hook Ctrl-C etc (win32 only; unix: hooked)
 ? iterators: make template, not based on any class (base is not needed?!), and iterate any class, containing field "next",
   pointed to the same data type
 - wildcards for filenames: make something like "path/filename.#pcx,jpg,tga" to work - find all images, started with "filename"
@@ -97,6 +99,7 @@ COMMON
     separately: "pcx,jpg,tga" with simple adding to filename
   - '#' - place, when wildcard started; currently, started after last '/' for filenames -- really, started from start of string
   - may be, make following form (bash-like): "path/filename.{pcx,jpg,tga}"
+  * currently used: "path/*.pcx,*.tga,*.jpg"
 - NO_DEBUG=1
   - no stats
 

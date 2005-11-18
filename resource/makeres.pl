@@ -95,8 +95,3 @@ close (ARC);
 
 # remove GZip archive
 #unlink ("$arcfile.gz");
-
-
-# VC settings:
-#   build: nasm -f win32 -o $(IntDir)\resources.obj -Darc=\"$(InputPath)\" $(InputDir)\make.asm
-#   out:   $(IntDir)\resources.obj

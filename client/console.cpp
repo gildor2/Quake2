@@ -3,7 +3,9 @@
 
 /*?? TODO:
  *	- console: smooth scroll with adaptive speed (different keys scrolls by different line counts)
- *	- notify: smooth scroll, smooth fade of background when notify area disappears
+ *	- notify: smooth scroll, smooth fade of background when notify area disappears; use separate special logger
+ *	  for notify messages, which will contain in memory few last lines, then remove notify support from this file ...
+ *	- DrawInput()+chat input -> separate ... (not console stuff!)
  */
 
 #define	NUM_CON_TIMES 6

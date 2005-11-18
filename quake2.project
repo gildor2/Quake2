@@ -20,22 +20,22 @@ NOSHARED  = 1			#!!!! shared; currently, shared build is not possible: Core is n
 				#!! make only 1 of STATIC/SHARED builds (not both in single makefile) - no problems with filenames etc ...
 				#!! + add "STATIC=1|0" to COM_DEFINES
 
+OPTIMIZE  = size
+CPP_EXCEPT = 0
+
 # compiler options
 !if "$COMPILER" eq "VisualC"
 	WARNLEVEL = 3
-	OPTIMIZE  = size
 #	INLINES   = explicit
 #	LIBC      = static
 #	PDB       = 1
 !elif "$COMPILER" eq "GnuC"
-	OPTIMIZE  = size
 #	INLINES   = explicit	-- not supported?
 	LIBC      = shared
 	MAX_DEBUG = 1		# currently, in debug stage
 	
 	# compiler: disable some optimizations
 	OPTIONS   = -fno-strict-aliasing	# required for our uint_cast()-based FP hacks
-	OPTIONS   += -fno-rtti -fno-exceptions	# smaller program (not using exceptions)
 	OPTIONS   += {
 		# disable some warnings
 		-Wno-invalid-offsetof
@@ -88,12 +88,14 @@ D = Core/Src
 CORE = {
 	$D/CoreMain.cpp
 	$D/Core$SUFF.cpp
+	$D/CoreCpuid.cpp
 	$D/DbgSymbols.cpp
 	$D/DbgSymbols$SUFF.cpp
 	$D/Memory.cpp
 	$D/OutputDevice.cpp
 	$D/ErrorMgr.cpp
 	$D/ExceptHandler$SUFF.cpp
+	$D/ExceptDumpers.cpp
 	$D/ScriptParser.cpp
 	$D/Strings.cpp
 	$D/TextContainer.cpp

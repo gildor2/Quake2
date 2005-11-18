@@ -64,7 +64,7 @@ struct clientInfo_t
 	CModelSkin	headSkin;
 	// ... animation parameters (should be linked to model ??)
 	bool	fixedLegs, fixedTorso;
-	bool	fixedAll;			// do not rotate head/torso/legs at all
+	bool	fixedAll;					// do not rotate head/torso/legs at all
 	animation_t animations[MAX_TOTALANIMATIONS];
 	// weapon info
 	weaponInfo_t weaponModel[MAX_CLIENTWEAPONMODELS];
@@ -74,16 +74,17 @@ struct clientInfo_t
 class playerModelInfo_t : public CStringItem
 {
 public:
-	bool	isQ3mdl;		// true for Quake3 player model, false for Quake2; unused_now!!
+	bool	isQ3mdl;					// true for Quake3 player model, false for Quake2; unused_now!!
 	int		numSkins;
 	TList<CStringItem> skins;
 };
 
-extern TList<playerModelInfo_t> pmiList;
-extern int numPlayerModels;
+extern TList<playerModelInfo_t> pmiList; // used in menus|player config
 
+// functions for pmiList support
 void FreePlayerModelsInfo ();
 bool ScanPlayerModels ();
+
 void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons = true);
 void RunAnimation (clientInfo_t &ci, animState_t &as, int animNum = ANIM_NOCHANGE);
 int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, const entity_t &ent, entity_t *buf, int maxEnts, int weaponIndex = -1);

@@ -61,7 +61,7 @@ void CCommandCompletion::RegisterWorker (CCmdCompletorWorker &worker)
 CCompletedList *CCommandCompletion::CompleteCommand (const char *partial)
 {
 	CCompletedList *list = new CCompletedList;
-
+	//!!
 
 	return list;
 }

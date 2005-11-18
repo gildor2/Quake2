@@ -269,8 +269,7 @@ CORE_API NORETURN void appNonFatalError (const char *fmt, ...) PRINTF(1,2);
 CORE_API void appUnwindPrefix (const char *fmt);		// not vararg (will display function name for unguardf only)
 CORE_API NORETURN void appUnwindThrow (const char *fmt, ...) PRINTF(1,2);
 
-// will return correct value even when log cannot be opened
-CORE_API COutputDevice *appGetErrorLog ();
+CORE_API const char *appGetSystemErrorMessage (unsigned code);
 CORE_API void appDisplayError ();
 
 
@@ -290,8 +289,6 @@ CORE_API const char *appPackage ();
 	Timing functions
 -----------------------------------------------------------------------------*/
 
-CORE_API double appSeconds ();
-CORE_API double appMillisecondsf ();
 CORE_API unsigned appMilliseconds ();
 CORE_API const char *appTimestamp ();
 
@@ -324,7 +321,7 @@ CORE_API extern char			GMachineCPU[];
 //??CORE_API extern TString<512>	GVersion;
 
 CORE_API extern CErrorHandler	GErr;
-CORE_API extern bool			GIsFatalError;
+CORE_API extern bool			GIsFatalError;			// should not be set manually; set by private appBeginError()
 CORE_API extern bool			GIsRequestingExit;
 
 

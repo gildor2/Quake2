@@ -114,7 +114,7 @@ void appPrintf (const char *fmt, ...)
 	va_end (argptr);
 	if (len < 0 || len >= sizeof(buf) - 1) return;		//?? may be, write anyway ...
 
-	if (GIsFatalError)
+	if (GIsFatalError)					// force to work without hooks
 		GLogHook = NULL;
 
 	char buf2[BUFFER_LEN];				// buffer for string with removed color codes

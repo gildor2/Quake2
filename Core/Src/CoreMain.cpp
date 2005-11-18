@@ -57,19 +57,6 @@ void appInit (/*?? const char *_cmdLine */)
 
 void appExit ()
 {
-	if (GIsFatalError)
-	{
-		// to log
-		appPrintf ("\n\n"S_RED"--------------------\n%s fatal error: %s\n", appPackage (), *GErr.Message);
-#if DO_GUARD
-		appPrintf ("History: %s\n\n", *GErr.History);
-#endif
-		// popup
-		appDisplayError ();
-		// add CR/LF to error log and close it
-		COutputDevice *ErrLog = appGetErrorLog ();
-		ErrLog->Write ("\n\n");
-		ErrLog->Close ();
-	}
+	appShutdownError ();
 	appShutdownPlatform ();
 }

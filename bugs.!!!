@@ -1,14 +1,17 @@
+! check: under Wine: when exec "error -drop", will work OK, then exec "quit" - OK!; "error Hehehe" -> lots of bugs, but, really,
+  VERY similar internal paths ... (difference in WinMain(): fatal error will jump to external TRY/CATCH, and IsFatalError==true on exit);
+  Something made wrong ?!
 - FPU exception detection bugs:
   CODE:  float sss; uint_cast(sss)=0xFF800000; appPrintf("sss=%g\n",sss);
   - message will be "float zero divide" (error is different! (but FPU too)) -> display all FPU errors -> "FPU exception" ?
-  - error even when loading 0 into FPU register! (appMillisecondsf() not works with this ...)
+  - error even when loading 0 into FPU register!
   - no exceptions at all, when sound system used (DirectX ?)
   - test in pmove.cpp: NAN (was a bug, long time to detect); is it possible to detect it now ?! :
     static void AirMove ()  // to activate -- simply jump
     {
 	....
-    	AddCurrents (wishvel);
-    	float wishspeed = VectorNormalize (wishvel, wishdir);
+	AddCurrents (wishvel);
+	float wishspeed = VectorNormalize (wishvel, wishdir);
 	uint_cast(wishdir[2])=0xFF800000; //!! added -- will set to NAN
 	....
 

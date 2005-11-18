@@ -1,6 +1,7 @@
 #include "CorePrivate.h"
-#include <unistd.h>					// for readlink()
+#include <unistd.h>					// for readlink() and gettimeofday()
 #include <sys/utsname.h>			// for uname() syscall
+#include <sys/time.h>				// struct timeval
 
 #include <termios.h>				// ioctl() codes for tty
 #include <sys/ioctl.h>				// ioctl() function itself
@@ -8,22 +9,21 @@
 #include <signal.h>
 
 
-/*!! REST TODO:
-	- CPU detect, speed -> vars
-	- debug symbols
-	- exception handler
-	- strerror() (system error message) -- should test this!
-*/
+char GMachineOS[64] = "Unknown Unix OS";
 
-//?? init
-double GSecondsPerCycle;			// really, should use GCyclesPerSecond, but this will require divide operation every
-									// time we use this, so GSecondsPerCycle=1/GCyclesPerSecond
-//?? init
-double GMSecondsPerCycle;			// == 1000*GSecondsPerCycle
 
-char GMachineOS[64]  = "Unknown Unix OS";
-//?? init
-char GMachineCPU[64] = "Unknown 386/486 CPU";
+/*-----------------------------------------------------------------------------
+	Timing
+-----------------------------------------------------------------------------*/
+
+unsigned appMilliseconds ()
+{
+	struct timeval t;
+	gettimeofday (&t, NULL);
+	static unsigned secBase = 0;
+	if (!secBase) secBase = t.tv_sec;
+	return (t.tv_sec - secBase) * 1000 + t.tv_usec / 1000;
+}
 
 
 /*-----------------------------------------------------------------------------
@@ -70,15 +70,20 @@ static void SetDefaultDirectory ()
 
 const char *appGetSystemErrorMessage (unsigned code)
 {
-	return "<unknown error>"; //?? do; strerror()?
+	const char *msg = strerror (code);
+	if (!msg || !msg[0]) return "unknown error code";
+	return msg;
 }
 
 
 void appDisplayError ()
 {
-	//?? find something like msgbox in X11; use when $DISPLAY is set ...
-	//?? may be, write to special log (check UT ?); stderr ?
-	//?? NOTE: already logged via appPrintf() !
+	//?? when $DISPLAY is set:
+	//?? GTK: gtk_message_dialog_... <- libgtk-x11-2.0.so
+	//??		/usr/share/gtk-2.0/demo/dialog.c
+	//??		/usr/share/gtk-doc/html/gtk/GtkMessageDialog.html
+	//?? Qt: <qmessagebox.h>: QMessageBox::information() etc
+	// NOTE: already logged to console via appPrintf() !
 #if DO_GUARD
 //	printf ("%s\n\nHistory: %s", *GErr.Message, *GErr.History);
 #else
@@ -95,10 +100,6 @@ void appDisplayError ()
 static void SigWinchHandler (int signum)
 {
 	//!! on Unix we will always have console; when have GUI/console - should ignore this signal?!
-	//?? Qt: QMessageBox_...
-	//?? GTK: gtk_message_dialog_... <- libgtk-x11-2.0.so
-	//??		/usr/share/gtk-2.0/demo/dialog.c
-	//??		/usr/share/gtk-doc/html/gtk/GtkMessageDialog.html
 	struct winsize ws;
 	if (ioctl (STDOUT_FILENO, TIOCGWINSZ, &ws) != -1)
 		GScreenWidth = ws.ws_col;
@@ -122,8 +123,7 @@ void appInitPlatform ()
 	// init console
 	SigWinchHandler (SIGWINCH);
 	// gather system information
-//	CheckCpuModel ();
-//	CheckCpuSpeed ();
+	appDetectCPU ();
 	DetectOs ();
 	// setup current directory
 	SetDefaultDirectory ();

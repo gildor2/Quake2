@@ -749,7 +749,7 @@ void SV_PostprocessFrame (void)
 	// work only in deathmatch game, not in single-player or coop game
 	if (sv_deathmatch->integer) //!! should be another variable; campersounds - below!! && sv_campersounds->integer)
 	{
-		int t = appMilliseconds ();
+		unsigned t = appMilliseconds ();
 		for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
 		{
 			if (cl->state != cs_spawned && cl->state != cs_connected)
@@ -800,11 +800,10 @@ void SV_PostprocessFrame (void)
 				{
 					if (curr_vel < FALLING_SCREAM_VELOCITY1 && prev_vel < FALLING_SCREAM_VELOCITY1)
 					{
-						trace_t	trace;
-
 						CVec3 end = pm_origin;
 						end[2] = pm_origin[2] - FALLING_SCREAM_HEIGHT_WATER;
 
+						trace_t	trace;
 						static const CBox bounds = {{-20, -20, -10}, {20, 20, 10}};
 						SV_Trace (trace, pm_origin, end, bounds, NULL, CONTENTS_WATER);
 						if (trace.fraction == 1.0 && !trace.startsolid)	// no water and start not in water

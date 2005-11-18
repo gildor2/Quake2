@@ -73,6 +73,34 @@ void cmd1 (int argc, char **argv)
 			TEST(appPrintf ("Temp=%s\n", Temp)); // shound use "*Temp" -- so, error in vsnprintf()
 		}
 		break;
+	case 'a':
+		{
+			TRY_S {
+				appPrintf ("testing TRY_S/CATCH_S ...\n");
+				TEST(*((byte*)NULL) = 0);		// memory access
+				appPrintf ("should not be here!\n");
+			} CATCH_S {
+				appPrintf ("catched exception!\n");
+			} END_CATCH
+			appPrintf ("continue!\n");
+		}
+		break;
+	case 'b':
+		{
+			appPrintf ("testing double TRY_S ...\n");
+			TRY_S {
+				TRY_S {
+					TEST(*((byte*)NULL) = 0);	// memory access
+				} CATCH_S {
+					appPrintf ("catched at 2\n");
+				} END_CATCH
+				appPrintf ("cont#2\n");
+			} CATCH_S {
+				appPrintf ("catched at 1\n");
+			} END_CATCH
+			appPrintf ("cont#1\n");
+		}
+		break;
 	default:
 		cmd1(0, NULL);							// infinite recurse
 		a = i + 1;
@@ -171,6 +199,11 @@ void cSym (bool usage, int argc, char **argv)
 		appPrintf ("%s\n", info);
 }
 
+void cSysErr (int argc, char **argv)
+{
+	int code = atoi (argv[1]);
+	appPrintf ("err(%d) = \"%s\"\n", code, appGetSystemErrorMessage (code));
+}
 
 int main (int argc, char** argv)
 {
@@ -202,12 +235,14 @@ int main (int argc, char** argv)
 		RegisterCommand ("both2", cBoth2);
 		RegisterCommand ("alloc", cAlloc);
 		RegisterCommand ("sym", cSym);
+		RegisterCommand ("syserr", cSysErr);
 
 		guard(MainLoop);
 		while (!GIsRequestingExit)
 		{
 			appPrintf (">");
 			char buf[1024];
+			buf[0] = 0;
 			gets (buf);
 			if (!buf[0]) continue;
 
@@ -219,7 +254,7 @@ int main (int argc, char** argv)
 		}
 		unguard;
 	} CATCH {
-		GIsFatalError = true;
+		// nothing ... just breaking MainLoop
 	} END_CATCH
 
 	appExit ();

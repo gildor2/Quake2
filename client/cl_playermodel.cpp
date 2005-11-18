@@ -11,7 +11,7 @@
 
 static CMemoryChain *pmiChain;
 TList<playerModelInfo_t> pmiList;
-int numPlayerModels;
+static int numPlayerModels;
 
 
 static bool Md2SkinExists (const char *skin, CFileList *pcxfiles)
@@ -82,7 +82,7 @@ static void ScanQuake2Models (const char *path)
 }
 
 
-void ScanQuake3Models (const char *path)
+static void ScanQuake3Models (const char *path)
 {
 	/*----- get a list of directories -----*/
 	// NOTE: use of FS_PATH_NAMES here will not allow to add new skins by mod for model from base dir

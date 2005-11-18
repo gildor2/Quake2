@@ -1,25 +1,21 @@
 #include "CorePrivate.h"
 #include <signal.h>
-
-#if __linux__
 #include "ExceptInfoLinux.h"
-#endif
+#include "ExceptDumpers.h"
 
-/* BUG:	when use following before MainLoop:
-		TRY {
-			*((int*)NULL)=1;
-		} CATCH {
-		} END_CATCH
-	app will ignore Ctrl-C (may be, this is because Ctrl-C will be disabled in SIGSEGV handler, which is not finished?)
-	1sr solution: avoid such constructions under Unix; but: this construction is required for some error recovery:
-		Memory.cpp::BuildAllocatorsTable() etc
-	2nd solution: use sigsetjmp()/siglongjmp(); check effectiveness under Linux ... (same code for sig/non-sig funcs ?)
+
+/* NOTES:
+	- under cygwin we can use C++ "throw" from signal handler; under linux - can't; so - use setjmp/longjmp calls ...
+	- when SIGABRT hooked, SIGSEGV (and others) will cause infinite loop with exceptions => stack overflow
+	  (program will try to exit using abort() => raise(SIGABRT))
+   CYGWIN NOTES:
+	- cygwin headers have siginfo_t declarations, but support of this call is not implemented (when testing, received NULL
+	  instead of siginfo_t* ...)
+	- cygwin have no sigaltstack(), so we cannot catch stack overflow - app will exit with creation of empty "crash.log"
+	- BUG: when GPF raised->hooked->ignored (inside TRY {exception} CATCH {do-nothing}), application stops reaction on Ctrl-C
+	  (under linux - ok) - possibly bug around SetConsoleCtrlHandler() (not verified)
 */
 
-// NOTE: under cygwin we can "throw" from signal handler; under linux - can't; so - use setjmp/longjmp calls ...
-
-//!! ERRORS: "error -stack" will not be handled under cygwin (linux untested)
-//!!		 when SIGABRT hooked, SIGSEGV (and others) will cause infinite loop with exceptions => stack overflow
 
 #if __CYGWIN__
 #define sighandler_t	void(*)(int)
@@ -47,8 +43,23 @@ static void handle_signal (int signum, SIGCONTEXT ctx)
 static void handle_signal (int signum)
 #endif
 {
+	// at first: re-enable all signals
+	sigset_t mask;
+	sigemptyset (&mask);
+	sigprocmask (SIG_SETMASK, &mask, NULL);
+
+#if SETJMP_GUARD
+	// check for disabled exceptions, THROW_AGAIN ...
+	if (GNumDisabledContexts)
+		THROW_AGAIN;
+#endif
+
+	//!! check for recurse, abort()
+
+	//?? is it possible to detect stack overflow? (simple SIGSEGV, same sc_trapno  ...)
 	const char *str = "(unknown signal)";
 	bool dump = false;
+	// when "dump == false", error context does not matters
 	switch (signum)
 	{
 	case SIGTERM:
@@ -69,9 +80,9 @@ static void handle_signal (int signum)
 		str = "General Protection Fault (SIGSEGV)";
 		dump = true;
 		break;
-/*	case SIGABRT:
-		str = "Abort Request (SIGABRT)";
-		break; */
+//	case SIGABRT:
+//		str = "Abort Request (SIGABRT)";
+//		break;
 	case SIGTRAP:
 		str = "Illegal Instruction (SIGTRAP)";
 		dump = true;
@@ -81,36 +92,80 @@ static void handle_signal (int signum)
 		dump = true;
 		break;
 	}
+	// initiate error + log
 #if __linux__
+	TString<1024> Message;
+	Message.sprintf ("%s in \"%s\"", str, appSymbolName (ctx.sc_eip));
+	COutputDevice *Out = appBeginError (Message);
 	if (dump)
 	{
-		//!! dump CONTEXT
-		appPrintf ("EXCEPTION: %08X\n", ctx.sc_eip);
-	}
+		// dump SIGCONTEXT
+//		Out->Printf ("TrapNo: %d\n\n", ctx.sc_trapno);
+		DumpRegs (Out, &ctx);
+		Out->Printf ("  EFLAGS: %08X\n", ctx.sc_eflags);
+		Out->Printf ("\nStack:\n");
+		DumpMem (Out, (unsigned*) ctx.sc_esp, &ctx);
+		Out->Printf ("\n");
+#if UNWIND_EBP_FRAMES
+		Out->Printf ("\nCall stack trace:\n");
+		UnwindEbpFrame (Out, (unsigned*) ctx.sc_ebp);
 #endif
-	appError (str);
+	}
+#else // __linux__
+	// no context info - simply print error message
+	appBeginError (str);
+#endif // __linux__
+
+	THROW_AGAIN;
 }
+
+
+#if __linux__ // have signal context
+
+static void HookSignal (int signum, void (*handler)(int, SIGCONTEXT))
+{
+	// using cast to sighandler_t, because under linux out functions have additional argument: "SIGCONTEXT ctx"
+	struct sigaction sa;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_handler = (sighandler_t)handler;
+	sa.sa_flags   = SA_ONSTACK;
+	sigaction (signum, &sa, NULL);
+}
+
+#else
+
+static void HookSignal (int signum, void (*handler)(int))
+{
+	struct sigaction sa;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_handler = handler;
+	sa.sa_flags   = 0;
+	sigaction (signum, &sa, NULL);
+}
+
+
+#endif
 
 
 void appHookExceptions ()
 {
-	// using cast to sighandler_t, because under linux out functions have additional argument: "SIGCONTEXT ctx"
+#if __linux__
+	// to catch stack overflow we require to setup alternative stack for signal handlers
+	static int altstack[4096];
+	stack_t ss;
+	ss.ss_sp    = &altstack;
+	ss.ss_size  = sizeof(altstack);
+	ss.ss_flags = 0;
+	if (sigaltstack (&ss, NULL))
+		appPrintf ("sigaltstack() failed\n");
+#endif
 	// hook ctrl-c (SIGINT)
-	struct sigaction sa;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_handler = (sighandler_t)handle_ctrlc;
-	sa.sa_flags   = 0;
-	sigaction (SIGINT, &sa, NULL);
+	HookSignal (SIGINT, handle_ctrlc);
 	// hook other signals
 	static short signals[] = {
 		SIGTERM, SIGHUP, SIGFPE, SIGILL,
 		SIGSEGV, /*SIGABRT,*/ SIGTRAP, SIGSYS
 	};
 	for (int i = 0; i < ARRAY_COUNT(signals); i++)
-	{
-		sigemptyset (&sa.sa_mask);
-		sa.sa_handler = (sighandler_t)handle_signal;
-		sa.sa_flags   = 0;
-		sigaction (signals[i], &sa, NULL);
-	}
+		HookSignal (signals[i], handle_signal);
 }

@@ -277,17 +277,23 @@ int main (int argc, const char **argv) // force to link as console application
 
 #if !IS_CONSOLE_APP
 		COutputDeviceCon ConLog;
+		// create real logger and flush init-time log
 		if (DEDICATED)
+		{
 			Win32Log.Init ();
+			Win32Log.Write (TempLog->GetText ());
+		}
 		else
+		{
 			ConLog.Register ();
-		// flush init-time log
-		TempLog->Unregister ();
-		appPrintf (TempLog->GetText ());
+			ConLog.Write (TempLog->GetText ());
+		}
+		// Currently, "logfile" does not contains init-time info: should place its handler into
+		// Core (this will allow us to catch init-time info, but requires Core cvar support)
 		delete TempLog;
 #endif
 
-		double oldtime = appMillisecondsf ();
+		int64 oldtime = appCycles64 ();
 
 		/*--------- main window message loop ------------*/
 		guard(MainLoop);
@@ -296,6 +302,7 @@ int main (int argc, const char **argv) // force to link as console application
 #if MAX_DEBUG
 #	if __MINGW32__
 			// reinstall exception handler in a case of someone (ATI's OpenGL.dll) replaced it
+			// (this is done because GCC have no win32 SEH support)
 			long WINAPI mingw32ExceptFilter (struct _EXCEPTION_POINTERS *info);
 			SetUnhandledExceptionFilter (mingw32ExceptFilter);
 #	endif
@@ -316,12 +323,13 @@ int main (int argc, const char **argv) // force to link as console application
 			}
 
 			// do not allow Com_Frame(0)
-			double timeDelta, newtime;
+			double timeDelta;
+			int64 newtime;
 			while (true)
 			{
 				//?? should process maxfps here (Sleep() required amount of time); problem: ensure server framerate!
-				newtime = appMillisecondsf ();	//?? can use appCycles() for measuring time delta, but (currently) this is Pentium-only
-				timeDelta = newtime - oldtime;
+				newtime = appCycles64 ();
+				timeDelta = appDeltaCyclesToMsecf (newtime - oldtime);
 				if (timeDelta < 0)
 				{
 					// may be, resumed from sleep mode - fix delta
@@ -350,7 +358,6 @@ int main (int argc, const char **argv) // force to link as console application
 		}
 		unguard;
 	} CATCH {
-		GIsFatalError = true;
 #if 0
 		extern COutputDevice *debugLog;
 		if (debugLog)

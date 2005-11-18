@@ -700,13 +700,14 @@ static void DrawOriginInfo (void)
 
 static void DrawFpsInfo (void)
 {
-	static double startSecTime, lastFrameTime;
 	static float avgFps, minFps, maxFps;
 	static int frames;
+	static int64 startSecTime, lastFrameTime;
 
-	double time = appMillisecondsf ();
+	int64 time = appCycles64 ();
 
-	if (cls.key_dest != key_game || (time - lastFrameTime > 2000))
+	double timeDelta = appDeltaCyclesToMsecf (time - lastFrameTime);
+	if (cls.key_dest != key_game || (timeDelta > 2000))
 	{	// reinitialize counters
 		startSecTime = lastFrameTime = time;
 		frames = 0;
@@ -716,7 +717,7 @@ static void DrawFpsInfo (void)
 	}
 
 	// update min/max stats
-	float tmpFps = (time == lastFrameTime) ? 1000 : 1000.0f / (time - lastFrameTime);
+	float tmpFps = (timeDelta == 0) ? 1000 : 1000.0f / timeDelta;
 #if FILTER_FPS_COUNTER
 	// median filter
 	static float values[3];
@@ -751,11 +752,11 @@ static void DrawFpsInfo (void)
 	lastFrameTime = time;
 
 	// update avg stats
-	float delta = time - startSecTime;
+	timeDelta = appDeltaCyclesToMsecf (time - startSecTime);
 	frames++;
-	if (delta >= 500)					// update 2 times per second
+	if (timeDelta >= 500)			// update 2 times per second
 	{
-		avgFps = frames * 1000.0f / delta;
+		avgFps = frames * 1000.0f / timeDelta;
 		startSecTime = time;
 		frames = 0;
 	}
@@ -833,18 +834,18 @@ bool V_RenderView (void)
 
 	if (timedemo->integer)
 	{
-		static int lastTime = 0;
+		static unsigned lastTime = 0;
 
-		int time = appMilliseconds ();
+		unsigned time = appMilliseconds ();
 		if (!cl.timedemoStart)
 		{
-			cl.timedemoStart = time;
+			cl.timedemoStart        = time;
 //			cl.timedemoLongestFrame = 0;	-- cleared anyway within a new server map
-//			cl.timedemoFrames = 0;
+//			cl.timedemoFrames       = 0;
 		}
 		else
 		{
-			int timeDelta = time - lastTime;
+			unsigned timeDelta = time - lastTime;
 			if (timeDelta > cl.timedemoLongestFrame) //?? && !fileFromPak)
 				cl.timedemoLongestFrame = timeDelta;
 		}

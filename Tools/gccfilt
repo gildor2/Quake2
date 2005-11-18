@@ -1,0 +1,99 @@
+#!/usr/bin/perl
+
+sub colorCode {
+	my $color = @_[0];
+	return "\033[1;${color}m";
+}
+
+sub color {
+	my ($line, $color, $hgl) = @_;
+	$hgl = 1 if !defined($hgl);
+	return "\033[${hgl};${color}m".$line."\033[0;37;40m";
+}
+
+sub shorten {
+	my $line = @_[0];
+	return $line if length($line) < 36;
+	return substr($line, 0, 16)."...".substr($line, -16);
+}
+
+sub isInt32type {
+	return $_[0] =~ /^ (long \s+)? ((unsigned|signed) \s+)? (int|dword) $/ix;
+}
+
+$log = 0;
+if (exists $ENV{"logfile"}) {
+	$log = 1;
+	open (LOG, ">>".$ENV{"logfile"}) or $log = 0;
+}
+
+#setpriority(PRIO_PROCESS, $PID, -20); -- unimplemented
+
+$cmdline = "\"".join("\" \"", @ARGV)."\"";
+# set priority of executed tool lower, then this filter' priority
+$cmdline = "nice -n 5 $cmdline";
+# create process with piped output
+open(IN, "-|", "2>&1 $cmdline") or die "Can't pipe to @ARGV[0]\n";
+
+while ($line = <IN>)
+{
+	my $line2 = $line;
+	if ($line =~ /^(gcc|nasm|windres) /) {
+		my ($pref, $fname, undef, $end) = $line =~ /^ (.*\S) \s+ (-o \s+ (\"[^"]+\"|\S+)) \s+ (.*) $/x;
+		# make line shorter (do not need full cmdline in console); LOG will contain full cmdline
+		$line2 = shorten($pref)." ".$fname." ".shorten($end)."\n";
+		$line2 = color ($line2, 30);
+	} elsif ($line =~ /^[^:]+: unrecognized option /) {
+		$line2 = color ($line, 35, 0);
+	} elsif ($line =~ /^make: .* Error \w+/) {
+		# make error
+		$line2 = color ($line, 31, 0);
+	} elsif ($line =~ /: undefined reference to /) {
+		# linker error
+		my ($info, $err, $sym) = $line =~ /^ (.*\:\s+) (undefined\sreference\sto\s) (\`.*\')/x;
+		$line2 = colorCode(37).$info.colorCode(31).$err.color($sym, 36)."\n";
+	} elsif ($line =~ /: (error|warning|#error)/) {
+		my $color = 0;
+		my $hgl   = 1;
+		# format: filename:[line:[column:]] (error|warning): message
+		my ($file, $ln, undef, undef, undef, $err, $msg) = $line =~ /^ ([^:]*) \: (([^:]+\:) (([^:]+) \:)?)? \s+ (error|warning|\#error) \:? \s+ (.*) $/x;
+		#?? check: invalid command line option
+		$ln = "" if !defined($ln);
+		if ($err eq "error" || $err eq "#error") {
+			# error
+			$color = 31;
+		} else {
+			# warning
+			if ($msg =~ /.* format, .* arg \(arg/) {
+				# print format warning: different color
+				# suppress some "incompatibilities" (unsigned <-> int etc)
+				my ($type1, $type2) = $msg =~ /(\S.*\S) format, (\S.*\S) arg \(arg/;
+				$hgl = 0 if isInt32type ($type1) && isInt32type ($type2);
+				$color = 34;
+			} elsif ($msg =~ /unused / || $line =~ /defined but not used$/) {
+				# unused variable/function/member
+				$color = 32;
+			} elsif ($msg =~ /`printf' format attribute$/) {
+				# function is possible candidate for `printf' format attribute
+				$color = 32;
+			} else {
+				# generic warning
+				$color = 33;
+			}
+		}
+		# colorize
+		$msg = " ".$err.": ".$msg;
+		$line2 = colorCode(37).$file.":".colorCode(36).$ln.color($msg, $color, $hgl)."\n";
+	} else {
+		# other lines
+		$line2 = $line;
+	}
+	print ($line2);
+	print (LOG $line) if $log;
+}
+close(IN);
+$ret = $?;
+
+close(LOG) if $log;
+
+exit $ret;		# return code => out

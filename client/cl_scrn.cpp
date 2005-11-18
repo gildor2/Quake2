@@ -349,22 +349,21 @@ static float conCurrent = 0;	// aproaches con_desired
 //!! sometimes console should be painted before menu! (when cls.keep_console)
 static void DrawGUI (bool allowNotifyArea)
 {
-	int		currTime, timeDelta;
-	static int lastConTime = 0;
-	float conDesired = 0;		// 0.0 to 1.0 lines of console to display
-
 	Con_CheckResize ();
 
 	// decide on the height of the console
+	float conDesired = 0;		// 0.0 to 1.0 lines of console to display
 	if (cls.key_dest == key_console || cls.keep_console)
 		conDesired = bound(con_maxSize->value, 0.1, 1);
 	else
 		conDesired = 0;		// none visible
 
 	// scroll console
-	currTime = appMilliseconds ();
-	timeDelta = lastConTime ? currTime - lastConTime : 0;
+	static unsigned lastConTime = 0;
+	unsigned currTime  = appMilliseconds ();
+	unsigned timeDelta = lastConTime ? currTime - lastConTime : 0;
 	lastConTime = currTime;
+
 	if (conDesired < conCurrent)
 	{
 		conCurrent -= 3 * timeDelta / 1000.0f;
@@ -541,7 +540,7 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 
 	keydest_t keyDest = cls.key_dest;
 
-	double start = appMillisecondsf ();
+	int64 start = appCycles64 ();
 	double time = 0;
 
 	int steps = (argc == 2) ? atoi (argv[1]) : 256;
@@ -552,7 +551,8 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 		RE_BeginFrame (cls.realtime / 1000.0);
 		RE_RenderFrame (&cl.refdef);
 		RE_EndFrame ();
-		time = (appMillisecondsf () - start) / 1000;
+		int64 timeDelta = appCycles64 () - start;
+		time = appDeltaCyclesToMsecf (timeDelta) / 1000;
 		// prevent too long measuring
 		Sys_ProcessMessages ();			// poll keyboard
 		if (cls.key_dest != keyDest)	// console or menu was activated or deactivated

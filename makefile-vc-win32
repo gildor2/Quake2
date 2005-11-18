@@ -25,12 +25,14 @@ DEDICATED : Release/q2ded.exe
 STATIC = \
 	Release/obj-win32/CoreStatic/CoreMain.obj \
 	Release/obj-win32/CoreStatic/CoreWin32.obj \
+	Release/obj-win32/CoreStatic/CoreCpuid.obj \
 	Release/obj-win32/CoreStatic/DbgSymbols.obj \
 	Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj \
 	Release/obj-win32/CoreStatic/Memory.obj \
 	Release/obj-win32/CoreStatic/OutputDevice.obj \
 	Release/obj-win32/CoreStatic/ErrorMgr.obj \
 	Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj \
+	Release/obj-win32/CoreStatic/ExceptDumpers.obj \
 	Release/obj-win32/CoreStatic/ScriptParser.obj \
 	Release/obj-win32/CoreStatic/Strings.obj \
 	Release/obj-win32/CoreStatic/TextContainer.obj \
@@ -110,7 +112,11 @@ STATIC = \
 	Release/obj-win32/q2stat/GLBind.obj \
 	Release/obj-win32/q2stat/gl_win.obj
 
-Release/Quake2.exe : DIRS $(STATIC)
+STATIC_DIRS = \
+	Release/obj-win32/CoreStatic \
+	Release/obj-win32/q2stat
+
+Release/Quake2.exe : $(STATIC_DIRS) $(STATIC)
 	echo Creating executable "Release/Quake2.exe" ...
 	$(LINK) -out:"Release/Quake2.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs.lib -map:"Release/Quake2.map" $(STATIC) -subsystem:windows
 
@@ -121,12 +127,14 @@ Release/Quake2.exe : DIRS $(STATIC)
 DEDICATED = \
 	Release/obj-win32/CoreStatic/CoreMain.obj \
 	Release/obj-win32/CoreStatic/CoreWin32.obj \
+	Release/obj-win32/CoreStatic/CoreCpuid.obj \
 	Release/obj-win32/CoreStatic/DbgSymbols.obj \
 	Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj \
 	Release/obj-win32/CoreStatic/Memory.obj \
 	Release/obj-win32/CoreStatic/OutputDevice.obj \
 	Release/obj-win32/CoreStatic/ErrorMgr.obj \
 	Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj \
+	Release/obj-win32/CoreStatic/ExceptDumpers.obj \
 	Release/obj-win32/CoreStatic/ScriptParser.obj \
 	Release/obj-win32/CoreStatic/Strings.obj \
 	Release/obj-win32/CoreStatic/TextContainer.obj \
@@ -163,7 +171,11 @@ DEDICATED = \
 	Release/obj-win32/dedstat/net_wins.obj \
 	Release/obj-win32/dedstat/sys_win.obj
 
-Release/q2ded.exe : DIRS $(DEDICATED)
+DEDICATED_DIRS = \
+	Release/obj-win32/CoreStatic \
+	Release/obj-win32/dedstat
+
+Release/q2ded.exe : $(DEDICATED_DIRS) $(DEDICATED)
 	echo Creating executable "Release/q2ded.exe" ...
 	$(LINK) -out:"Release/q2ded.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs.lib -map:"Release/q2ded.map" $(DEDICATED) -subsystem:console
 
@@ -174,12 +186,14 @@ Release/q2ded.exe : DIRS $(DEDICATED)
 TEST = \
 	Release/obj-win32/CoreStatic/CoreMain.obj \
 	Release/obj-win32/CoreStatic/CoreWin32.obj \
+	Release/obj-win32/CoreStatic/CoreCpuid.obj \
 	Release/obj-win32/CoreStatic/DbgSymbols.obj \
 	Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj \
 	Release/obj-win32/CoreStatic/Memory.obj \
 	Release/obj-win32/CoreStatic/OutputDevice.obj \
 	Release/obj-win32/CoreStatic/ErrorMgr.obj \
 	Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj \
+	Release/obj-win32/CoreStatic/ExceptDumpers.obj \
 	Release/obj-win32/CoreStatic/ScriptParser.obj \
 	Release/obj-win32/CoreStatic/Strings.obj \
 	Release/obj-win32/CoreStatic/TextContainer.obj \
@@ -189,7 +203,11 @@ TEST = \
 	Release/obj-win32/TestApp/TestApp.obj \
 	Release/obj-win32/TestApp/Commands.obj
 
-TestApp/TestApp.exe : DIRS $(TEST)
+TEST_DIRS = \
+	Release/obj-win32/CoreStatic \
+	Release/obj-win32/TestApp
+
+TestApp/TestApp.exe : $(TEST_DIRS) $(TEST)
 	echo Creating executable "TestApp/TestApp.exe" ...
 	$(LINK) -out:"TestApp/TestApp.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs.lib -map:"TestApp/TestApp.map" $(TEST) -subsystem:console
 
@@ -197,12 +215,12 @@ TestApp/TestApp.exe : DIRS $(TEST)
 #	compiling source files
 #------------------------------------------------------------------------------
 
-OPT_STATIC = -W3 -O1 -D MAX_DEBUG=0 -D STATIC_BUILD -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
+OPT_STATIC = -W3 -O1 -GX- -D MAX_DEBUG=0 -D STATIC_BUILD -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
 
 Release/obj-win32/q2stat/md4.obj : qcommon/md4.cpp
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/md4.obj" qcommon/md4.cpp
 
-OPT_DEDICATED = -W3 -O1 -D MAX_DEBUG=0 -D STATIC_BUILD -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
+OPT_DEDICATED = -W3 -O1 -GX- -D MAX_DEBUG=0 -D STATIC_BUILD -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
 
 Release/obj-win32/dedstat/md4.obj : qcommon/md4.cpp
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/md4.obj" qcommon/md4.cpp
@@ -242,7 +260,7 @@ Release/obj-win32/q2stat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEP
 Release/obj-win32/dedstat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
 
-OPT_TEST = -W3 -O1 -D MAX_DEBUG=0 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
+OPT_TEST = -W3 -O1 -GX- -D MAX_DEBUG=0 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
 	Core/../lib/zlib/zlib.h \
@@ -281,6 +299,28 @@ DEPENDS = \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
+	Core/Inc/OutputDeviceMemTail.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Src/CorePrivate.h
+
+Release/obj-win32/CoreStatic/ErrorMgr.obj : Core/Src/ErrorMgr.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ErrorMgr.obj" Core/Src/ErrorMgr.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
@@ -288,9 +328,6 @@ DEPENDS = \
 
 Release/obj-win32/CoreStatic/DbgSymbols.obj : Core/Src/DbgSymbols.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/DbgSymbols.obj" Core/Src/DbgSymbols.cpp
-
-Release/obj-win32/CoreStatic/ErrorMgr.obj : Core/Src/ErrorMgr.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ErrorMgr.obj" Core/Src/ErrorMgr.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -490,6 +527,9 @@ DEPENDS = \
 Release/obj-win32/TestApp/Commands.obj : Core/Src/Commands.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/TestApp/Commands.obj" Core/Src/Commands.cpp
 
+Release/obj-win32/CoreStatic/CoreCpuid.obj : Core/Src/CoreCpuid.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/CoreCpuid.obj" Core/Src/CoreCpuid.cpp
+
 Release/obj-win32/CoreStatic/CoreMain.obj : Core/Src/CoreMain.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/CoreMain.obj" Core/Src/CoreMain.cpp
 
@@ -498,9 +538,6 @@ Release/obj-win32/CoreStatic/CoreWin32.obj : Core/Src/CoreWin32.cpp $(DEPENDS)
 
 Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj : Core/Src/DbgSymbolsWin32.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj" Core/Src/DbgSymbolsWin32.cpp
-
-Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj : Core/Src/ExceptHandlerWin32.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj" Core/Src/ExceptHandlerWin32.cpp
 
 Release/obj-win32/CoreStatic/FileContainerArc.obj : Core/Src/FileContainerArc.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/FileContainerArc.obj" Core/Src/FileContainerArc.cpp
@@ -522,6 +559,49 @@ Release/obj-win32/CoreStatic/Strings.obj : Core/Src/Strings.cpp $(DEPENDS)
 
 Release/obj-win32/CoreStatic/TextContainer.obj : Core/Src/TextContainer.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/TextContainer.obj" Core/Src/TextContainer.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Src/CorePrivate.h \
+	Core/Src/ExceptDumpers.h
+
+Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj : Core/Src/ExceptHandlerWin32.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj" Core/Src/ExceptHandlerWin32.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Src/CorePrivate.h \
+	Core/Src/ExceptDumpers.h \
+	Core/Src/ExceptInfoLinux.h
+
+Release/obj-win32/CoreStatic/ExceptDumpers.obj : Core/Src/ExceptDumpers.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ExceptDumpers.obj" Core/Src/ExceptDumpers.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -1900,9 +1980,15 @@ Release/obj-win32/q2stat/makeres.obj : resource/makeres.asm $(DEPENDS)
 #	creating output directories
 #------------------------------------------------------------------------------
 
-DIRS :
+Release/obj-win32/CoreStatic:
 	if not exist "Release/obj-win32/CoreStatic" mkdir "Release/obj-win32/CoreStatic"
+
+Release/obj-win32/q2stat:
 	if not exist "Release/obj-win32/q2stat" mkdir "Release/obj-win32/q2stat"
+
+Release/obj-win32/dedstat:
 	if not exist "Release/obj-win32/dedstat" mkdir "Release/obj-win32/dedstat"
+
+Release/obj-win32/TestApp:
 	if not exist "Release/obj-win32/TestApp" mkdir "Release/obj-win32/TestApp"
 

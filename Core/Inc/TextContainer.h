@@ -16,7 +16,6 @@ protected:
 	bool	filled;			// !empty
 	int		fillPos;
 	CTextRec *lastRec;
-
 public:
 	inline void Clear ()
 	{

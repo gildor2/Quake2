@@ -26,12 +26,12 @@ case "$PLATFORM" in
 		;;
 	"mingw32"|"cygwin")
 		PATH=/bin:/usr/bin:$PATH		# configure CygWin paths
-		build="gccfilt make -f"
+		build="gccfilt make -f"			#?? use Tools/gccfilt ?
 		maptype="gcc"
 		libext=".a"
 		;;
 	"linux")
-		build="make -f"					#!! no logfile here!
+		build="Tools/gccfilt make -f"	# logging + colorizing
 		maptype="gcc"
 		libext=".a"
 		;;

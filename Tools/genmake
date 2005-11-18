@@ -3,6 +3,8 @@
 # TODO:
 # COMPILER: WatcomC, IntelC
 # CPU specification (+ MMX/SSE etc)
+# ? add dependency: generated_file.mak : source_file.project => echo "Rebuild makefile!"+exit; insert into ALL target?
+# ? custom targets: simply emit text to makefile?
 
 =documentation
 
@@ -57,6 +59,7 @@ platform specification:
 		When specified TARGET, PLATFORM and COMPILER not needed
 
 global:
+	CPP_EXCEPT	= 1 == undef | 0		when 0 -- C++ exceptions system disabled
 	MAPFILES	= 1 | 0 == undef
 	PDB			= 1 | 0 == undef (VisualC only)
 	STDLIBS		= list of used libraries (for "GNU Make" will append "lib" and will search in paths)
@@ -533,7 +536,7 @@ sub AddObjectList {
 			} elsif ($opt eq "speed") {
 				$options .= " -O2";
 			} elsif ($opt ne "") {
-				Warning ("unknown OPTIMIZE option: [$opt]");
+				WarningOnce ("unknown OPTIMIZE option: [$opt]");
 			}
 			# inline expansion
 			$opt = GetSrcOption ("INLINES");
@@ -544,7 +547,16 @@ sub AddObjectList {
 			} elsif ($opt eq "all") {
 				$options .= " -Ob2";
 			} elsif ($opt ne "") {
-				Warning ("unknown INLINES option: [$opt]");
+				WarningOnce ("unknown INLINES option: [$opt]");
+			}
+			# C++ exceptions
+			$opt = GetSrcOption ("CPP_EXCEPT");
+			if ($opt eq "1" || $opt eq "") {
+				$options .= " -GX+";
+			} elsif ($opt eq "0") {
+				$options .= " -GX-";
+			} else {
+				WarningOnce ("unknown CPP_EXCEPT option: [$opt]");
 			}
 		} elsif ($COMPILER eq "GnuC") {		#!! GnuC - compiler options
 			my $opt = GetSrcOption ("WARNLEVEL");
@@ -577,6 +589,15 @@ sub AddObjectList {
 				$options .= " -finline-functions";
 			} elsif ($opt ne "") {
 				Warning ("unknown INLINES option: [$opt]");
+			}
+			# C++ exceptions
+			$opt = GetSrcOption ("CPP_EXCEPT");
+			if ($opt eq "1" || $opt eq "") {
+				# use compiler defaults
+			} elsif ($opt eq "0") {
+				$options .= " -fno-rtti -fno-exceptions";
+			} else {
+				WarningOnce ("unknown CPP_EXCEPT option: [$opt]");
 			}
 		} else {
 			die "unknown compiler";
@@ -642,11 +663,30 @@ sub AppendFilePath {
 sub GetObjectList {
 	my $listName = $_[0];
 	my $list = "";
+	# output files
 	for my $item (@sources) {
 		my ($src, $objdir, undef, undef, undef, $lst) = split('%', $item);
 		$list .= " \\\n\t".GetObjFilename ($src, $objdir) if $lst eq $listName;
 	}
 	Error ("no files in object list \"$listName\"") if $list eq "";
+	return $list;
+}
+
+# usage: GetDirsList (list_name)
+sub GetDirsList {
+	my $listName = $_[0];
+	my $list = "";
+	my %dirs = ();
+	# output files
+	for my $item (@sources) {
+		my (undef, $objdir, undef, undef, undef, $lst) = split('%', $item);
+		if ($lst eq $listName) {
+			if (!exists($dirs{$objdir})) {
+				$list .= " \\\n\t".$objdir;
+				$dirs{$objdir} = 1;
+			}
+		}
+	}
 	return $list;
 }
 
@@ -976,9 +1016,9 @@ sub RememberTarget {
 }
 
 
-# usage: FlushTargetText (target={executable,shared,static}, outfile, objlist)
+# usage: FlushTargetText (target={executable,shared,static}, outfile, objlist, haveDirs)
 sub FlushTargetText {
-	my ($target, $n, $objListName) = @_;
+	my ($target, $n, $objListName, $haveDirs) = @_;
 	my $line;
 
 	# cut file extension
@@ -990,11 +1030,10 @@ sub FlushTargetText {
 
 	my $baseaddr = GetTargetOption ($n, "IMAGEBASE");
 
-	my $outdirs  = "";
-	$outdirs = "DIRS " if @outdirs;
-
 	# build target dependency line
-	my $prefix = "$n : $outdirs\$($objListName)";
+	my $prefix = "$n : ";
+	$prefix .= "\$(${objListName}_DIRS) " if $haveDirs;
+	$prefix .= "\$($objListName)";
 	# check dependency by libs from another targets
 	for my $lib (split(" ", $libs)) {
 		for my $t (@targets) {
@@ -1168,13 +1207,18 @@ for $target (keys(%symTargets)) {
 }
 print "\n";
 
+
 # generate targets
 for $target (@targets) {
 	my (undef, $outfile, $type, $objListName) = split ('%', $target);
 	Splitter ("\"$outfile\" target");
 
 	print "$objListName =".GetObjectList ($objListName)."\n\n";
-	print FlushTargetText ($type, $outfile, $objListName)."\n\n";
+	my $dirList = GetDirsList ($objListName);
+	if ($dirList ne "") {
+		print "${objListName}_DIRS =$dirList\n\n";
+	}
+	print FlushTargetText ($type, $outfile, $objListName, $dirList ne "")."\n\n";
 }
 
 # refine @sources array: remove files, not linked into any target
@@ -1220,14 +1264,13 @@ for $item (@sources) {
 	}
 }
 
-# generate DIRS target
+# generate targets for directories
 if (@outdirs) {
 	Splitter ("creating output directories");
-	print "DIRS :\n";
 	for my $dir (@outdirs) {
-		print "\t", GenMkdir ($dir), "\n";
+		print "$dir:\n";
+		print "\t", GenMkdir ($dir), "\n\n";
 	}
-	print "\n";
 }
 
 print STDERR "Makefile generated.\n";

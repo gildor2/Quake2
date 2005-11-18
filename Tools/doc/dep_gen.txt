@@ -1,0 +1,13 @@
+GET DEPENDENCY INFO:
+====================
+
+Command line (GNU C):
+~~~~~~~~~~~~~~~~~~~~~
+cpp -D_WIN32 -D_M_IX86 -IC:\PROGRA~1\MICROS~3\VC98\INCLUDE\ -MM filename.cpp > outfile
+
+Output:
+~~~~~~~
+filename.o: filename.cpp header header \
+	header ....
+
+Headers may be repeated (../dir/../dir2/header == ../dir2/header etc)

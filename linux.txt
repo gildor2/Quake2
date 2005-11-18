@@ -1,20 +1,13 @@
 PROBLEMS (LINUX/CYGWIN):
 ~~~~~~~~~~~~~~~~~~~~~~~~
-FIXED: build.sh etc - no exec permission
-linux target in Release/build.sh: no logfile, no colorizing
-? linux: use shared CRT (always shared? parts of C++ code statically linked ...)
-       - use "0xADDR  PROVIDE (__executable_start, 0xADDR)" -- this ADDR is exe image start!
 build.sh: timing info format incorrect (linux)
 linux testapp.cpp display warning about gets(); cygwin - no warning!
-FIXED: cygwin: "mount / fs" + "ls fs" will hang app
-ctrl+c: do not log error, simply "requesting exit"
 ------- REQUIREMENTS --------
 min GCC version: 3.4.0
   3.3.2 have no:
     -Wno-invalid-offsetof
     - error in Core/Strings.h with PRINTF() macro?
     ... not tested more
-LITTLE_ENDIAN macro: defined in /usr/include/endian.h
 
 
 FIRST TODO (for crash detection):
@@ -28,29 +21,35 @@ FIRST TODO (for crash detection):
 
 GCC TODO:
 ~~~~~~~~~
+! mingw32 exception system broken (used exception -> C++ throw before ...)
 - may be, access to SDK/includes from src as '#include <*>' instead of '#include "*"'
 - asm constructions:
   - check floor/ceil/round (implement asm? check mingw math.h header for some details)
 ! compare VC/GCC speed (after floor/ceil/round -> GCC asm)
 - "-ffunction-sections" slightly increase exe size; "-fdata-sections" grow q2 executable size up to 5 Mb ?!
 - structure copy (for CVec3) is per-element (not memcpy())
-? GPF: exception handler is not possible to throw C++ exception (CoreWin32.cpp: ExceptFilter() is useless)
 
 
 To port application to Linux require following steps:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * port Core/*Win32.cpp
-- exception hook: use signal() functions
+* exception hook: use signal() functions
 * compile TestApp
 - make net_wins.cpp cross-platform (initial: can create "empty" net device with loopback caps)
-- create sys_win.cpp for Linux
-- compile dedicated server
+- create sys_win.cpp for Linux (may be, create set of MainLoop wrappers in Core headers -- or set of main()/WinMain()
+  functions, and app should provide MainLoop() only?)
+- compile dedicated server (1.cygwin 2.linux)
 - verify network compatibility with Win32
+- ...
+- create empty sound driver
+- port input+windowing -> SDL (may use cygwin+sdl !)
+- ...
+- create OpenAL sound driver, use for win32 too
 - ...
 
 
 Notes:
-- appGetSystemErrorMessage() -- strerror(code)
+* appGetSystemErrorMessage() -- strerror(code)
 * #pragma(pack...) -- struct name __attribute__((__packed__)) {}
   (note: may use __attribute__((packed)) instead
 - function attributes:
@@ -68,9 +67,9 @@ Notes:
 
 ----------------------------------------------------------
 
-/proc/version -- OS version (can use uname())
-/proc/cpuinfo -- CPU information
-/proc/%d      -- some process information (%d == pid); can use "self" instead of %d
-  cmdline     -- very similar to argv[]; useless for self
-  exename
-  maps        -- which exe/dll/so loaded (2.4); WARNING: linux and cygwin have different "offset" meaning! (cygwin => entry point)
+* /proc/version -- OS version (can use uname())
+  /proc/cpuinfo -- CPU information (can use for non-x86 or when no CPUID support)
+* /proc/%d      -- some process information (%d == pid); can use "self" instead of %d
+    cmdline     -- very similar to argv[]; useless for self
+*   exename
+*   maps        -- which exe/dll/so loaded (2.4); WARNING: linux and cygwin have different "offset" meaning! (cygwin => entry point)

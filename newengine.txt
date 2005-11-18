@@ -87,6 +87,19 @@
   ? channel_t -> CNetStream
 ? stream readers: reading struc of data, little<->big endian; stream layout should be specified in format,
   similar to my "entdelta.cpp" processing (struc offset + data format); may be useful for reading model/map/other data
+- subsystems:
+  - separate client subsystems:
+    - input
+    - sound
+    - GUI
+    - 3D (scene graph?)
+    - screen (manage/visualize everything)
+    - network/game support
+  - CSubsystem: as class; all should Tick() from MainLoop() (not from client)
+    - shedule using system->MaxFps value (some subsystems really do not require high FPS)
+    - server: separate too (game+network; game - 10fps, network - more);
+    - add "bool inactive" - do not shedule
+    - global sheduler may create sleep() system calls when everything is fast enough!
 
 ------------ New renderer system -----------
 - separate renderer (math only) and backend (OpenGL); call hierarchy: mainEngine->renderer->backend->gl

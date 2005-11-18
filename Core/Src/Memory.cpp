@@ -24,7 +24,6 @@ address_t GCurrentMemAllocator;
 	Basic memory allocation
 -----------------------------------------------------------------------------*/
 
-
 // 16 bytes long struct (when non-debug version compiled)
 struct FMemHeader
 {
@@ -499,7 +498,6 @@ static void Cmd_CheckAllocs (bool usage)
 /*-----------------------------------------------------------------------------
 	Initialization
 -----------------------------------------------------------------------------*/
-
 
 void appInitMemory ()
 {

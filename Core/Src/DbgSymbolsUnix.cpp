@@ -1,8 +1,16 @@
 #include "CorePrivate.h"
 
-// Cygwin and Unix have have alternative API: BFD
+#if __CYGWIN__
+#define NO_DLADDR	1
+#endif
 
-#if __CYGWIN__		// change: real condition is "not supports dladdr()"
+/* NOTES:
+	- Cygwin and Unix have have alternative API for resolving symbol names: BFD
+	- dladdr() family allows us to retreive info about current process only
+	- using "/proc/(num)/maps" works for any process
+*/
+
+#if NO_DLADDR
 
 bool osGetAddressPackage (address_t address, char *pkgName, int bufSize, int &offset)
 {
@@ -26,8 +34,8 @@ bool osGetAddressPackage (address_t address, char *pkgName, int bufSize, int &of
 			// but, under cygwin, this field contains exe/dll entry point ...
 			mapOffset = 0;
 #endif
-			// cut extension
-			char *ext = strrchr (s, '.');
+			// cut extension + version ("lib.so.version" => strchr() instead of strrchr())
+			char *ext = strchr (s, '.');
 			if (ext) *ext = 0;
 			appStrncpyz (pkgName, s, bufSize);
 			offset = address - mapStart + mapOffset;
@@ -46,7 +54,7 @@ bool osGetAddressSymbol (address_t address, char *exportName, int bufSize, int &
 	return false;
 }
 
-#else  // here: supports dladdr()
+#else // NO_DLADDR; here: supports dladdr()
 
 static char module[256];
 
@@ -59,8 +67,8 @@ bool osGetAddressPackage (address_t address, char *pkgName, int bufSize, int &of
 	char *s;
 	if (s = strrchr (module, '/'))
 		strcpy (module, s+1);		// remove "path/" part
-	if (s = strrchr (module, '.'))
-		*s = 0;						// cut extension
+	if (s = strchr (module, '.'))
+		*s = 0;						// cut extension + version
 
 	offset = address - (address_t)info.dli_fbase;
 	appStrncpyz (pkgName, module, bufSize);
@@ -79,4 +87,4 @@ bool osGetAddressSymbol (address_t address, char *exportName, int bufSize, int &
 	return true;
 }
 
-#endif // dladdr()
+#endif // NO_DLADDR

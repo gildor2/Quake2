@@ -29,7 +29,6 @@
 	Win32 global variables
 -----------------------------------------------------------------------------*/
 
-const char *appGetSystemErrorMessage (unsigned code);	//?? move
 extern bool GIsWinNT, GIsWin2K;
 extern HINSTANCE hInstance;
 

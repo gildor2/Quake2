@@ -23,15 +23,15 @@ typedef unsigned int		address_t;
 
 // determing byte order (using std defines from Unix headers; mingw32 supports this too)
 #if BYTE_ORDER == LITTLE_ENDIAN
-#  undef LITTLE_ENDIAN
-#  undef BIG_ENDIAN
-#  define LITTLE_ENDIAN		1
+#	undef	LITTLE_ENDIAN
+#	undef	BIG_ENDIAN
+#	define	LITTLE_ENDIAN		1
 #elif BYTE_ORDER == BIG_ENDIAN
-#  undef LITTLE_ENDIAN
-#  undef BIG_ENDIAN
-#  define BIG_ENDIAN		1
+#	undef	LITTLE_ENDIAN
+#	undef	BIG_ENDIAN
+#	define	BIG_ENDIAN			1
 #else
-#  error unknown BYTE_OEDER
+#	error unknown BYTE_OEDER
 #endif
 
 
@@ -123,6 +123,7 @@ inline float appDeltaCyclesToMsecf (int64 &timeDelta)
 	guard/unguard macros
 -----------------------------------------------------------------------------*/
 
+//?? mingw32 should use C++ handler?
 #if 0
 // standard C++ try/catch block
 
@@ -172,6 +173,13 @@ public:
 	bool CGuardContext::Exec (const char *msg);
 };
 
+class CORE_API CGuardContext2 : public CGuardContext
+{
+public:
+	CGuardContext2 ();
+};
+
+
 CORE_API NORETURN void appThrowException ();
 
 #define guard(func)						\
@@ -194,7 +202,7 @@ CORE_API NORETURN void appThrowException ();
 
 #define TRY								\
 	{									\
-		CGuardContext _Context(NULL);	\
+		CGuardContext _Context(NULL); 	\
 		if (setjmp (_Context.jmp) == 0)
 			// guarded code here
 #define CATCH							\
@@ -202,6 +210,13 @@ CORE_API NORETURN void appThrowException ();
 			// exception handler here
 #define END_CATCH						\
 	}
+
+#define TRY_S							\
+	{									\
+		CGuardContext2 _Context; 		\
+		if (setjmp (_Context.jmp) == 0)
+			// guarded code here
+#define CATCH_S			CATCH
 
 #define THROW_AGAIN		appThrowException();
 #define THROW			appThrowException();

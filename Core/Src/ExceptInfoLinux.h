@@ -14,28 +14,28 @@
 // taken from kernel/include/asm-i386/sigcontext.h
 struct SIGCONTEXT
 {
-    unsigned short sc_gs, __gsh;
-    unsigned short sc_fs, __fsh;
-    unsigned short sc_es, __esh;
-    unsigned short sc_ds, __dsh;
-    unsigned long sc_edi;
-    unsigned long sc_esi;
-    unsigned long sc_ebp;
-    unsigned long sc_esp;
-    unsigned long sc_ebx;
-    unsigned long sc_edx;
-    unsigned long sc_ecx;
-    unsigned long sc_eax;
-    unsigned long sc_trapno;		// exception number: T_OFLOW etc
-    unsigned long sc_err;
-    unsigned long sc_eip;
-    unsigned short sc_cs, __csh;
-    unsigned long sc_eflags;
-    unsigned long esp_at_signal;	// useless ?
-    unsigned short sc_ss, __ssh;
-    unsigned long i387;				// if != 0 -> pointer to FLOATING_SAVE_AREA (FPU context)
-    unsigned long oldmask;			// useless ?
-    unsigned long cr2;				// address of fault
+	unsigned short sc_gs, __gsh;
+	unsigned short sc_fs, __fsh;
+	unsigned short sc_es, __esh;
+	unsigned short sc_ds, __dsh;
+	unsigned long sc_edi;
+	unsigned long sc_esi;
+	unsigned long sc_ebp;
+	unsigned long sc_esp;
+	unsigned long sc_ebx;
+	unsigned long sc_edx;
+	unsigned long sc_ecx;
+	unsigned long sc_eax;
+	unsigned long sc_trapno;		// exception number: T_OFLOW etc
+	unsigned long sc_err;
+	unsigned long sc_eip;
+	unsigned short sc_cs, __csh;
+	unsigned long sc_eflags;
+	unsigned long esp_at_signal;	// useless ?
+	unsigned short sc_ss, __ssh;
+	unsigned long i387;				// if != 0 -> pointer to FLOATING_SAVE_AREA (FPU context)
+	unsigned long oldmask;			// useless ?
+	unsigned long cr2;				// address of fault
 };
 
 

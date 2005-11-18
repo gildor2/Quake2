@@ -373,7 +373,7 @@ struct keysMenu_t : menuFramework_t
 	{
 		int		i;
 
-		//?? change parser
+		//!! change parser
 		// load "binds.lst" (file always present - have inline file)
 		unsigned length;
 		char *buffer = (char*) GFileSystem->LoadFile ("binds.lst", &length);
@@ -752,7 +752,7 @@ END GAME MENU
 struct creditsMenu_t : menuFramework_t
 {
 	int credits_start_time;
-	char *credits[256];		// start of each line
+	char *credits[256];		// start of each line; ugly !!
 	char *creditsBuffer;
 
 	void Draw ()
@@ -1916,7 +1916,7 @@ struct playerConfigMenu_t : menuFramework_t
 	menuSeparator_t	rate_title;
 	menuAction_t	download_action;
 
-	static int modelChangeTime;
+	static unsigned modelChangeTime;
 	static clientInfo_t ci;
 	static centity_t cent;
 
@@ -1945,7 +1945,7 @@ struct playerConfigMenu_t : menuFramework_t
 	{
 		playerModelInfo_t *info = &pmiList[model_box.curvalue];
 		skin_box.itemnames = info->skins.First();
-		skin_box.curvalue = 0;
+		skin_box.curvalue  = 0;
 		modelChangeTime = appMilliseconds ();
 		ci.isValidModel = false;
 	}
@@ -2259,7 +2259,7 @@ menuList_t	playerConfigMenu_t::rtype_box;
 menuList_t	playerConfigMenu_t::rcolor_box;
 menuList_t	playerConfigMenu_t::handedness_box;
 menuList_t	playerConfigMenu_t::rate_box;
-int playerConfigMenu_t::modelChangeTime;
+unsigned playerConfigMenu_t::modelChangeTime;
 clientInfo_t playerConfigMenu_t::ci;
 centity_t playerConfigMenu_t::cent;
 
