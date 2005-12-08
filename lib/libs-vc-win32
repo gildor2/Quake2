@@ -80,7 +80,10 @@ LIBFILES = \
 	obj/inftrees.obj \
 	obj/zlib.obj
 
-libs.lib : DIRS $(LIBFILES)
+LIBFILES_DIRS = \
+	obj
+
+libs.lib : $(LIBFILES_DIRS) $(LIBFILES)
 	echo Creating static "libs.lib" ...
 	$(AR) -out:"libs.lib" $(LIBFILES)
 
@@ -88,7 +91,7 @@ libs.lib : DIRS $(LIBFILES)
 #	compiling source files
 #------------------------------------------------------------------------------
 
-OPT_LIBFILES = -W2 -O1 -Ob2
+OPT_LIBFILES = -W2 -O1 -Ob2 -GX-
 
 DEPENDS = \
 	../Core/Inc/Build.h \
@@ -99,6 +102,7 @@ DEPENDS = \
 	../Core/Inc/CoreVisualC.h \
 	../Core/Inc/CoreWin32.h \
 	../Core/Inc/DbgSymbols.h \
+	../Core/Inc/ErrorMgr.h \
 	../Core/Inc/FileSystem.h \
 	../Core/Inc/Macro.h \
 	../Core/Inc/MemoryMgr.h \
@@ -109,7 +113,7 @@ DEPENDS = \
 obj/zlib.obj : zlib.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_LIBFILES) -Fo"obj/zlib.obj" zlib.cpp
 
-OPT_LIBFILES_2 = -W2 -O1 -Ob2 -D INLINE=__inline -D JDCT_DEFAULT=JDCT_FLOAT -D JDCT_FASTEST=JDCT_FLOAT -D NO_GETENV
+OPT_LIBFILES_2 = -W2 -O1 -Ob2 -GX- -D INLINE=__inline -D JDCT_DEFAULT=JDCT_FLOAT -D JDCT_FASTEST=JDCT_FLOAT -D NO_GETENV
 
 DEPENDS = \
 	jpeglib/jchuff.h \
@@ -394,7 +398,7 @@ obj/jquant2.obj : jpeglib/jquant2.c $(DEPENDS)
 obj/jutils.obj : jpeglib/jutils.c $(DEPENDS)
 	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jutils.obj" jpeglib/jutils.c
 
-OPT_LIBFILES_3 = -W2 -O1 -Ob2 -D DYNAMIC_CRC_TABLE -D BUILDFIXED
+OPT_LIBFILES_3 = -W2 -O1 -Ob2 -GX- -D DYNAMIC_CRC_TABLE -D BUILDFIXED
 
 DEPENDS = \
 	zlib/crc32.h \
@@ -448,6 +452,6 @@ obj/adler32.obj : zlib/adler32.c $(DEPENDS)
 #	creating output directories
 #------------------------------------------------------------------------------
 
-DIRS :
+obj:
 	if not exist "obj" mkdir "obj"
 

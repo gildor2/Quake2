@@ -76,7 +76,7 @@ CFile *CFileContainerArc::OpenFile (const char *filename)
 {
 	const CArcFile *FileInfo = FindFile (filename);
 	if (!FileInfo) return NULL;
-	return OpenFile (*FileInfo);
+	return OpenLocalFile (*FileInfo);
 }
 
 

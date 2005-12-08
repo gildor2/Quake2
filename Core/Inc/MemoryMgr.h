@@ -51,8 +51,9 @@ public:
 };
 
 
-// VC6 for unknown reason do not allow to make "operator new (size,alignment=1)" (def. param) ONLY
-// (may be, we require to override DEFAULT "operator new(size)" ?)
+// VC and GCC does not allow to make "operator new (size,alignment=1)" (def. param) ONLY; so - we
+// have 2 versions of this operators ...
+
 inline void *operator new (size_t size)
 {
 	return appMalloc (size, 1);

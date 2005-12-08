@@ -7,7 +7,7 @@
 
 CPP  = gcc -mno-cygwin -pipe -c
 LINK = gcc -mno-cygwin -pipe -s
-AR   = ar
+AR   = ar -rcs
 
 #------------------------------------------------------------------------------
 #	symbolic targets
@@ -80,15 +80,18 @@ LIBFILES = \
 	obj/inftrees.o \
 	obj/zlib.o
 
-libs.a : DIRS $(LIBFILES)
+LIBFILES_DIRS = \
+	obj
+
+libs.a : $(LIBFILES_DIRS) $(LIBFILES)
 	@echo Creating static "libs.a" ...
-	$(AR) rcs libs.a $(LIBFILES)
+	$(AR) libs.a $(LIBFILES)
 
 #------------------------------------------------------------------------------
 #	compiling source files
 #------------------------------------------------------------------------------
 
-OPT_LIBFILES = -Os
+OPT_LIBFILES = -Os -fno-rtti -fno-exceptions
 
 DEPENDS_1 = \
 	../Core/Inc/Build.h \
@@ -99,6 +102,7 @@ DEPENDS_1 = \
 	../Core/Inc/CoreVisualC.h \
 	../Core/Inc/CoreWin32.h \
 	../Core/Inc/DbgSymbols.h \
+	../Core/Inc/ErrorMgr.h \
 	../Core/Inc/FileSystem.h \
 	../Core/Inc/Macro.h \
 	../Core/Inc/MemoryMgr.h \
@@ -109,7 +113,7 @@ DEPENDS_1 = \
 obj/zlib.o : zlib.cpp $(DEPENDS_1)
 	$(CPP) $(OPT_LIBFILES) -o obj/zlib.o zlib.cpp
 
-OPT_LIBFILES_2 = -Os -D INLINE=__inline -D JDCT_DEFAULT=JDCT_FLOAT -D JDCT_FASTEST=JDCT_FLOAT -D NO_GETENV
+OPT_LIBFILES_2 = -Os -fno-rtti -fno-exceptions -D INLINE=__inline -D JDCT_DEFAULT=JDCT_FLOAT -D JDCT_FASTEST=JDCT_FLOAT -D NO_GETENV
 
 DEPENDS_2 = \
 	jpeglib/jchuff.h \
@@ -394,7 +398,7 @@ obj/jquant2.o : jpeglib/jquant2.c $(DEPENDS_14)
 obj/jutils.o : jpeglib/jutils.c $(DEPENDS_14)
 	$(CPP) $(OPT_LIBFILES_2) -o obj/jutils.o jpeglib/jutils.c
 
-OPT_LIBFILES_3 = -Os -D DYNAMIC_CRC_TABLE -D BUILDFIXED
+OPT_LIBFILES_3 = -Os -fno-rtti -fno-exceptions -D DYNAMIC_CRC_TABLE -D BUILDFIXED
 
 DEPENDS_15 = \
 	zlib/crc32.h \
@@ -448,6 +452,6 @@ obj/adler32.o : zlib/adler32.c $(DEPENDS_19)
 #	creating output directories
 #------------------------------------------------------------------------------
 
-DIRS :
+obj:
 	@mkdir -p obj
 

@@ -452,7 +452,7 @@ inline void CMod_LoadAreaPortals (dareaportal_t *data, int size)
 inline void CMod_LoadVisibility (dvis_t *data, int size)
 {
 	numvisibility = size;
-	map_visibility = (byte *) data;
+	map_visibility = size ? (byte *)data : NULL;
 }
 
 
@@ -895,13 +895,8 @@ void CM_LoadHLMap (char *name, void *buf)
 
 #endif
 
-/*
-==================
-CM_LoadMap
 
-Loads in the map and all submodels
-==================
-*/
+// Loads in the map and all submodels
 cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 {
 	guard(CM_LoadMap);
@@ -922,12 +917,7 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 
 	bspfile_t	*bsp;
 	// free old stuff
-	numPlanes = 0;
-	numNodes = 0;
-	numLeafs = 0;
-	numcmodels = 0;
-	numvisibility = 0;
-	numentitychars = 0;
+	numPlanes = numNodes = numLeafs = numcmodels = numvisibility = numentitychars = 0;
 	map_entitystring = "";
 	map_name[0] = 0;
 	map_bspfile = NULL;
@@ -936,10 +926,10 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 
 	if (!name || !name[0])
 	{
-		numLeafs = 0;
+		numLeafs    = 0;
 		numclusters = 0;
-		numAreas = 0;
-		*checksum = 0;
+		numAreas    = 0;
+		*checksum   = 0;
 		map_clientLoaded = false;
 		return &map_cmodels[0];			// cinematic servers won't have anything at all
 	}
@@ -971,14 +961,10 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 	strcpy (map_name, name);
 	return &map_cmodels[0];
 
-	unguard;
+	unguardf(("%s", name));
 }
 
-/*
-==================
-CM_InlineModel
-==================
-*/
+
 cmodel_t *CM_InlineModel (const char *name)
 {
 	if (!name || name[0] != '*') Com_DropError ("CM_InlineModel: bad name");
@@ -1032,26 +1018,21 @@ static int		box_headnode;
 static cbrush_t	*box_brush;
 static dleaf_t	*box_leaf;
 
-/*
-===================
-InitBoxHull
 
-Set up the planes and nodes so that the six floats of a bounding box
-can just be stored out and get a proper clipping hull structure.
-===================
-*/
+// Set up the planes and nodes so that the six floats of a bounding box
+// can just be stored out and get a proper clipping hull structure.
 static void InitBoxHull ()
 {
 	box_headnode = numNodes;
 	box_planes = &map_planes[numPlanes];
 
 	box_brush = &map_brushes[numBrushes];
-	box_brush->numsides = 6;
+	box_brush->numsides       = 6;
 	box_brush->firstbrushside = numBrushSides;
-	box_brush->contents = CONTENTS_MONSTER;
+	box_brush->contents       = CONTENTS_MONSTER;
 
 	box_leaf = &map_leafs[numLeafs];
-	box_leaf->contents = CONTENTS_MONSTER;
+	box_leaf->contents       = CONTENTS_MONSTER;
 	box_leaf->firstleafbrush = numLeafBrushes;
 	box_leaf->numleafbrushes = 1;
 
@@ -1063,7 +1044,7 @@ static void InitBoxHull ()
 
 		// brush sides
 		cbrushside_t *s = &map_brushSides[numBrushSides+i];
-		s->plane = map_planes + (numPlanes+i*2+side);
+		s->plane   = map_planes + (numPlanes+i*2+side);
 		s->surface = &nullsurface;
 
 		// nodes
@@ -1348,7 +1329,7 @@ static void ClipBoxToBrush (const cbrush_t &brush)
 			continue;
 
 		if (d1 > 0) startout = true;	// startpoint is not inside this brush
-		if (d2 > 0) getout = true;		// endpoint is not inside this brush
+		if (d2 > 0) getout   = true;	// endpoint is not inside this brush
 
 		// crosses face
 		if (d1 > d2)
@@ -1358,7 +1339,7 @@ static void ClipBoxToBrush (const cbrush_t &brush)
 			{
 				enterfrac = f;
 				clipplane = plane;
-				leadside = side;
+				leadside  = side;
 			}
 		}
 		else
@@ -1375,7 +1356,7 @@ static void ClipBoxToBrush (const cbrush_t &brush)
 	{
 		// original point was inside brush
 		tr.trace.startsolid = true;
-		tr.trace.allsolid = !getout;
+		tr.trace.allsolid   = !getout;
 		return;
 	}
 
@@ -1384,8 +1365,8 @@ static void ClipBoxToBrush (const cbrush_t &brush)
 		if (enterfrac < 0)			// when startsolid && allsolid
 			enterfrac = 0;
 		tr.trace.fraction = enterfrac;
-		tr.trace.plane = *clipplane;
-		tr.trace.surface = leadside->surface;
+		tr.trace.plane    = *clipplane;
+		tr.trace.surface  = leadside->surface;
 		tr.trace.contents = brush.contents;
 	}
 }
@@ -1715,16 +1696,7 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CB
 }
 
 
-/*
-==================
-CM_TransformedBoxTrace
-
-Handles offseting and rotation of the end points for moving and
-rotating entities
-==================
-*/
-
-
+// Handles offseting and rotation of the end points for moving and rotating entities
 void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds,
 	int headnode, int brushmask, const CVec3 &origin, const CVec3 &angles)
 {
@@ -2045,7 +2017,7 @@ byte *CM_ClusterPVS (int cluster)
 		memset (pvsrow, 0, (numclusters + 7) >> 3);
 	else
 	{
-		int i = ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PVS];
+		int i = map_visibility ? ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PVS] : -1;
 		if (i != -1)
 			DecompressVis (map_visibility + i, pvsrow);
 		else
@@ -2063,7 +2035,7 @@ byte *CM_ClusterPHS (int cluster)
 		memset (phsrow, 0, (numclusters + 7) >> 3);
 	else
 	{
-		int i = ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PHS];
+		int i = map_visibility ? ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PHS] : -1;
 		if (i != -1)
 			DecompressVis (map_visibility + i, phsrow);
 		else
@@ -2177,26 +2149,14 @@ int CM_WriteAreaBits (byte *buffer, int area)
 }
 
 
-/*
-===================
-CM_WritePortalState
-
-Writes the portal state to a savegame file
-===================
-*/
+// Writes the portal state to a savegame file
 void CM_WritePortalState (FILE *f)
 {
 	fwrite (portalopen, sizeof(portalopen), 1, f);
 }
 
-/*
-===================
-CM_ReadPortalState
 
-Reads the portal state from a savegame file
-and recalculates the area connections
-===================
-*/
+// Reads the portal state from a savegame file and recalculates the area connections
 void CM_ReadPortalState (FILE *f)
 {
 	fread (portalopen, sizeof(portalopen), 1, f);

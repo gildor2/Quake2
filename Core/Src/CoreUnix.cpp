@@ -2,10 +2,8 @@
 #include <unistd.h>					// for readlink() and gettimeofday()
 #include <sys/utsname.h>			// for uname() syscall
 #include <sys/time.h>				// struct timeval
-
 #include <termios.h>				// ioctl() codes for tty
 #include <sys/ioctl.h>				// ioctl() function itself
-
 #include <signal.h>
 
 
@@ -51,7 +49,8 @@ const char *appPackage ()
 {
 	static TString<256> Filename;
 	if (Filename[0]) return Filename;	// already computed
-	readlink ("/proc/self/exe", ARRAY_ARG(Filename));
+	if (readlink ("/proc/self/exe", ARRAY_ARG(Filename)) == -1)
+		return "unknown";
 	char *s = Filename.rchr ('/');
 	if (s) strcpy (Filename, s+1);
 	return Filename;
@@ -61,7 +60,8 @@ const char *appPackage ()
 static void SetDefaultDirectory ()
 {
 	TString<256> Buf;
-	readlink ("/proc/self/exe", ARRAY_ARG(Buf));
+	if (readlink ("/proc/self/exe", ARRAY_ARG(Buf)) == -1)
+		return;
 	char *s = Buf.rchr ('/');
 	if (s) *s = 0;
 	chdir (Buf);

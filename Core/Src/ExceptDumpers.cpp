@@ -229,7 +229,7 @@ void UnwindEbpFrame (COutputDevice *Out, const unsigned *data)
 		}
 		else
 		{
-			Out->Printf ("(wrong EBP frame)");
+			Out->Printf ("(wrong frame)");
 			break;
 		}
 	}

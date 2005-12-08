@@ -71,6 +71,6 @@ public:
 	}
 	void List (CFileList &list, const char *mask, unsigned flags)
 	{
-		appListDirectoryOS (va("%s/%s", name, mask), list, flags);
+		appListDirectory (va("%s/%s", name, mask), list, flags);
 	}
 };

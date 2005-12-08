@@ -22,8 +22,8 @@ static bool IsRDTSC;				// is there any Pentium-class CPU w/o RDTSC support?
 
 static unsigned cpuidRegs[4];
 
-#if _MSC_VER
 
+#if _MSC_VER
 
 static void cpuid (unsigned code)
 {

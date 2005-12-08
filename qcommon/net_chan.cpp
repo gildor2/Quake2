@@ -208,18 +208,11 @@ void netchan_t::Transmit (void *data, int length)
 	if (showpackets->integer)
 	{
 		if (send_reliable)
-			appPrintf ("send %4i : s=%i reliable=%i ack=%i rack=%i\n"
-				, send.cursize
-				, outgoing_sequence - 1
-				, reliable_sequence
-				, incoming_sequence
-				, incoming_reliable_sequence);
+			appPrintf ("send %4i : s=%i reliable=%i ack=%i rack=%i\n",
+				send.cursize, outgoing_sequence - 1, reliable_sequence, incoming_sequence, incoming_reliable_sequence);
 		else
-			appPrintf ("send %4i : s=%i ack=%i rack=%i\n"
-				, send.cursize
-				, outgoing_sequence - 1
-				, incoming_sequence
-				, incoming_reliable_sequence);
+			appPrintf ("send %4i : s=%i ack=%i rack=%i\n",
+				send.cursize, outgoing_sequence - 1, incoming_sequence, incoming_reliable_sequence);
 	}
 }
 
@@ -246,28 +239,19 @@ bool netchan_t::Process (sizebuf_t *msg)
 	if (showpackets->integer)
 	{
 		if (reliable_message)
-			appPrintf ("recv %4i : s=%i reliable=%i ack=%i rack=%i\n"
-				, msg->cursize
-				, sequence
-				, incoming_reliable_sequence ^ 1
-				, sequence_ack
-				, reliable_ack);
+			appPrintf ("recv %4i : s=%i reliable=%i ack=%i rack=%i\n",
+				msg->cursize, sequence, incoming_reliable_sequence ^ 1, sequence_ack, reliable_ack);
 		else
-			appPrintf ("recv %4i : s=%i ack=%i rack=%i\n"
-				, msg->cursize
-				, sequence
-				, sequence_ack
-				, reliable_ack);
+			appPrintf ("recv %4i : s=%i ack=%i rack=%i\n",
+				msg->cursize, sequence, sequence_ack, reliable_ack);
 	}
 
 	// discard stale or duplicated packets
 	if (sequence <= incoming_sequence)
 	{
 		if (showdrop->integer)
-			appPrintf ("%s:Out of order packet %i at %i\n"
-				, NET_AdrToString (&remote_address)
-				, sequence
-				, incoming_sequence);
+			appPrintf ("%s:Out of order packet %i at %i\n",
+				NET_AdrToString (&remote_address), sequence, incoming_sequence);
 		return false;
 	}
 
@@ -276,10 +260,8 @@ bool netchan_t::Process (sizebuf_t *msg)
 	if (dropped > 0)
 	{
 		if (showdrop->integer)
-			appPrintf ("%s:Dropped %i packets at %i\n"
-			, NET_AdrToString (&remote_address)
-			, dropped
-			, sequence);
+			appPrintf ("%s:Dropped %i packets at %i\n",
+				NET_AdrToString (&remote_address), dropped, sequence);
 	}
 
 	// if the current outgoing reliable message has been acknowledged

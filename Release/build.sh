@@ -58,10 +58,10 @@ rm -f $logfile
 #?? integrate libs.project into quake2.project
 #!! "lib/libs.a": linux/mingw/cygwin: should distinguish!
 if ! [ -f "lib/libs$libext" ]; then
-	cd lib
+	pushd lib
 	#?? logfile is not correct here (should be ../$OUT ...)
 	$build libs-$PLATFORM
-	cd ..
+	popd
 fi
 
 #----------------------------------------------------------

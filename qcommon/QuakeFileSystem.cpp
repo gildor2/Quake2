@@ -215,7 +215,7 @@ void FS_CopyFiles (const char *srcMask, const char *dstDir)
 	appMakeDirectoryForFile (Pattern);
 #if 1
 	CFileList *list = new CFileList;
-	appListDirectoryOS (srcMask, *list, FS_FILE);
+	appListDirectory (srcMask, *list, FS_FILE);
 #else
 	CFileList *list = GFileSystem->List (srcMask, FS_OS);
 #endif
@@ -239,7 +239,7 @@ void FS_RemoveFiles (const char *mask)
 
 #if 1
 	CFileList *list = new CFileList;
-	appListDirectoryOS (mask, *list, FS_FILE);
+	appListDirectory (mask, *list, FS_FILE);
 #else
 	CFileList *list = GFileSystem->List (mask, FS_OS);
 #endif

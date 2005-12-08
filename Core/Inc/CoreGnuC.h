@@ -41,7 +41,9 @@ typedef unsigned int		address_t;
 
 #if __GNUC__ >= 4
 // nothing exported by default
-#pragma GCC visibility push(hidden)
+//!! currently, will produce a lots of warnings abount "operator new/delete" marked w/o "visible"
+//!! (at least, with gcc 4.0.0); no warnings, when used "-fvisibility=hidden" + "-fvisibility-inlines-hidden"
+//#pragma GCC visibility push(hidden)
 #endif
 
 

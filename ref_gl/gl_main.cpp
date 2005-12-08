@@ -367,7 +367,7 @@ bool Init ()
 		THROW_AGAIN;	//?? or return "false" ?
 	} END_CATCH
 
-	forceVisMap = true;				// force update visinfo for map:
+	forceVisMap = true;				// force update visinfo for map
 
 	return true;
 
@@ -856,7 +856,8 @@ void DumpLoadStats ()
 		F(imgMipmap,		"tex mipmap"),
 		F(imgLightscale,	"tex lightscale"),
 		F(imgUpload,		"tex upload"),
-		F(md2normals,		"md2 normals")
+		F(md2normals,		"md2 normals"),
+		F(bspLoad,			"bsp load")
 #undef F
 	};
 	int i;

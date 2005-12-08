@@ -38,7 +38,7 @@
 class CFileItem : public CStringItem
 {
 public:
-	unsigned flags;			// combination of some FS_XXX flags
+	unsigned flags;					// combination of some FS_XXX flags
 };
 
 
@@ -57,13 +57,13 @@ class CFileSystem;
 
 class CORE_API CFile
 {
-	//?? can add to CFile/~CFile registering opened files, can be listed with "fsinfo" command
+	//?? can add to CFile/~CFile registering opened files, list with "fsinfo" command
 protected:
-	CFile () {}					// no default constructor
+	CFile () {}						// no default constructor
 public:
-	virtual ~CFile ()			// close all opened objects; virtual destructor
+	virtual ~CFile ()				// close all opened objects; virtual destructor
 	{}
-	TString<64>	Name;			// local name inside owner container
+	TString<64>	Name;				// local name inside owner container
 	CFileContainer *Owner;
 	virtual int Read (void *Buffer, int Size) = 0;
 #if LITTLE_ENDIAN
@@ -102,12 +102,12 @@ class CFileContainer : public CStringItem
 protected:
 	CFileSystem *Owner;
 	TString<64> MountPoint;
-	unsigned	containFlags;	// FS_OS, FS_PAK ... (used by CFileSystem::List())
-	unsigned	numFiles;		// for info
+	unsigned	containFlags;		// FS_OS, FS_PAK ... (used by CFileSystem::List())
+	unsigned	numFiles;			// for info
 	virtual const char *GetType ();
 public:
-	bool		locked;			// cannot "umount" from console command; but can use FS->Umount()
-	virtual ~CFileContainer ()	// required for correct destroying
+	bool		locked;				// cannot "umount" from console command; but can use FS->Umount()
+	virtual ~CFileContainer ()		// required for correct destroying
 	{}
 	virtual bool FileExists (const char *filename) = 0;
 	virtual CFile *OpenFile (const char *filename) = 0;
@@ -130,17 +130,17 @@ protected:
 		TList<CArcFile>	Files;
 	};
 
-	CMemoryChain *mem;			// will hold whole directory data
-	CArcDir		Root;			// root archive directory
+	CMemoryChain *mem;				// will hold whole directory data
+	CArcDir		Root;				// root archive directory
 	// directory manipulations
 	CArcDir *FindDir (const char *path, bool create = false);
 	CArcFile *FindFile (const char *filename);
 	// Opening file by info from internal directory structure.
-	virtual CFile *OpenFile (const CArcFile &Info) = 0;
+	virtual CFile *OpenLocalFile (const CArcFile &Info) = 0;
 	// Derived classes should:
 	//	1. define own CFile
 	//	2. define own CArcFile
-	//	3. overload OpenFile()
+	//	3. overload OpenLocalFile()
 	//	4. declare "static Create(const char *filename, FILE *f)" function
 public:
 	inline CFileContainerArc ()
@@ -175,7 +175,9 @@ private:
 	TList<CFileContainer> mounts;
 	static CreateArchive_t ArchiveReaders[MAX_ARCHIVE_FORMATS];
 public:
-	unsigned modifyCount;		// incremented every time something mounted/umounted; rename??
+	virtual ~CFileSystem ()			// shut up gcc4 warning; virtual destructor
+	{}
+	unsigned modifyCount;			// incremented every time something mounted/umounted; rename??
 	// registering archive format
 	static void RegisterFormat (CreateArchive_t reader);
 	// file operations
@@ -196,16 +198,19 @@ public:
 };
 
 
-//?? move to Core.h ?
 CORE_API extern CFileSystem *GFileSystem;
 CORE_API extern TString<64> GDefMountPoint;
 
 CORE_API void appInitFileSystem (CFileSystem &FS);
+
+
+//?? separate: FileSystem -- object-based; these functions works independently from CFileSystem;
+//?? should separate from cpp too
 // simple file reader using OS file system
 CORE_API CFile *appOpenFile (const char *filename);
 // This function can be used without CFileSystem objects at all; access to files is
 // not restricted by file system mounts (function works without it)
-CORE_API void appListDirectoryOS (const char *dir, CFileList &List, unsigned flags);
+CORE_API void appListDirectory (const char *dir, CFileList &List, unsigned flags);
 // Create directory; supports multiple nested dirs creation
 CORE_API void appMakeDirectory (const char *dirname);
 // Verify file type: return FS_FILE|FS_DIR; if file does not exists (or special Unix file) - return 0

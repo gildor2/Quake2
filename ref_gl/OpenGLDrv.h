@@ -188,6 +188,8 @@ struct FLoadStats
 	int64 imgUpload;
 	// model loading
 	int64 md2normals;
+	// world loading
+	int64 bspLoad;
 	// methods
 	inline void Zero ()
 	{

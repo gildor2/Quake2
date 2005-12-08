@@ -7,16 +7,17 @@
 	{								\
 		static const char _name[] = #name;\
 		const char *_arg = "";		\
-		unsigned _time = appCycles();
+		int64 _time = appCycles64();
 #define START_PROFILE2(name,arg)	\
 	{								\
 		static const char _name[] = #name;\
 		const char *_arg = arg;		\
-		unsigned _time = appCycles();
+		int64 _time = appCycles64();
 #define END_PROFILE	\
+		int64 _delta = appCycles64() - _time; \
 		if (Cvar_VariableInt("r_profile")) \
 			appPrintf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %.2f ms\n", _name, _arg,\
-			appDeltaCyclesToMsecf(appCycles() - _time)); \
+			appDeltaCyclesToMsecf(_delta)); \
 	}
 #else
 #define START_PROFILE(name)

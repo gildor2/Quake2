@@ -128,13 +128,17 @@ const char *appGetSystemErrorMessage (unsigned code)
 
 void appDisplayError ()
 {
+	// avoid 2 va() calls (may overflow one buffer when filling another)
+	TString<256> Title;
+	Title.sprintf ("%s: fatal error", appPackage ());
+	// display error
 	MessageBox (NULL,
 #if DO_GUARD
 		va("%s\n\nHistory: %s", *GErr.Message, *GErr.History),
 #else
 		GErr.Message,
 #endif
-		va("%s: fatal error", appPackage ()), MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
+		Title, MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
 }
 
 

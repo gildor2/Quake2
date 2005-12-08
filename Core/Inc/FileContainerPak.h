@@ -52,7 +52,7 @@ protected:
 		return "pak";
 	}
 	// function for file opening
-	CFile *OpenFile (const CArcFile &Info)
+	CFile *OpenLocalFile (const CArcFile &Info)
 	{
 		const CFileInfo &info = static_cast<const CFileInfo&>(Info);
 		FILE *f = fopen (name, "rb");

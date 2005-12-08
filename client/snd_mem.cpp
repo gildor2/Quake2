@@ -28,8 +28,10 @@ int			cache_full_cycle;
 static void GetWavinfo (wavinfo_t &info, char *name, byte *wav, int wavlength);
 
 
-void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
+static void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
 {
+	guard(ResampleSfx);
+
 	int		outcount;
 	int		srcsample;
 	float	stepscale;
@@ -37,10 +39,7 @@ void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
 	int		sample, samplefrac, fracstep;
 	sfxcache_t	*sc;
 
-	sc = sfx->cache;
-	if (!sc)
-		return;
-
+	if (!(sc = sfx->cache)) return;
 	stepscale = (float)inrate / dma.speed;	// this is usually 0.5, 1, or 2
 
 	outcount = appRound (sc->length / stepscale);
@@ -60,16 +59,15 @@ void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
 	if (stepscale == 1 && inwidth == 1 && sc->width == 1)
 	{
 		// fast special case
-		for (i=0 ; i<outcount ; i++)
-			((signed char *)sc->data)[i]
-			= (int)( (unsigned char)(data[i]) - 128);
+		for (i = 0; i < outcount; i++)
+			((signed char *)sc->data)[i] = (int)((unsigned char)(data[i]) - 128);
 	}
 	else
 	{
 		// general case
 		samplefrac = 0;
-		fracstep = appRound (stepscale*256);
-		for (i=0 ; i<outcount ; i++)
+		fracstep = appFloor (stepscale*256);
+		for (i = 0; i < outcount; i++)
 		{
 			srcsample = samplefrac >> 8;
 			samplefrac += fracstep;
@@ -83,17 +81,16 @@ void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
 				((signed char *)sc->data)[i] = sample >> 8;
 		}
 	}
+
+	unguard;
 }
 
 //=============================================================================
 
-/*
-==============
-S_LoadSound
-==============
-*/
 sfxcache_t *S_LoadSound (sfx_t *s)
 {
+	guard(S_LoadSound);
+
 	char		namebuffer[MAX_QPATH], *name;
 	byte		*data;
 	int			len;
@@ -111,7 +108,6 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 	// see if already tryed to load, but file not found
 	if (s->absent) return NULL;
 
-//	appPrintf ("S_LoadSound: %x\n", (int)stackbuf);
 	// load it in
 	name = s->TrueName[0] ? s->TrueName : s->Name;
 
@@ -119,8 +115,6 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 		strcpy(namebuffer, &name[1]);
 	else
 		appSprintf (ARRAY_ARG(namebuffer), "sound/%s", name);
-
-//	appPrintf ("loading %s\n",namebuffer);
 
 	if (!(data = (byte*) GFileSystem->LoadFile (namebuffer, &size)))
 	{
@@ -138,11 +132,12 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 		return NULL;
 	}
 
+	// compute size of buffer for resampled sfx
 	stepscale = (float)info.rate / dma.speed;
 	len = appRound (info.samples / stepscale);
-
 	len = len * info.width * info.channels;
 
+	// allocate memory for sfx info and data
 	sc = s->cache = (sfxcache_t*)appMalloc (len + sizeof(sfxcache_t));
 	if (!sc)
 	{
@@ -150,17 +145,20 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 		return NULL;
 	}
 
-	sc->length = info.samples;
+	sc->length    = info.samples;
 	sc->loopstart = info.loopstart;
-	sc->speed = info.rate;
-	sc->width = info.width;
-	sc->stereo = info.channels;
+	sc->speed     = info.rate;
+	sc->width     = info.width;
+	sc->stereo    = info.channels;
 
+	// resample sfx: tune its rate and stereo/mono
 	ResampleSfx (s, sc->speed, sc->width, data + info.dataofs);
 
 	delete data;
 
 	return sc;
+
+	unguardf(("%s", *s->Name));
 }
 
 

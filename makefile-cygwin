@@ -237,6 +237,7 @@ DEPENDS_1 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileContainerPak.h \
 	Core/Inc/FileContainerZRes.h \
 	Core/Inc/FileContainerZip.h \
@@ -271,6 +272,7 @@ DEPENDS_2 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileContainerPak.h \
 	Core/Inc/FileContainerZip.h \
 	Core/Inc/FileSystem.h \
@@ -294,6 +296,7 @@ DEPENDS_3 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -316,6 +319,7 @@ DEPENDS_4 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -337,6 +341,7 @@ DEPENDS_5 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -370,6 +375,7 @@ DEPENDS_6 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -411,6 +417,7 @@ DEPENDS_7 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -441,6 +448,7 @@ DEPENDS_8 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -483,6 +491,7 @@ DEPENDS_9 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -515,6 +524,7 @@ DEPENDS_10 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -568,6 +578,7 @@ DEPENDS_11 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -593,6 +604,7 @@ DEPENDS_12 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -614,6 +626,7 @@ DEPENDS_13 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -653,6 +666,7 @@ DEPENDS_14 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -694,6 +708,7 @@ DEPENDS_15 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -737,6 +752,7 @@ DEPENDS_16 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -779,6 +795,7 @@ DEPENDS_17 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -819,6 +836,7 @@ DEPENDS_18 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -858,6 +876,7 @@ DEPENDS_19 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -898,6 +917,7 @@ DEPENDS_20 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -939,6 +959,7 @@ DEPENDS_21 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -979,6 +1000,7 @@ DEPENDS_22 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1018,6 +1040,7 @@ DEPENDS_23 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1056,6 +1079,7 @@ DEPENDS_24 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1093,6 +1117,7 @@ DEPENDS_25 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1128,6 +1153,7 @@ DEPENDS_26 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1162,6 +1188,7 @@ DEPENDS_27 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1195,6 +1222,7 @@ DEPENDS_28 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1226,6 +1254,7 @@ DEPENDS_29 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1266,6 +1295,7 @@ DEPENDS_30 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1304,6 +1334,7 @@ DEPENDS_31 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1348,6 +1379,7 @@ DEPENDS_32 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1395,6 +1427,7 @@ DEPENDS_33 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1434,6 +1467,7 @@ DEPENDS_34 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1476,6 +1510,7 @@ DEPENDS_35 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1528,6 +1563,7 @@ DEPENDS_36 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1566,6 +1602,7 @@ DEPENDS_37 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1604,6 +1641,7 @@ DEPENDS_38 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1636,6 +1674,7 @@ DEPENDS_39 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1665,6 +1704,7 @@ DEPENDS_40 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1696,6 +1736,7 @@ DEPENDS_41 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1733,6 +1774,7 @@ DEPENDS_42 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1767,6 +1809,7 @@ DEPENDS_43 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1820,6 +1863,7 @@ DEPENDS_44 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
@@ -1906,6 +1950,7 @@ DEPENDS_45 = \
 	Core/Inc/CoreVisualC.h \
 	Core/Inc/CoreWin32.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \

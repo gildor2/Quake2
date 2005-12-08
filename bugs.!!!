@@ -14,6 +14,9 @@
 	float wishspeed = VectorNormalize (wishvel, wishdir);
 	uint_cast(wishdir[2])=0xFF800000; //!! added -- will set to NAN
 	....
+- map "flashfire":
+  - when paused, will display network errors (newnum!=oldnum ...)
+  ? may be, set numClusters=0 for CM_Xxxxx() funcs (current: set for renderer only)
 
 - a bug with collision detection against moving/rotating brushes (move through model with collision INSIDE model)
   - appeared after sv_world.cpp::LinkEdict/UnlinkEdict/AreaEdicts uses num[Solid|Trig]Edicts; sometimes this var becomes <0 ...
@@ -85,6 +88,8 @@ BUGGY MAPS:
   effect appears); check with baseq2 (sp+deathmatch); when do it 2nd time (wall respawned in DM) - all OK
 - "team_harbor" (KP, 3rd-party) - PF_SetModel() -- NULL name (game=dirty; with baseq2 - no problems)
   ? try to create empty (dummy) model and assign it from PF_SetModel(name==NULL) calls
+- "flashfire" (q2): 1) have cluster info per leaf, but no visinfo (so: cluster info is useless); 2) have no lightmaps, but set lightmap
+  sources (OpenGLDrv will display "disabled lm" + "SetLM(NULL) for non-vertex lightmap shader")
 
 HARDWARE:
 ~~~~~~~~~

@@ -552,7 +552,7 @@ sub AddObjectList {
 			# C++ exceptions
 			$opt = GetSrcOption ("CPP_EXCEPT");
 			if ($opt eq "1" || $opt eq "") {
-				$options .= " -GX+";
+				$options .= " -GX";
 			} elsif ($opt eq "0") {
 				$options .= " -GX-";
 			} else {

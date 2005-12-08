@@ -90,7 +90,7 @@ protected:
 		return "zres";
 	}
 	// function for file opening
-	CFile *OpenFile (const CArcFile &Info)
+	CFile *OpenLocalFile (const CArcFile &Info)
 	{
 		return new CFileRes (static_cast<const CFileInfo&>(Info), pData, dataSize);
 	}

@@ -477,13 +477,13 @@ static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 	}
 
 	node_t *leaf = PointInLeaf (*origin);
-	byte *row = leaf->cluster < 0 ? NULL : map.visInfo + leaf->cluster * map.visRowSize;
+	byte *row = leaf->cluster < 0 || !map.visInfo ? NULL : map.visInfo + leaf->cluster * map.visRowSize;
 
 	float scale = vp.lightStyles[0].value * AMBIENT_SCALE / 128.0f;
 	for (i = 0; i < 6; i++)
 		VectorScale (map.ambientLight, scale, entityColorAxis[i]);
 
-	if (!row && map.visInfo)
+	if (!row && map.visInfo)	//?? check correctness, when map w/o visinfo: how to detect out-of-world?
 	{
 		if (pcell) *pcell = &outCell;
 		return false;		// point is outside the world
@@ -595,7 +595,7 @@ void LightForEntity (refEntity_t *ent)
 			int		coord[3];
 
 			i = PointInLeaf (ent->center)->cluster;
-			byte *row = i < 0 ? NULL : map.visInfo + i * map.visRowSize;
+			byte *row = i < 0 || !map.visInfo ? NULL : map.visInfo + i * map.visRowSize;
 
 			for (i = 0; i < 3; i++)
 			{
@@ -905,11 +905,6 @@ void PostLoadLights ()
 
 		switch (sl->type)
 		{
-		case sl_linear:
-			if (sl->fade < 0.01f) sl->fade = 0.01f;
-			f = DISTANCE_LINEAR_POINTLIGHT(sl->intens, sl->fade, MIN_POINT_LIGHT, LINEAR_SCALE);
-			sl->maxDist2 = f * f;
-			break;
 		case sl_inverse:
 			f = DISTANCE_INVERSE_POINTLIGHT(sl->intens, MIN_POINT_LIGHT, INV_SCALE);
 			sl->maxDist2 = f * f;
@@ -920,7 +915,14 @@ void PostLoadLights ()
 			appPrintf ("inv2 slight at %g %g %g\n", VECTOR_ARG(sl->origin));
 			break;
 		default:
-			appPrintf ("unknown point sl.type at %g %g %g\n", VECTOR_ARG(sl->origin));
+			Com_DPrintf ("unknown point sl.type (\"_falloff\") at %g %g %g\n", VECTOR_ARG(sl->origin));
+			// => sl_linearnear (arghrad silently do this)
+			//?? may be, do this in models.cpp when parsing entities ?
+		case sl_linear:
+			if (sl->fade < 0.01f) sl->fade = 0.01f;
+			f = DISTANCE_LINEAR_POINTLIGHT(sl->intens, sl->fade, MIN_POINT_LIGHT, LINEAR_SCALE);
+			sl->maxDist2 = f * f;
+			break;
 		}
 	}
 

@@ -1,5 +1,6 @@
 BUGS:
 ~~~~~
+- try to create inline shaders for "flashfire" map - something like cartoon rendering ?
 - com_speeds: currently, displays some server stats - can use sv_texts.cpp funcs for this; and - separate cvar for this
 - software gamma: should use identityLight corrected by gamma(but: 1**any==1 ?!)/brightness/contrast (not overbright only)
   ? but: sometimes texture modulated by identityLight; separate identityLight and textureIdentityLight ??
@@ -39,7 +40,8 @@ MOD-DEPENDING UI OPTIONS:
 - player models: all or current mod only
 - browse maps
 - autocomplete map/demo names
-  
+
+- rename all "*_debug"   cvars => "debug_*" (more correct names); enable when !NO_DEBUG only
 - "paused": incorrect timing (at least, fx will be incorrect after paused=0)
   - should reimplement it in a different way
   - may be, make multiplayer pause (with sync clients to server; make attention to not timeout clients when server is paused)

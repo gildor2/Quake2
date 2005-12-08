@@ -4,7 +4,7 @@
 // and the initial and final xor values shown below...  in other words, the
 // CCITT standard CRC used by XMODEM
 
-#define CRC_INIT_VALUE	0xffff
+#define CRC_INIT_VALUE	0xFFFF
 
 static const unsigned short crctable[256] =
 {
@@ -121,13 +121,8 @@ static const byte chktbl[1024] =
 	0x39, 0x4f, 0xdd, 0xe4, 0xb6, 0x19, 0x27, 0xfb, 0xb8, 0xf5, 0x32, 0x73, 0xe5, 0xcb, 0x32
 };
 
-/*
-====================
-Com_BlockSequenceCRCByte
 
-For proxy protecting
-====================
-*/
+// For proxy protecting
 byte Com_BlockSequenceCRCByte (byte *base, int length, int sequence)
 {
 	byte buffer[60 + 4];

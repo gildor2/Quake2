@@ -1,7 +1,13 @@
 PROBLEMS (LINUX/CYGWIN):
 ~~~~~~~~~~~~~~~~~~~~~~~~
-build.sh: timing info format incorrect (linux)
-linux testapp.cpp display warning about gets(); cygwin - no warning!
+- build.sh: timing info format incorrect (linux)
+- linux testapp.cpp display warning about gets(); cygwin - no warning!
+- gcc4: when creating mapfile, names not demangled; move demangling from "ld" to "syminfo/make" ?
+- cc4: visibility: should use "-fvisibility..." cmdline instead of "#pragma GCC visibility ..."; make auto-detect of gcc4 from makefile?!
+  GCC_VER = $(shell echo __GNUC__ | gcc -E -xc - | tail -n 1)
+  # also: __GCC_MINOR__
+  ifeq ($(GCC_VER),4) / ifneq () ... (no -gt/-lt etc -- should use $(shell if [...] ...;))
+
 ------- REQUIREMENTS --------
 min GCC version: 3.4.0
   3.3.2 have no:
@@ -21,7 +27,8 @@ FIRST TODO (for crash detection):
 
 GCC TODO:
 ~~~~~~~~~
-! mingw32 exception system broken (used exception -> C++ throw before ...)
+? mingw32 exception system broken (used exception -> C++ throw before ...); currently uses setjmp() exception path (does works,
+  but cannot catch "error -stack" -- mingw32/cygwin problem)
 - may be, access to SDK/includes from src as '#include <*>' instead of '#include "*"'
 - asm constructions:
   - check floor/ceil/round (implement asm? check mingw math.h header for some details)

@@ -30,7 +30,7 @@ static void LoadPlanes (const dplane_t *data, int count, int stride)
 	for (int i = 0; i < count; i++, data = OffsetPointer(data, stride), out++)
 	{
 		out->normal = data->normal;
-		out->dist = data->dist;
+		out->dist   = data->dist;
 		out->SetType ();
 		out->SetSignbits ();
 	}
@@ -62,6 +62,7 @@ static void LoadFlares (lightFlare_t *data, int count)
 		if (data->model)
 			out->owner = map.models + data->model;
 
+		// insert into list as first
 		out->next = map.flares;
 		map.flares = out;
 	}
@@ -89,12 +90,12 @@ static void BuildSurfFlare (surfaceBase_t *surf, const color_t *color, float int
 	gl_flare_t *f = new (map.dataChain) gl_flare_t;
 
 	f->origin = origin;
-	f->surf = surf;
-//	f->owner = surf->owner;				// cannot do it: models not yet loaded
-	f->leaf = NULL;
-	f->size = sqrt (intens) * 3;
+	f->surf   = surf;
+//	f->owner  = surf->owner;			// cannot do it: models not yet loaded
+	f->leaf   = NULL;
+	f->size   = sqrt (intens) * 3;
 	f->radius = 0;
-	f->style = 0;
+	f->style  = 0;
 
 	c[0] = color->c[0];
 	c[1] = color->c[1];
@@ -106,6 +107,7 @@ static void BuildSurfFlare (surfaceBase_t *surf, const color_t *color, float int
 	f->color.c[3] = 255;				// A
 	SaturateColor4b (&f->color);
 
+	// insert into list as first
 	f->next = map.flares;
 	map.flares = f;
 	map.numFlares++;
@@ -185,10 +187,10 @@ static void BuildSurfLight (surfacePlanar_t *pl, const color_t *color, float are
 	sl->next = map.surfLights;
 	map.surfLights = sl;
 	map.numSurfLights++;
-	sl->color = c;
-	sl->sky = sky;
+	sl->color  = c;
+	sl->sky    = sky;
 	sl->intens = intens * area;
-	sl->pl = pl;
+	sl->pl     = pl;
 
 	// qrad3 does this ...
 	sl->color[0] *= sl->color[0];
@@ -251,7 +253,7 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 	}
 	// compute 2D bounds
 	float min1, max1, min2, max2;
-	min1 = min2 = BIG_NUMBER;
+	min1 = min2 =  BIG_NUMBER;
 	max1 = max2 = -BIG_NUMBER;
 	int	i;
 	vertex_t *v;
@@ -280,7 +282,7 @@ static void LoadLeafsNodes2 (const dnode_t *nodes, int numNodes, const dleaf_t *
 	node_t	*out;
 	int		i, j;
 
-	map.numNodes = numNodes;
+	map.numNodes     = numNodes;
 	map.numLeafNodes = numLeafs + numNodes;
 	map.nodes = out = new (map.dataChain) node_t [numNodes + numLeafs];
 
@@ -347,12 +349,12 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 		out->size = -1;							// do not delete in FreeModels()
 		modelsArray[modelCount++] = out;
 
-		out->bounds = data->bounds;
-		out->radius = data->radius;
+		out->bounds   = data->bounds;
+		out->radius   = data->radius;
 		out->headnode = data->headnode;
 		// create surface list
 		out->numFaces = data->numfaces;
-		out->faces = new (map.dataChain) surfaceBase_t* [out->numFaces];
+		out->faces    = new (map.dataChain) surfaceBase_t* [out->numFaces];
 
 		int k = data->firstface;
 		for (int j = 0; j < out->numFaces; j++, k++)
@@ -422,13 +424,13 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 			(SURF_SPECULAR|SURF_DIFFUSE|SURF_WARP|SURF_FLOWING)))		// && gl_autoReflect ??
 		{
 			CVec3	mid, p1, p2;
-			trace_t	trace;
 
 			int headnode = owner->headnode;
 			// find middle point
 			mid.Zero ();
 			for (j = 0; j < numVerts; j++)
 				VectorAdd (mid, (*pverts[j]), mid);
+			assert(numVerts);
 			float scale = 1.0f / numVerts;
 			mid.Scale (scale);
 			// get trace points
@@ -437,6 +439,7 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 			VectorMA (mid, 2, norm, p1);
 			VectorMA (mid, -2, norm, p2);
 			// perform trace
+			trace_t	trace;
 			if (!surfs->side)
 				CM_BoxTrace (trace, p1, p2, nullBox, headnode, MASK_SOLID);
 			else
@@ -580,6 +583,7 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 				/*-------- Texture coordinates -----------*/
 				if (!(sflags & SHADER_TURB)) //?? (!shader->tessSize)
 				{
+					assert(shader->width > 0 && shader->height > 0);
 					v->st[0] = v1 / shader->width;
 					v->st[1] = v2 / shader->height;
 				}
@@ -663,7 +667,15 @@ static int LightmapCompare (const void *s1, const void *s2)
 	v2 = (surf2->lightmap) ? surf2->lightmap->source[0] : NULL;
 
 	if (v1 == v2 && v1)
-		return (surf1->shader->style & SHADER_TRYLIGHTMAP) ? 1 : -1;	// TRYLIGHTMAP should go after normal lightmaps
+	{
+		// TRYLIGHTMAP should go after normal lightmaps
+		if (surf1->shader->style & SHADER_TRYLIGHTMAP)
+			return 1;
+		else if (surf2->shader->style & SHADER_TRYLIGHTMAP)
+			return -1;
+		else // situation, when 2 shaders have save lightmap pointers, but no TRYLIGHTMAP (bad, but supported)
+			return 0;
+	}
 
 	return v1 - v2;
 }
@@ -699,7 +711,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 		{
 			// convert lightmap offset to pointer
 			for (k = 0; k < dl->numStyles; k++)
-				dl->source[k] = lightData + (dl->source[k] - (byte*)NULL);
+				dl->source[k] += (unsigned)lightData;
 
 			// optimize lightmaps
 			color_t avg;
@@ -736,7 +748,11 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 
 	/*------------ find invalid lightmaps -------------*/
 	// sort surfaces by lightmap data pointer
-	qsort (sortedSurfaces, map.numFaces, sizeof(surfaceBase_t*), LightmapCompare);
+	if (lightDataSize)
+	{
+		// when map have no lightmaps, we do not need to sort them
+		qsort (sortedSurfaces, map.numFaces, sizeof(surfaceBase_t*), LightmapCompare);
+	}
 
 	// check for lightmap intersection
 	// NOTE: nere we compare lm->source[0], which should always correspond to a lightstyle=0 (global lighting)
@@ -963,6 +979,12 @@ static void LoadVisinfo2 (const dvis_t *data, int size)
 			}
 		}
 	}
+	else if (map.numClusters > 0)
+	{
+		map.numClusters = 0;
+//??	if (developer->integer) -- cvar is not in renderer
+			appWPrintf ("WARNING: map with cluster info but without visinfo\n");
+	}
 }
 
 
@@ -1034,6 +1056,7 @@ void LoadWorldMap (const char *name)
 	map.Name = Name2;
 	map.dataChain = new CMemoryChain;
 
+	STAT(clock(gl_ldStats.bspLoad));
 	// map should be already loaded by client
 	bspfile = LoadBspFile (Name2, true, NULL);
 
@@ -1069,6 +1092,7 @@ void LoadWorldMap (const char *name)
 	LoadSlights (bspfile->slights, bspfile->numSlights);
 	PostLoadLights ();
 	InitLightGrid ();
+	STAT(unclock(gl_ldStats.bspLoad));
 
 	unguard;
 }

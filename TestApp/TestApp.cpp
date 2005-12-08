@@ -28,11 +28,11 @@ void crash(char *b)
 }
 
 
-void cmd1 (int argc, char **argv)
+void cXcpt (int argc, char **argv)
 {
 	guard(excpt);
 
-	if (argc) appPrintf ("cmd1 - args: %d\n", argc);
+	if (argc) appPrintf ("xcpt - args: %d\n", argc);
 	int i;
 	for (i = 0; i < argc; i++) appPrintf(".. arg[%d] = <%s>\n", i, argv[i]);
 
@@ -102,35 +102,12 @@ void cmd1 (int argc, char **argv)
 		}
 		break;
 	default:
-		cmd1(0, NULL);							// infinite recurse
+		cXcpt(0, NULL);							// infinite recurse
 		a = i + 1;
 #undef TEST
 	}
 	unguard;
 }
-
-
-void cUncol (int argc, char **argv)
-{
-	if (argc != 2) return;
-	char dst[256];
-	appUncolorizeString (dst, argv[1]);
-	appPrintf("uncol (\"%s\") -> \"%s\"\n", argv[1], dst);
-}
-
-
-void cClen (int argc, char **argv)
-{
-	if (argc != 2) return;
-	appPrintf("clen (\"%s\") = %d\n", argv[1], appCStrlen (argv[1]));
-}
-
-
-static CSimpleCommand commands[] = {
-	{"uncol", cUncol},
-	{"clen", cClen},
-	{"xcpt",cmd1}
-};
 
 
 void cAlloc (int argc, char **argv)
@@ -228,6 +205,7 @@ int main (int argc, char** argv)
 #endif
 
 		// testing commands
+		RegisterCommand ("xcpt", cXcpt);
 		RegisterCommand ("args", cArgs);
 		RegisterCommand ("usage", cUsage);
 		RegisterCommand ("both", cBoth);
@@ -246,11 +224,8 @@ int main (int argc, char** argv)
 			gets (buf);
 			if (!buf[0]) continue;
 
-			if (!ExecuteCommand (buf, ARRAY_ARG(commands)))
-			{
-				if (!ExecuteCommand (buf))
-					appWPrintf ("ERROR: bad command\n");
-			}
+			if (!ExecuteCommand (buf))
+				appWPrintf ("ERROR: bad command\n");
 		}
 		unguard;
 	} CATCH {

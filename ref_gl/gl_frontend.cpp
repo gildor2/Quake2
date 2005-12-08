@@ -1920,7 +1920,7 @@ static void MarkLeaves ()
 	viewCluster = cluster;
 	forceVisMap = false;
 	visFrame++;
-	if (r_novis->integer || cluster < 0 || cluster >= map.numClusters || map.numClusters <= 1)
+	if (r_novis->integer || cluster < 0 || !map.visInfo || cluster >= map.numClusters || map.numClusters <= 1)
 	{
 		// mark ALL nodes
 		for (i = 0, n = map.nodes; i < map.numLeafNodes; i++, n++)

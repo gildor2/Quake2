@@ -70,6 +70,13 @@ while ($line = <IN>)
 				my ($type1, $type2) = $msg =~ /(\S.*\S) format, (\S.*\S) arg \(arg/;
 				$hgl = 0 if isInt32type ($type1) && isInt32type ($type2);
 				$color = 34;
+			} elsif ($msg =~ /^format .* expects type .*, but argument .*/) {
+				# print format warning: different color (gcc 4 version)
+				# note: here gcc uses unicode single quotes, which will be 3-chars each
+				# suppress some "incompatibilities" (unsigned <-> int etc)
+				my ($type1, $type2) = $msg =~ /^format .* expects type ...(.*)..., but argument .* has type ...(.*)...$/;
+				$hgl = 0 if isInt32type ($type1) && isInt32type ($type2);
+				$color = 34;
 			} elsif ($msg =~ /unused / || $line =~ /defined but not used$/) {
 				# unused variable/function/member
 				$color = 32;

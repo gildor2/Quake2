@@ -11,9 +11,9 @@
 		- and OpenFile()/FileExists() will require to use ListDirectoryOS() function
 */
 
-void appListDirectoryOS (const char *mask, CFileList &List, unsigned flags)
+void appListDirectory (const char *mask, CFileList &List, unsigned flags)
 {
-	guard(appListDirectoryOS);
+	guard(appListDirectory);
 
 	TString<256> Path, Mask;
 	Path.filename (mask);

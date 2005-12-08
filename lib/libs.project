@@ -1,13 +1,15 @@
 # script file; perl highlighting
 # libraries
 
+OPTIMIZE   = size
+CPP_EXCEPT = 0
+
 !if $COMPILER eq VisualC
 	WARNLEVEL = 2		# JPEGLIB will produce lots of warnings with level=3
-	OPTIMIZE  = size
 	INLINES   = all
 #	LIBC      = static	# WARNING: should be synced with main project LIBC
 !elif $COMPILER eq GnuC
-	OPTIMIZE  = size
+	# nothing ...
 !endif
 
 OBJDIR = obj

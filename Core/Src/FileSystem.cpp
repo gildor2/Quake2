@@ -263,7 +263,7 @@ void CFileSystem::Mount (const char *mask, const char *point)
 	clock(time);
 
 	CFileList *list = new CFileList;
-	appListDirectoryOS (Path, *list, FS_FILE|FS_DIR);
+	appListDirectory (Path, *list, FS_FILE|FS_DIR);
 	if (!*list)
 	{
 		appWPrintf ("mount: nothing in \"%s\"\n", *Path);
