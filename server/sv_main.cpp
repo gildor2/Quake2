@@ -129,8 +129,9 @@ SV_StatusString
 Builds the string that is sent as heartbeats and status replies
 ===============
 */
-static const char *SV_StatusString (void)
+static const char *SV_StatusString ()
 {
+	guard(SV_StatusString);
 	static char	status[MAX_MSGLEN - 16];
 
 	if (sv.attractloop) return "";
@@ -146,12 +147,13 @@ static const char *SV_StatusString (void)
 				cl->edict->client->ps.stats[STAT_FRAGS], cl->ping, *cl->Name);
 			if (statusLength + playerLength >= sizeof(status))
 				break;		// can't hold any more
-			strcpy (status + statusLength, player);
+			memcpy (status + statusLength, player, playerLength+1);
 			statusLength += playerLength;
 		}
 	}
 
 	return status;
+	unguard;
 }
 
 static void cStatus (int argc, char **argv)
@@ -480,7 +482,7 @@ static const CSimpleCommand connectionlessCmds[] = {
 	{"rcon", cRemoteCommand}
 };
 
-void SV_ConnectionlessPacket (void)
+static void SV_ConnectionlessPacket ()
 {
 	guard(SV_ConnectionlessPacket);
 	net_message.BeginReading ();
@@ -511,7 +513,7 @@ SV_CalcPings
 Updates the cl->ping variables
 ===================
 */
-void SV_CalcPings (void)
+void SV_CalcPings ()
 {
 	for (int i = 0; i < sv_maxclients->integer; i++)
 	{
@@ -644,7 +646,7 @@ for a few seconds to make sure any final reliable message gets resent
 if necessary
 ==================
 */
-void SV_CheckTimeouts (void)
+void SV_CheckTimeouts ()
 {
 	guard(SV_CheckTimeouts);
 	int droppoint = svs.realtime - appRound (timeout->value * 1000);
@@ -680,7 +682,7 @@ This has to be done before the world logic, because
 player processing happens outside RunWorldFrame
 ================
 */
-static void SV_PrepWorldFrame (void)
+static void SV_PrepWorldFrame ()
 {
 	edict_t	*ent;
 	int		i;
@@ -702,7 +704,7 @@ static CVec3 shotStart, shotEnd;
 static int shotLevel;
 
 
-void SV_PostprocessFrame (void)
+void SV_PostprocessFrame ()
 {
 	edict_t *ent;
 	int e, i;

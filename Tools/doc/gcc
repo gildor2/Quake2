@@ -109,6 +109,11 @@ GCC optimization control:
 						keyword or defined within the class definition in c++). n is the size of functions that can be
 						inlined in number of pseudo instructions (not counting parameter handling). The default value
 						of n is 600.
+ -finline-functions-called-once (gcc4.0)
+						Consider all `static' functions called once for inlining into their caller even if they are not
+						marked `inline'.  If a call to a given function is integrated, then the function is not output as
+						assembler code in its own right. Enabled if `-funit-at-a-time' is enabled.
+
  -fkeep-static-consts	Emit variables declared static const when optimization isn't turned on, even if the variables
 						aren't referenced. GCC enables this option by default. If you want to force the compiler to
 						check if the variable was referenced, regardless of whether or not optimization is turned on,

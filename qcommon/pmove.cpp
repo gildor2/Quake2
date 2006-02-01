@@ -566,11 +566,7 @@ static void CatagorizePosition ()
 	// if the player hull point one unit down is solid, the player
 	// is on ground
 
-	// see if standing on something solid
-	CVec3 point;
-	point[0] = pml.origin[0];
-	point[1] = pml.origin[1];
-	point[2] = pml.origin[2] - 0.25f;
+	CVec3 point = pml.origin;
 
 	if (pml.velocity[2] > 180) //ZOID changed from 100 to 180 (ramp accel)
 	{	// NOTE: if disable this code, jumppads will be VERY buggy; and waterjump will be very high
@@ -579,10 +575,12 @@ static void CatagorizePosition ()
 	}
 	else
 	{
+		// see if standing on something solid
 		trace_t trace;
+		point[2] = pml.origin[2] - 0.25f;
 		PM_Trace (trace, pml.origin, point, pm->bounds);
-		pml.groundplane = trace.plane;
-		pml.groundsurface = trace.surface;
+		pml.groundplane    = trace.plane;
+		pml.groundsurface  = trace.surface;
 		pml.groundcontents = trace.contents;
 
 //		appPrintf("gr: n2=%g frac=%g sol=%d\n", trace.plane.normal[2], trace.fraction, trace.allsolid);//!!
@@ -633,7 +631,7 @@ static void CatagorizePosition ()
 
 	// get waterlevel, accounting for ducking
 	pm->waterlevel = 0;
-	pm->watertype = 0;
+	pm->watertype  = 0;
 
 	float sample2 = pm->viewheight - pm->bounds.mins[2];
 	float sample1 = sample2 / 2;
@@ -642,7 +640,7 @@ static void CatagorizePosition ()
 	unsigned cont = pm->pointcontents (point);
 	if (cont & MASK_WATER)
 	{
-		pm->watertype = cont;
+		pm->watertype  = cont;
 		pm->waterlevel = 1;
 		point[2] = pml.origin[2] + pm->bounds.mins[2] + sample1;
 		cont = pm->pointcontents (point);
@@ -732,7 +730,7 @@ static void CheckSpecialMovement ()
 	PM_Trace (trace, pml.origin, spot, pm->bounds);
 	if ((trace.fraction < 1) && (trace.contents & CONTENTS_LADDER))
 	{
-		pml.ladder = true;
+		pml.ladder      = true;
 		pml.ladderPlane = trace.plane;
 //		pm->groundentity = trace.ent;	// -- allows to move with entities, having CONTENTS_LADDER; requires some game changes
 	}
@@ -770,8 +768,8 @@ static void FlyMove (bool doclip)
 	else
 	{
 		float friction = pm_friction * 1.5f;	// extra friction
-		float control = speed < pm_stopspeed ? pm_stopspeed : speed;
-		float drop = control * friction * pml.frametime;
+		float control  = speed < pm_stopspeed ? pm_stopspeed : speed;
+		float drop     = control * friction * pml.frametime;
 
 		// scale the velocity
 		float newspeed = speed - drop;

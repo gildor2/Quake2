@@ -111,7 +111,8 @@ struct client_t
 
 	client_frame_t frames[UPDATE_BACKUP]; // updates can be delta'd from here
 
-	byte		*download;				// file being downloaded
+	TString<64>	DownloadName;			// name of downloading file
+	byte		*download;				// data of downloading file
 	unsigned	downloadsize;			// total bytes (can't use EOF because of paks)
 	unsigned	downloadcount;			// bytes sent
 

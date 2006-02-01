@@ -48,11 +48,19 @@ typedef unsigned int		address_t;
 
 
 #define DLL_IMPORT						// nothing?
-#define DLL_EXPORT		__attribute__((visibility("default")))
-#define NORETURN		__attribute__((noreturn))
-#define PRINTF(n,m)		__attribute__((format(__printf__,n,m)))
+#define DLL_EXPORT			__attribute__((visibility("default")))
+#define NORETURN			__attribute__((noreturn))
+#define PRINTF(n,m)			__attribute__((format(__printf__,n,m)))
 
-#define GCC_PACK		__attribute__((__packed__))
+#if (__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 2))
+// strange, but there is only way to work (inline+always_inline)
+#	define FORCEINLINE		inline __attribute__((always_inline))
+#else
+#	define FORCEINLINE		inline
+#endif
+#define NOINLINE			__attribute__((noinline))
+
+#define GCC_PACK			__attribute__((__packed__))
 
 #define	GET_RETADDR(firstarg)	((address_t)__builtin_return_address(0))
 

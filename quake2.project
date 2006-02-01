@@ -1,21 +1,5 @@
 # script file; perl highlighting
 
-# Just keep here:
-# disable all -O1 optimizations
-# CPP += { -fno-defer-pop -fno-merge-constants -fno-thread-jumps -fno-loop-optimize -fno-if-conversion -fno-if-conversion2
-#	   -fno-delayed-branch -fno-guess-branch-probability -fno-cprop-registers -fno-omit-frame-pointer
-#	 }
-# disable all -O2 optimizations:
-# CPP += { -fno-force-mem -fno-optimize-sibling-calls -fno-strength-reduce -fno-cse-follow-jumps -fno-cse-skip-blocks
-#	   -fno-rerun-cse-after-loop -fno-rerun-loop-opt -fno-gcse -fno-gcse-lm -fno-gcse-sm -fno-gcse-las
-#	   -fno-delete-null-pointer-checks -fno-expensive-optimizations -fno-regmove -fno-schedule-insns -fno-schedule-insns2
-#	   -fno-sched-interblock -fno-sched-spec -fno-caller-saves -fno-peephole2 -fno-reorder-blocks -fno-reorder-functions
-#	   -fno-strict-aliasing -fno-unit-at-a-time -fno-align-functions -fno-align-jumps -fno-align-loops -fno-align-labels -fno-crossjumping
-#	 }
-# optimizations, disabled by -Os:
-# CPP +=   -falign-functions -falign-jumps -falign-loops -falign-labels -freorder-blocks -fprefetch-loop-arrays
-
-
 NOSHARED  = 1			#!!!! shared; currently, shared build is not possible: Core is not yet finished
 				#!! make only 1 of STATIC/SHARED builds (not both in single makefile) - no problems with filenames etc ...
 				#!! + add "STATIC=1|0" to COM_DEFINES
@@ -33,7 +17,7 @@ CPP_EXCEPT = 0
 #	INLINES   = explicit	-- not supported?
 	LIBC      = shared
 	MAX_DEBUG = 1		# currently, in debug stage
-	
+
 	# compiler: disable some optimizations
 	OPTIONS   = -fno-strict-aliasing	# required for our uint_cast()-based FP hacks
 	OPTIONS   += {
@@ -44,6 +28,7 @@ CPP_EXCEPT = 0
 		-Wunused-function -Wunused-variable -Wunused-value
 		-Wunknown-pragmas -Wmissing-format-attribute -Wredundant-decls
 		-Waggregate-return -Wstrict-aliasing
+#		-Winline			#?? for gcc4 will display a LOTS of warnings ...
 		# max warning level
 #		-Weffc++ -Wshadow -Wlarger-than-131072 -Wpacked -Winline -Wswitch -Wmissing-noreturn
 #		-Wunreachable-code -Wuninitialized
@@ -229,7 +214,7 @@ DEFINES = $COM_DEFINES STATIC_BUILD
 OBJDIR  = $OBJ/CoreStatic
 sources(STATIC) = $CORE
 
-DEFINES = $COM_DEFINES STATIC_BUILD SINGLE_RENDERER	#?? SINGLE_RENDERER -- check when will be 2+ renderers
+DEFINES = $COM_DEFINES STATIC_BUILD SINGLE_RENDERER	#?? SINGLE_RENDERER: check when will be 2+ renderers
 OBJDIR  = $OBJ/q2stat
 sources(STATIC) = $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES $GL_RENDERER
 

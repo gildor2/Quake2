@@ -52,23 +52,13 @@ float			r_blend[4];			// rgba 0-1 full screen blend
 char cl_weaponmodels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
 int num_cl_weaponmodels;
 
-/*
-====================
-V_ClearScene
-====================
-*/
-static void V_ClearScene (void)
+
+static void V_ClearScene ()
 {
 	r_numdlights = 0;
 	r_numentities = 0;
 }
 
-
-/*
-=====================
-V_AddEntity
-=====================
-*/
 
 // player effects
 static CBasicImage *disguiseShader, *irShader, *shellShader;
@@ -166,31 +156,20 @@ static void RegisterShaders ()
 }
 
 
-/*
-=====================
-V_AddLight
-=====================
-*/
 void V_AddLight (const CVec3 &org, float intensity, float r, float g, float b)
 {
 	if (r_numdlights >= MAX_DLIGHTS) return;
 	dlight_t &dl = r_dlights[r_numdlights++];
-	dl.origin = org;
+	dl.origin    = org;
 	dl.intensity = intensity;
 	dl.color.Set (r, g, b);
 }
 
 
-/*
-================
-V_TestEntities
-
-If cl_testentities is set, create 32 player models
-================
-*/
+// If cl_testentities is set, create 32 player models
 #if !NO_DEBUG
 
-void V_TestEntities (void)
+void V_TestEntities ()
 {
 	r_numentities = 32;
 	memset (r_entities, 0, sizeof(r_entities));
@@ -227,14 +206,9 @@ void V_TestEntities (void)
 #undef LAST_FRAME
 }
 
-/*
-================
-V_TestLights
 
-If cl_testlights is set, create 32 lights models
-================
-*/
-void V_TestLights (void)
+// If cl_testlights is set, create 32 lights models
+void V_TestLights ()
 {
 	int		i;
 	dlight_t *dl;
@@ -267,6 +241,15 @@ void V_TestLights (void)
 #endif // NO_DEBUG
 
 //===================================================================
+
+
+// weights of separate loading units
+#define W_MAP			10
+#define W_TEXTURES		3
+#define W_MODEL			1
+#define W_CLIENT		3
+#define W_SKY			1
+
 
 void V_InitRenderer ()
 {
@@ -307,14 +290,22 @@ void V_InitRenderer ()
 	strcpy (mapname, cl.configstrings[CS_MODELS+1] + 5);	// skip "maps/"
 	mapname[strlen(mapname)-4] = 0;		// cut off ".bsp"
 
+	// compute total loading weight
+	float totalWeight = W_MAP + W_TEXTURES + W_SKY;
+	for (i = 1; i < MAX_MODELS && cl.configstrings[CS_MODELS+i][0]; i++) // models
+		if (cl.configstrings[CS_MODELS+i][0] != '*')
+			totalWeight += W_MODEL;
+	for (i = 0; i < MAX_CLIENTS; i++)	// clients
+		if (cl.configstrings[CS_PLAYERSKINS+i][0])
+			totalWeight += W_CLIENT;
+
 	// register models, pics, and skins
-	appPrintf ("Map: %s\r", mapname);
-	SCR_UpdateScreen ();
+	float loadingFrac = 0;
+	SCR_LoadingNotify (va("map: %s", mapname), 0);
+	loadingFrac += W_MAP / totalWeight;
 	RE_LoadNewWorld (mapname);
 
 	// precache status bar pics
-	appPrintf ("pics\r");
-	SCR_UpdateScreen ();
 	SCR_TouchPics ();
 
 	CL_RegisterTEntModels ();
@@ -325,14 +316,12 @@ void V_InitRenderer ()
 
 	for (i = 1; i < MAX_MODELS && cl.configstrings[CS_MODELS+i][0]; i++)
 	{
-		char name[MAX_QPATH];
-		strcpy (name, cl.configstrings[CS_MODELS+i]);
-		if (GScreenWidth < ARRAY_COUNT(name))
-			name[GScreenWidth-1] = 0;			// never go beyond one line (for correct '\r' erasing)
+		const char *name = cl.configstrings[CS_MODELS+i];
 		if (name[0] != '*')
-			appPrintf ("%s\r", name);
-		SCR_UpdateScreen ();
-		Sys_ProcessMessages ();					// pump message loop
+		{
+			SCR_LoadingNotify (name, loadingFrac);
+			loadingFrac += W_MODEL / totalWeight;
+		}
 		if (name[0] == '#')
 		{
 			// special player weapon model
@@ -355,8 +344,8 @@ void V_InitRenderer ()
 		}
 	}
 
-	appPrintf ("images\r");
-	SCR_UpdateScreen ();
+	SCR_LoadingNotify ("textures", loadingFrac);
+	loadingFrac += W_TEXTURES / totalWeight;
 	for (i = 1; i < MAX_IMAGES && cl.configstrings[CS_IMAGES+i][0]; i++)
 	{
 		cl.image_precache[i] = RE_RegisterPic (va("pics/%s", cl.configstrings[CS_IMAGES+i]));
@@ -367,21 +356,20 @@ void V_InitRenderer ()
 	{
 		if (!cl.configstrings[CS_PLAYERSKINS+i][0])
 			continue;
-		appPrintf ("client %d\r", i);
-		SCR_UpdateScreen ();
-		Sys_ProcessMessages ();	// pump message loop
+		SCR_LoadingNotify (va("client %d: %s", i, cl.configstrings[CS_PLAYERSKINS+i]), loadingFrac);
+		loadingFrac += W_CLIENT / totalWeight;
 		CL_ParseClientinfo (i);
 	}
 	if (!cl.configstrings[CS_PLAYERSKINS+cl.playernum][0])
 	{
-		// in a singleplayer mode, server will not send clientinfo - generate it by ourself
+		// in a singleplayer mode, server will not send clientinfo - generate it by
+		// ourself for correct third-person view
 //		Com_DPrintf("Fixing CI[playernum]\n");
 		CL_UpdatePlayerClientInfo ();
 	}
 
-	// set sky textures and speed
-	appPrintf ("sky\r");
-	SCR_UpdateScreen ();
+	// setup sky
+	SCR_LoadingNotify ("sky", loadingFrac);
 	float rotate = atof (cl.configstrings[CS_SKYROTATE]);
 	CVec3 axis;
 	sscanf (cl.configstrings[CS_SKYAXIS], "%f %f %f", &axis[0], &axis[1], &axis[2]);
@@ -389,13 +377,10 @@ void V_InitRenderer ()
 
 	// the renderer can now free unneeded stuff
 	RE_FinishLoadingWorld ();
-	appPrintf (" \r");			// clear console notification about loading process; require to send space char !
 
 	Con_ClearNotify ();
-
-	SCR_UpdateScreen ();
 	SCR_EndLoadingPlaque (true);
-	cl.rendererReady = true;
+	cl.rendererReady  = true;
 	cl.forceViewFrame = true;
 
 	// start the cd track
@@ -415,7 +400,7 @@ static struct
 } scr_vrect;					// position of render window (changed when scr_viewsize cvar modified)
 //?? rename to v_vrect ?
 
-static void CalcVrect (void)
+static void CalcVrect ()
 {
 	float frac = scr_viewsize->Clamp (40, 100) / 100.0f;
 
@@ -430,7 +415,7 @@ static void CalcVrect (void)
 }
 
 
-static void TileClear (void)
+static void TileClear ()
 {
 	const char *tileName = "pics/backtile";	//?? try "*detail" with a different color
 	if (con_height == viddef.height || scr_viewsize->integer == 100) return;
@@ -448,11 +433,6 @@ static void TileClear (void)
 }
 
 
-/*
-====================
-CalcFov
-====================
-*/
 float CalcFov (float fov_x, float width, float height)
 {
 	if (fov_x < 1 || fov_x > 179)
@@ -467,13 +447,13 @@ float CalcFov (float fov_x, float width, float height)
 #if GUN_DEBUG
 
 // gun frame debugging functions
-void V_Gun_Next_f (void)
+void V_Gun_Next_f ()
 {
 	gun_frame++;
 	appPrintf ("frame %i\n", gun_frame);
 }
 
-void V_Gun_Prev_f (void)
+void V_Gun_Prev_f ()
 {
 	gun_frame--;
 	if (gun_frame < 0)
@@ -493,13 +473,8 @@ void V_Gun_Model_f (int argc, char **argv)
 
 #endif
 
-/*
-=================
-SCR_Sky_f
 
-Set a specific sky and rotation speed
-=================
-*/
+// Set a specific sky and rotation speed
 static void Sky_f (bool usage, int argc, char **argv)
 {
 	if (argc < 2 || usage)
@@ -596,7 +571,7 @@ static char *ModelName (int modelIndex)
 
 #if !NO_DEBUG
 
-static void DrawSurfInfo (void)
+static void DrawSurfInfo ()
 {
 	CVec3	start, end;
 	csurface_t	*surf;
@@ -679,7 +654,7 @@ static void DrawSurfInfo (void)
 	}
 }
 
-static void DrawOriginInfo (void)
+static void DrawOriginInfo ()
 {
 	RE_DrawTextLeft ("Player position:\n----------------", RGB(0.4,0.4,0.6));
 	RE_DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), RGB(0.2,0.4,0.1));
@@ -698,7 +673,7 @@ static void DrawOriginInfo (void)
 
 //#define FILTER_FPS_COUNTER		1
 
-static void DrawFpsInfo (void)
+static void DrawFpsInfo ()
 {
 	static float avgFps, minFps, maxFps;
 	static int frames;
@@ -773,7 +748,7 @@ static void DrawFpsInfo (void)
 
 #define MIN_WATER_DISTANCE	4.5
 
-static void FixWaterVis (void)
+static void FixWaterVis ()
 {
 	CVec3	p;			// point
 	bool	w, w1;		// "in water" flag
@@ -821,7 +796,7 @@ static void FixWaterVis (void)
 }
 
 
-bool V_RenderView (void)
+bool V_RenderView ()
 {
 	guard(V_RenderView);
 
@@ -944,12 +919,7 @@ bool V_RenderView (void)
 }
 
 
-/*
-=============
-V_Init
-=============
-*/
-void V_Init (void)
+void V_Init ()
 {
 CVAR_BEGIN(vars)
 #if !NO_DEBUG

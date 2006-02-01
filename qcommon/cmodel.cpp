@@ -23,33 +23,33 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "cmodel.h"
 
 
-typedef struct
+struct cnode_t
 {
 	cplane_t *plane;
 	int		children[2];		// negative numbers are leafs
-} cnode_t;
+};
 
-typedef struct
+struct cbrushside_t
 {
 	cplane_t *plane;
 	csurface_t *surface;
-} cbrushside_t;
+};
 
-typedef struct
+struct cbrush_t
 {
 	int		contents;
 	int		numsides;
 	int		firstbrushside;
 	int		traceFrame;			// to avoid repeated testings
-} cbrush_t;
+};
 
-typedef struct
+struct carea_t
 {
 	int		numareaportals;
 	int		firstareaportal;
 	int		floodnum;			// if two areas have equal floodnums, they are connected
 	int		floodvalid;
-} carea_t;
+};
 
 char	map_name[MAX_QPATH];
 static CMemoryChain *dataChain;
@@ -169,33 +169,17 @@ static void ReadSurfMaterials (const char *filename)
 		char c = toLower (s[0]);
 		switch (c)
 		{
-		case 'm':
-			m = MATERIAL_METAL;
-			break;
-		case 't':
-			m = MATERIAL_TILE;
-			break;
-		case 'y':
-			m = MATERIAL_GLASS;
-			break;
-		case 'l':
-			m = MATERIAL_GRAVEL;
-			break;
-		case 'd':
-			m = MATERIAL_DIRT;
-			break;
-		case 'c':
-			m = MATERIAL_CONCRETE;
-			break;
-		case 'w':
-			m = MATERIAL_WOOD;
-			break;
-		case 'n':
-			m = MATERIAL_SNOW;
-			break;
-		case 'z':
-			m = MATERIAL_SILENT;
-			break;
+#define T(c,mat) case c: m = MATERIAL_##mat; break;
+		T('m',METAL);
+		T('t',TILE);
+		T('y',GLASS);
+		T('l',GRAVEL);
+		T('d',DIRT);
+		T('c',CONCRETE);
+		T('w',WOOD);
+		T('n',SNOW);
+		T('z',SILENT);
+#undef T
 		default:
 			appWPrintf ("Unknown material mark \"%s\" in %s\n", s, filename);
 			m = MATERIAL_CONCRETE;
@@ -263,7 +247,7 @@ static material_t CMod_GetSurfMaterial (const char *name)
 inline void CMod_LoadSubmodels (cmodel_t *data, int count)
 {
 	map_cmodels = data;
-	numcmodels = count;
+	numcmodels  = count;
 	if (map_cmodels[0].headnode)
 		Com_DropError ("map has invalid headnode = %d", map_cmodels[0].headnode);
 }
@@ -316,7 +300,7 @@ static void CMod_LoadNodes (dnode_t *data, int size)
 	numNodes = size;
 	for (int i = 0; i < size; i++, out++, in++)
 	{
-		out->plane = map_planes + in->planenum;
+		out->plane       = map_planes + in->planenum;
 		out->children[0] = in->children[0];
 		out->children[1] = in->children[1];
 	}
@@ -334,8 +318,8 @@ static void CMod_LoadBrushes (dbrush_t *data, int size)
 	for (int i = 0; i < size; i++, out++, in++)
 	{
 		out->firstbrushside = in->firstside;
-		out->numsides = in->numsides;
-		out->contents = in->contents;
+		out->numsides       = in->numsides;
+		out->contents       = in->contents;
 	}
 }
 
@@ -387,7 +371,7 @@ static void CMod_LoadPlanes (dplane_t *data, int size)
 	for (int i = 0; i < size; i++, in++, out++)
 	{
 		out->normal = in->normal;
-		out->dist = in->dist;
+		out->dist   = in->dist;
 		out->SetType ();
 		out->SetSignbits ();
 	}
@@ -434,31 +418,31 @@ static void CMod_LoadAreas (darea_t *data, int size)
 
 	for (int i = 0; i < size; i++, in++, out++)
 	{
-		out->numareaportals = in->numareaportals;
+		out->numareaportals  = in->numareaportals;
 		out->firstareaportal = in->firstareaportal;
-		out->floodvalid = 0;
-		out->floodnum = 0;
+		out->floodvalid      = 0;
+		out->floodnum        = 0;
 	}
 }
 
 
 inline void CMod_LoadAreaPortals (dareaportal_t *data, int size)
 {
-	numareaportals = size;
+	numareaportals  = size;
 	map_areaportals = data;
 }
 
 
 inline void CMod_LoadVisibility (dvis_t *data, int size)
 {
-	numvisibility = size;
+	numvisibility  = size;
 	map_visibility = size ? (byte *)data : NULL;
 }
 
 
 inline void CMod_LoadEntityString (const char *data, int size)
 {
-	numentitychars = size;
+	numentitychars   = size;
 	map_entitystring = data;
 }
 
@@ -1451,14 +1435,8 @@ static bool TestBoxInBrush (const cbrush_t &brush)
 }
 
 
-/*
-================
-TestInLeaf
-
-Call TestBoxInBrush for each leafbrush.
-When first intersection found (trace.fraction == 0) - return
-================
-*/
+// Call TestBoxInBrush for each leafbrush.
+// When first intersection found (trace.fraction == 0) - return
 static void TestInLeaf (int leafnum)
 {
 	dleaf_t *leaf = &map_leafs[leafnum];
@@ -2006,6 +1984,7 @@ static void DecompressVis (const byte *in, byte *out)
 	} while (out_p - out < rowSize);
 }
 
+//?? don't need 2 arrays: pvsrow[] and phsrow[]; may be, remove PHS support at all (replace with different API)
 static byte	pvsrow[MAX_MAP_LEAFS/8];
 static byte	phsrow[MAX_MAP_LEAFS/8];
 
@@ -2018,10 +1997,7 @@ byte *CM_ClusterPVS (int cluster)
 	else
 	{
 		int i = map_visibility ? ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PVS] : -1;
-		if (i != -1)
-			DecompressVis (map_visibility + i, pvsrow);
-		else
-			DecompressVis (NULL, pvsrow);
+		DecompressVis ((i != -1) ? map_visibility + i : NULL, pvsrow);
 	}
 	return pvsrow;
 	unguard;
@@ -2036,10 +2012,7 @@ byte *CM_ClusterPHS (int cluster)
 	else
 	{
 		int i = map_visibility ? ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PHS] : -1;
-		if (i != -1)
-			DecompressVis (map_visibility + i, phsrow);
-		else
-			DecompressVis (NULL, phsrow);
+		DecompressVis ((i != -1) ? map_visibility + i : NULL, phsrow);
 	}
 	return phsrow;
 	unguard;

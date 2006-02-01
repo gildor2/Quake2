@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ref.h"
 
 #include "vid.h"
-#include "screen.h"
+#include "cl_scrn.h"
 #include "sound.h"
 #include "cl_input.h"
 #include "keys.h"
@@ -279,7 +279,6 @@ void CL_PingServers_f ();
 void CL_Snd_Restart_f ();
 void CL_RegisterSounds ();
 
-void CL_ReadPackets ();
 void CL_WriteDemoMessage ();
 
 void CL_ClearState ();
@@ -290,7 +289,7 @@ void CL_ClearState ();
 //
 extern const char *svc_strings[svc_last];
 
-void CL_ParseServerMessage (void);
+void CL_ParseServerMessage ();
 
 #define SHOWNET(s)	\
 	if (cl_shownet->integer >= 2) appPrintf ("%3d:%s\n", net_message.readcount-1, s);
@@ -324,12 +323,12 @@ float CalcFov (float fov_x, float width, float height);
 // cl_tent.cpp
 //
 //!! MOVE to cl_fx.h
-void CL_RegisterTEntSounds (void);
-void CL_RegisterTEntModels (void);
+void CL_RegisterTEntSounds ();
+void CL_RegisterTEntModels ();
 void CL_SmokeAndFlash(const CVec3 &origin);
-void CL_ClearTEnts (void);
-void CL_ParseTEnt (void);
-void CL_AddTEnts (void);
+void CL_ClearTEnts ();
+void CL_ParseTEnt ();
+void CL_AddTEnts ();
 
 //
 // menu.cpp & qmenu.cpp
@@ -351,8 +350,8 @@ extern menuFramework_t *m_current;
 //
 void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int contents);
 void CL_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int contents);
-void CL_PredictMovement (void);
-void CL_CheckPredictionError (void);
+void CL_PredictMovement ();
+void CL_CheckPredictionError ();
 
 //
 // cl_download.cpp

@@ -116,9 +116,9 @@ $COMMENT = '\#';
 #	Service output functions
 #------------------------------------------------------------------------------
 
-$S_RED    ="\033[1;31m";
-$S_YELLOW ="\033[1;33m";
-$S_WHITE  ="\033[0;37m";
+$S_RED     = "\033[1;31m";
+$S_YELLOW  = "\033[1;33m";
+$S_DEFAULT = "\033[0m";
 
 sub Error {
 	# add error text to generated makefile to prevent compilation
@@ -131,13 +131,13 @@ sub Error {
 	}
 	print "#----------------------------------------\n\n";
 	# log text to stderr
-	die "${S_RED}ERROR: $_[0]${S_WHITE}\n";
+	die "${S_RED}ERROR: $_[0]${S_DEFAULT}\n";
 }
 
 
 sub Warning {
 #	print "!message [GENMAKE WARNING] $_[0]\n";
-	print STDERR "${S_YELLOW}WARNING: $_[0]${S_WHITE}\n";
+	print STDERR "${S_YELLOW}WARNING: $_[0]${S_DEFAULT}\n";
 }
 
 
@@ -146,7 +146,7 @@ sub Warning {
 sub WarningOnce {
 	my ($msg, $key) = @_;
 	if (!exists($onceWarnings{$key})) {
-		print STDERR "${S_YELLOW}WARNING: $_[0]${S_WHITE}\n";
+		print STDERR "${S_YELLOW}WARNING: $_[0]${S_DEFAULT}\n";
 		$onceWarnings{$key} = 1;
 	}
 }
@@ -1104,7 +1104,8 @@ sub FlushTargetText {
 			# win32-specific options
 			$line .= " -Wl,--image-base,0x$baseaddr" if $baseaddr ne "";
 		}
-		$line .= " -Wl,-Map,$shortOutName.map,--demangle" if GetTargetOption ($n, "MAPFILES") eq "1";
+		#?? can add "--demangle" to linker cmdline, but does not works with gcc4 ...
+		$line .= " -Wl,-Map,$shortOutName.map" if GetTargetOption ($n, "MAPFILES") eq "1";
 		if ($target eq "executable") {
 			return $prefix.$line;
 		} elsif ($target eq "shared") {

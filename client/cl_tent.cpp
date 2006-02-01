@@ -151,7 +151,7 @@ static const char *impactSounds[IMPACT_COUNT] = {
 };
 
 
-void CL_RegisterTEntSounds (void)
+void CL_RegisterTEntSounds ()
 {
 	int		i, j;
 
@@ -366,9 +366,9 @@ static explosion_t *AllocExplosion (const CVec3 &origin, exptype_t type, CRender
 
 	memset (dst, 0, sizeof(explosion_t));
 	dst->ent.pos.origin = origin2;
-	dst->time = -100;
-	dst->type = type;
-	dst->ent.time = cl.ftime;
+	dst->time      = -100;
+	dst->type      = type;
+	dst->ent.time  = cl.ftime;
 	dst->ent.model = model;
 	return dst;
 }
@@ -496,11 +496,6 @@ static void ProcessSustains ()
 }
 
 
-/*
-=================
-CL_SmokeAndFlash
-=================
-*/
 void CL_SmokeAndFlash (const CVec3 &origin)
 {
 	explosion_t	*ex;
@@ -514,28 +509,7 @@ void CL_SmokeAndFlash (const CVec3 &origin)
 	ex->ent.flags = RF_FULLBRIGHT;
 }
 
-/*
-=================
-CL_ParseParticles
-=================
-*/
-void CL_ParseParticles (void)
-{
-	CVec3	pos, dir;
-	MSG_ReadPos (&net_message, pos);
-	MSG_ReadDir (&net_message, dir);
 
-	int color = MSG_ReadByte (&net_message);
-	int count = MSG_ReadByte (&net_message);
-
-	CL_ParticleEffect (pos, dir, color, count);
-}
-
-/*
-=================
-CL_ParseBeam
-=================
-*/
 static void CL_ParseBeam (CRenderModel *model)
 {
 	int		i;
@@ -551,11 +525,11 @@ static void CL_ParseBeam (CRenderModel *model)
 	for (i = 0, b = cl_mBeams; i < MAX_BEAMS ; i++, b++)
 		if (b->entity == ent)
 		{
-			b->entity = ent;
-			b->model = model;
+			b->entity  = ent;
+			b->model   = model;
 			b->endtime = cl.time + 200;
-			b->start = start;
-			b->end = end;
+			b->start   = start;
+			b->end     = end;
 			b->offset.Zero();
 			return;
 		}
@@ -564,11 +538,11 @@ static void CL_ParseBeam (CRenderModel *model)
 	for (i = 0, b = cl_mBeams; i < MAX_BEAMS ; i++, b++)
 		if (!b->model || b->endtime < cl.time)
 		{
-			b->entity = ent;
-			b->model = model;
+			b->entity  = ent;
+			b->model   = model;
 			b->endtime = cl.time + 200;
-			b->start = start;
-			b->end = end;
+			b->start   = start;
+			b->end     = end;
 			b->offset.Zero();
 			return;
 		}
@@ -577,11 +551,7 @@ static void CL_ParseBeam (CRenderModel *model)
 	return;
 }
 
-/*
-=================
-CL_ParseBeam2
-=================
-*/
+
 static void CL_ParseBeam2 (CRenderModel *model)
 {
 	int ent = MSG_ReadShort (&net_message);
@@ -597,12 +567,12 @@ static void CL_ParseBeam2 (CRenderModel *model)
 	for (i = 0, b = cl_mBeams; i < MAX_BEAMS; i++, b++)
 		if (b->entity == ent)
 		{
-			b->entity = ent;
-			b->model = model;
+			b->entity  = ent;
+			b->model   = model;
 			b->endtime = cl.time + 200;
-			b->start = start;
-			b->end = end;
-			b->offset = offset;
+			b->start   = start;
+			b->end     = end;
+			b->offset  = offset;
 			return;
 		}
 
@@ -610,12 +580,12 @@ static void CL_ParseBeam2 (CRenderModel *model)
 	for (i = 0, b = cl_mBeams; i < MAX_BEAMS ; i++, b++)
 		if (!b->model || b->endtime < cl.time)
 		{
-			b->entity = ent;
-			b->model = model;
+			b->entity  = ent;
+			b->model   = model;
 			b->endtime = cl.time + 200;
-			b->start = start;
-			b->end = end;
-			b->offset = offset;
+			b->start   = start;
+			b->end     = end;
+			b->offset  = offset;
 			return;
 		}
 
@@ -624,17 +594,12 @@ static void CL_ParseBeam2 (CRenderModel *model)
 }
 
 // ROGUE
-/*
-=================
-CL_ParsePlayerBeam
-  - adds to the cl_mPlayerbeam array instead of the cl_mBeams array
-=================
-*/
-int CL_ParsePlayerBeam (CRenderModel *model)
+// adds to the cl_mPlayerbeam array instead of the cl_mBeams array
+static int CL_ParsePlayerBeam (CRenderModel *model)
 {
 	int ent = MSG_ReadShort (&net_message);
 
-	CVec3	start, end, offset;
+	CVec3 start, end, offset;
 	MSG_ReadPos (&net_message, start);
 	MSG_ReadPos (&net_message, end);
 	// PMM - network optimization
@@ -655,12 +620,12 @@ int CL_ParsePlayerBeam (CRenderModel *model)
 	for (i = 0, b = cl_mPlayerbeams; i < MAX_BEAMS ; i++, b++)
 		if (b->entity == ent)
 		{
-			b->entity = ent;
-			b->model = model;
+			b->entity  = ent;
+			b->model   = model;
 			b->endtime = cl.time + 200;
-			b->start = start;
-			b->end = end;
-			b->offset = offset;
+			b->start   = start;
+			b->end     = end;
+			b->offset  = offset;
 			return ent;
 		}
 
@@ -668,12 +633,12 @@ int CL_ParsePlayerBeam (CRenderModel *model)
 	for (i = 0, b = cl_mPlayerbeams; i < MAX_BEAMS ; i++, b++)
 		if (!b->model || b->endtime < cl.time)
 		{
-			b->entity = ent;
-			b->model = model;
+			b->entity  = ent;
+			b->model   = model;
 			b->endtime = cl.time + 100;		// PMM - this needs to be 100 to prevent multiple heatbeams
-			b->start = start;
-			b->end = end;
-			b->offset = offset;
+			b->start   = start;
+			b->end     = end;
+			b->offset  = offset;
 			return ent;
 		}
 
@@ -682,14 +647,10 @@ int CL_ParsePlayerBeam (CRenderModel *model)
 }
 //rogue
 
-/*
-=================
-CL_ParseLightning
-=================
-*/
-int CL_ParseLightning (CRenderModel *model)
+
+static int CL_ParseLightning (CRenderModel *model)
 {
-	int srcEnt = MSG_ReadShort (&net_message);
+	int srcEnt  = MSG_ReadShort (&net_message);
 	int destEnt = MSG_ReadShort (&net_message);
 
 	CVec3	start, end;
@@ -702,12 +663,12 @@ int CL_ParseLightning (CRenderModel *model)
 	for (i = 0, b = cl_mBeams; i < MAX_BEAMS ; i++, b++)
 		if (b->entity == srcEnt && b->dest_entity == destEnt)
 		{
-			b->entity = srcEnt;
+			b->entity      = srcEnt;
 			b->dest_entity = destEnt;
-			b->model = model;
-			b->endtime = cl.time + 200;
-			b->start = start;
-			b->end = end;
+			b->model       = model;
+			b->endtime     = cl.time + 200;
+			b->start       = start;
+			b->end         = end;
 			b->offset.Zero();
 			return srcEnt;
 		}
@@ -716,12 +677,12 @@ int CL_ParseLightning (CRenderModel *model)
 	for (i = 0, b = cl_mBeams; i < MAX_BEAMS ; i++, b++)
 		if (!b->model || b->endtime < cl.time)
 		{
-			b->entity = srcEnt;
+			b->entity      = srcEnt;
 			b->dest_entity = destEnt;
-			b->model = model;
-			b->endtime = cl.time + 200;
-			b->start = start;
-			b->end = end;
+			b->model       = model;
+			b->endtime     = cl.time + 200;
+			b->start       = start;
+			b->end         = end;
 			b->offset.Zero();
 			return srcEnt;
 		}
@@ -731,24 +692,6 @@ int CL_ParseLightning (CRenderModel *model)
 }
 
 
-static void CL_ParseBFGLaser (unsigned colors)
-{
-	CVec3 start, end;
-	MSG_ReadPos (&net_message, start);
-	MSG_ReadPos (&net_message, end);
-
-	beam_t *b = CL_AllocParticleBeam (start, end, 2.0f, 0.1f);
-	if (!b) return;
-
-	b->type = BEAM_STANDARD;
-	b->color.rgba = 0;
-	b->color.c[0] = (colors >> ((rand() % 4)*8)) & 0xFF;
-	b->alpha = b->dstAlpha = 0.3f;
-}
-
-//=============
-//ROGUE
-
 static void ParticleSteamEffect (cl_sustain_t *self)
 {
 	CL_ParticleSteamEffect (self->org, self->dir, self->color, self->count, self->magnitude);
@@ -756,7 +699,7 @@ static void ParticleSteamEffect (cl_sustain_t *self)
 }
 
 
-static void CL_ParseSteam (void)
+static void CL_ParseSteam ()
 {
 	CVec3	pos, dir;
 	int id = MSG_ReadShort (&net_message);		// an id of -1 is an instant effect
@@ -773,13 +716,13 @@ static void CL_ParseSteam (void)
 		int interval = MSG_ReadLong (&net_message);
 		if (s)
 		{
-			s->count = count;
-			s->org = pos;
-			s->dir = dir;
-			s->color = color;
+			s->count     = count;
+			s->org       = pos;
+			s->dir       = dir;
+			s->color     = color;
 			s->magnitude = magnitude;
-			s->endtime = cl.time + interval;
-			s->think = ParticleSteamEffect;
+			s->endtime   = cl.time + interval;
+			s->think     = ParticleSteamEffect;
 			s->nextthink = cl.time;
 		}
 	}
@@ -811,7 +754,7 @@ static void Widowbeamout (cl_sustain_t *self)
 	// nextthink is not updated - call every frame
 }
 
-void CL_ParseWidow (void)
+static void CL_ParseWidow ()
 {
 	/* int id = */ MSG_ReadShort (&net_message); // unused value
 	CVec3 pos;
@@ -819,9 +762,9 @@ void CL_ParseWidow (void)
 	cl_sustain_t *s = AllocSustain ();
 	if (s)
 	{
-		s->org = pos;
-		s->endtime = cl.time + 2100;
-		s->think = Widowbeamout;
+		s->org       = pos;
+		s->endtime   = cl.time + 2100;
+		s->think     = Widowbeamout;
 		s->nextthink = cl.time;
 	}
 }
@@ -849,7 +792,7 @@ static void Nukeblast (cl_sustain_t *self)
 	// nextthink is not updated - call every frame
 }
 
-void CL_ParseNuke (void)
+static void CL_ParseNuke ()
 {
 	cl_sustain_t *s = AllocSustain ();
 	CVec3 pos;
@@ -857,24 +800,15 @@ void CL_ParseNuke (void)
 
 	if (s)
 	{
-		s->org = pos;
-		s->endtime = cl.time + 1000;
-		s->think = Nukeblast;
+		s->org       = pos;
+		s->endtime   = cl.time + 1000;
+		s->think     = Nukeblast;
 		s->nextthink = cl.time;
 	}
 }
 
-//ROGUE
-//=============
 
-
-/*
-=================
-CL_ParseTEnt
-=================
-*/
-
-void CL_ParseTEnt (void)
+void CL_ParseTEnt ()
 {
 	CVec3	pos, pos2, dir;
 	explosion_t	*ex;
@@ -1027,7 +961,7 @@ void CL_ParseTEnt (void)
 		ex->ent.angles[PITCH] = acos (dir[2]) / M_PI * 180;
 		ex->ent.angles[YAW]   = Vec2Yaw (dir);
 		ex->ent.flags = RF_FULLBRIGHT|RF_TRANSLUCENT;
-		ex->light = 150;
+		ex->light  = 150;
 		ex->frames = 4;
 		sound = cl_sfx_lashit;
 		break;
@@ -1035,7 +969,7 @@ void CL_ParseTEnt (void)
 	case TE_RAILTRAIL:			// railgun effect
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadPos (&net_message, pos2);
-		if (cls.newprotocol)
+		if (cls.newprotocol)	// player have ext protocol, but have choosen to use "original" rail fx
 			CL_RailTrail (pos, pos2);
 		else
 			CL_RailTrailExt (pos, pos2, 1, 0);
@@ -1047,7 +981,7 @@ void CL_ParseTEnt (void)
 			MSG_ReadPos (&net_message, pos);
 			MSG_ReadPos (&net_message, pos2);
 			byte rColor = MSG_ReadByte (&net_message);
-			byte rType = MSG_ReadByte (&net_message);
+			byte rType  = MSG_ReadByte (&net_message);
 			CL_RailTrailExt (pos, pos2, rType, rColor);
 			sound = cl_sfx_railg;
 		}
@@ -1071,7 +1005,7 @@ void CL_ParseTEnt (void)
 		ex->ent.angles[YAW] = rand() % 360;
 		if (type == TE_EXPLOSION2 || type == TE_GRENADE_EXPLOSION || type == TE_GRENADE_EXPLOSION_WATER)
 		{
-			ex->frames = 15;	//?? original: max frame was 19; for this explosion type should be 15 (can be negative ex->alpha)
+			ex->frames    = 15;	//?? original: max frame was 19; for this explosion type should be 15 (can be negative ex->alpha)
 			ex->baseframe = 30;
 		}
 		else
@@ -1111,7 +1045,15 @@ void CL_ParseTEnt (void)
 		break;
 
 	case TE_BFG_LASER:
-		CL_ParseBFGLaser (0xD0D1D2D3);
+		MSG_ReadPos (&net_message, pos);
+		MSG_ReadPos (&net_message, pos2);
+		if (beam_t *b = CL_AllocParticleBeam (pos, pos2, 2.0f, 0.1f))
+		{
+			b->type = BEAM_STANDARD;
+			b->color.rgba = 0;
+			b->color.c[0] = 0xD0 + rand() % 4;	// 0xD0..0xD3
+			b->alpha = b->dstAlpha = 0.3f;
+		}
 		break;
 
 	case TE_BUBBLETRAIL:
@@ -1258,7 +1200,7 @@ void CL_ParseTEnt (void)
 			MSG_ReadPos (&net_message, pos);
 			cdlight_t *dl = CL_AllocDlight (0, pos);
 			dl->radius = 150;
-			dl->die = cl.time + 100;
+			dl->die    = cl.time + 100;
 			dl->color.Set (-1, -1, -1);
 			CL_TrackerExplosionParticles (pos);
 			sound = cl_sfx_disrexp;
@@ -1292,12 +1234,8 @@ void CL_ParseTEnt (void)
 		S_StartSound (&pos, 0, 0, sound, 1, ATTN_NORM, 0);
 }
 
-/*
-=================
-CL_AddBeams
-=================
-*/
-void CL_AddBeams (void)
+
+static void CL_AddBeams ()
 {
 	int			i;
 	mBeam_t		*b;
@@ -1368,13 +1306,8 @@ void CL_AddBeams (void)
 }
 
 
-/*
-=================
-ROGUE - draw player locked beams
-CL_AddPlayerBeams
-=================
-*/
-void CL_AddPlayerBeams (void)
+// ROGUE - draw player locked beams
+static void CL_AddPlayerBeams ()
 {
 	//PMM
 	float hand_multiplier;
@@ -1507,7 +1440,7 @@ void CL_AddPlayerBeams (void)
 		if ((b->model == cl_mod_lightning) && (d <= model_length))
 		{
 			ent.pos.origin = b->end;
-			ent.flags = RF_FULLBRIGHT;
+			ent.flags  = RF_FULLBRIGHT;
 			ent.angles = angles;
 			ent.angles[ROLL] = rand() % 360;
 			V_AddEntity (&ent);
@@ -1544,12 +1477,7 @@ void CL_AddPlayerBeams (void)
 }
 
 
-/*
-=================
-CL_AddTEnts
-=================
-*/
-void CL_AddTEnts (void)
+void CL_AddTEnts ()
 {
 	CL_AddBeams ();
 	// PMM - draw plasma beams

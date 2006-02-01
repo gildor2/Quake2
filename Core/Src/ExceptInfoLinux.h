@@ -70,10 +70,10 @@ struct SIGCONTEXT
 #define T_CACHEFLT		19			// Cache flush exception
 
 
-/*=============================================================================
+/*
 
   Places with useful documentation/sources:
-    wine:
+    wine (should be a primary source: always up-to-date and easy to read):
 		dlls/ntdll/signal_i386.c
 		winedocs/en/winedev-kernel.sgml - "Translating signals to exceptions"
 	kernel:
@@ -92,4 +92,4 @@ struct SIGCONTEXT
 		...
 		char retcode[]	-
 
-=============================================================================*/
+*/

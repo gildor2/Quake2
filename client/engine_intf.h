@@ -17,7 +17,7 @@ struct refImport_t
 	void	(*_FS_CopyFile) (const char *src, const char *dst);
 	void	(*_FS_CopyFiles) (const char *srcMask, const char *dstDir);
 	void	(*_FS_RemoveFiles) (const char *mask);
-	void	(*_Vid_Restart) (void);
+	void	(*_Vid_Restart) ();
 	bool	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
 	int	(*_ImageExists) (const char *name, int stop_mask);
 	void	(*_LoadPCX) (const char *name, byte *&pic, byte *&palette, int &width, int &height);
@@ -100,7 +100,7 @@ inline void FS_RemoveFiles (const char *mask)
 {
 	ri._FS_RemoveFiles (mask);
 }
-inline void Vid_Restart (void)
+inline void Vid_Restart ()
 {
 	ri._Vid_Restart ();
 }

@@ -269,6 +269,7 @@ CORE_API const char *appPackage ();
 
 CORE_API unsigned appMilliseconds ();
 CORE_API const char *appTimestamp ();
+CORE_API void appSleep (unsigned msec);
 
 
 /*-----------------------------------------------------------------------------

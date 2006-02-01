@@ -1,6 +1,5 @@
-! check: under Wine: when exec "error -drop", will work OK, then exec "quit" - OK!; "error Hehehe" -> lots of bugs, but, really,
-  VERY similar internal paths ... (difference in WinMain(): fatal error will jump to external TRY/CATCH, and IsFatalError==true on exit);
-  Something made wrong ?!
+- "version" cvar: created in common.cpp, but updated when this file or qcommon.h changed only (date is not updated!)
+- check: under Wine: errors does not catched (vc-win32: TRY_S/CATCH_S do works, but TRY/CATCH does not works) -- Wine bugs?
 - FPU exception detection bugs:
   CODE:  float sss; uint_cast(sss)=0xFF800000; appPrintf("sss=%g\n",sss);
   - message will be "float zero divide" (error is different! (but FPU too)) -> display all FPU errors -> "FPU exception" ?
@@ -33,14 +32,14 @@
 ?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
    (saved without shot) but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
 - explosions are invisible through non-transparent water (incorrect server-side PVS cull ?) -- should be at least dlights ?? (or not?)
-- when game paused: moving mouse will not rotate view, but when game unpaused -- will rotate to moved amount (should not rotate)
-? game, base1, kill all grunts -- dead bodies will fall through floor
+? game, base1, kill all grunts -- dead bodies will fall through floor (not always)
 - jumpy demo "tower" (at home, all Q2 versions -- at least from p10) -- low fps on original server computer ?
 
 - q3 player model animation:
   - when standing on a movable entity - legs will move in entity direction:
     ? should analyze usercmd
     ? check ground entity and compare player speed with its speed (dirty, map "lumber", moving tape -- CONTENTS_CURRENT_NNN|CONTENTS_SOLID)
+  - should detect teleports (respawns) and reset rotating submodels (current: will 'slowly' rotate from old direction to new one)
 
 - ATI: BK_EndFrame(): if add GL_SetMultitexture(0) to the end of function, sky will be corrupted (NV -- OK)
 
@@ -56,7 +55,6 @@
     - disco: neon lamp text should not disappear
   ? g_misc.c::SP_light() -- disabled lights with style>=32
 
-? game crash in msvcrt.dll (pak loading/unloading/download breaking/map not found)
 ? crash on map change/game load with Anachronox map : crash when door/elevator moving somewhere on level -- absolute pointers ?
 
 - z-buffer bugs with glass floor on "omd_map1"
@@ -69,6 +67,9 @@
 
 - new pmove.cpp errors:
   - "ground3" cafe, on the street: cannot jump onto a corner column (horiz. speed set to 0 due to position snap)
+
+! Win9x (98SE): when running + rotating view, when releasing <forward> key, but still rotating with mouse,
+  player will continue to run for a few seconds (bug present in original q2 too)
 
 UNRECOVARABLE:
 ~~~~~~~~~~~~~~
@@ -140,9 +141,10 @@ SOURCE FILES (COMPILER):
     made as call to separate function.
   - not understand template classes as friends (VC7 - OK)
 - (VisualC++ 7) -- cannot use default arguments for functions, which are part of structure
-  Workaround: should use Struc_Func() inline (with default args) instead of struc.Func() call
+  Workaround: should use `inline Struc_Func()' (with default args) instead of struc.Func() call
 - GNU C++ 3.4: optimization: "-O2"-level: (all bugs - from FP hacks!?)
-    - "force-mem" optimization: incorrect code, when use uint_cast():
+    ! all these bugs are covered with "strict-aliasing" optimization; can use "-fno-strict-aliasing" to allow FP-hack constructions.
+    - incorrect code, when use uint_cast():
 	float appRsqrt (float number)
 	{
 		float x2 = number * 0.5f;
@@ -151,7 +153,7 @@ SOURCE FILES (COMPILER):
 		return number;
 	}
       (appearance): bugs with movement, light; when adapt appRsqrt(), movement will be correct, but lighting - not
-    - "shedule-insns2" optimization: incorrect code: (gl_bspmodel.cpp, LoadSurfaces2())
+    - gl_bspmodel.cpp, LoadSurfaces2()
 	if (surfs->side)
 	{
 		s->plane.normal.Negate ();       // -> FNegate() *3 times -- FP hack
@@ -160,8 +162,7 @@ SOURCE FILES (COMPILER):
 	}
       Bug: normal.Negate() is not finished, but already analyzed in SetType(): normal==(1,0,0)=>(-1,0,0) will be analyzed as (1,0,0)
       (appearance): bad light: no dlights on walls with normal {-1,0,0}; no lighting for models from this wall's SURF_LIGHT
-    ! both of these bugs are covered with "strict-aliasing" optimization; can use "-fno-strict-aliasing" to allow FP-hack constructions.
-      Also, check GCC manual:
+    * Also, check GCC manual:
        - "3.8  Options to Request or Suppress Warnings" : '-Wstrict-aliasing' to detect possible errors -- our situations was not detected!
        - "5.33 Specifying Attributes of Types" : 'may_alias' attribute
        - "6.3  Restricted Pointer Aliasing": '__restrict__' keyword

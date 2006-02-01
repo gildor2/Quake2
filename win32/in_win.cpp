@@ -684,7 +684,6 @@ static void JoyMove (usercmd_t *cmd)
 		return;
 
 	int i;
-	static DWORD oldbuttonstate = 0, oldpovstate = 0;
 
 	// acquire joystick data
 	JOYINFOEX ji;
@@ -695,36 +694,38 @@ static void JoyMove (usercmd_t *cmd)
 
 	//--------- loop through the buttons -----------------------
 	// key a joystick event or auxillary event for higher number buttons for each state change
-	DWORD buttonstate = ji.dwButtons;
+	DWORD buttonState = ji.dwButtons;
+	static DWORD oldButtonState = 0;
 	for (i = 0; i < joy_numButtons; i++)
 	{
-		int oldState = (oldbuttonstate >> i) & 1;
-		int newState = (buttonstate >> i) & 1;
+		int oldState = (oldButtonState >> i) & 1;
+		int newState = (buttonState    >> i) & 1;
 		if (oldState != newState)
 			Key_Event (K_JOY1 + i, newState != 0);	// for button index >= 4 used K_AUXn (n = button-4)
 	}
-	oldbuttonstate = buttonstate;
+	oldButtonState = buttonState;
 
 	if (joy_hasPov)
 	{
 		// POV movement -> K_AUX29..K_AUX32
-		DWORD povstate = 0;
+		DWORD povState = 0;
+		static DWORD oldPovState = 0;
 		if (ji.dwPOV != JOY_POVCENTERED)
 		{
-			if (ji.dwPOV == JOY_POVFORWARD)		povstate |= 1;
-			if (ji.dwPOV == JOY_POVRIGHT)		povstate |= 2;
-			if (ji.dwPOV == JOY_POVBACKWARD)	povstate |= 4;
-			if (ji.dwPOV == JOY_POVLEFT)		povstate |= 8;
+			if (ji.dwPOV == JOY_POVFORWARD)		povState |= 1;
+			if (ji.dwPOV == JOY_POVRIGHT)		povState |= 2;
+			if (ji.dwPOV == JOY_POVBACKWARD)	povState |= 4;
+			if (ji.dwPOV == JOY_POVLEFT)		povState |= 8;
 		}
 		// determine which bits have changed and key an auxillary event for each change
 		for (i = 0; i < 4 ; i++)
 		{
-			int oldState = (oldpovstate >> i) & 1;
-			int newState = (povstate >> i) & 1;
+			int oldState = (oldPovState >> i) & 1;
+			int newState = (povState    >> i) & 1;
 			if (oldState != newState)
 				Key_Event (K_AUX29 + i, newState != 0);
 		}
-		oldpovstate = povstate;
+		oldPovState = povState;
 	}
 
 	//------------- loop through the axes ----------------------
@@ -760,27 +761,23 @@ static void JoyMove (usercmd_t *cmd)
 			break;
 
 		case AxisTurn:
-			{
-				if (isAbsAxis)
-					fAxisValue *= cl_yawspeed->value * cls.frametime;
-				else
-					fAxisValue *= 180.0f;
-				cl.viewangles[YAW] += fAxisValue;
-			}
+			if (isAbsAxis)
+				fAxisValue *= cl_yawspeed->value * cls.frametime;
+			else
+				fAxisValue *= 180.0f;
+			cl.viewangles[YAW] += fAxisValue;
 			break;
 
 		case AxisLook:
-			{
-				if (isAbsAxis)
-					fAxisValue *= cl_pitchspeed->value * cls.frametime;
-				else
-					fAxisValue *= 180.0f;
-				// take into account inverted mouse
-				if (m_invert->integer)
-					cl.viewangles[PITCH] -= fAxisValue;
-				else
-					cl.viewangles[PITCH] += fAxisValue;
-			}
+			if (isAbsAxis)
+				fAxisValue *= cl_pitchspeed->value * cls.frametime;
+			else
+				fAxisValue *= 180.0f;
+			// take into account inverted mouse
+			if (m_invert->integer)
+				cl.viewangles[PITCH] -= fAxisValue;
+			else
+				cl.viewangles[PITCH] += fAxisValue;
 			break;
 		}
 	}

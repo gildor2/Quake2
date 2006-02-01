@@ -1,5 +1,8 @@
 #include "client.h"
 
+//!! NOTE: some particle effects are not synced to game time (not affected by timescale!)
+//!!   Example: CL_TrapParticles(), CL_TeleportParticles()
+//!! Some particle effects are instant (once created and then fading)
 
 /*-----------------------------------------------------------------------------
 	Lightstyles
@@ -125,7 +128,7 @@ cdlight_t *CL_AllocDlight (int key, const CVec3 &origin)
 		dst = cl_dlights;
 
 	memset (dst, 0, sizeof(cdlight_t));
-	dst->key = key;
+	dst->key    = key;
 	dst->origin = origin;
 	return dst;
 }
@@ -287,15 +290,15 @@ static void AddParticleTraces (float timeDelta)
 			{
 			case PT_SPARKLE:
 				t = pos1 / dist * timeDelta;	// time offset
-				cp->type = p->type;
-				cp->color = 0;					// any -- ignored
+				cp->type     = p->type;
+				cp->color    = 0;				// any -- ignored
 				cp->alphavel = -1.0f / p->fadeTime;
-				cp->alpha = (p->lifeTime - (p->time + t)) / p->lifeTime *
+				cp->alpha    = (p->lifeTime - (p->time + t)) / p->lifeTime *
 					(p->maxAlpha - p->minAlpha) + p->minAlpha -
 					(timeDelta - t) / p->fadeTime;
 				cp->accel[2] = 0;
+				cp->org      = pos;
 				cp->vel.Zero();
-				cp->org = pos;
 				break;
 			}
 		}
@@ -320,23 +323,23 @@ particleTrace_t *CL_AllocParticleTrace (const CVec3 &pos, const CVec3 &vel, floa
 	{
 		if (p->allocated) continue;
 
-		p->allocated = true;
-		p->lifeTime = lifeTime;
-		p->fadeTime = fadeTime;
+		p->allocated  = true;
+		p->lifeTime   = lifeTime;
+		p->fadeTime   = fadeTime;
 
 		CVec3	dir;
 		VectorNormalize (vel, dir);
-		p->pos = pos;
-		p->vel = vel;
+		p->pos        = pos;
+		p->vel        = vel;
 
-		p->time = 0;
+		p->time       = 0;
 
-		p->minAlpha = 0;
-		p->maxAlpha = 1;
+		p->minAlpha   = 0;
+		p->maxAlpha   = 1;
 
-		p->gravity = 400;
+		p->gravity    = 400;
 		p->elasticity = 1.9;
-		p->radius = 1;
+		p->radius     = 1;
 
 		p->type = PT_SPARKLE;
 		return p;
@@ -363,9 +366,9 @@ static void UpdateParticleBeams (float timeDelta)
 		float radiusDelta = timeDelta * b->growSpeed;
 
 		b->lifeTime -= timeDelta;
-		b->alpha -= alphaDelta;
+		b->alpha    -= alphaDelta;
 		b->color.c[3] = appRound (b->alpha * 255);
-		b->radius += radiusDelta;
+		b->radius   += radiusDelta;
 
 		if ((b->fadeTime > 0 && b->lifeTime <= 0) || b->alpha <= 0 || b->radius <= 0)
 		// do not disappear when "fadeTime == 0" (lifetime is 1 frame)
@@ -1089,7 +1092,7 @@ static void ParticleEffect (const CVec3 &origin, int count, const particleEffect
 		}
 
 		particle_t *p = CL_AllocParticle ();
-		if (!p) return;					// no free particles
+		if (!p) return;				// no free particles
 
 		p->color = fx.color;
 		if (fx.colorRand > 1)
@@ -1132,12 +1135,12 @@ static float MovableParticleEffect (centity_t &ent, const particleEffect_t &fx)
 	CVec3 delta;
 	VectorSubtract (pos, ent.prevTrail, delta);
 	float len = delta.NormalizeFast ();
-	if (len < fx.interval) return 0;	// not enough movement
+	if (len < fx.interval) return 0; // not enough movement
 	delta.Scale (fx.interval);
 	int count = appFloor (len / fx.interval);
 	ParticleEffect (ent.prevTrail, count, fx, nullVec3, delta);
 	VectorMA (ent.prevTrail, count, delta); // ent.prevTrail += delta * count
-	len = count * fx.interval;			// snap len to fx.interval
+	len = count * fx.interval;		// snap len to fx.interval
 	ent.trailLen += len;
 	return len;
 }
@@ -1217,7 +1220,7 @@ void CL_LogoutEffect (const CVec3 &org, int type)
 		color = 0x40;		// red
 
 	static particleEffect_t fx = {
-		0, 8,							// color
+		0, 8,							// color -> from arg
 		{-16,-16,-24, 16,16,32},		// bounds
 		{-20,-20,-20, 20,20,20},		// velocity
 		1.0, 1.3,						// fade time
@@ -1490,9 +1493,9 @@ void CL_BigTeleportParticles (const CVec3 &org)
 		p->color = colortable[rand()&3];
 
 		float angle = 2*M_PI * (rand()&1023) / 1023.0;
-		float dist = rand()&31;
-		float c = cos(angle);
-		float s = sin(angle);
+		float dist  = rand()&31;
+		float c     = cos(angle);
+		float s     = sin(angle);
 
 		p->org[0] = org[0] + c * dist;
 		p->org[1] = org[1] + s * dist;
@@ -1778,9 +1781,9 @@ void CL_IonripperTrail (centity_t &ent)
 		if (!(p = CL_AllocParticle ())) return;
 		p->accel[2] = 0;
 
-		p->alpha = 0.5;
+		p->alpha    = 0.5;
 		p->alphavel = -1.0 / (0.3 + frand() * 0.2);
-		p->color = 0xE4 + (rand()&3);
+		p->color    = 0xE4 + (rand()&3);
 
 		p->org = move;
 		p->vel[0] = vel0;
@@ -1799,7 +1802,7 @@ void CL_TrapParticles (const CVec3 &origin)
 	CVec3 start, end;
 	start = end = origin;
 	start[2] -= 14;
-	end[2] += 64;
+	end[2]   += 64;
 
 	static const particleEffect_t fx = {
 		0xE0, 1,						// color
@@ -1816,6 +1819,7 @@ void CL_TrapParticles (const CVec3 &origin)
 
 	// complex
 	CVec3 org = origin;
+	// 8 box vertices:
 	for (int i= -2; i <= 2; i += 4)
 		for (int j = -2; j <= 2; j += 4)
 			for (int k = -2; k <= 4; k += 4)
@@ -1823,20 +1827,17 @@ void CL_TrapParticles (const CVec3 &origin)
 				particle_t *p;
 				if (!(p = CL_AllocParticle ())) return;
 
-				p->color = 0xE0 + (rand()&3);
+				p->color    = 0xE0 + (rand()&3);
 				p->alphavel = -1.0 / (0.3 + (rand()&7) * 0.02);
 
-				//?? rand() * crand() ??
-				p->org[0] = org[0] + i + ((rand()&23) * crand());
-				p->org[1] = org[1] + j + ((rand()&23) * crand());
-				p->org[2] = org[2] + k + ((rand()&23) * crand());
+				p->org[0] = org[0] + i + crand()*23;
+				p->org[1] = org[1] + j + crand()*23;
+				p->org[2] = org[2] + k + crand()*23;
 
 				CVec3 dir;
-				dir.Set (j*8, i*8, k*8);
-
+				dir.Set (j*8, i*8, k*8);	// move outside from center
 				dir.NormalizeFast ();
-				float vel = 50 + rand()&63;
-				VectorScale (dir, vel, p->vel);
+				VectorScale (dir, 50 + (rand()&63), p->vel);
 			}
 }
 
@@ -1850,7 +1851,7 @@ void CL_TeleportParticles (const CVec3 &org)
 				particle_t *p;
 				if (!(p = CL_AllocParticle ())) return;
 
-				p->color = 7 + (rand()&7);
+				p->color    = 7 + (rand()&7);
 				p->alphavel = -1.0 / (0.3 + (rand()&7) * 0.02);
 
 				p->org[0] = org[0] + i + (rand()&3);
@@ -1858,11 +1859,9 @@ void CL_TeleportParticles (const CVec3 &org)
 				p->org[2] = org[2] + k + (rand()&3);
 
 				CVec3 dir;
-				dir.Set (j*8, i*8, k*8);
+				dir.Set (j*8, i*8, k*8);	// move outside from center
 				dir.NormalizeFast ();
-
-				float vel = 50 + (rand()&63);
-				VectorScale (dir, vel, p->vel);
+				VectorScale (dir, 50 + (rand()&63), p->vel);
 			}
 }
 
@@ -2043,7 +2042,7 @@ void CL_MonsterPlasmaShell(const CVec3 &origin)
 		p->accel[2] = 0;
 
 		p->alphavel = INSTANT_PARTICLE;
-		p->color = 0xE0;
+		p->color    = 0xE0;
 
 		CVec3 dir;
 		dir.Set (crand(), crand(), crand());
@@ -2074,5 +2073,4 @@ void CL_WidowSplash (const CVec3 &org)
 //??		p->accel[2] = (originally -- undefined) ??
 		p->alphavel = -0.8 / (0.5 + frand()*0.3);
 	}
-
 }

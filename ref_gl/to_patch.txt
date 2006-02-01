@@ -8,3 +8,17 @@
 - marics maps
 - rogue, xatrix maps
 - make levelshots for baseq2/rogue/xatrix/ctf dm maps
+
+- try to create inline shaders for "flashfire" map - something like cartoon rendering ?
+  ! require some flags processing: have transparent surfaces
+	textures/*
+	{
+		{
+			map $texture
+		}
+		{
+			map $whiteimage
+			alphaGen dot 0 1
+			blendFunc GL_ZERO GL_SRC_ALPHA
+		}
+	}

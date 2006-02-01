@@ -531,7 +531,7 @@ void CL_Disconnect ()
 	unguard;
 }
 
-void CL_Disconnect_f (void)
+void CL_Disconnect_f ()
 {
 	Com_DropError ("Disconnected from server");
 }
@@ -545,7 +545,7 @@ Just sent as a hint to the client that they should
 drop to full console
 =================
 */
-void CL_Changing_f (void)
+void CL_Changing_f ()
 {
 	//ZOID
 	//if we are downloading, we don't change!  This so we don't suddenly stop downloading a map
@@ -558,14 +558,8 @@ void CL_Changing_f (void)
 }
 
 
-/*
-=================
-CL_Reconnect_f
-
-The server is changing levels
-=================
-*/
-void CL_Reconnect_f (void)
+// The server is changing levels
+void CL_Reconnect_f ()
 {
 	//ZOID
 	//if we are downloading, we don't change!  This so we don't suddenly stop downloading a map
@@ -792,12 +786,7 @@ void CL_ConnectionlessPacket ()
 }
 
 
-/*
-=================
-CL_ReadPackets
-=================
-*/
-void CL_ReadPackets (void)
+static void CL_ReadPackets ()
 {
 	guard(CL_ReadPackets);
 
@@ -882,15 +871,9 @@ void CL_RegisterSounds ()
 	S_EndRegistration ();
 }
 
-/*
-=================
-CL_Snd_Restart_f
 
-Restart the sound subsystem so it can pick up
-new parameters and flush all sounds
-=================
-*/
-void CL_Snd_Restart_f (void)
+// Restart the sound subsystem so it can pick up new parameters and flush all sounds
+void CL_Snd_Restart_f ()
 {
 	S_Shutdown ();
 	S_Init ();
@@ -1143,13 +1126,8 @@ void CL_Init ()
 	guard(CL_Init);
 
 	Con_Init ();
-#if defined __linux__ || defined __sgi
-	S_Init ();
 	Vid_Init ();
-#else
-	Vid_Init ();
-	S_Init ();	// sound must be initialized after window is created
-#endif
+	S_Init ();						// win32: sound must be initialized after window is created (can link to dummy wnd?)
 
 	if (!DEDICATED) cl_entities = new centity_t [MAX_EDICTS];
 

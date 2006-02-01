@@ -30,14 +30,7 @@ Build a client frame structure
 
 static byte fatpvs[65536/8];				// 65536 is MAX_MAP_LEAFS
 
-/*
-============
-SV_FatPVS
-
-The client will interpolate the view position,
-so we can't use a single PVS point
-===========
-*/
+// The client will interpolate the view position, so we can't use a single PVS point
 static void SV_FatPVS (const CVec3 &org)
 {
 	int		i, j;
@@ -74,14 +67,7 @@ static void SV_FatPVS (const CVec3 &org)
 }
 
 
-/*
-=============
-SV_BuildClientFrame
-
-Decides which entities are going to be visible to the client, and
-copies off the playerstat and areabits.
-=============
-*/
+// Decides which entities are going to be visible to the client, and copies off the playerstat and areabits.
 static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldframe)
 {
 	guard(SV_BuildClientFrame);
@@ -112,7 +98,7 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 	frame->ps = cl_ent->client->ps;
 
 	SV_FatPVS (org);
-	const byte *clientphs = CM_ClusterPHS (clientcluster);
+	const byte *clientphs = CM_ClusterPHS (clientcluster);	//?? used for RF_BEAM visibility detection only
 
 	// build up the list of visible entities
 	frame->num_entities = 0;
@@ -144,6 +130,9 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 			// beams just check one point for PHS
 			if (ent->s.renderfx & RF_BEAM)
 			{
+				//?? change this; may check beam using its center point and "radius" (if beam is relatively small)
+				//?? or check `distance_to_beam / beam_size' relation -- if small - send always, if large - use
+				//?? PVS (fatpvs[]) -- will require more complex `ent->clusternums[]' for beams ...
 				int num = ent->clusternums[0];
 				if (!(clientphs[num >> 3] & (1 << (num & 7))))
 					continue;
@@ -265,13 +254,7 @@ Encode a client frame onto the network channel
 =============================================================================
 */
 
-/*
-=============
-SV_EmitPacketEntities
-
-Writes a delta update of an entity_state_t list to the message.
-=============
-*/
+// Writes a delta update of an entity_state_t list to the message.
 static void SV_EmitPacketEntities (const client_frame_t *from, const client_frame_t *to, sizebuf_t *msg, bool extProtocol)
 {
 	guard(SV_EmitPacketEntities);
@@ -333,11 +316,6 @@ static void SV_EmitPacketEntities (const client_frame_t *from, const client_fram
 
 
 
-/*
-==================
-SV_WriteFrameToClient
-==================
-*/
 void SV_WriteFrameToClient (client_t *client, sizebuf_t *msg)
 {
 	// this is the frame we are creating
@@ -383,14 +361,7 @@ void SV_WriteFrameToClient (client_t *client, sizebuf_t *msg)
 }
 
 
-/*
-==================
-SV_RecordDemoMessage
-
-Save everything in the world out without deltas.
-Used for recording footage for merged or assembled demos
-==================
-*/
+// Save everything in the world out without deltas. Used for recording footage for merged or assembled demos
 void SV_RecordDemoMessage (void)
 {
 	guard(SV_RecordDemoMessage);

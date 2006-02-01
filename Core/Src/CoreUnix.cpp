@@ -1,7 +1,8 @@
 #include "CorePrivate.h"
 #include <unistd.h>					// for readlink() and gettimeofday()
 #include <sys/utsname.h>			// for uname() syscall
-#include <sys/time.h>				// struct timeval
+#include <time.h>					// nanosleep()
+#include <sys/time.h>				// struct timeval, gettimeofday()
 #include <termios.h>				// ioctl() codes for tty
 #include <sys/ioctl.h>				// ioctl() function itself
 #include <signal.h>
@@ -21,6 +22,23 @@ unsigned appMilliseconds ()
 	static unsigned secBase = 0;
 	if (!secBase) secBase = t.tv_sec;
 	return (t.tv_sec - secBase) * 1000 + t.tv_usec / 1000;
+}
+
+
+void appSleep (unsigned msec)
+{
+#if 0
+	struct timespec t;
+	t.tv_sec  = msec / 1000;
+	t.tv_nsec = msec % 1000 * 1000000;
+	nanosleep (&t, NULL);
+#else
+	// under linux, nanosleep() and usleep() versions are less precise, than select() version
+	struct timeval t;
+	t.tv_sec  = msec / 1000;
+	t.tv_usec = msec % 1000 * 1000;
+	select (0, NULL, NULL, NULL, &t);
+#endif
 }
 
 
@@ -83,6 +101,7 @@ void appDisplayError ()
 	//??		/usr/share/gtk-2.0/demo/dialog.c
 	//??		/usr/share/gtk-doc/html/gtk/GtkMessageDialog.html
 	//?? Qt: <qmessagebox.h>: QMessageBox::information() etc
+	//?? Can use dlsym(RTLD_DEFAULT,"funcName") -- will return !NULL when linked with such library
 	// NOTE: already logged to console via appPrintf() !
 #if DO_GUARD
 //	printf ("%s\n\nHistory: %s", *GErr.Message, *GErr.History);

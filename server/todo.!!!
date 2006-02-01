@@ -1,4 +1,4 @@
-sc_world.cpp:
+sv_world.cpp:
 ! check: is AreaEdicts() required for ClipMoveToEntities() and PointContents() (after md3->radius computation fix)
 - edict_t: have field "area", which is link_t: 2 pointers; we can use this 2 pointers in our own purposes
   BUT(!!): used area.prev!=0 for check world link

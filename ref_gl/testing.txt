@@ -53,3 +53,13 @@ textures/*
 		tcGen vector ( 0.003 0.05 0.003 ) ( 0.003 0.003 0.05 )
 	}
 }
+
+3. view-dependent lighting
+textures/*
+{
+	{
+		map $whiteimage
+		alphaGen dot 0 1
+		blendFunc GL_SRC_ALPHA GL_ZERO
+	}
+}

@@ -27,8 +27,9 @@
 	Dynamic libraries
 -----------------------------------------------------------------------------*/
 
-#define GNU_SOURCE					// require some GNU extensions
+#define GNU_SOURCE					// require some GNU extensions (dladdr())
 #include <dlfcn.h>					//?? another place
+#undef GNU_SOURCE
 
 #define DLLEXT		".so"			//?? cygwin uses .dll (may be, .so works too?)
 

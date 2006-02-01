@@ -25,6 +25,10 @@ sub DumpSymbol {
 	my ($hexAddr, $name, $force) = @_;
 	my $addr = hex($hexAddr) - $base;
 
+	if ($name =~ /^_[^_]\w+$/) {
+		$name =~ s/^_//;
+	}
+
 	if ($lastSymName ne "") {
 		if ($lastSymAddr != $addr) {
 			printf ("%08X   %s\n", $lastSymAddr, $lastSymName);
@@ -45,7 +49,9 @@ sub DumpSymbol {
 
 die "Usage: dumpmap <map_file>\n" if $#ARGV != 0;
 
-open (IN, $ARGV[0]) or die "Cannot open \"".$ARGV[0]."\"\n";
+# create process with piped output
+open(IN, "-|", "2>&1 cat $ARGV[0] | c++filt") or die "Can't pipe to c++filt\n";
+#--open (IN, $ARGV[0]) or die "Cannot open \"".$ARGV[0]."\"\n";
 
 # get base address
 WaitLine ("Linker script and memory map");
@@ -67,10 +73,16 @@ while (getline ())
 	# OUTPUT(filename format)  => end of section description
 	last if $line =~ /^OUTPUT\(.*\)$/;
 	# check for new section
-	($sec2) = $line =~ /^ \s* \*\( ([^)]+) \) $/x;
-	($sec2) = $line =~ /^ \s* \*\(SORT\( ([^)]+) \)\) $/x if !defined($sec2);
+	($sec2) = $line =~ /^ \s* \*\( ([^)]+) \) $/x;								# ignore line?
+	($sec2) = $line =~ /^ \s* \*\(SORT\( ([^)]+) \)\) $/x if !defined($sec2);	# ignore line?
+	($sec2) = $line =~ /^ (\S+) \s+ 0x\w+ \s+ 0x\w+ $/x if !defined($sec2);		# section start; may be, add symbol here?
 	if (defined($sec2)) {
 		$sec2 =~ s/^\.//;
+		if ($sec2 =~ /\s/) {
+			# spaces in section name (when line = "*(.sec)" or *(SORT(...)) only)
+#			print "*** ignore sec [$sec2] ***\n";
+			next;
+		}
 		$section = $sec2;
 #		print "*** $section ***\n";			###
 		next;			# no further processing for this line
@@ -116,6 +128,9 @@ while (getline ())
 			} elsif ($name =~ /^ \S+ \s* = \s+ \. \s* $/x) {
 				($name2) = $name =~ /^ (\S+) \s* = /x;
 				$name = $name2;
+			} elsif ($name =~ /^ \. \s* \= \s* /x) {
+#				print "?  $name\n";			###
+				next;
 			}
 #			print ".. $addr $name\n";		###
 			# generate symbol
@@ -136,7 +151,7 @@ DumpSymbol ("", "", 0);
 
 #        0xADDRESS  VARIABLE = VALUE      -- ignore
 # *fill* 0xADDRESS  0xSEG_SIZE 00         -- ignore
-# .sec   0xADDRESS  0xSEG_SIZE            -- ignore (no objfile specified)
+# .sec   0xADDRESS  0xSEG_SIZE            -- (no objfile specified) => change section
 # OUTPUT(Path/ExeName pormat)             -- ignore (last line in .map file)
 #        0xADDR     PROVIDE (symbol, address) -- ignore
 

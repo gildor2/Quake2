@@ -98,7 +98,7 @@ static void Cbuf_InsertText (const char *text)
 Cbuf_CopyToDefer
 ============
 */
-void Cbuf_CopyToDefer (void)
+void Cbuf_CopyToDefer ()
 {
 	memcpy (defer_text_buf, cmd_text_buf, cmd_text.cursize);
 	defer_text_buf[cmd_text.cursize] = 0;
@@ -111,7 +111,7 @@ void Cbuf_CopyToDefer (void)
 Cbuf_InsertFromDefer
 ============
 */
-void Cbuf_InsertFromDefer (void)
+void Cbuf_InsertFromDefer ()
 {
 	if (cmd_debug->integer & 2) appPrintf (S_BLUE"UndeferCommands: ");	// line will be continued from Cbuf_InsertText()
 	Cbuf_InsertText (defer_text_buf);
@@ -124,7 +124,7 @@ void Cbuf_InsertFromDefer (void)
 Cbuf_Execute
 ============
 */
-void Cbuf_Execute (void)
+void Cbuf_Execute ()
 {
 	int		i, len;
 	char	*text;

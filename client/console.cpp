@@ -262,14 +262,6 @@ static void PlaceChar (char c, byte color)
 		con.totallines--;
 	}
 
-	if (c == '\r')
-	{
-		con.endpos = FindLine (con.current);
-		con.times[con.current % NUM_CON_TIMES] = cls.realtime;
-		con.x = 0;
-		return;
-	}
-
 	// mark time for transparent overlay
 	con.times[con.current % NUM_CON_TIMES] = cls.realtime;
 

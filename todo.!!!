@@ -1,12 +1,25 @@
-BUGS:
-~~~~~
-- try to create inline shaders for "flashfire" map - something like cartoon rendering ?
+! server: packets are read with unlimited speed, but sent back only sv_fps (10) times per second
+  ? may be, split server->client data into 2 lists: game flow (10 times per second) and secondary flow (connection info,
+    downloading data etc -- sent back to 'extProtocol' clients every frame)
+  ? what will be, when server will send all data every frame, but will run game frame only 10 times/sec ?
+    - server sent to client data, packed into frames; each frame have counter; we cannot increment it w/o running game
+      frame; may be, we can modify client code to accept non-framed data from server (new protocol)
+  ? downloading is not connectionless (because created user to hold current file info ?)
+  * this will allow 'bandwidth+CPU'-limited download/connect speed + fix problem of frozen connection when changing map with
+    timescale=0
+  ? server should do ge.RunFrame() 10 times/sec, other funcs can be called at any time
+  ? attach priority to packets: downloading should be less priority (will go fast, when fast connection or no players connected)
 - com_speeds: currently, displays some server stats - can use sv_texts.cpp funcs for this; and - separate cvar for this
 - software gamma: should use identityLight corrected by gamma(but: 1**any==1 ?!)/brightness/contrast (not overbright only)
   ? but: sometimes texture modulated by identityLight; separate identityLight and textureIdentityLight ??
     ? may be, only replace 'glBind(NULL)+glColor(color*identityLight)+DrawRect()' (white texture) ->
       'glBind()+glColor(gamma(color)*identityLight)+draw'
     ? may be, bring back white texture support (glBind(NULL) -> glBind("*white"))
+! "symbols.dbg": should bind to executable or encode compile version (win32, mingw32, cygwin etc) into file name to avoid
+  conflicts, when few versions (mostly - win32+unix) resides in a single directory
+
+? remove "./" from all OS filename starts ? (when non-game mounted FS used -- for .pak files etc (not "./baseq2/pak0.pak" but
+  "baseq2/pak0.pak")) -- but keep for quake fs to allow load root-relative file (w/o searchig in few game dirs + w/o adding "baseq2")
 ! add [auto-]detail for rail
 ? make InitialSnapPosition() work with Trace() to allow "teleporter grenade" in LOX mod
 ! check for valid key names for bindings (now: works ':', ';', '+', '=', UNK01, Ctrl+Alt, Alt+Ctrl etc)
@@ -20,7 +33,7 @@ BUGS:
   - CVAR_LOG -- add to crash.log on fatal exit (vid_ref,developer,dedicated,version,
      + {game,mapname,deathmatch,cheats,maxclients}==CVAR_SERVERINFO)
   - log OS version, app command line
-- intro playing: do not display "loading" for cinematics (wait a little before displaying splash?), + try to parse "nextserver"
+- intro playback: do not display "loading" for cinematics (wait a little before displaying splash?), + try to parse "nextserver"
   in Demomap_f() to not launch demos (but keep current code just in case); disable "nointro" code in sv_cmds.cpp::SV_DemoMap_f()
   when app command line contains "map"/"demomap" command (and automatically disable intro; change "4.XX_Changes.txt" about this)
   Current: when specify "map", intro will be initialized + immediately server changed to map; when specify "demomap", server
@@ -35,11 +48,19 @@ BUGS:
     ? all gl buffers should be allocated dynamically; may be, vary size from map surface count
 - fatal error msgbox: display few latest warnings (if going one by one); may be, display as "advanced info" (checkbox)
 
+
 MOD-DEPENDING UI OPTIONS:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-- player models: all or current mod only
+... all or current mod only:
+- player models
 - browse maps
 - autocomplete map/demo names
+MOD COMPATIBILITY:
+~~~~~~~~~~~~~~~~~~
+- (non-UI) do not cut light entities (send them to game dll too)
+- bindings: use common movement/looking binds, or completely separate set
+- use separate system settings (video resolution/gamma, sound volume ...)
+
 
 - rename all "*_debug"   cvars => "debug_*" (more correct names); enable when !NO_DEBUG only
 - "paused": incorrect timing (at least, fx will be incorrect after paused=0)
@@ -67,7 +88,6 @@ MOD-DEPENDING UI OPTIONS:
   ! lerp entity angles (may remove bug with locking inside opening door)
 - "client" source dir: split game-related stuff (effects, particles, prediction etc) and sound/console/keyboard/menu into separate
   dirs (choose 2 names from: cgame, client, ui ... etc)
-- game/m_flash.c : convert float[][3] -> short[][3]  (2.5 Kb -> 2 times smaller ...)
 ? effects::dlights: may be, when fading dlight, modulate its color, not intensity -- this will allow to combine few dlights from
   the same position, but with different color, into a single one
 - input, sound: check requirement of linking to hWnd; perform as less as possible work for re-activating when cl_hwnd changed
@@ -75,13 +95,17 @@ MOD-DEPENDING UI OPTIONS:
 
 ----------------------------------------
 
-? check PHS requirement; what Q3 do; use occluders?
+? check PHS requirement; what Q3 do (checked: in q3 no PHS system at all); check UT; use occluders?
 - option "Screen Flashes" (flash scale ? -- 0 - invisible, 1 - as is)
 - compile option: store configs and savegames (and screenshots?) in "ApplicationData", "MyGames" or inside game directory
   ? Linux: "~/<APP_NAME>/<MOD_NAME>/..." (under user's home directory)
   - this will allow to launch game directly from CD without installation
 
 - if Win32 can't get keyboard focus, "set r_fullscreen 0" (as Unreal2)
+
+REDUCE GAME DATA SIZE:
+- add .ogg support, convert audio to .ogg format (try .ogg, then .wav ...)
+- remove mipmaps from .wal textures (original q2: used in soft renderer only)
 BINDS:
   - "bind key action1|onrelease action2" (Unreal-like); current: "bind key +action" == "bind key +action|onrelease -action" only
   - "bind -ask <action>": will display "Press a key or button for this action" MsgBox and wait for user to press key
@@ -131,7 +155,8 @@ TRACE:
       1) compare trace bounds with ent bbox (very fast; like AreaEdicts())
       2) compare ent sphere with trace cylinder  (already implemented ?)
       3) TransformedTrace()  (already ?)
-  - speedup detection of "tr.fraction != 1" - stop on 1st collision -- special trace flag
+  - speedup detection of "tr.fraction != 1" - stop on 1st collision -- special trace flag; or -- BoolTrace(); current: may be used
+    BrushTrace() with 1 leaf ?
   - TransformedBoxTrace: replace (headnode,origin,angles) with entity; make HeadnodeForBox() -> tempEntity;
     cache/update ent.angles->ent.axis ! (in renderer: ClipToEntities() -- use TransformedBoxTrace; send to renderer axis, not angles
     (check how this will affects left-hand weapon model))
@@ -209,7 +234,7 @@ BSP:
 ? downloading:
   ? sv_user.c :: SV_NextDownload_f() -- should limit downloading speed when server is on modem
   - ext protocol:
-    - allow downloading of jpg/tga instead of pcx/wal (any suitable image)
+    - allow downloading of jpg/tga instead of pcx/wal (any suitable image) (when extProtocol connection only!)
     - download paks (when not very large - limit max size with cvar)
     * download map levelshot (current: jpg only, no other file types)
     - download player models/skins at game time (and allow download indicator during game)

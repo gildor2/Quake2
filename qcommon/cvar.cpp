@@ -624,6 +624,7 @@ const char *Cvar_BitInfo (unsigned bit)
 	{
 		if (var->flags & bit)
 			Info_SetValueForKey (info, var->name, var->string);
+		//?? can simply concat var/value (all cvar names are unique), but check for valid var values ?
 	}
 	return va("%s", info);
 }

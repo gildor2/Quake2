@@ -308,7 +308,7 @@ public:
 	void filename (const char *s2)			{ appCopyFilename (str, s2, N); }	//?? rename function
 	void cat (const char *s2)				{ appStrcatn (str, N, s2); }
 	TString<N>& operator+= (const char *s2)	{ appStrcatn (str, N, s2); return *this; }
-	int sprintf (const char *fmt, ...) PRINTF(2,3)
+	int NOINLINE sprintf (const char *fmt, ...) PRINTF(2,3)						// `NOINLINE' here to disable GCC warning only
 	{
 		va_list	argptr;
 		va_start (argptr, fmt);

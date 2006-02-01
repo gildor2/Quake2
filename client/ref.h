@@ -17,7 +17,7 @@ class CBasicImage
 public:
 	TString<64> Name;
 	short	width, height;
-	virtual void Reload (void) = 0;
+	virtual void Reload () = 0;
 };
 
 

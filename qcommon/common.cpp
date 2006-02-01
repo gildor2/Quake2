@@ -137,7 +137,7 @@ bool IPWildcard (netadr_t *a, const char *mask)
 }
 
 
-server_state_t Com_ServerState (void)
+server_state_t Com_ServerState ()
 {
 	return server_state;
 }
@@ -261,17 +261,12 @@ void Info_SetValueForKey (char *s, const char *key, const char *value)
 	}
 #endif
 
-	if (strlen (key) > MAX_INFO_KEY - 1 || strlen (value) > MAX_INFO_KEY - 1)
-	{
-		appWPrintf ("Keys and values must be < " STR(MAX_INFO_KEY) " characters\n");
-		return;
-	}
 	Info_RemoveKey (s, key);
 	if (!value || !value[0]) return;	// will not add variable with empty value, for example, when game=""
 
 	char newi[MAX_INFO_STRING];
 	int size = appSprintf (ARRAY_ARG(newi), "\\%s\\%s", key, value);
-	if (strlen (s) + size > MAX_INFO_STRING)
+	if (strlen (s) + size >= MAX_INFO_STRING)
 	{
 		appWPrintf ("Info string length exceeded\n");
 		return;
@@ -282,7 +277,7 @@ void Info_SetValueForKey (char *s, const char *key, const char *value)
 	char *v = newi;
 	while (*v)
 	{
-		char c = *v++ & 127;		// strip high bits
+		char c = *v++ & 127;		// strip high bits (note: q3 does not perform this!)
 		if (c >= 32) *s++ = c;
 	}
 	*s = 0;

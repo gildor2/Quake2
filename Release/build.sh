@@ -18,19 +18,15 @@
 #	configure build tools
 #----------------------------------------------------------
 
+[ "$PLATFORM" == "mingw32" ] || [ "$PLATFORM" == "cygwin" ] && PATH=/bin:/usr/bin:$PATH
+
 case "$PLATFORM" in
 	"vc-win32")
 		build="vc32tools --make"
 		maptype="vc"
 		libext=".lib"
 		;;
-	"mingw32"|"cygwin")
-		PATH=/bin:/usr/bin:$PATH		# configure CygWin paths
-		build="gccfilt make -f"			#?? use Tools/gccfilt ?
-		maptype="gcc"
-		libext=".a"
-		;;
-	"linux")
+	"linux"|"mingw32"|"cygwin")
 		build="Tools/gccfilt make -f"	# logging + colorizing
 		maptype="gcc"
 		libext=".a"
@@ -69,6 +65,11 @@ fi
 #----------------------------------------------------------
 
 TIMEFORMAT="Build time: %1R sec"
+
+# verify makefile date
+[ makefile-$PLATFORM -ot quake2.project ] &&
+	echo -e "\e[31mWARNING: makefile for $PLATFORM is older than project file -- recreate it!\e[0m"
+
 time $build makefile-$PLATFORM $TARGET || exit 1
 # generate symbols.dbg
 Tools/SymInfoBuilder/work.pl $OUT $maptype

@@ -1,12 +1,6 @@
 # Makefile for GnuC/unix target
 # This file was automatically generated from "quake2.project": do not edit
 
-GCC_VER = $(shell echo __GNUC__ __GNUC_MINOR__ | gcc -E -xc - | tail -n 1)
-#ifneq ($(GCC_VER),4)
-#$(error [$(GCC_VER)] HEHEHE!)
-#endif
-
-
 #------------------------------------------------------------------------------
 #	Compiler definitions
 #------------------------------------------------------------------------------
@@ -123,7 +117,7 @@ STATIC_DIRS = \
 
 Release/Quake2 : $(STATIC_DIRS) $(STATIC)
 	@echo Creating executable "Release/Quake2" ...
-	$(LINK) -o Release/Quake2 $(STATIC) -shared-libgcc -LSDK/lib -lstdc++ -ldl lib/libs.a -Wl,-Map,Release/Quake2.map,--demangle
+	$(LINK) -o Release/Quake2 $(STATIC) -shared-libgcc -LSDK/lib -lstdc++ -ldl lib/libs.a -Wl,-Map,Release/Quake2.map
 
 #------------------------------------------------------------------------------
 #	"Release/q2ded" target
@@ -182,7 +176,7 @@ DEDICATED_DIRS = \
 
 Release/q2ded : $(DEDICATED_DIRS) $(DEDICATED)
 	@echo Creating executable "Release/q2ded" ...
-	$(LINK) -o Release/q2ded $(DEDICATED) -shared-libgcc -LSDK/lib -lstdc++ -ldl lib/libs.a -Wl,-Map,Release/q2ded.map,--demangle
+	$(LINK) -o Release/q2ded $(DEDICATED) -shared-libgcc -LSDK/lib -lstdc++ -ldl lib/libs.a -Wl,-Map,Release/q2ded.map
 
 #------------------------------------------------------------------------------
 #	"TestApp/TestApp" target
@@ -214,7 +208,7 @@ TEST_DIRS = \
 
 TestApp/TestApp : $(TEST_DIRS) $(TEST)
 	@echo Creating executable "TestApp/TestApp" ...
-	$(LINK) -o TestApp/TestApp $(TEST) -shared-libgcc -LSDK/lib -lstdc++ -ldl lib/libs.a -Wl,-Map,TestApp/TestApp.map,--demangle
+	$(LINK) -o TestApp/TestApp $(TEST) -shared-libgcc -LSDK/lib -lstdc++ -ldl lib/libs.a -Wl,-Map,TestApp/TestApp.map
 
 #------------------------------------------------------------------------------
 #	compiling source files
@@ -393,6 +387,7 @@ DEPENDS_6 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -401,7 +396,6 @@ DEPENDS_6 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -466,6 +460,7 @@ DEPENDS_8 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -474,7 +469,6 @@ DEPENDS_8 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -644,6 +638,7 @@ DEPENDS_13 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -652,7 +647,6 @@ DEPENDS_13 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -1271,6 +1265,7 @@ DEPENDS_29 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1280,7 +1275,6 @@ DEPENDS_29 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -1312,6 +1306,7 @@ DEPENDS_30 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1321,7 +1316,6 @@ DEPENDS_30 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -1351,6 +1345,7 @@ DEPENDS_31 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1360,7 +1355,6 @@ DEPENDS_31 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -1396,6 +1390,7 @@ DEPENDS_32 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1404,7 +1399,6 @@ DEPENDS_32 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/snd_loc.h \
 	client/sound.h \
 	client/vid.h \
@@ -1444,6 +1438,7 @@ DEPENDS_33 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1452,7 +1447,6 @@ DEPENDS_33 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/snd_loc.h \
 	client/sound.h \
 	client/vid.h \
@@ -1484,6 +1478,7 @@ DEPENDS_34 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1492,7 +1487,6 @@ DEPENDS_34 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/cmodel.h \
@@ -1527,6 +1521,7 @@ DEPENDS_35 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1535,7 +1530,6 @@ DEPENDS_35 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -1580,6 +1574,7 @@ DEPENDS_36 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1588,7 +1583,6 @@ DEPENDS_36 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -1619,6 +1613,7 @@ DEPENDS_37 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1627,7 +1622,6 @@ DEPENDS_37 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \

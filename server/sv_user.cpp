@@ -279,7 +279,7 @@ static void SV_BeginDownload_f (int argc, char **argv)
 		// now maps (note special case for maps, must not be in pak)
 		|| (!memcmp (Name, "maps/", 6) && !allow_download_maps->integer)
 		// MUST be in a subdirectory
-		|| !Name.chr ('/'))
+		|| !Name.chr ('/'))		//?? should allow to download from root dir *.pak files ?
 	{	// don't allow anything with .. path
 		MSG_WriteByte (&sv_client->netchan.message, svc_download);
 		MSG_WriteShort (&sv_client->netchan.message, -1);
@@ -291,7 +291,8 @@ static void SV_BeginDownload_f (int argc, char **argv)
 	if (sv_client->download)
 		delete sv_client->download;
 
-	sv_client->download = (byte*) GFileSystem->LoadFile (Name, &sv_client->downloadsize);
+	sv_client->DownloadName  = Name;
+	sv_client->download      = (byte*) GFileSystem->LoadFile (Name, &sv_client->downloadsize);
 	sv_client->downloadcount = offset;
 
 	if (offset > sv_client->downloadsize)

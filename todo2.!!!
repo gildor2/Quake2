@@ -22,6 +22,7 @@ BFG:
 md3 todo:
 - pain animation
 * temp_models.pak -> q3models
+- models showing taunt after throwing a grenade (impossible to recover -- q2 models too?)
 --------------------------------------------
 ? move CopyFiles()/RemoveFiles() to Core (CFileSystem? - no, either global, or CFileContainer)
 ! implement name completion interface (in Commands.cpp + copy to cmd.cpp, or as separate

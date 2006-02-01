@@ -25,6 +25,12 @@ unsigned appMilliseconds ()
 }
 
 
+void appSleep (unsigned msec)
+{
+	Sleep (msec);
+}
+
+
 /*-----------------------------------------------------------------------------
 	Detecting Windows version
 -----------------------------------------------------------------------------*/
@@ -60,6 +66,8 @@ static void DetectOs ()
 	}
 	GIsWinNT = (ver.dwPlatformId == VER_PLATFORM_WIN32_NT);
 	GIsWin2K = (GIsWinNT && ver.dwMajorVersion >= 5);
+	if (!GIsWinNT)
+		ver.dwBuildNumber &= 0xFFFF;	// win9x: LOWORD contains build number, HIGHWORD contains OS version ...
 	for (int i = 0; i < ARRAY_COUNT(table); i++)
 	{
 		const osInfo_t &v = table[i];

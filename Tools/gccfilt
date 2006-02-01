@@ -8,7 +8,7 @@ sub colorCode {
 sub color {
 	my ($line, $color, $hgl) = @_;
 	$hgl = 1 if !defined($hgl);
-	return "\033[${hgl};${color}m".$line."\033[0;37;40m";
+	return "\033[${hgl};${color}m".$line."\033[0m";
 }
 
 sub shorten {
@@ -42,7 +42,7 @@ while ($line = <IN>)
 		my ($pref, $fname, undef, $end) = $line =~ /^ (.*\S) \s+ (-o \s+ (\"[^"]+\"|\S+)) \s+ (.*) $/x;
 		# make line shorter (do not need full cmdline in console); LOG will contain full cmdline
 		$line2 = shorten($pref)." ".$fname." ".shorten($end)."\n";
-		$line2 = color ($line2, 30);
+#		$line2 = color ($line2, 37); -- this will draw `bold-black on black' - may be invisible ...
 	} elsif ($line =~ /^[^:]+: unrecognized option /) {
 		$line2 = color ($line, 35, 0);
 	} elsif ($line =~ /^make: .* Error \w+/) {

@@ -212,7 +212,7 @@ static void CheckCpuSpeed ()
 		{
 			time2 = appMilliseconds ();
 			if (time2 - time1 > 150) break;
-			//?? may be, Sleep()/nanosleep() when time distance is long (>20ms)
+			//?? may be, appSleep() when time distance is long (>20ms)
 		}
 		int64 stamp2 = appCycles64 ();
 		double msecPerCycle = (time2 - time1) / double(stamp2 - stamp1);

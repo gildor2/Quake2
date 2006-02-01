@@ -182,6 +182,28 @@ void cSysErr (int argc, char **argv)
 	appPrintf ("err(%d) = \"%s\"\n", code, appGetSystemErrorMessage (code));
 }
 
+void cSleep (bool usage, int argc, char **argv)
+{
+	if (usage)
+	{
+		appPrintf ("Usage: sleep <msec> [<num_times>]\n");
+		return;
+	}
+	int time = atoi (argv[1]);
+	if (time < 0) time = 0;
+	int times = atoi (argv[2]);
+	if (times < 1) times = 1;
+
+	for (int i = 0; i < times; i++)
+	{
+		int64 t1 = appCycles64 ();
+		appSleep (time);
+		int64 t2 = appCycles64 ();
+		float t3 = appDeltaCyclesToMsecf (t2 - t1);
+		appPrintf ("%d: %.3f (%+.3f)\n", i, t3, t3 - time);
+	}
+}
+
 int main (int argc, char** argv)
 {
 	TRY {
@@ -214,6 +236,7 @@ int main (int argc, char** argv)
 		RegisterCommand ("alloc", cAlloc);
 		RegisterCommand ("sym", cSym);
 		RegisterCommand ("syserr", cSysErr);
+		RegisterCommand ("sleep", cSleep);
 
 		guard(MainLoop);
 		while (!GIsRequestingExit)

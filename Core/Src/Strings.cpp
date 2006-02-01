@@ -7,7 +7,7 @@
 
 int appStrcmp (const char *s1, const char *s2)
 {
-	char	c1, c2;
+	char c1, c2;
 
 	do
 	{
@@ -21,7 +21,7 @@ int appStrcmp (const char *s1, const char *s2)
 
 int appStrncmp (const char *s1, const char *s2, int count)
 {
-	char	c1, c2;
+	char c1, c2;
 
 	do
 	{
@@ -36,7 +36,7 @@ int appStrncmp (const char *s1, const char *s2, int count)
 
 int appStricmp (const char *s1, const char *s2)
 {
-	char	c1, c2;
+	char c1, c2;
 
 	do
 	{
@@ -50,7 +50,7 @@ int appStricmp (const char *s1, const char *s2)
 
 int appStrnicmp (const char *s1, const char *s2, int count)
 {
-	char	c1, c2;
+	char c1, c2;
 
 	do
 	{
@@ -69,7 +69,7 @@ int appStrnicmp (const char *s1, const char *s2, int count)
 
 void appStrcpy (char *dst, const char *src)
 {
-	char	c;
+	char c;
 	do
 	{
 		c = *src++;
@@ -80,7 +80,7 @@ void appStrcpy (char *dst, const char *src)
 
 void appStrncpy (char *dst, const char *src, int count)
 {
-	char	c;
+	char c;
 	do
 	{
 		if (!count--) return;
@@ -94,7 +94,7 @@ void appStrncpylwr (char *dst, const char *src, int count)
 {
 	if (count <= 0) return;
 
-	char	c;
+	char c;
 	do
 	{
 		if (!--count)
@@ -114,7 +114,7 @@ void appStrncpyz (char *dst, const char *src, int count)
 
 	if (count <= 0) return;	// zero-length string
 
-	char	c;
+	char c;
 	do
 	{
 		if (!--count)
@@ -144,7 +144,7 @@ void appCopyFilename (char *dest, const char *src, int len)
 {
 	guardSlow(appCopyFilename);
 
-	char	c;
+	char c;
 	// copy name with replacing '\' -> '/' and lowercasing
 	const char *s = src;
 	char *d = dest;
@@ -222,7 +222,7 @@ int appCStrlen (const char *str)
 
 void appUncolorizeString (char *dst, const char *src)
 {
-	char	c;
+	char c;
 
 	if (!src) src = dst;
 	do
@@ -249,6 +249,7 @@ void appUncolorizeString (char *dst, const char *src)
 #define VA_GOODSIZE		512
 #define VA_BUFSIZE		2048
 
+// name of this function is a short form of "VarArgs"
 const char *va (const char *format, ...)
 {
 	guardSlow(va);
@@ -274,7 +275,7 @@ const char *va (const char *format, ...)
 
 	va_end (argptr);
 
-	if (len < 0)		// not enough buffer space
+	if (len < 0)					// not enough buffer space
 	{
 		const char suffix[] = " ... (overflow)";		// it is better, than return empty string
 		memcpy (buf + VA_BUFSIZE - sizeof(suffix), suffix, sizeof(suffix));
@@ -343,7 +344,7 @@ bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 		if (next)
 		{
 			masklen = next - mask;
-			next++;		// skip ','
+			next++;					// skip ','
 		}
 		else
 			masklen = strlen (mask);
@@ -359,7 +360,7 @@ bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 		if (mask[0] == '*')
 		{
 			if (masklen == 1 || (masklen == 3 && mask[1] == '.' && mask[2] == '*'))
-				return true;			// "*" or "*.*" -- any name valid
+				return true;		// "*" or "*.*" -- any name valid
 		}
 
 		// "*text*" mask
@@ -384,11 +385,11 @@ bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 				suff++;
 
 				if (namelen < preflen + sufflen)
-					continue;			// name is not long enough
+					continue;		// name is not long enough
 				if (preflen && memcmp (name, mask, preflen))
-					continue;			// different prefix
+					continue;		// different prefix
 				if (sufflen && memcmp (name + namelen - sufflen, suff, sufflen))
-					continue;			// different suffix
+					continue;		// different suffix
 
 				return true;
 			}
@@ -441,11 +442,17 @@ char *CopyString (const char *str, CMemoryChain *chain)
 
 #ifdef STRING_ITEM_TRICK
 // We allocate string in the same block, as CStringItem; but we cannot initialize
-// CStringItem.name field in common case: offset to this field depends on presense
-// of VMT in derived class (basic CStringItem - have no virtual methods, but derived
+// CStringItem.name field in common case: offset to this field depends on VMT presense
+// in derived class (basic CStringItem - have no virtual methods, but derived
 // class can have it ...)
-// To resolve this problem, we using a simple trick with static AllocatedName.
+// To solve this problem, we using a simple trick with static AllocatedName and default
+// constructor for CStringItem.
 char *CStringItem::AllocatedName;
+
+// used in conjunction with "CStringItem::operator new" only!
+CStringItem::CStringItem ()
+:	name (AllocatedName)			// properly initialize CStringItem::name field
+{}
 #endif
 
 void* CStringItem::operator new (size_t size, const char *str)
@@ -456,7 +463,7 @@ void* CStringItem::operator new (size_t size, const char *str)
 	CStringItem *item = (CStringItem*) appMalloc (size + len);
 #ifndef STRING_ITEM_TRICK
 	item->name    = (char*) OffsetPointer (item, size);
-	memcpy (item->name, str, len);			// may be faster than strcpy()
+	memcpy (item->name, str, len);	// faster than strcpy()
 #else
 	AllocatedName = (char*) OffsetPointer (item, size);
 	memcpy (AllocatedName, str, len);
@@ -475,9 +482,9 @@ void* CStringItem::operator new (size_t size, const char *str, CMemoryChain *cha
 	int len = strlen (str) + 1;
 	CStringItem *item = (CStringItem*) chain->Alloc (size + len);
 	item->name = (char*) OffsetPointer (item, size);
-	memcpy (item->name, str, len);			// may be faster than strcpy()
+	memcpy (item->name, str, len);	// faster than strcpy()
 #else
-	// 2 separate blocks: may be more effective memory usage
+	// 2 separate blocks: may be more effective memory usage (CMemoryChain architecture)
 	CStringItem *item = (CStringItem*) chain->Alloc (size);
   #ifndef STRING_ITEM_TRICK
 	item->name    = CopyString (str, chain);
@@ -489,15 +496,6 @@ void* CStringItem::operator new (size_t size, const char *str, CMemoryChain *cha
 	return item;
 	unguardSlow;
 }
-
-#ifdef STRING_ITEM_TRICK
-// used in conjunction with "CStringItem::operator new" only!
-CStringItem::CStringItem ()
-{
-	// properly initialize CStringItem::name field
-	name = AllocatedName;
-}
-#endif
 
 
 int CStringList::GetCount ()
@@ -521,7 +519,7 @@ CStringItem *CStringList::Find (const char *name, CStringItem **after)
 			return item;
 
 		if (cmp < 0)
-			return NULL;				// list is alpha-sorted, and item should be before this place
+			return NULL;			// list is alpha-sorted, and item should be before this place
 		if (after) *after = item;
 	}
 
@@ -541,7 +539,7 @@ const CStringItem *CStringList::Find (const char *name) const
 			return item;
 
 		if (cmp < 0)
-			return NULL;				// list is alpha-sorted, and item should be before this place
+			return NULL;			// list is alpha-sorted, and item should be before this place
 	}
 
 	return NULL;
@@ -559,6 +557,7 @@ CStringItem* CStringList::Find (int index)
 }
 
 
+//!! note: this function works with unsorted list, but Find() -- with sorted; should change!
 int CStringList::IndexOf (const char *str)
 {
 	guardSlow(CStringList::IndexOf);
@@ -605,7 +604,7 @@ bool CStringList::Remove (CStringItem *item)
 		}
 		prev = curr;
 	}
-	return false;		// not found
+	return false;					// not found
 	unguardSlow;
 }
 

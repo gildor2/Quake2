@@ -49,7 +49,7 @@ void appInit (/*?? const char *_cmdLine */)
 
 //!!	GVersion = PkgVersion;
 //!!	RegisterCommand ("version", Cmd_Version);
-	RegisterCommand ("quit", Cmd_Quit);
+	RegisterCommand ("quit", Cmd_Quit);		//?? add "exit" as synonym ("quit" came from Quake, but "exit" from bash etc)
 
 	unguard;
 }

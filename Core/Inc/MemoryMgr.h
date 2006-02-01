@@ -54,23 +54,23 @@ public:
 // VC and GCC does not allow to make "operator new (size,alignment=1)" (def. param) ONLY; so - we
 // have 2 versions of this operators ...
 
-inline void *operator new (size_t size)
+FORCEINLINE void *operator new (size_t size)
 {
 	return appMalloc (size, 1);
 }
 
-inline void *operator new (size_t size, int alignment)
+FORCEINLINE void *operator new (size_t size, int alignment)
 {
 	return appMalloc (size, alignment);
 }
 
-inline void operator delete (void *ptr)
+FORCEINLINE void operator delete (void *ptr)
 {
 	appFree (ptr);
 }
 
 // allocating block from chain
-inline void *operator new (size_t size, CMemoryChain *chain, int alignment = DEFAULT_ALIGNMENT)
+FORCEINLINE void *operator new (size_t size, CMemoryChain *chain, int alignment = DEFAULT_ALIGNMENT)
 {
 	return chain->Alloc (size, alignment);
 };
@@ -79,22 +79,22 @@ inline void *operator new (size_t size, CMemoryChain *chain, int alignment = DEF
 // for GCC: operator new[]/delete[]
 // exact copy of non-[] operators ...
 
-inline void *operator new[] (size_t size)
+FORCEINLINE void *operator new[] (size_t size)
 {
 	return appMalloc (size, 1);
 }
 
-inline void *operator new[] (size_t size, int alignment)
+FORCEINLINE void *operator new[] (size_t size, int alignment)
 {
 	return appMalloc (size, alignment);
 }
 
-inline void operator delete[] (void *ptr)
+FORCEINLINE void operator delete[] (void *ptr)
 {
 	appFree (ptr);
 }
 
-inline void *operator new[] (size_t size, CMemoryChain *chain, int alignment = DEFAULT_ALIGNMENT)
+FORCEINLINE void *operator new[] (size_t size, CMemoryChain *chain, int alignment = DEFAULT_ALIGNMENT)
 {
 	return chain->Alloc (size, alignment);
 };
@@ -102,12 +102,12 @@ inline void *operator new[] (size_t size, CMemoryChain *chain, int alignment = D
 #endif
 
 // hack to initialize VMT for objects, created without using "operator new"
-inline void *operator new (unsigned size, char *buffer)
+FORCEINLINE void *operator new (unsigned size, char *buffer)
 {
 	return buffer;
 }
 //#define CALL_CONSTRUCTOR(obj,type)		obj = new ((char*)obj) type
-template<class T> inline void CALL_CONSTRUCTOR(T *c)
+template<class T> FORCEINLINE void CALL_CONSTRUCTOR(T *c)
 {
 	c = new ((char*)c) T;
 }

@@ -19,7 +19,7 @@ void FS_CopyFiles (const char *srcMask, const char *dstDir);
 void FS_RemoveFiles (const char *mask);
 
 //------- video mode --------
-void Vid_Restart (void);
+void Vid_Restart ();
 bool Vid_GetModeInfo (int *width, int *height, int mode);
 
 //--------- images ----------

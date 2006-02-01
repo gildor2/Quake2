@@ -1,4 +1,0 @@
-#!/bin/bash
-
-chmod a+x *.sh Release/*.sh TestApp/*.sh
-chmod a+x Tools/genmake Tools/SymInfoBuilder/{work.pl,dumpmap-gcc}

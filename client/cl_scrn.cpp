@@ -16,6 +16,7 @@ static cvar_t	*cl_draw2d;
 #define CHAR_HEIGHT	8
 
 // Function DrawString used for painting HUD
+//?? may add shadow fx
 void DrawString (int x, int y, const char *s)
 {
 	int color = C_WHITE;
@@ -268,6 +269,8 @@ static void MessageMode2_f ()
 -----------------------------------------------------------------------------*/
 
 static const char *map_levelshot;
+static TString<64> LoadingNotify;
+static float loadingFrac = 0;
 
 void SCR_SetLevelshot (const char *name)
 {
@@ -322,6 +325,7 @@ void SCR_BeginLoadingPlaque ()
 	CDAudio_Stop ();
 	cls.loading = true;
 	cls.disable_servercount = cl.servercount;
+	LoadingNotify[0] = 0;
 
 	M_ForceMenuOff ();
 	SCR_ShowConsole (false, true);
@@ -341,6 +345,15 @@ void SCR_EndLoadingPlaque (bool force)
 		SCR_ShowConsole (false, true);
 	}
 	unguard;
+}
+
+
+void SCR_LoadingNotify (const char *msg, float frac)
+{
+	LoadingNotify = msg;
+	loadingFrac   = frac;
+	Sys_ProcessMessages ();
+	SCR_UpdateScreen ();
 }
 
 
@@ -401,8 +414,47 @@ static void DrawGUI (bool allowNotifyArea)
 				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "pics/conback");
 				RE_DrawPic (viddef.width / 2, viddef.height / 2, "pics/loading", ANCHOR_CENTER);
 			}
-			if (!conCurrent)
-				Con_DrawNotify (false);		// do not draw notify area when console is visible too
+			// common params
+			int left   = viddef.width / 4;
+			int w      = viddef.width / 2;
+			int r      = appRound (w * loadingFrac);
+			int top    = viddef.height * 4 / 5;
+			int height = 2 * CHAR_HEIGHT;
+			// map name -- draw multi-line centered message
+			if (cl.configstrings[CS_NAME][0])
+			{
+				const char *src = cl.configstrings[CS_NAME];
+				int shift = 0;
+				while (src)
+				{
+					char buf[64];
+					const char *end = strchr (src, '\n');
+					int len;
+					if (end)
+					{
+						len = end - src;
+						appStrncpyz (buf, src, len + 1);
+						src = end + 1;
+					}
+					else
+					{
+						len = strlen (src);
+						memcpy (buf, src, len + 1);
+						src = NULL;
+					}
+					// note: up to 6 lines until overlap
+					DrawString ((viddef.width - CHAR_WIDTH*len) / 2, top - CHAR_HEIGHT*6 + shift, va(S_YELLOW"%s", buf));
+					shift += CHAR_HEIGHT;
+				}
+			}
+			if (LoadingNotify[0])
+			{
+				// graphical progress indicator
+				RE_Fill (left, top, r, height, RGBA(1,1,1,0.1));
+				RE_Fill (left + r, top, w - r, height, RGBA(0.1,0.1,0.1,0.5));
+				// hotification text
+				DrawString (left + 8, top + 4, va(S_BLACK"%s", *LoadingNotify));
+			}
 			allowNotifyArea = false;
 		}
 	}
@@ -424,7 +476,7 @@ static void DrawGUI (bool allowNotifyArea)
 	M_Draw ();
 
 	// draw console
-	if (!cls.loading || !DEVELOPER)
+	if (!(cls.loading && DEVELOPER))
 		if (conCurrent)
 			Con_DrawConsole (conCurrent);
 		else if (allowNotifyArea && cl_draw2d->integer && (cls.key_dest == key_game || cls.key_dest == key_message))

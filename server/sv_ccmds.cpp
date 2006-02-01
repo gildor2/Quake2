@@ -740,9 +740,17 @@ static void SV_Status_f ()
 			appPrintf (S_RED"ZMBI "S_WHITE);
 		else
 			appPrintf ("%4d ", min (cl->ping, 9999));
-
-		appPrintf ("%-15s %7d %-21s %5d\n", *cl->Name, svs.realtime - cl->lastmessage,
+		// display info
+		appPrintf ("%-15s %7d %-21s %5d", *cl->Name, svs.realtime - cl->lastmessage,
 			NET_AdrToString (&cl->netchan.remote_address), cl->netchan.port);
+		// display downloading info
+		if (cl->download)
+		{
+			int size = cl->downloadsize;
+			if (!size) size = 1;
+			appPrintf (S_BLUE"  dwnl: %s (%d%%)", *cl->DownloadName, cl->downloadcount * 100 / size);
+		}
+		appPrintf ("\n");
 	}
 	appPrintf ("\n");
 }

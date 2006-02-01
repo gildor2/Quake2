@@ -219,11 +219,9 @@ static bool GLimp_SetPixelFormat ()
 {
 	static const PIXELFORMATDESCRIPTOR pfdBase =
 	{
-		sizeof(PIXELFORMATDESCRIPTOR),	// size of this pfd
+		sizeof(PIXELFORMATDESCRIPTOR),
 		1,								// version number
-		PFD_DRAW_TO_WINDOW |			// support window
-		PFD_SUPPORT_OPENGL |			// support OpenGL
-		PFD_DOUBLEBUFFER,				// double buffered
+		PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
 		PFD_TYPE_RGBA,					// RGBA type
 		24,								// 24-bit color depth
 		0, 0, 0, 0, 0, 0,				// color bits ignored
@@ -238,9 +236,7 @@ static bool GLimp_SetPixelFormat ()
 		0,								// reserved
 		0, 0, 0							// layer masks ignored
 	};
-	PIXELFORMATDESCRIPTOR pfd;
-	int		pixelformat;
-
+	int pixelformat;
 	if ((pixelformat = wglChoosePixelFormat (gl_hDC, &pfdBase)) == 0)
 	{
 		ErrFail ("(wgl)ChoosePixelFormat()");
@@ -251,6 +247,7 @@ static bool GLimp_SetPixelFormat ()
 		ErrFail ("(wgl)SetPixelFormat()");
 		return false;
 	}
+	PIXELFORMATDESCRIPTOR pfd;
 	wglDescribePixelFormat (gl_hDC, pixelformat, sizeof(pfd), &pfd);
 
 	// startup the OpenGL subsystem by creating a context and making it current
@@ -315,7 +312,7 @@ bool GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscre
 	{
 		DEVMODE dm;
 		memset (&dm, 0, sizeof(dm));
-		dm.dmSize = sizeof(dm);
+		dm.dmSize       = sizeof(dm);
 		dm.dmPelsWidth  = width;
 		dm.dmPelsHeight = height;
 		dm.dmFields     = DM_PELSWIDTH|DM_PELSHEIGHT;
@@ -349,7 +346,7 @@ bool GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscre
 		ChangeDisplaySettings (NULL, 0);
 	}
 
-	*pwidth = width;
+	*pwidth  = width;
 	*pheight = height;
 	gl_config.fullscreen = fullscreen;
 
@@ -410,7 +407,7 @@ void AppActivate (bool active)
 		}
 		// update gamma
 #if 0
-		UpdateGamma ();				// immediately -- bugs with ATI
+		UpdateGamma ();				// immediately --> bugs with ATI
 #else
 		r_gamma->modified = true;	// later
 #endif

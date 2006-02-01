@@ -118,7 +118,7 @@ STATIC_DIRS = \
 
 Release/Quake2.exe : $(STATIC_DIRS) $(STATIC)
 	@echo Creating executable "Release/Quake2.exe" ...
-	$(LINK) -o Release/Quake2.exe $(STATIC) -shared-libgcc -LSDK/lib -lkernel32 -luser32 -lgdi32 -lwinmm -lwsock32 -ldinput -lstdc++ lib/libs.a -mwindows -Wl,-Map,Release/Quake2.map,--demangle
+	$(LINK) -o Release/Quake2.exe $(STATIC) -shared-libgcc -LSDK/lib -lkernel32 -luser32 -lgdi32 -lwinmm -lwsock32 -ldinput -lstdc++ lib/libs.a -mwindows -Wl,-Map,Release/Quake2.map
 
 #------------------------------------------------------------------------------
 #	"Release/q2ded.exe" target
@@ -177,7 +177,7 @@ DEDICATED_DIRS = \
 
 Release/q2ded.exe : $(DEDICATED_DIRS) $(DEDICATED)
 	@echo Creating executable "Release/q2ded.exe" ...
-	$(LINK) -o Release/q2ded.exe $(DEDICATED) -shared-libgcc -LSDK/lib -lkernel32 -luser32 -lgdi32 -lwinmm -lwsock32 -ldinput -lstdc++ lib/libs.a -Wl,-Map,Release/q2ded.map,--demangle
+	$(LINK) -o Release/q2ded.exe $(DEDICATED) -shared-libgcc -LSDK/lib -lkernel32 -luser32 -lgdi32 -lwinmm -lwsock32 -ldinput -lstdc++ lib/libs.a -Wl,-Map,Release/q2ded.map
 
 #------------------------------------------------------------------------------
 #	"TestApp/TestApp.exe" target
@@ -209,7 +209,7 @@ TEST_DIRS = \
 
 TestApp/TestApp.exe : $(TEST_DIRS) $(TEST)
 	@echo Creating executable "TestApp/TestApp.exe" ...
-	$(LINK) -o TestApp/TestApp.exe $(TEST) -shared-libgcc -LSDK/lib -lkernel32 -luser32 -lgdi32 -lwinmm -lwsock32 -ldinput -lstdc++ lib/libs.a -Wl,-Map,TestApp/TestApp.map,--demangle
+	$(LINK) -o TestApp/TestApp.exe $(TEST) -shared-libgcc -LSDK/lib -lkernel32 -luser32 -lgdi32 -lwinmm -lwsock32 -ldinput -lstdc++ lib/libs.a -Wl,-Map,TestApp/TestApp.map
 
 #------------------------------------------------------------------------------
 #	compiling source files
@@ -388,6 +388,7 @@ DEPENDS_6 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -396,7 +397,6 @@ DEPENDS_6 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -461,6 +461,7 @@ DEPENDS_8 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -469,7 +470,6 @@ DEPENDS_8 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -658,6 +658,7 @@ DEPENDS_14 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -666,7 +667,6 @@ DEPENDS_14 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -1317,6 +1317,7 @@ DEPENDS_31 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1326,7 +1327,6 @@ DEPENDS_31 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -1358,6 +1358,7 @@ DEPENDS_32 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1367,7 +1368,6 @@ DEPENDS_32 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -1397,6 +1397,7 @@ DEPENDS_33 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1406,7 +1407,6 @@ DEPENDS_33 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -1442,6 +1442,7 @@ DEPENDS_34 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1450,7 +1451,6 @@ DEPENDS_34 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/snd_loc.h \
 	client/sound.h \
 	client/vid.h \
@@ -1490,6 +1490,7 @@ DEPENDS_35 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1498,7 +1499,6 @@ DEPENDS_35 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/snd_loc.h \
 	client/sound.h \
 	client/vid.h \
@@ -1530,6 +1530,7 @@ DEPENDS_36 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1538,7 +1539,6 @@ DEPENDS_36 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/cmodel.h \
@@ -1573,6 +1573,7 @@ DEPENDS_37 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1581,7 +1582,6 @@ DEPENDS_37 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -1626,6 +1626,7 @@ DEPENDS_38 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1634,7 +1635,6 @@ DEPENDS_38 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -1665,6 +1665,7 @@ DEPENDS_39 = \
 	client/cl_fx.h \
 	client/cl_input.h \
 	client/cl_playermodel.h \
+	client/cl_scrn.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1673,7 +1674,6 @@ DEPENDS_39 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/screen.h \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
@@ -2038,4 +2038,3 @@ Release/obj-win32/dedstat:
 
 Release/obj-win32/TestApp:
 	@mkdir -p Release/obj-win32/TestApp
-

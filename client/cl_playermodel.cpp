@@ -54,9 +54,9 @@ static void ScanQuake2Models (const char *path)
 		// verify the existence of tris.md2
 		if (!GFileSystem->FileExists (va("%s/players/%s/tris.md2", path, diritem->name)))
 			continue;
-
 		// verify the existence of at least one pcx skin
 		CFileList *skinNames = GFileSystem->List (va("%s/players/%s/*.pcx,*.tga,*.jpg", path, diritem->name), FS_FILE|FS_NOEXT); // images only
+
 		// count valid skins, which consist of a skin with a matching "_i" icon
 		TList<CStringItem> skins;
 		int numSkins = 0;
@@ -75,7 +75,6 @@ static void ScanQuake2Models (const char *path)
 		info->skins    = skins;
 		// add model info to pmi
 		pmiList.Insert (info);
-
 		numPlayerModels++;
 	}
 	delete dirNames;
@@ -87,6 +86,7 @@ static void ScanQuake3Models (const char *path)
 	/*----- get a list of directories -----*/
 	// NOTE: use of FS_PATH_NAMES here will not allow to add new skins by mod for model from base dir
 	CFileList *dirNames = GFileSystem->List (va("%s/models/players/*", path), FS_DIR);
+
 	/*--- go through the subdirectories ---*/
 	for (TListIterator<CFileItem> diritem = *dirNames; diritem; ++diritem)
 	{
@@ -95,9 +95,9 @@ static void ScanQuake3Models (const char *path)
 		// verify the existence of animation.cfg
 		if (!GFileSystem->FileExists (va("%s/models/players/%s/animation.cfg", path, diritem->name)))
 			continue;
-
 		// verify the existence of at least one skin file
 		CFileList *skinNames = GFileSystem->List (va("%s/models/players/%s/lower_*.skin", path, diritem->name), FS_FILE|FS_NOEXT);
+
 		// count valid skins
 		TList<CStringItem> skins;
 		int numSkins = 0;
@@ -121,7 +121,6 @@ static void ScanQuake3Models (const char *path)
 		info->isQ3mdl  = true;
 		// add model info to pmi
 		pmiList.Insert (info);
-
 		numPlayerModels++;
 	}
 	delete dirNames;
@@ -136,7 +135,7 @@ bool ScanPlayerModels ()
 	const char *path = NULL;
 	while (path = FS_NextPath (path))
 	{
-		// give priority to Quake3 player models: when model with same name
+		// give priority to Quake3 player models: when model with the same name
 		// presents in md2 format too, it will be ignored
 		ScanQuake3Models (path);
 		ScanQuake2Models (path);
@@ -432,7 +431,7 @@ static bool SetQuake3Skin (clientInfo_t &ci, const char *modelName, const char *
 {
 	bool result = SetMd3Skin (va("%s/lower_%s", modelName, skinName), ci.legsSkin);
 	result     &= SetMd3Skin (va("%s/upper_%s", modelName, skinName), ci.torsoSkin);
-	result     &= SetMd3Skin (va("%s/head_%s", modelName, skinName), ci.headSkin);
+	result     &= SetMd3Skin (va("%s/head_%s",  modelName, skinName), ci.headSkin);
 
 	return result;
 }
@@ -984,6 +983,7 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, c
 	if (cent.clientInfoId != ci.id)
 	{
 		// clientInfo_t changed -> reset animations for new model
+		//!! same after teleport/respawn or long time without visualization
 		cent.clientInfoId = ci.id;
 		memset (&cent.legsAnim, 0, sizeof(animState_t));
 		cent.legsAnim.angles = ent.angles;

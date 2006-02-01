@@ -88,24 +88,25 @@ static int		area_type;
 int SV_HullForEntity (edict_t *ent);
 
 
+//?? convert these funcs to class members
 // ClearLink is used for new headnodes
-static void ClearLink (link_t *l)
+static void ClearLink (link_t &l)
 {
-	l->prev = l->next = l;
+	l.prev = l.next = &l;
 }
 
-static void RemoveLink (link_t *l)
+static void RemoveLink (link_t &l)
 {
-	l->next->prev = l->prev;
-	l->prev->next = l->next;
+	l.next->prev = l.prev;
+	l.prev->next = l.next;
 }
 
-static void InsertLinkBefore (link_t *l, link_t *before)
+static void InsertLinkBefore (link_t &l, link_t &before)
 {
-	l->next = before;
-	l->prev = before->prev;
-	l->prev->next = l;
-	l->next->prev = l;
+	l.next = &before;
+	l.prev = before.prev;
+	before.prev->next = &l;
+	before.prev = &l;
 }
 
 
@@ -114,8 +115,8 @@ static areanode_t *SV_CreateAreaNode (int depth, const CBox &bounds)
 {
 	areanode_t &anode = areaNodes[numAreaNodes++];
 
-	ClearLink (&anode.trigEdicts);
-	ClearLink (&anode.solidEdicts);
+	ClearLink (anode.trigEdicts);
+	ClearLink (anode.solidEdicts);
 
 	if (depth == AREA_DEPTH)
 	{
@@ -165,23 +166,18 @@ void SV_UnlinkEdict (edict_t *ent)
 	guard(SV_UnlinkEdict);
 
 	if (!ent->area.prev) return;			// not linked
-	RemoveLink (&ent->area);
+	RemoveLink (ent->area);
 	ent->area.prev = ent->area.next = NULL;
 
 	entityHull_t &ex = ents[NUM_FOR_EDICT(ent)];
 	areanode_t *node = ex.area;
 	if (ent->solid == SOLID_TRIGGER)
-		while (node)
-		{
+		for ( ; node; node = node->parent)
 			node->numTrigEdicts--;
-			node = node->parent;
-		}
 	else
-		while (node)
-		{
+		for ( ; node; node = node->parent)
 			node->numSolidEdicts--;
-			node = node->parent;
-		}
+
 	ex.area = NULL;
 
 	unguard;
@@ -361,21 +357,15 @@ void SV_LinkEdict (edict_t *ent)
 	areanode_t *node2 = node;
 	if (ent->solid == SOLID_TRIGGER)
 	{
-		InsertLinkBefore (&ent->area, &node->trigEdicts);
-		while (node2)
-		{
+		InsertLinkBefore (ent->area, node->trigEdicts);
+		for ( ; node2; node2 = node2->parent)
 			node2->numTrigEdicts++;
-			node2 = node2->parent;
-		}
 	}
 	else
 	{
-		InsertLinkBefore (&ent->area, &node->solidEdicts);
-		while (node2)
-		{
+		InsertLinkBefore (ent->area, node->solidEdicts);
+		for ( ; node2; node2 = node2->parent)
 			node2->numSolidEdicts++;
-			node2 = node2->parent;
-		}
 	}
 	ex.area = node;
 

@@ -37,10 +37,22 @@ typedef unsigned int		address_t;
 // allow nested inline expansions
 #pragma inline_depth(8)
 
-#define DLL_IMPORT	__declspec(dllimport)
-#define DLL_EXPORT	__declspec(dllexport)
-#define NORETURN	__declspec(noreturn)
+#define DLL_IMPORT			__declspec(dllimport)
+#define DLL_EXPORT			__declspec(dllexport)
+#define NORETURN			__declspec(noreturn)
 #define PRINTF(n,m)						// no way ...
+
+#if _MSC_VER >= 1200
+#	define FORCEINLINE		__forceinline
+#else
+#	define FORCEINLINE		inline
+#endif
+#if _MSC_VER >= 1300
+#	define NOINLINE			__declspec(noinline)
+#else
+#	define NOINLINE						// no way ...
+#endif
+
 #define GCC_PACK						// VC uses #pragma pack()
 
 

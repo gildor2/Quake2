@@ -1,12 +1,23 @@
-PROBLEMS (LINUX/CYGWIN):
-~~~~~~~~~~~~~~~~~~~~~~~~
-- build.sh: timing info format incorrect (linux)
-- linux testapp.cpp display warning about gets(); cygwin - no warning!
-- gcc4: when creating mapfile, names not demangled; move demangling from "ld" to "syminfo/make" ?
-- cc4: visibility: should use "-fvisibility..." cmdline instead of "#pragma GCC visibility ..."; make auto-detect of gcc4 from makefile?!
-  GCC_VER = $(shell echo __GNUC__ | gcc -E -xc - | tail -n 1)
-  # also: __GCC_MINOR__
-  ifeq ($(GCC_VER),4) / ifneq () ... (no -gt/-lt etc -- should use $(shell if [...] ...;))
+PROBLEMS/BUGS (LINUX/CYGWIN):
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+? build.sh: timing info format incorrect (linux) -- 31.01.2006: all OK?!
+- linux testapp.cpp display warning about gets(); cygwin - no warning! (linker message)
+
+GCC 4.0 BUGS:
+~~~~~~~~~~~~~
+  - when creating mapfile, names not demangled
+    * move demangling from "ld" to "syminfo/make"
+  - visibility: `#pragma GCC visibility' not affects builtin functions, so - conflicts ... (displays warnings about trying to hide
+    built-in visible function `operator new')
+    - should use "-fvisibility..." cmdline instead of "#pragma GCC visibility ..."; make auto-detect of gcc4 from makefile:
+      GCC_VER = $(shell echo __GNUC__ | gcc -E -xc - | tail -n 1)
+      # also: __GCC_MINOR__
+      ifeq ($(GCC_VER),4) / ifneq () ... (no -gt/-lt etc -- should use $(shell if [...] ...;))
+  - inlining: not inlined most of functions (can check with `-Winlines') - compiler says 'max-inline-insns-single reached', which,
+    by info page, should be inline-limit/2 (by default, inline-limit=600 -- by info page)
+    * may be fixed by inserting `--finline-limit=600', which is default (by documentation) value (should be automatic!)
+    NOTE: inlining required for `operator new' and similar functions to take advantage of `mem_dump' console functions --
+      * fixed using FORCEINLINE; other inline functions not inlined anyway (-Winline)!
 
 ------- REQUIREMENTS --------
 min GCC version: 3.4.0
@@ -27,8 +38,8 @@ FIRST TODO (for crash detection):
 
 GCC TODO:
 ~~~~~~~~~
-? mingw32 exception system broken (used exception -> C++ throw before ...); currently uses setjmp() exception path (does works,
-  but cannot catch "error -stack" -- mingw32/cygwin problem)
+? mingw32 exception system (used exception/signal -> C++ throw before ...); currently uses setjmp() exception path (does works,
+  but cannot catch "error -stack" -- mingw32/cygwin problem -- no separate signal stack)
 - may be, access to SDK/includes from src as '#include <*>' instead of '#include "*"'
 - asm constructions:
   - check floor/ceil/round (implement asm? check mingw math.h header for some details)
@@ -43,19 +54,35 @@ To port application to Linux require following steps:
 * exception hook: use signal() functions
 * compile TestApp
 - make net_wins.cpp cross-platform (initial: can create "empty" net device with loopback caps)
-- create sys_win.cpp for Linux (may be, create set of MainLoop wrappers in Core headers -- or set of main()/WinMain()
-  functions, and app should provide MainLoop() only?)
+  ! should redesign networking lower level unit
+- create sys_win.cpp for Linux
+  ? may be, create set of MainLoop wrappers in Core headers -- or set of main()/WinMain() functions, and app should
+    provide MainLoop() only?
 - compile dedicated server (1.cygwin 2.linux)
 - verify network compatibility with Win32
 - ...
-- create empty sound driver
+- create empty sound driver, use it for "nosound=1"
 - port input+windowing -> SDL (may use cygwin+sdl !)
 - ...
+- separate sound driver from client code
 - create OpenAL sound driver, use for win32 too
+? may be, create SDL sound driver too (in a case of absent OpenAL driver)
 - ...
 
 
-Notes:
+To allow binaries to work under any Linux version/distribution:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- avoid dynamic linkage with C++ libraries (libstdc++.so.6 etc)
+  - libstdc++.so: should be dynamic to allow inter-module exceptions (not used here)
+  * tried linux of 2001 year (kernel 2.2, KDE 2.1, libc is v6) -- libc.so.6 requires LIBC2_... exports
+    (so - build with static libc too? -- or static/shared versions?)
+  ? may be, do not need to support old linux versions - build for current versions, but ensure, upgrading linux
+    will not break binary/library compatibility
+- may be, statically link with all modules (app and system)
+
+
+GCC notes:
+~~~~~~~~~~
 * appGetSystemErrorMessage() -- strerror(code)
 * #pragma(pack...) -- struct name __attribute__((__packed__)) {}
   (note: may use __attribute__((packed)) instead
@@ -71,12 +98,14 @@ Notes:
 - type_t varName; "typeof(varName) varName2" == "type_t varName2"
 - __func__ macro: "const char name[]" of current function
 - i386 type attribute: ms_struct, gcc_struct
+- to create dynamic build: use "ld -rpath ..." cmdline arg to allow placing engine .so files into non-standard dirs
 
 ----------------------------------------------------------
 
+"Proc" file system:
 * /proc/version -- OS version (can use uname())
   /proc/cpuinfo -- CPU information (can use for non-x86 or when no CPUID support)
 * /proc/%d      -- some process information (%d == pid); can use "self" instead of %d
-    cmdline     -- very similar to argv[]; useless for self
+    cmdline     -- very similar to argv[]; useless for self (but may be used to obtain cmdlines of other processes)
 *   exename
 *   maps        -- which exe/dll/so loaded (2.4); WARNING: linux and cygwin have different "offset" meaning! (cygwin => entry point)

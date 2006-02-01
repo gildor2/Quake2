@@ -54,6 +54,12 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 	int f = ent.frame;		// Quake2 animation frame
 	int i;
 
+	// consts from pmove.cpp:
+	static const CBox trBounds = {
+		{-16, -16, -24},
+		{ 16,  16,   4}		// as ducked
+	};
+
 	/*----------------------- Death animation -------------------------------*/
 
 	static const simpleAnim_t deaths[] = {
@@ -103,17 +109,12 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 		 */
 		memset (&calcPs, 0, sizeof(player_state_t));
 		// detect crouch
-		if (f >= 135 && f <= 172)		// crstnd/crwalk/crattack/crpain
+		if (f >= 135 && f <= 172)	// crstnd/crwalk/crattack/crpain
 			calcPs.pmove.pm_flags |= PMF_DUCKED;
 		// detect on-ground
 		CVec3 down = ent.origin;
 		down[2] -= 0.25f;
 		trace_t trace;
-		// consts from pmove.cpp:
-		static const CBox trBounds = {
-			{-16, -16, -24},
-			{ 16,  16,   4}		// as ducked
-		};
 		SV_Trace (trace, ent.origin, down, trBounds, edict, MASK_PLAYERSOLID);
 		if (trace.fraction < 1.0f || trace.startsolid)
 			calcPs.pmove.pm_flags |= PMF_ON_GROUND;
@@ -137,7 +138,7 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 	CVec3 velHorz;
 	velHorz[0] = ps->pmove.velocity[0] * 0.125f;
 	velHorz[1] = ps->pmove.velocity[1] * 0.125f;
-	velHorz[2] = 0;		// no vertical component
+	velHorz[2] = 0;					// no vertical component
 
 	CVec3 forward, right;
 	AngleVectors (ps->viewangles, &forward, &right, NULL);
@@ -158,14 +159,27 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 			legs = LEGS_SWIM;
 		else
 		{
-			legs = (velForward > -20) ? LEGS_JUMP : LEGS_JUMPB;
+			bool smallFall = false;
+			if (ps->pmove.velocity[2] <= 0)	// when player jumping - should always playback jump animation
+			{
+				// pmove signals jumping, but it will "jump" even when simply falling from 0.25 height
+				// (running through small ladder); try to check height below player
+				CVec3 down = ent.origin;
+				down[2] -= 57;		// Q3A uses height=64; Q2 have models 0.9 times smaller (QUAKE3_PLAYER_SCALE) => 57
+				trace_t trace;
+				SV_Trace (trace, ent.origin, down, trBounds, edict, MASK_PLAYERSOLID);
+				if (trace.fraction < 1.0f || trace.startsolid)
+					smallFall = true;
+			}
+			if (!smallFall)
+				legs = (velForward > -20) ? LEGS_JUMP : LEGS_JUMPB;
 			// but: when one of jump animations already started, do not change it
 			if (prevLegs == LEGS_JUMP || prevLegs == LEGS_JUMPB)
 				legs = prevLegs;
 			// land animation: automatically launched by client, when JUMP -> IDLE/RUN/WALK
 		}
 	}
-	else if (ps->pmove.pm_flags & PMF_DUCKED)
+	if ((legs == ANIM_NOCHANGE) && (ps->pmove.pm_flags & PMF_DUCKED))
 	{
 		// duck
 		if (absVelHorz < 20)
@@ -175,7 +189,7 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 		else
 			legs = LEGS_BACKCR;
 	}
-	else
+	if (legs == ANIM_NOCHANGE)		// not yet decided, which animation to play => run, walk or idle
 	{
 		// stand
 		if (absVelHorz > 150)

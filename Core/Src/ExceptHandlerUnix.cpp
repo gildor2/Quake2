@@ -9,22 +9,18 @@
 	- when SIGABRT hooked, SIGSEGV (and others) will cause infinite loop with exceptions => stack overflow
 	  (program will try to exit using abort() => raise(SIGABRT))
    CYGWIN NOTES:
-	- cygwin headers have siginfo_t declarations, but support of this call is not implemented (when testing, received NULL
-	  instead of siginfo_t* ...)
+	- cygwin prior to 1.5.19 have siginfo_t declarations in headers, but support of this feature is not implemented (when testing,
+	  received NULL instead of siginfo_t* ...)
 	- cygwin have no sigaltstack(), so we cannot catch stack overflow - app will exit with creation of empty "crash.log"
-	- BUG: when GPF raised->hooked->ignored (inside TRY {exception} CATCH {do-nothing}), application stops reaction on Ctrl-C
-	  (under linux - ok) - possibly bug around SetConsoleCtrlHandler() (not verified)
+	- (bug fixed in 1.5.19) when GPF raised->hooked->ignored (inside TRY {exception} CATCH {do-nothing}), application will stop
+	  reaction on Ctrl-C
 */
 
-
-#if __CYGWIN__
-#define sighandler_t	void(*)(int)
-#endif
 
 #if __linux__
 static void handle_ctrlc (int signum, SIGCONTEXT ctx)
 #else
-static void handle_ctrlc (int signum)
+static void handle_ctrlc (int signum, siginfo_t*, void*)
 #endif
 {
 	if (GIsRequestingExit)			// exit requested, but not yet executed (application is hang?)
@@ -40,7 +36,7 @@ static void handle_ctrlc (int signum)
 #if __linux__
 static void handle_signal (int signum, SIGCONTEXT ctx)
 #else
-static void handle_signal (int signum)
+static void handle_signal (int signum, siginfo_t *info, void *ctx)
 #endif
 {
 	// at first: re-enable all signals
@@ -106,14 +102,26 @@ static void handle_signal (int signum)
 		Out->Printf ("\nStack:\n");
 		DumpMem (Out, (unsigned*) ctx.sc_esp, &ctx);
 		Out->Printf ("\n");
-#if UNWIND_EBP_FRAMES
+	#if UNWIND_EBP_FRAMES
 		Out->Printf ("\nCall stack trace:\n");
 		UnwindEbpFrame (Out, (unsigned*) ctx.sc_ebp);
-#endif
+	#endif
 	}
 #else // __linux__
 	// no context info - simply print error message
-	appBeginError (str);
+	if (info &&						// may be, running under old Cygwin version w/o SA_SIGINFO support
+		(signum == SIGSEGV || signum == SIGFPE))	// no si_addr for this signal numbers
+	{
+		TRY_S {						// guard in a case of non-NULL `info', pointed to incorrect siginfo_t
+			TString<1024> Message;
+			Message.sprintf ("%s in \"%s\"", str, appSymbolName ((address_t)info->si_addr));
+			appBeginError (Message);
+		} CATCH_S {
+			appBeginError (str);	// failed to get extended info -> print minimal information ...
+		} END_CATCH
+	}
+	else
+		appBeginError (str);		// no extended info available
 #endif // __linux__
 
 	THROW_AGAIN;
@@ -134,15 +142,14 @@ static void HookSignal (int signum, void (*handler)(int, SIGCONTEXT))
 
 #else
 
-static void HookSignal (int signum, void (*handler)(int))
+static void HookSignal (int signum, void (*handler)(int,siginfo_t*,void*))
 {
 	struct sigaction sa;
 	sigemptyset (&sa.sa_mask);
-	sa.sa_handler = handler;
-	sa.sa_flags   = 0;
+	sa.sa_handler = (void(*)(int))handler;
+	sa.sa_flags   = SA_SIGINFO;
 	sigaction (signum, &sa, NULL);
 }
-
 
 #endif
 

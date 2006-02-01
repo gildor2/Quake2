@@ -253,6 +253,7 @@ void	InitByteDirs ();
 #define	MAX_INFO_STRING		512
 
 const char * Info_ValueForKey (const char *s, const char *key);
+//?? Info_SetValueForKey: used for Cvar_BitInfo() and 1 place for value("ip")=ip only!
 void	Info_SetValueForKey (char *s, const char *key, const char *value);
 void	Info_Print (const char *s);
 
@@ -375,14 +376,14 @@ void	Cbuf_AddText (const char *text);
 // as new commands are generated from the console or keybindings,
 // the text is added to the end of the command buffer.
 
-void	Cbuf_Execute (void);
+void	Cbuf_Execute ();
 // Pulls off \n terminated lines of text from the command buffer and sends
 // them through Cmd_ExecuteString.  Stops when the buffer is empty.
 // Normally called once per frame, but may be explicitly invoked.
 // Do not call inside a command function!
 
-void	Cbuf_CopyToDefer (void);
-void	Cbuf_InsertFromDefer (void);
+void	Cbuf_CopyToDefer ();
+void	Cbuf_InsertFromDefer ();
 // These two functions are used to defer any pending commands while a map
 // is being loaded (NOTE: cannot simply disable Cbuf_Execute(): while map is loading,
 // there can be executed different commands)
@@ -562,8 +563,8 @@ struct netadr_t
 
 bool	IPWildcard (netadr_t *a, const char *mask);
 
-void	NET_Init (void);
-void	NET_Shutdown (void);
+void	NET_Init ();
+void	NET_Shutdown ();
 
 void	NET_Config (bool multiplayer);
 
@@ -633,7 +634,7 @@ extern netadr_t	net_from;
 extern sizebuf_t net_message;
 
 
-void	Netchan_Init (void);
+void	Netchan_Init ();
 void	Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, const char *format, ...);
 
 
@@ -649,9 +650,9 @@ extern bool map_clientLoaded;
 cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum);
 cmodel_t *CM_InlineModel (const char *name);	// *1, *2, etc
 
-int		CM_NumClusters (void);
-int		CM_NumInlineModels (void);
-const char *CM_EntityString (void);
+int		CM_NumClusters ();
+int		CM_NumInlineModels ();
+const char *CM_EntityString ();
 
 // creates a clipping hull for an arbitrary box
 int		CM_HeadnodeForBox (const CBox &box);

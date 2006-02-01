@@ -94,4 +94,4 @@ syswrite (ARC, $data);
 close (ARC);
 
 # remove GZip archive
-#unlink ("$arcfile.gz");
+unlink ("$arcfile.gz");

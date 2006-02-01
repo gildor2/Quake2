@@ -54,7 +54,11 @@ sub ProcessMap {
 #		print "  [$t/$n] -> [$name] [$args]\n";	#!!!
 		# cut "virtual"
 		if ($name =~ /^virtual\s/) {
-			($name) = $name =~ /^virtual\s+(\S+.*)/;
+			($name) = $name =~ /^virtual\s+(\S.*)/;
+		}
+		# cut "void" at start
+		if ($name =~ /^void\s/) {
+			($name) = $name =~ /^void\s+(\S.*)/;
 		}
 		# detect constructors/destructors
 		($t, $n) = $name =~ /^ (.*) \:\: (.*) $/x;
