@@ -6,8 +6,8 @@
 	- Access to files restricted by mount points. For example, if CFileSystem
 	  have only 1 mount point at "a/b/c", CFileSystem functions will not get
 	  access to "a/b/*" or "a/*"
-	- Supported "hidden" files: name should start with "." (Unix-like)
-	- File names are case-insensitive.
+	- Supported Unix-like "hidden" files (name should start with ".")
+	- File names are case-insensitive (on Unix systems should be in lower case).
 
 =============================================================================*/
 
@@ -59,7 +59,8 @@ class CORE_API CFile
 {
 	//?? can add to CFile/~CFile registering opened files, list with "fsinfo" command
 protected:
-	CFile () {}						// no default constructor
+	CFile ()						// no default constructor
+	{}
 public:
 	virtual ~CFile ()				// close all opened objects; virtual destructor
 	{}

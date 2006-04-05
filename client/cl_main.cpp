@@ -43,9 +43,7 @@ cvar_t	*cl_showclamp;
 
 cvar_t	*cl_paused;
 
-//
 // userinfo
-//
 cvar_t	*info_password;
 cvar_t	*info_spectator;
 cvar_t	*name;
@@ -628,27 +626,6 @@ void CL_PingServers_f ()
 }
 
 
-/*
-=================
-CL_Skins_f
-
-Load or download any custom player skins and models
-=================
-*/
-void CL_Skins_f ()
-{
-	for (int i = 0; i < MAX_CLIENTS; i++)
-	{
-		if (!cl.configstrings[CS_PLAYERSKINS+i][0])
-			continue;
-		appPrintf ("client %d: %s\n", i, cl.configstrings[CS_PLAYERSKINS+i]);
-		SCR_UpdateScreen ();
-		Sys_ProcessMessages ();	// pump message loop
-		CL_ParseClientinfo (i);
-	}
-}
-
-
 /*-----------------------------------------------------------------------------
 	Connectionless communication
 	Responses to broadcasts, etc
@@ -840,22 +817,13 @@ static void CL_ReadPackets ()
 
 //=============================================================================
 
-/*
-==============
-CL_Userinfo_f
-==============
-*/
 void CL_Userinfo_f ()
 {
 	appPrintf (S_GREEN"------- User info settings -------\n");
 	Info_Print (Cvar_BitInfo (CVAR_USERINFO));
 }
 
-/*
-======================
-CL_RegisterSounds
-======================
-*/
+
 void CL_RegisterSounds ()
 {
 	S_BeginRegistration ();
@@ -972,7 +940,7 @@ CVAR_END
 	for (int i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
 		Cvar_Get (va("adr%d", i), "", CVAR_ARCHIVE);
 
-	cls.state = ca_disconnected;
+	cls.state    = ca_disconnected;
 	cls.realtime = appMilliseconds ();
 
 	CL_InitInput ();
@@ -981,7 +949,6 @@ CVAR_END
 	RegisterCommand ("cmd", CL_ForwardToServer_f);
 	RegisterCommand ("pause", CL_Pause_f);
 	RegisterCommand ("pingservers", CL_PingServers_f);
-	RegisterCommand ("skins", CL_Skins_f);
 
 	RegisterCommand ("userinfo", CL_Userinfo_f);
 	RegisterCommand ("snd_restart", CL_Snd_Restart_f);

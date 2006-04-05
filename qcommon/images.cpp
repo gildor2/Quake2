@@ -31,37 +31,40 @@ struct pcxHdr_t
 };
 
 
-void LoadPCX (const char *name, byte *&pic, byte *&palette, int &width, int &height)
+byte* LoadPCX (const char *name, int &width, int &height, byte *&palette)
 {
-	pic = palette = NULL;
-	pcxHdr_t *hdr;
+	palette = NULL;
+
+	byte *file;
 	unsigned filelen;
-	if (!(hdr = (pcxHdr_t*) GFileSystem->LoadFile (name, &filelen))) return;
+	if (!(file = (byte*) GFileSystem->LoadFile (name, &filelen))) return NULL;
+
+	pcxHdr_t *hdr = (pcxHdr_t*)file;
 
 	int w = LittleShort(hdr->xmax) + 1;
 	int h = LittleShort(hdr->ymax) + 1;
 
 	const char *errMsg = NULL;
 	if (filelen < sizeof(pcxHdr_t) + 768 || hdr->manufacturer != 10 || hdr->version != 5 || hdr->encoding != 1 || hdr->bits_per_pixel != 8)
-		errMsg = "LoadPCX(%s): bad pcx file";
+		errMsg = "bad pcx file";
 	else if (w > MAX_IMG_SIZE || h > MAX_IMG_SIZE)
-		errMsg = "LoadPCX(%s): image is too large";
+		errMsg = "image is too large";
 
 	if (errMsg)
 	{
-		delete hdr;
-		Com_DropError (errMsg, name);
+		delete file;
+		Com_DropError ("LoadPCX(%s): %s", name, errMsg);
 	}
 
 	palette = new byte [768];
 	memcpy (palette, (byte *)hdr + filelen - 768, 768);
 
-	width = w;
+	width  = w;
 	height = h;
 
 	byte *src = (byte*)(hdr + 1);
 	byte *dst = (byte*)appMalloc (w * h);
-	pic = dst;
+	byte *ret = dst;
 
 	for (int y = 0; y < h; y++)
 	{
@@ -87,6 +90,7 @@ void LoadPCX (const char *name, byte *&pic, byte *&palette, int &width, int &hei
 	}
 
 	delete hdr;
+	return ret;
 }
 
 
@@ -119,11 +123,10 @@ struct GCC_PACK tgaHdr_t
 #endif
 
 
-void LoadTGA (const char *name, byte *&pic, int &width, int &height)
+byte* LoadTGA (const char *name, int &width, int &height)
 {
-	pic = NULL;
 	byte	*file;
-	if (!(file = (byte*) GFileSystem->LoadFile (name))) return;
+	if (!(file = (byte*) GFileSystem->LoadFile (name))) return NULL;
 
 	tgaHdr_t *hdr = (tgaHdr_t*)file;
 
@@ -133,28 +136,25 @@ void LoadTGA (const char *name, byte *&pic, int &width, int &height)
 	height = LittleShort(hdr->height);
 
 	if (hdr->image_type != 2 && hdr->image_type != 10 && hdr->image_type != 3)
-		errMsg = "LoadTGA(%s): Only type 2 (RGB), 3 (grey) and 10 (RGB RLE) targa RGB images supported";
+		errMsg = "only type 2 (RGB), 3 (grey) and 10 (RGB RLE) images supported";
 	else if (hdr->colormap_type != 0)
-		errMsg = "LoadTGA(%s): colormaps not supported";
+		errMsg = "colormaps not supported";
 	else if (hdr->pixel_size != 32 && hdr->pixel_size != 24 && !(hdr->image_type == 3 && hdr->pixel_size == 8))
-	{
-		delete file;
-		Com_DropError ("LoadTGA(%s): invalid color depth %d for format %d", name, hdr->pixel_size, hdr->image_type);
-	}
+		errMsg = va("invalid color depth %d for format %d", hdr->pixel_size, hdr->image_type);
 	else if (width > MAX_IMG_SIZE || height > MAX_IMG_SIZE)
-		errMsg = "LoadTGA(%s): image is too large";
+		errMsg = "image is too large";
 
 	if (errMsg)
 	{
 		delete file;
-		Com_DropError (errMsg, name);
+		Com_DropError ("LoadTGA(%s): %s", name, errMsg);
 	}
 
 	int numPixels = width * height;
 
 	byte *src = (byte*)(hdr + 1);
 	byte *dst = new byte [numPixels * 4];
-	pic = dst;
+	byte *ret = dst;
 
 	if (hdr->id_length != 0)
 		src += hdr->id_length;		// skip image comment
@@ -218,6 +218,7 @@ void LoadTGA (const char *name, byte *&pic, int &width, int &height)
 	}
 
 	delete file;
+	return ret;
 }
 
 
@@ -230,8 +231,7 @@ static bool jpegerror;
 
 
 METHODDEF(void) J_InitSource (j_decompress_ptr cinfo)
-{
-}
+{}
 
 
 METHODDEF(boolean) J_FillInputBuffer (j_decompress_ptr cinfo)
@@ -253,8 +253,7 @@ METHODDEF(void) J_SkipInputData (j_decompress_ptr cinfo, long num_bytes)
 }
 
 METHODDEF(void) J_TermSource (j_decompress_ptr cinfo)
-{
-}
+{}
 
 METHODDEF(void) J_ErrorExit (j_common_ptr cinfo)
 {
@@ -274,7 +273,7 @@ METHODDEF(void) J_EmitMessage (j_common_ptr cinfo, int msg_level)
 METHODDEF(void) J_ResetErrorMgr (j_common_ptr cinfo)
 {
 	cinfo->err->num_warnings = 0;
-	cinfo->err->msg_code = 0;
+	cinfo->err->msg_code     = 0;
 }
 
 // Replacement for jpeg_std_error
@@ -303,20 +302,18 @@ static struct jpeg_error_mgr *InitJpegError (struct jpeg_error_mgr *err)
 }
 
 
-void LoadJPG (const char *name, byte *&pic, int &width, int &height)
+byte* LoadJPG (const char *name, int &width, int &height)
 {
 	struct jpeg_decompress_struct cinfo;
 	struct jpeg_error_mgr jerr;
 	byte	line[MAX_IMG_SIZE*3];
 
-	pic = NULL;
 	unsigned length;
 	byte *buffer;
-	if (!(buffer = (byte*) GFileSystem->LoadFile (name, &length))) return;
+	if (!(buffer = (byte*) GFileSystem->LoadFile (name, &length))) return NULL;
 
 	jpegerror = false;
-	jpegname = name;
-	const char *errMsg = NULL;
+	jpegname  = name;
 
 	cinfo.err = InitJpegError (&jerr);
 	jpeg_create_decompress (&cinfo);
@@ -336,24 +333,25 @@ void LoadJPG (const char *name, byte *&pic, int &width, int &height)
 	jpeg_start_decompress (&cinfo);
 
 	int columns = cinfo.output_width;
-	int rows = cinfo.output_height;
+	int rows    = cinfo.output_height;
 
+	const char *errMsg = NULL;
 	if (cinfo.output_components != 3)
-		errMsg = "LoadJPG(%s): color components not equal 3";
+		errMsg = "color components not equal 3";
 	else if (columns > MAX_IMG_SIZE || rows > MAX_IMG_SIZE)
-		errMsg = "LoadJPG(%s): image is too large";
+		errMsg = "image is too large";
 
 	if (errMsg)
 	{
 		jpeg_destroy_decompress (&cinfo);
 		delete buffer;
-		Com_DropError (errMsg, name);
+		Com_DropError ("LoadJPG(%s): %s", name, errMsg);
 	}
 
 	byte *decompr = (byte*)appMalloc (columns * rows * 4);
 
 	byte *scanline = line;
-	byte *out = decompr;
+	byte *out      = decompr;
 
 	while (cinfo.output_scanline < rows)
 	{
@@ -372,22 +370,21 @@ void LoadJPG (const char *name, byte *&pic, int &width, int &height)
 	jpeg_finish_decompress (&cinfo);
 	jpeg_destroy_decompress (&cinfo);
 
-	if (!jpegerror)
+	delete buffer;
+	if (jpegerror)
 	{
-		pic = decompr;
-		width = columns;
-		height = rows;
+		delete decompr;
+		return NULL;
 	}
 
-	delete buffer;
+	width  = columns;
+	height = rows;
+	return decompr;
 }
 
 
-/*
- * Finds name.* images within all game dirs and paks; returns 0 if not found or OR'ed
- * set of IMAGE_XXX flags. Name should be without extension and in a lowercase.
- */
-
+// Finds name.* images within all game dirs and paks; returns 0 if not found or OR'ed
+// set of IMAGE_XXX flags. Name should be without extension and in a lowercase.
 int ImageExists (const char *name, int stop_mask)
 {
 	int out = 0;
@@ -431,7 +428,7 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 	int		i;
 
 	appMakeDirectoryForFile (name);
-	FILE	*f;
+	FILE *f;
 	if (!(f = fopen (name, "wb")))
 	{
 		appWPrintf ("WriteTGA(%s): cannot create file\n", name);
@@ -440,7 +437,7 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 
 	byte *src;
 	int size = width * height;
-	// convert RGB to BGR (inplace conversion !)
+	// convert RGB to BGR (inplace!)
 	for (i = 0, src = pic; i < size; i++, src += 3)
 		Exchange (src[0], src[2]);
 
@@ -542,7 +539,7 @@ bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQual
 	FILE	*f;
 	if (!(f = fopen (name, "wb")))
 	{
-		appWPrintf ("WriteJPG: cannot create \"%s\"\n", name);
+		appWPrintf ("WriteJPG(%s): cannot create file\n", name);
 		return false;
 	}
 

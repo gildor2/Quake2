@@ -1,14 +1,23 @@
+#if _WIN32
+#include <windows.h>		// here for COutputDeviceCon only!
+#endif
+
 #include "Core.h"
 
+#if 0
 #include "OutputDeviceFile.h"
 static COutputDeviceStdout	Out;
+#else
+#include "OutputConsole.h"
+static COutputDeviceCon		Out;
+#endif
 
 #include "FileContainerPak.h"
 #include "FileContainerZip.h"
 
 
-char tests[256] = "TestApp.cpp";
-void crash(char *b)
+char tests[32] = "TestApp.cpp";
+void crash (char *b)
 {
 	static float f = 13;
 	float	z;
@@ -21,7 +30,7 @@ void crash(char *b)
 	z = f;
 	if (strlen (b) > 0) z = 0;
 	appPrintf ("%s %f\n", b, z);
-	f = f / z;		// should be "float zero divide" ... (not works for win32)
+	f = f / z;		// should be "float zero divide" ... (not works for WinXP); test for win98!!
 	appPrintf ("f=%g\n", f);
 	*(byte*)NULL = 0;
 	unguard;
@@ -52,13 +61,13 @@ void cXcpt (int argc, char **argv)
 		TEST(crash(tests));						// some tests
 		break;
 	case '4':
-		TEST(((void (*)(void)) NULL) ());		// jump to null address
+		TEST(((void (*)()) NULL) ());			// jump to null address
 		break;
 	case '5':
 		TEST(appStrcmp (NULL, tests));			// crash in local function
 		break;
 	case '6':
-		TEST(sprintf ((char*)1, "%s", tests));	// crash in kernel
+		TEST(sprintf ((char*)1, "%s", tests));	// crash in kernel/libc
 		break;
 	case '7':
 #if 0
@@ -204,12 +213,132 @@ void cSleep (bool usage, int argc, char **argv)
 	}
 }
 
+#if !_WIN32
+//!!! move most code to CoreUnix.cpp
+#include <termios.h>				// tc* functions
+#include <unistd.h>
+#include <fcntl.h>					// fcntl()
+
+void cInput ()
+{
+	if (!isatty (STDIN_FILENO))
+	{
+		appWPrintf ("ERROR: stdin is not a terminal\n");
+		//?? work in non-terminal mode?
+		return;
+	}
+#if __CYGWIN__
+	//?? cygwin bug: execution will be blocked until input received
+	int oldCtl = fcntl (STDIN_FILENO, F_GETFL);
+	fcntl (STDIN_FILENO, F_SETFL, oldCtl|O_NONBLOCK);
+#endif
+	// request attributes
+	struct termios tc;
+	tcgetattr (STDIN_FILENO, &tc);
+	// modify attributes: disable non-canonical terminal mode (no buffered input)
+	struct termios tc2 = tc;
+	tc2.c_lflag     &= ~(ECHO|ICANON);
+	tc2.c_cc[VMIN]  = 0;
+	tc2.c_cc[VTIME] = 0;
+	tcsetattr (STDIN_FILENO, TCSANOW, &tc2);
+	// input loop
+	while (true)
+	{
+		if (GIsRequestingExit) break;
+#if 0
+		fd_set fd;
+		struct timeval tv;
+		FD_ZERO(&fd);
+		FD_SET(STDIN_FILENO, &fd);
+		tv.tv_sec  = 0;
+		tv.tv_usec = 0;
+		if (select (1, &fd, NULL, NULL, &tv) == -1 || FD_ISSET(0, &fd))
+		{
+			appSleep (100);
+			continue;
+		}
+#endif
+
+		char buf;
+		if (read (STDIN_FILENO, &buf, 1) < 1)
+		{
+			printf ("*"); fflush (stdout);
+			appSleep (200);
+			continue;
+		}
+		appPrintf ("%02X = [%c]\n", buf, buf < ' ' ? '?' : buf);
+		if (buf == 4)
+		{
+			appPrintf ("Ctrl-D: break\n");
+			break;
+		}
+	}
+	// restore tc
+	//!! WARNING: should exec after Ctrl-C too!
+	tcsetattr (STDIN_FILENO, TCSANOW, &tc);
+#if __CYGWIN__
+	fcntl (STDIN_FILENO, F_SETFL, oldCtl);
+#endif
+}
+#endif
+
+
+//???????????????????????????????????????????
+
+class CClassEvent
+{
+private:
+	// local types
+	class CDummy { /* empty */ };
+	typedef void (CDummy::*EventFunc_t)();
+	// data fields
+	EventFunc_t func;
+	CDummy		*obj;
+public:
+	CClassEvent ()
+	{}
+	template<class T> CClassEvent (T &object, void (T::*method)())
+	:	func((EventFunc_t)method)
+	,	obj((CDummy*)&object)
+	{}
+	template<class T> void set (T &object, void (T::*method)())
+	{
+		func = (EventFunc_t)method;
+		obj  = (CDummy*)&object;
+	}
+	FORCEINLINE void operator() (void) const
+	{
+		(obj->*func)();
+	}
+};
+
+
+class CTest
+{
+private:
+	int		n;
+public:
+	CTest (int _n)
+	:	n(_n)
+	{}
+	void OnT ()
+	{
+		appPrintf ("n=%d\n", n);
+	}
+};
+
+
 int main (int argc, char** argv)
 {
 	TRY {
 		Out.Register ();
 		appInit ();
 
+/*		CTest tst1(13);
+		CTest tst2(24);
+		CClassEvent evt(tst2, &CTest::OnT);
+		evt ();
+*/
 		// testing file system
 		CFileSystem FS;
 		appInitFileSystem (FS);
@@ -237,6 +366,9 @@ int main (int argc, char** argv)
 		RegisterCommand ("sym", cSym);
 		RegisterCommand ("syserr", cSysErr);
 		RegisterCommand ("sleep", cSleep);
+#if !_WIN32
+		RegisterCommand ("test", cInput);
+#endif
 
 		guard(MainLoop);
 		while (!GIsRequestingExit)

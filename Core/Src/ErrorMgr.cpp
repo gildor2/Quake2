@@ -2,13 +2,6 @@
 #include "OutputDeviceFile.h"
 #include "OutputDeviceMemTail.h"
 
-//?? add "bool GSilentErrors": when true, appError() etc will not set GErr.swError/GIsFatalError +
-//??  appGetErrorLog() will return GNull (incorrect: should avoid ErrLog places at all to allow use of
-//??  logging in a case of later error with GSilentErrors==false)
-//?? use GSilentErrors=1 with some TRY/CATCH blocks; Win32 analog:
-//?? "__try { /*code1*/ } __except(1) { /*code2*/ }" =>
-//?? "GSilentErrors=true;TRY { /*code1*/ } CATCH { /*code2*/ } END_CATCH GSilentErrors=false;"
-
 
 #define CRASH_LOG		"crash.log"
 
@@ -288,7 +281,7 @@ static void Cmd_Error (int argc, char **argv)
 	else if (!stricmp (argv[1], "-stack"))
 		Cmd_Error (argc, argv);					// infinite recurse
 	else if (!stricmp (argv[1], "-throw"))
-		THROW;									//?? use C++ throw?
+		THROW;
 	appFatalError ("%s", argv[1]);
 	unguard;
 }

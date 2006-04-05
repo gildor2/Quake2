@@ -5,6 +5,9 @@
 static bspfile_t bspfile;
 static dBsp2Hdr_t *header;
 
+// forwards
+static const char *ProcessEntstring (const char *entString);
+
 
 //?? Should perform SwapBlock() (as in Q3 bsp tools)
 #if !LITTLE_ENDIAN
@@ -15,19 +18,16 @@ static void SwapQ2BspFile (bspfile_t *f)
 	// models
 	for (i = 0; i < f->numModels; i++)
 	{
-		cmodel_t	*d;
-
-		d = &f->models[i];
-
+		cmodel_t *d = &f->models[i];
 		d->firstface = LittleLong (d->firstface);
-		d->numfaces = LittleLong (d->numfaces);
-		d->headnode = LittleLong (d->headnode);
+		d->numfaces  = LittleLong (d->numfaces);
+		d->headnode  = LittleLong (d->headnode);
 
 		for (j = 0; j < 3; j++)
 		{
 			d->bounds.mins[j] = LittleFloat(d->bounds.mins[j]);
 			d->bounds.maxs[j] = LittleFloat(d->bounds.maxs[j]);
-//			d->origin[j] = LittleFloat(d->origin[j]);
+//			d->origin[j]      = LittleFloat(d->origin[j]);
 		}
 	}
 
@@ -50,11 +50,8 @@ static void SwapQ2BspFile (bspfile_t *f)
 	// texinfos
 	for (i = 0; i < f->numTexinfo; i++)
 	{
-		texinfo_t *d;
-
-		d = &f->texinfo[i];
-
-		float *vec = &d->vecs[0].vec[0];	// hack to get all ([3]+1)[2] == 8 components of texinfo_t.vecs[]
+		dBsp2Texinfo_t *d = &f->texinfo[i];
+		float *vec = &d->vecs[0].vec[0];	// hack to get all ([3]+1)[2] == 8 components of dBsp2Texinfo_t.vecs[]
 		for (j = 0; j < 8; j++)
 			vec[j] = LittleFloat (vec[j]);
 		d->flags = LittleLong (d->flags);
@@ -65,12 +62,12 @@ static void SwapQ2BspFile (bspfile_t *f)
 	// faces
 	for (i = 0; i < f->numFaces; i++)
 	{
-		f->faces[i].texinfo = LittleShort (f->faces[i].texinfo);
-		f->faces[i].planenum = LittleShort (f->faces[i].planenum);
-		f->faces[i].side = LittleShort (f->faces[i].side);
-		f->faces[i].lightofs = LittleLong (f->faces[i].lightofs);
+		f->faces[i].texinfo   = LittleShort (f->faces[i].texinfo);
+		f->faces[i].planenum  = LittleShort (f->faces[i].planenum);
+		f->faces[i].side      = LittleShort (f->faces[i].side);
+		f->faces[i].lightofs  = LittleLong (f->faces[i].lightofs);
 		f->faces[i].firstedge = LittleLong (f->faces[i].firstedge);
-		f->faces[i].numedges = LittleShort (f->faces[i].numedges);
+		f->faces[i].numedges  = LittleShort (f->faces[i].numedges);
 	}
 
 	// nodes
@@ -84,24 +81,24 @@ static void SwapQ2BspFile (bspfile_t *f)
 		}
 		f->nodes[i].children[0] = LittleLong (f->nodes[i].children[0]);
 		f->nodes[i].children[1] = LittleLong (f->nodes[i].children[1]);
-		f->nodes[i].firstface = LittleShort (f->nodes[i].firstface);
-		f->nodes[i].numfaces = LittleShort (f->nodes[i].numfaces);
+		f->nodes[i].firstface   = LittleShort (f->nodes[i].firstface);
+		f->nodes[i].numfaces    = LittleShort (f->nodes[i].numfaces);
 	}
 
 	// leafs
 	for (i = 0; i < f->numLeafs; i++)
 	{
 		f->leafs[i].contents = LittleLong (f->leafs[i].contents);
-		f->leafs[i].cluster = LittleShort (f->leafs[i].cluster);
-		f->leafs[i].area = LittleShort (f->leafs[i].area);
+		f->leafs[i].cluster  = LittleShort (f->leafs[i].cluster);
+		f->leafs[i].area     = LittleShort (f->leafs[i].area);
 		for (j = 0; j < 3; j++)
 		{
 			f->leafs[i].mins[j] = LittleShort (f->leafs[i].mins[j]);
 			f->leafs[i].maxs[j] = LittleShort (f->leafs[i].maxs[j]);
 		}
 
-		f->leafs[i].firstleafface = LittleShort (f->leafs[i].firstleafface);
-		f->leafs[i].numleaffaces = LittleShort (f->leafs[i].numleaffaces);
+		f->leafs[i].firstleafface  = LittleShort (f->leafs[i].firstleafface);
+		f->leafs[i].numleaffaces   = LittleShort (f->leafs[i].numleaffaces);
 		f->leafs[i].firstleafbrush = LittleShort (f->leafs[i].firstleafbrush);
 		f->leafs[i].numleafbrushes = LittleShort (f->leafs[i].numleafbrushes);
 	}
@@ -129,14 +126,14 @@ static void SwapQ2BspFile (bspfile_t *f)
 	for (i = 0; i < f->numBrushes; i++)
 	{
 		f->brushes[i].firstside = LittleLong (f->brushes[i].firstside);
-		f->brushes[i].numsides = LittleLong (f->brushes[i].numsides);
-		f->brushes[i].contents = LittleLong (f->brushes[i].contents);
+		f->brushes[i].numsides  = LittleLong (f->brushes[i].numsides);
+		f->brushes[i].contents  = LittleLong (f->brushes[i].contents);
 	}
 
 	// areas
 	for (i = 0; i < f->numAreas; i++)
 	{
-		f->areas[i].numareaportals = LittleLong (f->areas[i].numareaportals);
+		f->areas[i].numareaportals  = LittleLong (f->areas[i].numareaportals);
 		f->areas[i].firstareaportal = LittleLong (f->areas[i].firstareaportal);
 	}
 
@@ -151,7 +148,7 @@ static void SwapQ2BspFile (bspfile_t *f)
 	for (i = 0; i < f->numBrushsides; i++)
 	{
 		f->brushsides[i].planenum = LittleShort (f->brushsides[i].planenum);
-		f->brushsides[i].texinfo = LittleShort (f->brushsides[i].texinfo);
+		f->brushsides[i].texinfo  = LittleShort (f->brushsides[i].texinfo);
 	}
 
 	// visibility
@@ -187,7 +184,7 @@ static void ProcessQ2BspFile (bspfile_t *f)
 	// texinfo: lowercase all filenames and remove leading "." and "/"
 	for (i = 0; i < f->numTexinfo; i++)
 	{
-		texinfo_t *d = &f->texinfo[i];
+		dBsp2Texinfo_t *d = &f->texinfo[i];
 		char *s = d->texture;
 		for (j = 0; j < sizeof(d->texture); j++, s++)
 			*s = toLower (*s);
@@ -205,7 +202,7 @@ static void ProcessQ2BspFile (bspfile_t *f)
 }
 
 
-static void LoadQ2Submodels (bspfile_t *f, dmodel_t *data)
+static void LoadQ2Submodels (bspfile_t *f, dBsp2Model_t *data)
 {
 	if (f->numModels < 1)
 		Com_DropError ("Map with no models");
@@ -219,7 +216,7 @@ static void LoadQ2Submodels (bspfile_t *f, dmodel_t *data)
 		out->flags     = 0;
 		out->firstface = data->firstface;
 		out->numfaces  = data->numfaces;
-		// dmodel_t have unused field "origin"
+		// dBsp2Model_t have unused field "origin"
 	}
 }
 
@@ -255,27 +252,28 @@ void LoadQ2BspFile ()
 
 	bspfile.type = map_q2;
 
-#define C(num,field,type)	CheckLump(LUMP_##num, (void**)&bspfile.field, sizeof(type))
-	bspfile.lightDataSize = C(LIGHTING, lighting, byte);
-	bspfile.visDataSize =	C(VISIBILITY, visibility, byte);
+#define C(num,field,count,type) \
+	bspfile.count = CheckLump(Q2LUMP_##num, (void**)&bspfile.field, sizeof(type))
+	C(LIGHTING, lighting, lightDataSize, byte);
+	C(VISIBILITY, vis, visDataSize, byte);
 
-	bspfile.numVertexes =	C(VERTEXES, vertexes, dvertex_t);
-	bspfile.numPlanes =		C(PLANES, planes, dplane_t);
-	bspfile.numLeafs =		C(LEAFS, leafs, dleaf_t);
-	bspfile.numNodes =		C(NODES, nodes, dnode_t);
-	bspfile.numTexinfo =	C(TEXINFO, texinfo, texinfo_t);
-	bspfile.numFaces =		C(FACES, faces, dface_t);
-	bspfile.numLeaffaces =	C(LEAFFACES, leaffaces, unsigned short);
-	bspfile.numLeafbrushes = C(LEAFBRUSHES, leafbrushes, unsigned short);
-	bspfile.numSurfedges =	C(SURFEDGES, surfedges, int);
-	bspfile.numEdges =		C(EDGES, edges, dedge_t);
-	bspfile.numBrushes =	C(BRUSHES, brushes, dbrush_t);
-	bspfile.numBrushsides = C(BRUSHSIDES, brushsides, dbrushside_t);
-	bspfile.numAreas =		C(AREAS, areas, darea_t);
-	bspfile.numAreaportals = C(AREAPORTALS, areaportals, dareaportal_t);
+	C(VERTEXES, vertexes, numVertexes, CVec3);
+	C(PLANES, planes, numPlanes, dPlane_t);
+	C(LEAFS, leafs, numLeafs, dBsp2Leaf_t);
+	C(NODES, nodes, numNodes, dBsp2Node_t);
+	C(TEXINFO, texinfo, numTexinfo, dBsp2Texinfo_t);
+	C(FACES, faces, numFaces, dFace_t);
+	C(LEAFFACES, leaffaces, numLeaffaces, unsigned short);
+	C(LEAFBRUSHES, leafbrushes, numLeafbrushes, unsigned short);
+	C(SURFEDGES, surfedges, numSurfedges, int);
+	C(EDGES, edges, numEdges, dEdge_t);
+	C(BRUSHES, brushes, numBrushes, dBsp2Brush_t);
+	C(BRUSHSIDES, brushsides, numBrushsides, dBsp2Brushside_t);
+	C(AREAS, areas, numAreas, darea_t);
+	C(AREAPORTALS, areaportals, numAreaportals, dareaportal_t);
 
-	dmodel_t	*models;
-	bspfile.numModels =		CheckLump (LUMP_MODELS, (void**)&models, sizeof(dmodel_t));	// not in bspfile_t struc
+	dBsp2Model_t *models;
+	bspfile.numModels = CheckLump (Q2LUMP_MODELS, (void**)&models, sizeof(dBsp2Model_t));	// not in bspfile_t struc
 	LoadQ2Submodels (&bspfile, models);
 
 #if !LITTLE_ENDIAN
@@ -289,8 +287,8 @@ void LoadQ2BspFile ()
 	bspfile.entDataSize = C(ENTITIES, entities, char);
 #else
 #undef C
-	bspfile.entities = ProcessEntstring ((char*)header + header->lumps[LUMP_ENTITIES].fileofs);
-	bspfile.entDataSize = strlen (bspfile.entities);
+	bspfile.entStr = ProcessEntstring ((char*)header + header->lumps[Q2LUMP_ENTITIES].fileofs);
+	bspfile.entStrSize = strlen (bspfile.entStr);
 #endif
 
 	unguard;
@@ -326,7 +324,7 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 		Com_DropError ("Couldn't load %s", filename);
 	}
 	bspfile.checksum = LittleLong (Com_BlockChecksum (bspfile.file, bspfile.length));
-		if (checksum) *checksum = bspfile.checksum;
+	if (checksum) *checksum = bspfile.checksum;
 	bspfile.extraChain = new CMemoryChain;
 
 	map_clientLoaded = clientload;
@@ -346,7 +344,7 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 	bspfile.name[0]  = 0;
 	bspfile.file     = NULL;
 	map_clientLoaded = false;
-	Com_DropError ("%s has a wrong BSP header\n", filename);
+	Com_DropError ("%s has a wrong BSP header", filename);
 	return NULL;		// make compiler happy
 
 	unguard;
@@ -358,21 +356,20 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 #define MAX_ENT_FIELDS	32
 #define MAX_TARGETS		256
 
-typedef struct
+struct entField_t
 {
 	char	name[64];
 	char	value[192];
-} entField_t;
+};
 
-typedef struct
+struct target_t
 {
 	char	name[64];
 	CVec3	origin;
-} target_t;
+};
 
 
 static bool haveErrors;
-static bool isPatch;
 static entField_t entity[MAX_ENT_FIELDS];
 static int numEntFields;
 
@@ -480,7 +477,7 @@ static void WriteEntity (char **dst)
 	char	*txt = *dst;
 #endif
 
-/* -- disabled: will remove { "classname" "worldspawn" }  (map "campblud")
+/* -- disabled: will remove { "classname" "worldspawn" }  (empty worldspawn, map "campblud")
 	bool found;
 	// check presence of any non-removed field
 	found = false;
@@ -786,7 +783,7 @@ static bool ProcessEntity ()
 					testflags = testmask = 0;
 				bool found = false;
 				int i;
-				texinfo_t *d;
+				dBsp2Texinfo_t *d;
 				for (i = 0, d = bspfile.texinfo; i < bspfile.numTexinfo; i++, d++)
 					if (appMatchWildcard (d->texture, name, true) && ((d->flags & testmask) == testflags))
 					{
@@ -922,7 +919,7 @@ static bool ProcessEntity ()
 }
 
 
-char *ProcessEntstring (char *entString)
+static const char *ProcessEntstring (const char *entString)
 {
 	guard(ProcessEntstring);
 
@@ -951,7 +948,7 @@ char *ProcessEntstring (char *entString)
 
 	// parse main entstring
 	src = entString;
-	haveErrors = isPatch = false;
+	haveErrors = false;
 	sunTarget[0] = 0;
 	while (!haveErrors && ReadEntity (src))
 	{
@@ -963,7 +960,6 @@ char *ProcessEntstring (char *entString)
 	if (patch)
 	{
 		Com_DPrintf ("Adding entity patch ...\n");
-		isPatch = true;
 		src = patch;
 		while (!haveErrors && ReadEntity (src))
 		{

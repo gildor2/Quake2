@@ -97,7 +97,7 @@ extern byte		areaMask[MAX_MAP_AREAS/8];
 extern bool		forceVisMap;
 
 
-//?? rename (gl_entity_t ? entity_t) -- no "ref" ("refresh")
+//?? rename (gl_entity_t ? entity_t) -- no "ref" (== "refresh")
 struct refEntity_t
 {
 	unsigned flags;

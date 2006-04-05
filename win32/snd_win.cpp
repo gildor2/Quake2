@@ -18,12 +18,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-//#define WAVEOUT_DRV	1	-- not works anyway
+//#define WAVEOUT_DRV	1	-- does not works anyway
 
 #include "WinPrivate.h"
 #include <mmsystem.h>		// required for dsound.h and for WAVEOUT_DRV
 
-// declaration required for new dsound.h header, used from VC6
+// declaration required for dsound.h header from new SDK, used from (old) VC6
 typedef unsigned long DWORD_PTR, *PDWORD_PTR;
 #include <dsound.h>
 
@@ -108,12 +108,12 @@ static bool DS_CreateBuffers ()
 	DWORD			dwWrite;
 
 	memset (&format, 0, sizeof(format));
-	format.wFormatTag = WAVE_FORMAT_PCM;
-	format.nChannels = dma.channels;
-	format.wBitsPerSample = dma.samplebits;
-	format.nSamplesPerSec = dma.speed;
-	format.nBlockAlign = format.nChannels * format.wBitsPerSample / 8;	// bytes per samples for all channels
-	format.cbSize = 0;
+	format.wFormatTag      = WAVE_FORMAT_PCM;
+	format.nChannels       = dma.channels;
+	format.wBitsPerSample  = dma.samplebits;
+	format.nSamplesPerSec  = dma.speed;
+	format.nBlockAlign     = format.nChannels * format.wBitsPerSample / 8;	// bytes per samples for all channels
+	format.cbSize          = 0;
 	format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;	// bytes per sec for all channels
 
 	appPrintf ("Creating DS buffers\n");
@@ -130,10 +130,10 @@ static bool DS_CreateBuffers ()
 	// get access to the primary buffer, if possible, so we can set the
 	// sound hardware format
 	memset (&dsbuf, 0, sizeof(dsbuf));
-	dsbuf.dwSize = sizeof(dsbuf);
-	dsbuf.dwFlags = DSBCAPS_PRIMARYBUFFER;
+	dsbuf.dwSize        = sizeof(dsbuf);
+	dsbuf.dwFlags       = DSBCAPS_PRIMARYBUFFER;
 	dsbuf.dwBufferBytes = 0;
-	dsbuf.lpwfxFormat = NULL;
+	dsbuf.lpwfxFormat   = NULL;
 
 	memset (&dsbcaps, 0, sizeof(dsbcaps));
 	dsbcaps.dwSize = sizeof(dsbcaps);
@@ -165,10 +165,10 @@ static bool DS_CreateBuffers ()
 	{
 		// create the secondary buffer we'll actually work with
 		memset (&dsbuf, 0, sizeof(dsbuf));
-		dsbuf.dwSize = sizeof (DSBUFFERDESC);
-		dsbuf.dwFlags = DSBCAPS_CTRLFREQUENCY|DSBCAPS_LOCSOFTWARE;
+		dsbuf.dwSize        = sizeof (DSBUFFERDESC);
+		dsbuf.dwFlags       = DSBCAPS_CTRLFREQUENCY|DSBCAPS_LOCSOFTWARE;
 		dsbuf.dwBufferBytes = SECONDARY_BUFFER_SIZE;
-		dsbuf.lpwfxFormat = &format;
+		dsbuf.lpwfxFormat   = &format;
 
 		memset (&dsbcaps, 0, sizeof(dsbcaps));
 		dsbcaps.dwSize = sizeof(dsbcaps);
@@ -182,9 +182,9 @@ static bool DS_CreateBuffers ()
 		}
 		Com_DPrintf ("ok\n");
 
-		dma.channels = format.nChannels;
+		dma.channels   = format.nChannels;
 		dma.samplebits = format.wBitsPerSample;
-		dma.speed = format.nSamplesPerSec;
+		dma.speed      = format.nSamplesPerSec;
 
 		if (DS_OK != pDSBuf->GetCaps (&dsbcaps))
 		{
@@ -242,10 +242,10 @@ static bool DS_CreateBuffers ()
 	pDSBuf->GetCurrentPosition (&mmstarttime.u.sample, &dwWrite);
 	pDSBuf->Play (0, 0, DSBPLAY_LOOPING);
 
-	dma.samples = gSndBufSize/(dma.samplebits/8);
-	dma.samplepos = 0;
+	dma.samples          = gSndBufSize/(dma.samplebits/8);
+	dma.samplepos        = 0;
 	dma.submission_chunk = 1;
-	dma.buffer = NULL;	//?? (unsigned char *) lpData;
+	dma.buffer           = NULL;	//?? (unsigned char *) lpData;
 	sample16 = (dma.samplebits/8) - 1;
 
 	return true;
@@ -274,7 +274,7 @@ static void DS_DestroyBuffers ()
 		Com_DPrintf ("...releasing primary buffer\n");
 		pDSPBuf->Release ();
 	}
-	pDSBuf = NULL;
+	pDSBuf  = NULL;
 	pDSPBuf = NULL;
 
 	dma.buffer = NULL;
@@ -336,19 +336,10 @@ static void FreeSound ()
 #endif
 }
 
-/*
-==================
-SNDDMA_InitDirect
 
-Direct-Sound support
-==================
-*/
 static bool SNDDMA_InitDirect ()
 {
-//	DSCAPS	dscaps;
-	int		i;
-
-	dma.channels = 2;
+	dma.channels   = 2;
 	dma.samplebits = 16;
 
 	if (s_khz->integer == 44)
@@ -384,7 +375,7 @@ static bool SNDDMA_InitDirect ()
 
 
 	Com_DPrintf ("...creating DS object: ");
-	for (i = 0; /* have condition inside loop */; i++)
+	for (int i = 0; /* have condition inside loop */; i++)
 	{
 		HRESULT hresult = pDirectSoundCreate (NULL, &pDS, NULL);
 		if (hresult == DS_OK)
@@ -400,17 +391,19 @@ static bool SNDDMA_InitDirect ()
 				return false;
 			}
 
-			if (i == 2)
+			if (i == 4)
 			{
 				appWPrintf ("failed, hardware already in use\n");
 				return false;
 			}
 			Com_DPrintf ("retrying...\n");
-			Sleep (2000);
+			Sleep (1000);
 		}
 	}
 
-/*	dscaps.dwSize = sizeof(dscaps);
+/*
+	DSCAPS	dscaps;
+	dscaps.dwSize = sizeof(dscaps);
 
 	if (DS_OK != pDS->GetCaps (&dscaps))
 		appPrintf ("*** couldn't get DS caps ***\n");
@@ -434,13 +427,7 @@ static bool SNDDMA_InitDirect ()
 
 
 #if WAVEOUT_DRV
-/*
-==================
-SNDDM_InitWav
 
-Crappy windows multimedia base
-==================
-*/
 static bool SNDDMA_InitWav ()
 {
 	WAVEFORMATEX format;
@@ -462,12 +449,12 @@ static bool SNDDMA_InitWav ()
 		dma.speed = 11025;
 
 	memset (&format, 0, sizeof(format));
-	format.wFormatTag = WAVE_FORMAT_PCM;
-	format.nChannels = dma.channels;
-	format.wBitsPerSample = dma.samplebits;
-	format.nSamplesPerSec = dma.speed;
-	format.nBlockAlign = format.nChannels * format.wBitsPerSample / 8;
-	format.cbSize = 0;
+	format.wFormatTag      = WAVE_FORMAT_PCM;
+	format.nChannels       = dma.channels;
+	format.wBitsPerSample  = dma.samplebits;
+	format.nSamplesPerSec  = dma.speed;
+	format.nBlockAlign     = format.nChannels * format.wBitsPerSample / 8;
+	format.cbSize          = 0;
 	format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
 
 	/* Open a waveform device for output using window callback. */
@@ -517,10 +504,10 @@ static bool SNDDMA_InitWav ()
 	}
 	Com_DPrintf ("ok\n");
 
-	dma.samples = gSndBufSize / (dma.samplebits/8);
-	dma.samplepos = 0;
+	dma.samples          = gSndBufSize / (dma.samplebits/8);
+	dma.samplepos        = 0;
 	dma.submission_chunk = 512;
-	dma.buffer = (unsigned char *) lpData;
+	dma.buffer           = (unsigned char *) lpData;
 	sample16 = (dma.samplebits/8) - 1;
 
 	wav_init = true;
@@ -531,14 +518,7 @@ static bool SNDDMA_InitWav ()
 #endif
 
 
-/*
-==================
-SNDDMA_Init
-
-Try to find a sound device to mix for.
-Returns false if nothing is found.
-==================
-*/
+// Try to find a sound device to mix for. Returns false if nothing is found.
 bool SNDDMA_Init ()
 {
 	memset ((void *)&dma, 0, sizeof (dma));
@@ -612,15 +592,10 @@ bool SNDDMA_Init ()
 	return true;
 }
 
-/*
-==============
-SNDDMA_GetDMAPos
 
-return the current sample position (in mono samples read)
-inside the recirculating dma buffer, so the mixing code will know
-how many sample are required to fill it up.
-===============
-*/
+// Return the current sample position (in mono samples read) inside the
+// recirculating dma buffer, so the mixing code will know how many sample
+// are required to fill it up.
 int SNDDMA_GetDMAPos ()
 {
 	int		s;
@@ -643,31 +618,21 @@ int SNDDMA_GetDMAPos ()
 
 
 	s >>= sample16;
-
 	s &= (dma.samples-1);
 
 	return s;
 }
 
-/*
-==============
-SNDDMA_BeginPainting
 
-Makes sure dma.buffer is valid
-===============
-*/
-DWORD	locksize;
+// Makes sure dma.buffer is valid
+static DWORD locksize;
+
 void SNDDMA_BeginPainting ()
 {
-	int		reps;
-	DWORD	dwSize2;
-	void	*pbuf, *pbuf2;
-	HRESULT	hresult;
-	DWORD	dwStatus;
-
 	if (!pDSBuf) return;
 
 	// if the buffer was lost or stopped, restore it and/or restart it
+	DWORD	dwStatus;
 	if (pDSBuf->GetStatus (&dwStatus) != DS_OK)
 		appPrintf ("Couldn't get sound buffer status\n");
 
@@ -679,9 +644,12 @@ void SNDDMA_BeginPainting ()
 
 	// lock the dsound buffer
 
-	reps = 0;
+	int reps = 0;
 	dma.buffer = NULL;
 
+	DWORD	dwSize2;
+	void	*pbuf, *pbuf2;
+	HRESULT	hresult;
 	while ((hresult = pDSBuf->Lock (0, gSndBufSize, &pbuf, &locksize, &pbuf2, &dwSize2, 0)) != DS_OK)
 	{
 		if (hresult != DSERR_BUFFERLOST)
@@ -701,14 +669,8 @@ void SNDDMA_BeginPainting ()
 	dma.buffer = (unsigned char *)pbuf;
 }
 
-/*
-==============
-SNDDMA_Submit
 
-Send sound to device if buffer isn't really the dma buffer
-Also unlocks the dsound buffer
-===============
-*/
+// Send sound to device if buffer isn't really the dma buffer. Also unlocks the dsound buffer
 void SNDDMA_Submit ()
 {
 	if (!dma.buffer)
@@ -723,7 +685,7 @@ void SNDDMA_Submit ()
 		return;
 
 	// find which sound blocks have completed
-	while (1)
+	while (true)
 	{
 		if (snd_completed == snd_sent)
 		{
@@ -732,33 +694,21 @@ void SNDDMA_Submit ()
 		}
 
 		if (! (lpWaveHdr[ snd_completed & WAV_MASK].dwFlags & WHDR_DONE))
-		{
 			break;
-		}
 
 		snd_completed++;	// this buffer has been played
 	}
 
-//appPrintf ("completed %i\n", snd_completed);
-	//
 	// submit a few new sound blocks
-	//
 	while (((snd_sent - snd_completed) >> sample16) < 8)
 	{
-		LPWAVEHDR	h;
-		int			wResult;
-
-		h = lpWaveHdr + ( snd_sent&WAV_MASK );
-		if (paintedtime/256 <= snd_sent)
-		break;	//	appPrintf ("submit overrun\n");
-//appPrintf ("send %i\n", snd_sent);
+		LPWAVEHDR h = lpWaveHdr + ( snd_sent&WAV_MASK );
+		if (paintedtime/256 <= snd_sent) break;
 		snd_sent++;
-		/*
-		 * Now the data block can be sent to the output device. The
-		 * waveOutWrite function returns immediately and waveform
-		 * data is sent to the output device in the background.
-		 */
-		wResult = waveOutWrite (hWaveOut, h, sizeof(WAVEHDR));
+		// Now the data block can be sent to the output device. The
+		// waveOutWrite function returns immediately and waveform
+		// data is sent to the output device in the background.
+		int wResult = waveOutWrite (hWaveOut, h, sizeof(WAVEHDR));
 
 		if (wResult != MMSYSERR_NOERROR)
 		{
@@ -770,35 +720,23 @@ void SNDDMA_Submit ()
 #endif
 }
 
-/*
-==============
-SNDDMA_Shutdown
 
-Reset the sound device for exiting
-===============
-*/
+// Reset the sound device for exiting
 void SNDDMA_Shutdown ()
 {
 	FreeSound ();
 }
 
 
-/*
-===========
-S_Activate
-
-Called when the main window gains or loses focus.
-The window have been destroyed and recreated
-between a deactivate and an activate.
-===========
-*/
+// Called when the main window gains or loses focus. The window have
+// been destroyed and recreated between a deactivate and an activate.
 void S_Activate (bool active)
 {
 	if (pDS && cl_hwnd && snd_isdirect)
 	{
 		if (active)
-			DS_CreateBuffers();
+			DS_CreateBuffers ();
 		else
-			DS_DestroyBuffers();
+			DS_DestroyBuffers ();
 	}
 }

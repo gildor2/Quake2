@@ -416,9 +416,7 @@ bool appIsWildcard (const char *string)
 	String allocation
 -----------------------------------------------------------------------------*/
 
-//?? make strdup()-like name
-
-char *CopyString (const char *str)
+char *appStrdup (const char *str)
 {
 	MEM_ALLOCATOR(str);
 	int size = strlen (str) + 1;
@@ -427,7 +425,7 @@ char *CopyString (const char *str)
 	return out;
 }
 
-char *CopyString (const char *str, CMemoryChain *chain)
+char *appStrdup (const char *str, CMemoryChain *chain)
 {
 	int size = strlen (str) + 1;
 	char *out = (char*)chain->Alloc (size);
@@ -437,7 +435,7 @@ char *CopyString (const char *str, CMemoryChain *chain)
 
 
 /*-----------------------------------------------------------------------------
-	String lists
+	CStringList
 -----------------------------------------------------------------------------*/
 
 #ifdef STRING_ITEM_TRICK
@@ -487,9 +485,9 @@ void* CStringItem::operator new (size_t size, const char *str, CMemoryChain *cha
 	// 2 separate blocks: may be more effective memory usage (CMemoryChain architecture)
 	CStringItem *item = (CStringItem*) chain->Alloc (size);
   #ifndef STRING_ITEM_TRICK
-	item->name    = CopyString (str, chain);
+	item->name    = appStrdup (str, chain);
   #else
-	AllocatedName = CopyString (str, chain);
+	AllocatedName = appStrdup (str, chain);
   #endif
 #endif
 

@@ -279,6 +279,7 @@ DEPENDS = \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputConsole.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \

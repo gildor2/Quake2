@@ -23,7 +23,6 @@ GL_t		GL;
 static GL_t	lib;
 
 // access to GL_t functions by index
-//?? rename most things?
 typedef void (APIENTRY * dummyFunc_t) ();
 struct glDummy_t {
 	dummyFunc_t funcs[1];
@@ -134,8 +133,7 @@ static bool ExtensionSupported (extInfo_t *ext, const char *extStr1, const char 
 	{
 		s = strchr (s, 0) + 1;
 		if (!s[0]) return false;	// no another aliases
-		//?? change notify string
-		Com_DPrintf ("%s not found - try alias %s\n", ext->names, s);
+		Com_DPrintf ("%s is not found - trying alias %s\n", ext->names, s);
 		if (ExtensionNameSupported (s, extStr1) || ExtensionNameSupported (s, extStr2))
 		{
 			ext->name = s;
@@ -283,7 +281,7 @@ void QGL_InitExtensions ()
 	/*----------- notify extension absence ----------*/
 	if (notFoundExt)
 	{
-		appPrintf ("...undetected extensions:\n");
+		appPrintf ("...missing extensions:\n");
 		for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 		{
 			if (!(notFoundExt & (1 << i))) continue;
@@ -336,7 +334,7 @@ void QGL_PrintExtensionsString (const char *label, const char *str, const char *
 			for (j = 0, m = 1, ext = extInfo; j < NUM_EXTENSIONS; j++, ext++, m <<= 1)
 			{
 				const char *s = ext->names;
-				while (s[0])	// while aliases present
+				while (s[0])				// while aliases present
 				{
 					if (!strcmp (s, name)) break;
 					s = strchr (s, 0) + 1;
@@ -446,7 +444,7 @@ void QGL_SwapBuffers ()
 			appWPrintf ("wglSwapBuffers() failed\n");
 	}
 #else
-	glXSwapBuffers (display, wnd) //??
+	glXSwapBuffers (display, wnd) //?? unimplemented!
 #endif
 }
 

@@ -118,7 +118,6 @@ bool appSymbolName (address_t addr, char *buffer, int size)
 		}
 	}
 
-	const char *name;
 	if (i == dbgPackages)
 	{
 		// symbol belongs to a system library
@@ -126,6 +125,7 @@ bool appSymbolName (address_t addr, char *buffer, int size)
 		osGetAddressSymbol (addr, ARRAY_ARG(package), offset);
 	}
 
+	const char *name;
 	if (sym)
 	{
 		// func + offset

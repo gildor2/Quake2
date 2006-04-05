@@ -179,7 +179,7 @@ void SV_Multicast (const CVec3 &origin, multicast_t to, bool oldclients)
 		{
 			int leafnum = CM_PointLeafnum (client->edict->s.origin);
 			int cluster = CM_LeafCluster (leafnum);
-			int area2 = CM_LeafArea (leafnum);
+			int area2   = CM_LeafArea (leafnum);
 			if (!CM_AreasConnected (area1, area2))
 				continue;
 			if ( mask && (!(mask[cluster>>3] & (1<<(cluster&7)) ) ) )

@@ -31,6 +31,7 @@ Build a client frame structure
 static byte fatpvs[65536/8];				// 65536 is MAX_MAP_LEAFS
 
 // The client will interpolate the view position, so we can't use a single PVS point
+//?? move to cmodel.cpp, name 'void CM_BoxPVS(const CBox&, byte *pvs)'
 static void SV_FatPVS (const CVec3 &org)
 {
 	int		i, j;
@@ -87,8 +88,8 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 	for (i = 0; i < 3; i++)
 		org[i] = cl_ent->client->ps.pmove.origin[i]*0.125f + cl_ent->client->ps.viewoffset[i];
 
-	int leafnum = CM_PointLeafnum (org);
-	int clientarea = CM_LeafArea (leafnum);
+	int leafnum       = CM_PointLeafnum (org);
+	int clientarea    = CM_LeafArea (leafnum);
 	int clientcluster = CM_LeafCluster (leafnum);
 
 	// calculate the visible areas
@@ -212,6 +213,8 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 
 		if (sv_labels->integer)
 		{
+			//?? possible bug: in multiplayer, BuildClientFrame() will be called for each client, and labels
+			//?? will be displayed multiple times
 			if (state.modelindex == 255)
 			{
 				int legs, torso, angle1;

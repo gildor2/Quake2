@@ -45,14 +45,14 @@
 
 #else // non-Quake game -------------------------------------------------------
 
-/*?? QUAKE NOTES (may be implemented after Q3 source release ...):
+/*?? QUAKE NOTES:
  *	1. Cleanup Quake3 flags (check: may be, some of them completely useless) and place here only usefull things
  *		usefull: USERINFO, SERVERINFO, NOSET (== ROM?), LATCH, CHEAT, USER_CREATED, GAME_CREATED
  *		useless??: SYSTEMINFO, ROM (== NOSET?), TEMP, NORESTART
  *	2. Make define QUAKE_GAME == QUAKE2||QUAKE3, and remove some flags (from cpp source too), which usefull
  *		for game engine only (GAME_CREATED, USERINFO, SERVERINFO, CHEAT etc)
- *	3. May be, NOSET can be set from cmdline, but ROM will be always in its default value (in Q3 NOSET==ROM, can be set from
- *		cmdline only ??)
+ *	3. May be, NOSET (INIT) can be set from cmdline, but ROM will be always in its default value (in Q3 NOSET==ROM,
+ *		can be set from cmdline only + from engine code)
  */
 
 #define CVAR_NOSET

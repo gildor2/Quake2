@@ -389,12 +389,11 @@ static void ParseCmdline (const char *cmdline)
 		if (s1 && (!s2 || s2 > s1))		// a=b, but '=' not inside quotes
 		{
 			char	varName[64], varValue[256];
-			char	*value;
-
 			// convert to "set a b"
 			appStrncpyz (varName, cmd, s1 - cmd + 1);	// copy "a"
 			appStrncpyz (varValue, s1 + 1, sizeof(varValue));
 			int len = strlen (varValue);
+			const char *value;
 			if (varValue[0] == '\"' && varValue[len-1] == '\"')
 			{
 				// remove quotes
@@ -614,10 +613,10 @@ void Com_Frame (float msec)
 
 			time_after = appCycles ();
 
-			float rf = (time_before_ref) ? appDeltaCyclesToMsecf (time_after_ref - time_before_ref) : 0;
-			float gm = (time_before_game) ? appDeltaCyclesToMsecf (time_after_game - time_before_game) : 0;
-			float sv = appDeltaCyclesToMsecf (time_between - time_before) - gm;
-			float cl = appDeltaCyclesToMsecf (time_after - time_between) - rf;
+			float rf  = (time_before_ref) ? appDeltaCyclesToMsecf (time_after_ref - time_before_ref) : 0;
+			float gm  = (time_before_game) ? appDeltaCyclesToMsecf (time_after_game - time_before_game) : 0;
+			float sv  = appDeltaCyclesToMsecf (time_between - time_before) - gm;
+			float cl  = appDeltaCyclesToMsecf (time_after - time_between) - rf;
 			float all = appDeltaCyclesToMsecf (time_after - time_before);
 			if (time_before_game)			// have a valid game frame
 			{

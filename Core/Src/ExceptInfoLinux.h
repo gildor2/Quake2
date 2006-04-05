@@ -43,7 +43,7 @@ struct SIGCONTEXT
 	trap codes (sc_trapno)
 -----------------------------------------------------------------------------*/
 
-// really taken from wine/dlls/ntdll/signal_i386.c (possible source: BSD headers?)
+// taken from wine/dlls/ntdll/signal_i386.c (possible source: BSD headers?)
 // may be gathered from kernel source (note: no symbolic names)
 // major place with codes (kernel): kernel/arch/i386/kernel/trap.c
 // (seek for DO_XXX_ERROR() -> do_##name(...) defines)
@@ -73,7 +73,7 @@ struct SIGCONTEXT
 /*
 
   Places with useful documentation/sources:
-    wine (should be a primary source: always up-to-date and easy to read):
+	wine (should be a primary source: always up-to-date and easy to read):
 		dlls/ntdll/signal_i386.c
 		winedocs/en/winedev-kernel.sgml - "Translating signals to exceptions"
 	kernel:

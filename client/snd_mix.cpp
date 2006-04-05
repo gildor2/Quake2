@@ -171,7 +171,7 @@ void S_PaintChannels (int endtime)
 
 		// start any playsounds
 		//?? this block absent in Q3
-		while (1)
+		while (true)
 		{
 			ps = s_pendingplays.next;
 			if (ps == &s_pendingplays)

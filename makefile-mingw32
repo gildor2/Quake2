@@ -279,6 +279,7 @@ DEPENDS_2 = \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputConsole.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -2038,3 +2039,4 @@ Release/obj-win32/dedstat:
 
 Release/obj-win32/TestApp:
 	@mkdir -p Release/obj-win32/TestApp
+

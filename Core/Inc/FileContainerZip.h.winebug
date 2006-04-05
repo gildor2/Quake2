@@ -15,7 +15,7 @@ typedef unsigned long   ulg;		// 4-byte unsigned
 #define END_HDR_MAGIC		BYTES4('P','K',5,6)
 
 
-//#define ZLIB_DEBUG		1
+#define ZLIB_DEBUG		1
 
 
 #if _MSC_VER
@@ -225,30 +225,36 @@ protected:
 public:
 	static CFileContainer *Create (const char *filename, FILE *f)
 	{
+		appPrintf("zipOpen: %s\n", filename);
 #if ZLIB_DEBUG
 		// can disable this code to allow zip files, attached to another file (sfx archives etc)
 		unsigned signature;
 		if (fread (&signature, 4, 1, f) != 1 || signature != LOCAL_HDR_MAGIC)
 			return NULL;
 #endif
+		appPrintf("1(%d)\n", feof(f));
 		// rewind to the archive end
 		if (fseek (f, 0, SEEK_END))
 			return NULL;
+		appPrintf("2(%d)\n", feof(f));
 		// find end of central directory record (by signature)
 		unsigned pos;
 		char buf[512];
 		if ((pos = ftell (f)) < 22)	// file too small to be a zip-archive
 			return NULL;
+		appPrintf("size: %d\n", pos);
 		// here: 18 = sizeof(ecdir_rec_ehdr) - sizeof(signature)
 		if (pos < sizeof(buf) - 18)
 			pos = 0;				// small file
 		else
 			pos -= sizeof(buf) - 18;
+		appPrintf("4: %d\n", pos);
 
 		// try to fill buf 128 times (64K total - max size of central arc comment)
 		bool found = false;
 		for (int i = 0; i < 128; i++)
 		{
+			appPrintf("5(%d):%d\n", feof(f), i);
 			if (fseek (f, pos, SEEK_SET)) return false;
 			unsigned readBytes = fread (buf, 1, sizeof(buf), f);
 			if (!readBytes) return NULL;
@@ -265,21 +271,28 @@ public:
 				return NULL;
 		}
 		if (!found) return NULL;
+		appPrintf("6(%d):pos=%d\n", (int)feof(f), pos);
+		//!! Wine 0.9.10 msvcrt bug: here have feof(f)==true (in all platforms), but
+		//!! next fseek(f, ...) will not reset feof flag
 
 		// get pointer to a central directory
 		// read end of central directory record
 		endOfCentralDir_t endCDir;
 		fseek (f, pos, SEEK_SET);
+		appPrintf("7(%d)\n", feof(f));
 		if (fread (&endCDir, sizeof(endCDir), 1, f) != 1) return NULL;
+		appPrintf("8(%d)\n", feof(f));
 		int posDelta = pos - (endCDir.cdirOffset+endCDir.cdirSize+4);	// +4-sizeof(CENTRAL_HDR_MAGIC); != 0 for SFX archives
 		if (posDelta < 0)
 			return NULL;
+		appPrintf("9\n");
 		// seek to a central directory
 		if (fseek (f, endCDir.cdirOffset+posDelta, SEEK_SET)) return NULL;
 
 		CFileContainerZip *Zip = new (filename) CFileContainerZip;
 		// WARNING: when wrong archive loaded, function will return NULL, but will not "delete Zip"
-		while (true)
+		appPrintf("10(%d)\n", feof(f));
+		while (!feof (f))			// really, eof will not be reached
 		{
 			unsigned signature;
 			if (fread (&signature, 4, 1, f) != 1)
@@ -302,6 +315,7 @@ public:
 			}
 			if (fread (&buf[0], nameLen, 1, f) != 1) return false;
 			buf[nameLen] = 0;
+			appPrintf("14(%d):[%s]\n", feof(f), buf);
 			appCopyFilename (buf, buf);
 			// verify for supported compression method
 			if (hdr.compressionMethod != Z_DEFLATED && hdr.compressionMethod != 0)
@@ -348,6 +362,7 @@ public:
 				Zip->numFiles++;
 			}
 		}
+		appPrintf("18(%d):END\n", feof(f));
 
 		return Zip;
 	}

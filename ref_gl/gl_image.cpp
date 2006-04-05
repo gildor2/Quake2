@@ -72,10 +72,9 @@ static int ComputeHash (const char *name)
 static void GetPalette ()
 {
 	int		width, height;
-	byte	*pic, *pal;
-
+	byte	*pal;
 	// get the palette
-	LoadPCX ("pics/colormap.pcx", pic, pal, width, height);
+	byte *pic = LoadPCX ("pics/colormap.pcx", width, height, pal);
 	if (!pal)
 		Com_FatalError ("Can not load pics/colormap.pcx");
 
@@ -1653,19 +1652,18 @@ image_t *FindImage (const char *name, unsigned flags)
 	if (fmt & IMAGE_TGA)
 	{
 		strcpy (s, ".tga");
-		LoadTGA (Name2, pic, width, height);
+		pic = LoadTGA (Name2, width, height);
 	}
 	else if (fmt & IMAGE_JPG)
 	{
 		strcpy (s, ".jpg");
-		LoadJPG (Name2, pic, width, height);
+		pic = LoadJPG (Name2, width, height);
 	}
 	else if (fmt & IMAGE_PCX)
 	{
-		byte	*pic8, *palette;
-
 		strcpy (s, ".pcx");
-		LoadPCX (Name2, pic8, palette, width, height);
+		byte *palette;
+		byte *pic8 = LoadPCX (Name2, width, height, palette);
 		if (pic8)
 		{
 			//?? should use palette; sometimes should use 0xFF as color (not transparency)
@@ -1692,7 +1690,7 @@ image_t *FindImage (const char *name, unsigned flags)
 	else if (fmt & IMAGE_WAL)
 	{
 		strcpy (s, ".wal");
-		if (dMiptex_t *mt = (dMiptex_t*) GFileSystem->LoadFile (Name2))
+		if (dWal_t *mt = (dWal_t*) GFileSystem->LoadFile (Name2))
 		{
 			width  = LittleLong(mt->width);
 			height = LittleLong(mt->height);

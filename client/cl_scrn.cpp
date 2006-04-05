@@ -103,8 +103,6 @@ void SCR_CenterPrint (const char *str)
 
 	// echo it to the console
 	appPrintf ("\n------------------------------------\n\n");
-//	appPrintf("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
-
 	s = str;
 	while (true)
 	{
@@ -133,7 +131,6 @@ void SCR_CenterPrint (const char *str)
 		s++;		// skip the \n
 	}
 	appPrintf ("------------------------------------\n");
-//	appPrintf("\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
 	Con_ClearNotify ();
 }
 
@@ -583,6 +580,8 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 
 static void TimeRefresh_f (bool usage, int argc, char **argv)
 {
+	//?? name of this func came from "time refresh" == "profile renderer"
+	//?? we was renamed refresh=>renderer, so - rename this func too?
 	if (usage || argc > 2)
 	{
 		appPrintf ("Usage: timerefresh [steps=256]\n");

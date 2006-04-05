@@ -50,7 +50,7 @@ void SV_TokenizeString (const char *text)
 		if (!text) return;
 
 		if (cmd_argc < MAX_STRING_TOKENS)
-			cmd_argv[cmd_argc++] = CopyString (com_token);
+			cmd_argv[cmd_argc++] = appStrdup (com_token);
 	}
 }
 

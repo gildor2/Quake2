@@ -2,8 +2,6 @@
 	Embedded to executable compressed files
 -----------------------------------------------------------------------------*/
 
-//!! if use few resources, should export CORE_API appMountResource(const void *data) ?
-//?? or CFileSystem->MountResource(const void *data)
 //!! CHECK: created func as CORE_API, check call from other dynamic module
 
 #include "../../lib/zlib/zlib.h"

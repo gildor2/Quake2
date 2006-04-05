@@ -7,7 +7,6 @@
 #define MEM_STATS 1
 #endif
 
-//!! should gather chains stats for dumpallocs too
 
 #if MEM_STATS
 // Stats (make class-static ?)
@@ -27,7 +26,7 @@ address_t GCurrentMemAllocator;
 // 16 bytes long struct (when non-debug version compiled)
 struct FMemHeader
 {
-	byte	magic;					//?? use it
+//	byte	magic;					//?? use it
 	byte	offset;					// for alignment
 #if MEM_STATS
 	size_t	size;					// stats

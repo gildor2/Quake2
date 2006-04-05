@@ -18,9 +18,9 @@ static bspfile_t *bspfile;
 	Common BSP loading code
 -----------------------------------------------------------------------------*/
 
-// "stride" = sizeof(dplane_t) or sizeof(dplane3_t)
+// "stride" = sizeof(dPlane_t) or sizeof(dplane3_t)
 // Both this structures has same fields, except Q3 lost "type"
-static void LoadPlanes (const dplane_t *data, int count, int stride)
+static void LoadPlanes (const dPlane_t *data, int count, int stride)
 {
 	cplane_t *out;
 
@@ -277,7 +277,7 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 	Loading Quake2 BSP file
 -----------------------------------------------------------------------------*/
 
-static void LoadLeafsNodes2 (const dnode_t *nodes, int numNodes, const dleaf_t *leafs, int numLeafs)
+static void LoadLeafsNodes2 (const dBsp2Node_t *nodes, int numNodes, const dBsp2Leaf_t *leafs, int numLeafs)
 {
 	node_t	*out;
 	int		i, j;
@@ -367,8 +367,8 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 }
 
 
-static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *surfedges, const dedge_t *edges,
-	dvertex_t *verts, const texinfo_t *tex, const cmodel_t *models, int numModels)
+static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *surfedges, const dEdge_t *edges,
+	CVec3 *verts, const dBsp2Texinfo_t *tex, const cmodel_t *models, int numModels)
 {
 	int		j;
 
@@ -385,13 +385,13 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 		{
 			int idx = *pedge;
 			if (idx > 0)
-				pverts[j] = &(verts + (edges+idx)->v[0])->point;
+				pverts[j] = verts + (edges+idx)->v[0];
 			else
-				pverts[j] = &(verts + (edges-idx)->v[1])->point;
+				pverts[j] = verts + (edges-idx)->v[1];
 		}
 
 		/*---- Generate shader with name and SURF_XXX flags ----*/
-		const texinfo_t *stex = tex + surfs->texinfo;
+		const dBsp2Texinfo_t *stex = tex + surfs->texinfo;
 		int sflags = SHADER_WALL;
 		if (stex->flags & SURF_ALPHA)	sflags |= SHADER_ALPHA;
 		if (stex->flags & SURF_TRANS33)	sflags |= SHADER_TRANS33;
@@ -480,7 +480,7 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 
 		/*---------- check for texture animation ----------*/
 		char textures[MAX_QPATH * MAX_STAGE_TEXTURES];
-		const texinfo_t *ptex = stex;
+		const dBsp2Texinfo_t *ptex = stex;
 		char *pname = textures;
 		int numTextures = 0;
 		while (true)
@@ -937,7 +937,7 @@ static void LoadLeafSurfaces2 (const unsigned short *data, int count)
 }
 
 
-static void LoadVisinfo2 (const dvis_t *data, int size)
+static void LoadVisinfo2 (const dBsp2Vis_t *data, int size)
 {
 	int		rowSize;
 
@@ -991,7 +991,7 @@ static void LoadVisinfo2 (const dvis_t *data, int size)
 static void LoadBsp2 (const bspfile_t *bsp)
 {
 	// Load planes
-	LoadPlanes (bsp->planes, bsp->numPlanes, sizeof(dplane_t));
+	LoadPlanes (bsp->planes, bsp->numPlanes, sizeof(dPlane_t));
 	// Load surfaces
 START_PROFILE(LoadSurfaces2)
 	LoadSurfaces2 (bsp->faces, bsp->numFaces, bsp->surfedges, bsp->edges, bsp->vertexes, bsp->texinfo, bsp->models, bsp->numModels);
@@ -1005,7 +1005,7 @@ START_PROFILE(LoadLeafsNodes2)
 	LoadLeafsNodes2 (bsp->nodes, bsp->numNodes, bsp->leafs, bsp->numLeafs);
 END_PROFILE
 START_PROFILE(LoadVisinfo2)
-	LoadVisinfo2 (bsp->visibility, bsp->visDataSize);
+	LoadVisinfo2 (bsp->vis, bsp->visDataSize);
 END_PROFILE
 START_PROFILE(LoadInlineModels2)
 	LoadInlineModels2 (bsp->models, bsp->numModels);

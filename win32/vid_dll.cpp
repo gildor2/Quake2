@@ -11,16 +11,11 @@
 
 #define DEFAULT_RENDERER	"gl"		// for vid_ref cvar
 
-cvar_t *win_noalttab;
-cvar_t *win_priorityBoost;
+cvar_t *win_noalttab, *win_priorityBoost;
+static cvar_t *vid_xpos, *vid_ypos;		// coordinates of window position
 
-
+// win95 & WinNT3.51 mouse wheel support
 static UINT MSH_MOUSEWHEEL = 0xDEAD0000; // initialized to something unused
-
-// Console variables that we need to access from this module
-static cvar_t	*vid_xpos;				// X coordinate of window position
-static cvar_t	*vid_ypos;				// Y coordinate of window position
-
 
 #if !SINGLE_RENDERER
 
@@ -34,41 +29,32 @@ refExport_t	re;
 
 #endif // SINGLE_RENDERER
 
-
-// Global variables used internally by this module
 viddef_t viddef;						// global video state; used by other modules
 static bool refActive = false;
 
-static bool needRestart;
-
 HWND	cl_hwnd;						// main window handle
 
-static bool alttab_disabled;
-
-static void DisableAltTab (bool enable)
+static void DisableAltTab (bool value)
 {
-	if (alttab_disabled == enable) return;
-	alttab_disabled = enable;
+	static bool disabled = false;
+	if (disabled == value) return;
+	disabled = value;
 
 	if (!GIsWinNT)
 	{
 		BOOL old;
-		SystemParametersInfo (SPI_SCREENSAVERRUNNING, enable, &old, 0);
+		SystemParametersInfo (SPI_SCREENSAVERRUNNING, value, &old, 0);
 	}
 	else
 	{
 		// this code does not works with WinNT 4.0 +
-		if (enable)
+		if (value)
 		{
 			RegisterHotKey (0, 0, 1/*MOD_ALT*/, VK_TAB);	// MOD_ALT is redefined, so use winuser.h const directly
-//			RegisterHotKey (0, 1, 1/*MOD_ALT*/, VK_RETURN);	// disable Alt+Enter too (do not allow fullscreen noggle)
 			// really, should disable <Win>, <Ctrl+Esc>, <Alt+Esc> key combinations too; see Q226359 in MSDN
 		}
 		else
-		{
 			UnregisterHotKey (0, 0);
-//			UnregisterHotKey (0, 1);
-		}
 	}
 }
 
@@ -203,7 +189,7 @@ void RemoveMsgHook (MSGHOOK_FUNC func)
 			return;
 		}
 	}
-	Com_DPrintf ("RemoveMsgHook: hook not installed\n");
+	Com_DPrintf ("RemoveMsgHook: hook is not installed\n");
 }
 
 
@@ -243,6 +229,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				HDC dc = GetDC (NULL);
 				dm.dmSize       = sizeof(dm);
 				dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL;
+				//!! can get HORZRES/VERTRES/BITSPIXEL from our SetDisplayMode() - no GetDeviceCaps() needed!
 				dm.dmPelsWidth  = GetDeviceCaps (dc, HORZRES);
 				dm.dmPelsHeight = GetDeviceCaps (dc, VERTRES);
 				dm.dmBitsPerPel = GetDeviceCaps (dc, BITSPIXEL);
@@ -276,16 +263,14 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			// using (short) type conversion to convert "unsigned short" to signed
 			int xPos = (short) LOWORD(lParam);    // horizontal position
 			int yPos = (short) HIWORD(lParam);    // vertical position
-
+			// now xPos and yPos contains client area coordinates, so - convert to window coordinates
 			RECT r;
 			r.left   = 0;
 			r.top    = 0;
 			r.right  = 1;
 			r.bottom = 1;
-
-			int style = GetWindowLong (hWnd, GWL_STYLE);
-			AdjustWindowRect (&r, style, FALSE);
-
+			AdjustWindowRect (&r, GetWindowLong (hWnd, GWL_STYLE), FALSE);
+			// update cvars
 			Cvar_SetInteger ("vid_xpos", xPos + r.left);
 			Cvar_SetInteger ("vid_ypos", yPos + r.top);
 			vid_xpos->modified = false;
@@ -354,57 +339,51 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 {
 	guard(Vid_CreateWindow);
 
+	FullscreenApp = fullscreen;
+
 	DWORD stylebits, exstyle;
+	int x, y, w, h;
 	if (fullscreen)
 	{
-		exstyle   = WS_EX_TOPMOST;
 		stylebits = WS_POPUP|WS_SYSMENU;
+		exstyle   = WS_EX_TOPMOST;
+		x = 0;
+		y = 0;
+		w = width;
+		h = height;
 	}
 	else
 	{
+		stylebits = WS_CAPTION|WS_SYSMENU;
 		exstyle   = 0;
-		stylebits = WS_SYSMENU|WS_CAPTION;
+		// compute window pos/size
+		RECT r;
+		r.left   = 0;
+		r.top    = 0;
+		r.right  = width;
+		r.bottom = height;
+		AdjustWindowRect (&r, stylebits, FALSE);
+		x = vid_xpos->integer;
+		y = vid_ypos->integer;
+		w = r.right - r.left;
+		h = r.bottom - r.top;
 	}
 
 	// if size=0 -- invisible (fake) window
 //	if (width || height)		// if enable this, window will be created without taskbar button!
 //		stylebits |= WS_VISIBLE;
 
-	RECT r;
-	r.left   = 0;
-	r.top    = 0;
-	r.right  = width;
-	r.bottom = height;
-
-	AdjustWindowRect (&r, stylebits, FALSE);
-
-	int w = r.right - r.left;
-	int h = r.bottom - r.top;
-
-	FullscreenApp = fullscreen;
-	int x, y;
-	if (fullscreen)
-	{
-		x = 0;
-		y = 0;
-	}
-	else
-	{
-		x = vid_xpos->integer;
-		y = vid_ypos->integer;
-	}
-
 	if (cl_hwnd)
 	{
 		SetWindowLong (cl_hwnd, GWL_STYLE, stylebits);
-//		SetWindowLong (cl_hwnd, GWL_EXSTYLE, exstyle); -- require to change WS_EX_TOPMOST only, do it with SetWindowPos() (better effect)
+		// NOTE: SetWindowLong(wnd, GWL_EXSTYLE, WS_EX_TOPMOST) works bad, SetWindowPos() have a better effect
 		ShowWindow (cl_hwnd, SW_SHOW);
 		SetWindowPos (cl_hwnd, fullscreen ? HWND_TOPMOST : HWND_NOTOPMOST, x, y, w, h, 0);
 	}
 	else
 	{
 		const char *app = appPackage ();
-		// Register the frame class
+		// Register the window class
 		WNDCLASS wc;
 		memset (&wc, 0, sizeof(WNDCLASS));
 		wc.lpfnWndProc   = MainWndProc;
@@ -413,10 +392,10 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 		wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
 //		wc.hbrBackground = (HBRUSH) COLOR_GRAYTEXT;
 		wc.lpszClassName = app;
-		if (!RegisterClass (&wc)) Com_FatalError ("Couldn't register window class");
+		if (!RegisterClass (&wc)) Com_FatalError ("Cannot register window class");
 
 		cl_hwnd = CreateWindowEx (exstyle, app, app, stylebits, x, y, w, h, NULL, NULL, hInstance, NULL);
-		if (!cl_hwnd) Com_FatalError ("Couldn't create window");
+		if (!cl_hwnd) Com_FatalError ("Cannot create window");
 
 		if (width || height) ShowWindow (cl_hwnd, SW_SHOW);
 		// let the sound and input subsystems know about the new window
@@ -460,14 +439,14 @@ void Vid_DestroyWindow (bool force)
 
 /*-------------------------------------------*/
 
+static bool needRestart;
+
 void Vid_Restart ()
 {
 	needRestart = true;
 	M_ForceMenuOff ();		// required: menu graphics may be required to reload
 }
 
-
-/*------------- Vid_GetModeInfo -------------*/
 
 static const struct {
 	short width, height;
@@ -505,13 +484,10 @@ static void Vid_UpdateWindowPosAndSize (int x, int y)
 	r.top    = 0;
 	r.right  = viddef.width;
 	r.bottom = viddef.height;
-
-	int style = GetWindowLong (cl_hwnd, GWL_STYLE);
-	AdjustWindowRect (&r, style, FALSE);
+	AdjustWindowRect (&r, GetWindowLong (cl_hwnd, GWL_STYLE), FALSE);
 
 	int w = r.right - r.left;
 	int h = r.bottom - r.top;
-
 	MoveWindow (cl_hwnd, vid_xpos->integer, vid_ypos->integer, w, h, TRUE);
 }
 
@@ -627,7 +603,7 @@ void Vid_Tick ()
 
 	if (needRestart)
 	{
-		// refresh has changed
+		// renderer has changed
 		cl.forceViewFrame = true;
 		S_StopAllSounds_f ();
 		cl.rendererReady = false;
@@ -645,10 +621,10 @@ void Vid_Tick ()
 				loaded = true;
 			}
 		}
-		if (!loaded) Com_FatalError ("Couldn't load renderer");
+		if (!loaded) Com_FatalError ("Cannot load renderer");
 		strcpy (lastRenderer, vid_ref->string);
 #else
-		if (!LoadRenderer ()) Com_FatalError ("Couldn't load renderer");
+		if (!LoadRenderer ()) Com_FatalError ("Cannot load renderer");
 #endif
 		needRestart = false;
 	}
@@ -685,13 +661,13 @@ CVAR_END
 	// add some console commands that we want to handle
 	RegisterCommand ("vid_restart", Vid_Restart);
 
-	if (!GIsWin2K)		// really, for WinNT 3.51 and Win95
+	if (!GIsWin2K)			// for WinNT3.51 and Win95 only
 		MSH_MOUSEWHEEL = RegisterWindowMessage ("MSWHEEL_ROLLMSG");
 
 	// create invisible (fake) window to capture Win32 focus
 	Vid_CreateWindow (0, 0, false);
 
-	// start the graphics mode and load refresh DLL
+	// load renderer
 	needRestart = true;		// should init renderer on startup
 	Vid_Tick ();
 

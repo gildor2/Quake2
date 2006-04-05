@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PLATFORM="cygwin"
+#PLATFORM="cygwin"
 TARGET="TESTAPP"
 OUT="TestApp"
 

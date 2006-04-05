@@ -41,7 +41,8 @@
     ? check ground entity and compare player speed with its speed (dirty, map "lumber", moving tape -- CONTENTS_CURRENT_NNN|CONTENTS_SOLID)
   - should detect teleports (respawns) and reset rotating submodels (current: will 'slowly' rotate from old direction to new one)
 
-- ATI: BK_EndFrame(): if add GL_SetMultitexture(0) to the end of function, sky will be corrupted (NV -- OK)
+- ATI: BK_EndFrame(): if add GL_SetMultitexture(0) to the end of function, sky will be corrupted (NV -- OK); _should_ not be any effect
+  at all
 
 - timing:
   - after power sleep/resume FPS counter will be incorrect
@@ -70,6 +71,7 @@
 
 ! Win9x (98SE): when running + rotating view, when releasing <forward> key, but still rotating with mouse,
   player will continue to run for a few seconds (bug present in original q2 too)
+  ? try to close most background apps - may be, the reason is there ...
 
 UNRECOVARABLE:
 ~~~~~~~~~~~~~~
@@ -91,6 +93,9 @@ BUGGY MAPS:
   ? try to create empty (dummy) model and assign it from PF_SetModel(name==NULL) calls
 - "flashfire" (q2): 1) have cluster info per leaf, but no visinfo (so: cluster info is useless); 2) have no lightmaps, but set lightmap
   sources (OpenGLDrv will display "disabled lm" + "SetLM(NULL) for non-vertex lightmap shader")
+
+
+-----------------------------------------------------------------------------------------------------------------------
 
 HARDWARE:
 ~~~~~~~~~
@@ -124,9 +129,8 @@ HARDWARE:
 ? notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move
   crouched)
 
-(?? place this section to separate file ??)
-SOURCE FILES (COMPILER):
-~~~~~~~~~~~~~~~~~~~~~~~~
+COMPILERS:
+~~~~~~~~~~
 - (VisualC++ 6) when compiling renderer with !STATIC_BUILD:
   - "unguard" will be linked to "NORETURN struc.appUnwindThrow()"; VC ignores NORETURN here,
     and will display warning C4715 (not all control paths return value)
@@ -156,7 +160,7 @@ SOURCE FILES (COMPILER):
     - gl_bspmodel.cpp, LoadSurfaces2()
 	if (surfs->side)
 	{
-		s->plane.normal.Negate ();       // -> FNegate() *3 times -- FP hack
+		s->plane.normal.Negate ();       // inlined; -> FNegate() *3 times -- FP hack
 		s->plane.dist = -s->plane.dist;
 		s->plane.SetType ();             // here: few "if (normal[] == 1|-1)" ...
 	}

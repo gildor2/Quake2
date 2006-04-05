@@ -18,7 +18,8 @@
 #	configure build tools
 #----------------------------------------------------------
 
-[ "$PLATFORM" == "mingw32" ] || [ "$PLATFORM" == "cygwin" ] && PATH=/bin:/usr/bin:$PATH
+[ "$PLATFORM" == "mingw32" ] || [ "$PLATFORM" == "cygwin" ] &&
+	PATH=/bin:/usr/bin:$PATH
 
 case "$PLATFORM" in
 	"vc-win32")

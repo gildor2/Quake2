@@ -2,8 +2,6 @@
 #define __OPENGLDRV_INCLUDED__
 
 
-//??#include <stdio.h>
-
 /*-----------------------------------------------------------------------------
 	Standard OpenGL stuff
 -----------------------------------------------------------------------------*/
@@ -85,9 +83,6 @@ void	QGL_SwapBuffers ();
 #define NO_GL_LOG	1
 #endif
 
-#ifndef NO_GL_LOG
-#define NO_GL_LOG	0
-#endif
 
 #if !NO_GL_LOG
 

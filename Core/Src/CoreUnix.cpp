@@ -1,5 +1,5 @@
 #include "CorePrivate.h"
-#include <unistd.h>					// for readlink() and gettimeofday()
+#include <unistd.h>					// syscalls
 #include <sys/utsname.h>			// for uname() syscall
 #include <time.h>					// nanosleep()
 #include <sys/time.h>				// struct timeval, gettimeofday()
@@ -33,7 +33,7 @@ void appSleep (unsigned msec)
 	t.tv_nsec = msec % 1000 * 1000000;
 	nanosleep (&t, NULL);
 #else
-	// under linux, nanosleep() and usleep() versions are less precise, than select() version
+	// in linux, nanosleep() and usleep() are less precise, than select()-based sleep
 	struct timeval t;
 	t.tv_sec  = msec / 1000;
 	t.tv_usec = msec % 1000 * 1000;

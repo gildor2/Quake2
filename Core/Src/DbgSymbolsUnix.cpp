@@ -5,7 +5,7 @@
 #endif
 
 /* NOTES:
-	- Cygwin and Unix have have alternative API for resolving symbol names: BFD
+	- Cygwin and Unix have alternative API for resolving symbol names: BFD
 	- dladdr() family allows us to retreive info about current process only
 	- using "/proc/(num)/maps" works for any process
 */
@@ -25,19 +25,20 @@ bool osGetAddressPackage (address_t address, char *pkgName, int bufSize, int &of
 		if (sscanf (line, "%x-%x %*15s %x %*x:%*x %*u %255s", &mapStart, &mapEnd, &mapOffset, mapFile) == 4)
 		{
 			if (address < mapStart || address >= mapEnd) continue;	// not this file
+			// get name
 			char *s = strrchr (mapFile, '/');
 			if (s) s++;
 			else s = mapFile;
+			// cut extension + version ("lib.so.version" => strchr() instead of strrchr())
+			if (char *ext = strchr (s, '.'))
+				*ext = 0;
+			appStrncpyz (pkgName, s, bufSize);
 #if __CYGWIN__
 			// under normal Unix system, "offset" is offset of mapped part from file start (single
 			// file can be mapped by parts with a different access rights);
 			// but, under cygwin, this field contains exe/dll entry point ...
 			mapOffset = 0;
 #endif
-			// cut extension + version ("lib.so.version" => strchr() instead of strrchr())
-			char *ext = strchr (s, '.');
-			if (ext) *ext = 0;
-			appStrncpyz (pkgName, s, bufSize);
 			offset = address - mapStart + mapOffset;
 
 			fclose (f);
@@ -64,14 +65,17 @@ bool osGetAddressPackage (address_t address, char *pkgName, int bufSize, int &of
 	if (!dladdr ((void*) address, &info)) return false;
 	appStrncpyz (module, info.dli_fname, bufSize);
 
-	char *s;
-	if (s = strrchr (module, '/'))
-		strcpy (module, s+1);		// remove "path/" part
-	if (s = strchr (module, '.'))
-		*s = 0;						// cut extension + version
+	// get name
+	char *s = strrchr (module, '/');
+	if (s) s++;
+	else s = module;
+	// cut extension + version ("lib.so.version" => strchr() instead of strrchr())
+	if (char *ext = strchr (s, '.'))
+		*ext = 0;
+	appStrncpyz (module, s, ARRAY_COUNT(module));	// keep copy in "module" for osGetAddressSymbol()
+	appStrncpyz (pkgName, module, bufSize);
 
 	offset = address - (address_t)info.dli_fbase;
-	appStrncpyz (pkgName, module, bufSize);
 
 	return true;
 }

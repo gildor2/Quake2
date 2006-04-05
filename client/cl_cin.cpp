@@ -209,10 +209,7 @@ static bool ReadNextFrame (byte *buffer)
 	cin.file->Read (compressed, size);
 
 	// read sound
-	int start = cin.frame * cin.s_rate / CIN_SPEED;
-	int end   = (cin.frame + 1) * cin.s_rate / CIN_SPEED;
-	int count = end - start;
-
+	int count = cin.s_rate / CIN_SPEED;
 	byte samples[22050 * 4];
 	cin.file->Read (samples, count*cin.s_width*cin.s_channels);
 	S_RawSamples (count, cin.s_rate, cin.s_width, cin.s_channels, samples);

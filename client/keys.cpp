@@ -386,7 +386,7 @@ static char *Do_CompleteCommand (char *partial)
 		}
 
 		partial_name = arg1;
-		partial_len = strlen (arg1);
+		partial_len  = strlen (arg1);
 		for (int display = 0; display < 2; display++)
 		{
 			completed_count = 0;
@@ -467,7 +467,7 @@ struct completeMenu_t : menuFramework_t
 		if (m_current != this)
 		{
 			// "ESCAPE" (or any other menu-exit-key) pressed
-			cls.key_dest = key_console;
+			cls.key_dest     = key_console;
 			cls.keep_console = false;
 		}
 		return res;
@@ -499,7 +499,7 @@ struct completeMenu_t : menuFramework_t
 		for (i = 0, y1 = 0; i < completed_count; i++, y1 += 10)
 		{
 			MENU_ACTION(completeItems[i], y1, completeVariants[i], CompleteMenuCallback, NULL);
-			completeItems[i].flags = QMF_LEFT_JUSTIFY;
+			completeItems[i].flags     = QMF_LEFT_JUSTIFY;
 			completeItems[i].localData = i;
 			AddItem (&completeItems[i]);
 			int len = strlen (completeVariants[i]);
@@ -568,7 +568,7 @@ void Key_SetBinding (int keynum, const char *binding)
 	}
 
 	if (binding && binding[0])
-		keybindings[keynum] = CopyString (binding);
+		keybindings[keynum] = appStrdup (binding);
 }
 
 

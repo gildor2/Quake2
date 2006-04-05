@@ -1,5 +1,5 @@
-// This file is included in both the game dll and client code: the game needs
-// it to source shot locations, the client needs it to position muzzle flashes
+// These data are used in both the game dll and client code: the game needs it
+// to source shot locations, the client needs it to position muzzle flashes
 
 // max found size = 111.2; we use 128 as denom here
 #if 1

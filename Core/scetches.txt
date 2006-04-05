@@ -79,6 +79,7 @@ OPENGL RENDERER
 
 COMMAND SYSTEM
 ~~~~~~~~~~~~~~
+- add ExecuteCommand(argc,argv) -- send already split command line (used in q2 by "rcon" only?)
 - aliases: add support for bash_function-like arguments (bash have no args for aliases, but our command system have no functions ...)
   ? make as function? aliases - no args
 - argument for all commands "--silent" or "-silent" -- will redirect output to GNull (should correctly process such flag in

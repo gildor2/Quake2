@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 static float predictLerp = -1;		// >= 0 -- use this value for prediction; if < 0 -- use cl.lerpfrac
 
 
-void CL_CheckPredictionError (void)
+void CL_CheckPredictionError ()
 {
 	guard(CL_CheckPredictionError);
 
@@ -240,7 +240,7 @@ void CL_PredictMovement ()
 		return;
 	}
 
-	int ack = cls.netchan.incoming_acknowledged;
+	int ack     = cls.netchan.incoming_acknowledged;
 	int current = cls.netchan.outgoing_sequence;
 	if (cls.netFrameDropped) current++;
 

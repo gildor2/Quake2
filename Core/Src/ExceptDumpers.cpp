@@ -221,7 +221,7 @@ void UnwindEbpFrame (COutputDevice *Out, const unsigned *data)
 			Out->Printf ("%s <- ", symbol);
 			if (data[0] <= (unsigned)data)	// possible loop
 			{
-				Out->Printf ("(loop?)");
+				Out->Printf ("(loop)");
 				break;
 			}
 			data = (unsigned*)data[0];

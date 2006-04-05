@@ -1,5 +1,54 @@
+MAP PATCH:
+- .bsp.add => .patch
+  - change in RequestNextDownload() too
+- allow to load .patch w/o .bsp (patch will specify, which .bsp file to load)
+  - this will allow single map with few texture or entity sets
+  - this will require loading patch before map
+  - can implement "dummy" .bsp file: something like "soft link" in unix
+  - downloading: will require one additional step to download "link" (and then bsp and patch)
+- load patch before processing map entstring, remember, what to patch and what to add, then
+  process entstring and apply patch data
+- patch features:
+  - add entity (already implemented)
+  - patch <filter>
+    {
+       <body>
+    }
+    - in <body> should:
+      - add fields
+      - replace fields (when field absent - add it; so, no "add" requirement?)
+      - delete fields
+  - delete <filter> -- delete entity (should keep numbers of other ents for easier modification later?)
+  - <filter> is:
+    - <number> -- entity number
+    - '"field" = "mask"'  -- all entities, containing field with value matched mask
+      * may be used as "classname=worldspawn" or "origin=x y z" etc
+  - replace textures (new texture/shader + original texture size)
+  - modify texture flags (add envmap, transparency, autoflares etc)
+  - inline shaders (templates):
+    shader <name-or-mask>
+    {
+       <body>
+    }
+- better effect, when implement preprocessor support (requires '#define'!)
+  - this will require to use our parser instead of COM_Parse() (word parser -> line parser)
+  - can post-include special file, which will do work, implemented as C++ code now:
+    - delete all light entities
+    - replace/delete some Kingpin entities
+  - can pre-include file with macros for easier adding:
+    - flares
+    - surface flags: envmap, autoflare
+    - fogging (patch worldspawn entity)
+    * this will allow us to modify patch script specs with reimplementation of macros to keep compatibility
+  - these include files may be overriden in mods (use game-based name to include), mod can use following file:
+    ... <code> ...
+    #include "/baseq2/includes/entpatch.h"
+    ... <code> ...
+! write .spec file for patch system
+  - format
+  - filenames
+=============
 - EF_BFG, some other - TRANSLUCENT -> shader (cl_ents.cpp)
-- map script with builtin shaders; main engine will pass them to renderer
 ? aminMap with cross-blending (for sprites) -- combiners?
 ? animMapOnce (check UberEngine function)
 - bfg beams: try to find entity, which is damaged, and lerp beam dst to it (beam src should be lerped too)
@@ -11,6 +60,7 @@
 - shader.globalTime -- force to use vp.time; shader.absoluteTime -- use ent.time instead of (vp.time-ent.time) (useful for sprites)
 =============
 - correct autoflare center -- can get texture coords of surface, and compute, when it's center
+  - should check, whether coords inside current triangle strip or not
 - SURF_LIGHT: can specify for some textures, which have large wall + small lamp pic, where lamp is placed (its texcoords) and
   which percent of whole surface its area
 - gl_state.haveFullscreen3d -- change (may be, remove var)

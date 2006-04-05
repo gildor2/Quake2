@@ -20,6 +20,7 @@
 
 ? remove "./" from all OS filename starts ? (when non-game mounted FS used -- for .pak files etc (not "./baseq2/pak0.pak" but
   "baseq2/pak0.pak")) -- but keep for quake fs to allow load root-relative file (w/o searchig in few game dirs + w/o adding "baseq2")
+  - can replace (add synonym for "./path" = "/path" and use it everywhere)
 ! add [auto-]detail for rail
 ? make InitialSnapPosition() work with Trace() to allow "teleporter grenade" in LOX mod
 ! check for valid key names for bindings (now: works ':', ';', '+', '=', UNK01, Ctrl+Alt, Alt+Ctrl etc)
@@ -57,9 +58,12 @@ MOD-DEPENDING UI OPTIONS:
 - autocomplete map/demo names
 MOD COMPATIBILITY:
 ~~~~~~~~~~~~~~~~~~
-- (non-UI) do not cut light entities (send them to game dll too)
+- models.cpp: do not cut light entities (send them to game dll too)
 - bindings: use common movement/looking binds, or completely separate set
-- use separate system settings (video resolution/gamma, sound volume ...)
+  + may be, common (baseq2) weapon bindings
+- config: use separate system settings (video resolution/gamma, sound volume ...)
+- fx: use new or old fx system (cl_newfx)
+- protocol: disable protocol extensions (sv_extProtocol)
 
 
 - rename all "*_debug"   cvars => "debug_*" (more correct names); enable when !NO_DEBUG only

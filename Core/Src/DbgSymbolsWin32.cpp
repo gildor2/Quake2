@@ -49,13 +49,13 @@ bool osGetAddressSymbol (address_t address, char *exportName, int bufSize, int &
 		const DWORD* addrTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfFunctions);
 		const DWORD* nameTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfNames);
 		unsigned bestRVA = 0;
-		int bestIndex = -1;
+		int bestIndex    = -1;
 		unsigned RVA = address - (unsigned)hModule;
 		for (int i = 0; i < exp->NumberOfFunctions; i++)
 		{
 			if (addrTbl[i] <= RVA && addrTbl[i] > bestRVA)
 			{
-				bestRVA = addrTbl[i];
+				bestRVA   = addrTbl[i];
 				bestIndex = i;
 			}
 		}

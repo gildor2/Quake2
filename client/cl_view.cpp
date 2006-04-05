@@ -347,10 +347,7 @@ void V_InitRenderer ()
 	SCR_LoadingNotify ("textures", loadingFrac);
 	loadingFrac += W_TEXTURES / totalWeight;
 	for (i = 1; i < MAX_IMAGES && cl.configstrings[CS_IMAGES+i][0]; i++)
-	{
 		cl.image_precache[i] = RE_RegisterPic (va("pics/%s", cl.configstrings[CS_IMAGES+i]));
-		Sys_ProcessMessages ();	// pump message loop
-	}
 
 	for (i = 0; i < MAX_CLIENTS; i++)
 	{
@@ -840,7 +837,7 @@ bool V_RenderView ()
 
 		cl.refdef.rdflags = cl.frame.playerstate.rdflags;
 
-		// build a refresh entity list and calc cl.sim*
+		// build a renderer entity list and calc cl.sim*
 		// this also calls CL_CalcViewValues which loads
 		// v_forward, etc.
 		CL_AddEntities ();

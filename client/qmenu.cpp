@@ -23,13 +23,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define CHAR_WIDTH	8
 #define CHAR_HEIGHT	8
 
-static void	 Action_DoEnter (menuAction_t *a);
 static void	 Action_Draw (menuAction_t *a);
-static void  Menu_DrawStatusBar (const char *string);
+static void	 Action_DoEnter (menuAction_t *a);
+static void  DrawStatusBar (const char *string);
 static void	 MenuList_Draw (menuList_t *l);
 static void	 Separator_Draw (menuSeparator_t *s);
-static void	 Slider_DoSlide (menuSlider_t *s, int dir);
 static void	 Slider_Draw (menuSlider_t *s);
+static void	 Slider_DoSlide (menuSlider_t *s, int dir);
 static void	 SpinControl_Draw (menuList_t *s);
 static void	 SpinControl_DoSlide (menuList_t *s, int dir);
 static void	 SpinControl2_Draw (menuList2_t *s);
@@ -157,9 +157,7 @@ static bool Field_Key (menuField_t *f, int key)
 			f->cursor--;
 
 			if (f->visible_offset)
-			{
 				f->visible_offset--;
-			}
 		}
 		break;
 
@@ -185,9 +183,7 @@ static bool Field_Key (menuField_t *f, int key)
 			f->buffer[f->cursor] = 0;
 
 			if (f->cursor > f->visible_length)
-			{
 				f->visible_offset++;
-			}
 		}
 	}
 
@@ -217,7 +213,7 @@ void menuFramework_t::AddItem (menuCommon_t *item)
 	nitems++;
 	// setup new item
 	item->parent = this;
-	item->next = NULL;
+	item->next   = NULL;
 	unguard;
 }
 
@@ -401,47 +397,33 @@ void menuFramework_t::Draw ()
 	item = ItemAtCursor ();
 
 	if (item && item->cursordraw)
-	{
 		item->cursordraw (item);
-	}
 	else if (cursordraw)
-	{
 		cursordraw (this);
-	}
 	else if (item && item->type != MTYPE_FIELD)
 	{
 		if (item->flags & QMF_LEFT_JUSTIFY)
-		{
-			RE_DrawChar (x + item->x - 3*CHAR_WIDTH + item->cursor_offset, y + item->y, 12 + ((cls.realtime >> 8) & 1));
-		}
+			RE_DrawChar (x + item->x - 3*CHAR_WIDTH + item->cursor_offset,
+				y + item->y, 12 + ((cls.realtime >> 8) & 1));
 		else
-		{
-			RE_DrawChar (x + item->cursor_offset, y + item->y, 12 + ((cls.realtime >> 8) & 1));
-		}
+			RE_DrawChar (x + item->cursor_offset,
+				y + item->y, 12 + ((cls.realtime >> 8) & 1));
 	}
 
-	if (item)
-	{
-		if (item->statusbar)
-			Menu_DrawStatusBar (item->statusbar);
-		else
-			Menu_DrawStatusBar (statusbar);
-
-	}
+	if (item && item->statusbar)
+		DrawStatusBar (item->statusbar);
 	else
-		Menu_DrawStatusBar (statusbar);
+		DrawStatusBar (statusbar);
 }
 
-void Menu_DrawStatusBar (const char *string)
+static void DrawStatusBar (const char *string)
 {
 	if (string)
 	{
-		int		l, maxrow, maxcol, col;
-
-		l = appCStrlen (string);
-		maxrow = VID_HEIGHT / CHAR_HEIGHT;
-		maxcol = VID_WIDTH / CHAR_WIDTH;
-		col = maxcol / 2 - l / 2;
+		int l = appCStrlen (string);
+		int maxrow = VID_HEIGHT / CHAR_HEIGHT;
+		int maxcol = VID_WIDTH / CHAR_WIDTH;
+		int col = maxcol / 2 - l / 2;
 
 		RE_Fill8 (0, VID_HEIGHT - CHAR_HEIGHT, VID_WIDTH, CHAR_HEIGHT, 4);
 		DrawString (col * CHAR_WIDTH, VID_HEIGHT - CHAR_WIDTH, string);
@@ -505,17 +487,13 @@ static void DrawCaption (menuCommon_t *m)
 
 static void MenuList_Draw (menuList_t *l)
 {
-	const char **n;
-
 	DrawCaption (l);
-	n = l->itemnames;
   	RE_Fill8 (l->x - 112 + l->parent->x, l->parent->y + l->y + l->curvalue*10 + 10, 128, CHAR_HEIGHT+2, 16);
 
 	int y = 0;
-	while (*n)
+	for (const char **n = l->itemnames; *n; n++)
 	{
 		Menu_DrawStringR2L (l->x + l->parent->x + LCOLUMN_OFFSET, l->y + l->parent->y + y + CHAR_HEIGHT+2, va(S_GREEN"%s", *n));
-		n++;
 		y += CHAR_HEIGHT + 2;
 	}
 }
@@ -535,12 +513,7 @@ static void Separator_Draw (menuSeparator_t *s)
 static void Slider_DoSlide (menuSlider_t *s, int dir)
 {
 	s->curvalue += dir;
-
-	if (s->curvalue > s->maxvalue)
-		s->curvalue = s->maxvalue;
-	else if (s->curvalue < s->minvalue)
-		s->curvalue = s->minvalue;
-
+	s->curvalue = bound(s->curvalue, s->minvalue, s->maxvalue);
 	if (s->callback)
 		s->callback( s );
 }
@@ -579,26 +552,22 @@ static void SpinControl_DoSlide (menuList_t *s, int dir)
 
 static void SpinControl_Draw (menuList_t *s)
 {
-	int		maxIndex;
-	const char	*text;
-	char	*newline;
-
 	DrawCaption (s);
 
 	// check for valid index
-	maxIndex = 0;
+	int maxIndex = 0;
 	while (s->itemnames[maxIndex]) maxIndex++;
 	maxIndex--;
 	if (s->curvalue > maxIndex)
 		s->curvalue = maxIndex;
 	// draw value
-	text = s->itemnames[s->curvalue];
+	const char *text = s->itemnames[s->curvalue];
+	char *newline;
 	if (!(newline = strchr (text, '\n')))
 		DrawString (RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y, text);
 	else
 	{
-		char	buffer[256];
-
+		char buffer[256];
 		appStrncpyz (buffer, text, newline - text + 1);	// copy text till '\n' and put zero to its place
 		DrawString (RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y, buffer);
 		DrawString (RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y + 10, newline+1);
@@ -630,8 +599,6 @@ static void SpinControl2_Draw (menuList2_t *s)
 {
 	int		i;
 	CStringItem *item, *last;
-	const char	*text;
-	char	*newline;
 
 	DrawCaption (s);
 
@@ -645,7 +612,8 @@ static void SpinControl2_Draw (menuList2_t *s)
 		item = last;
 	}
 	// draw value
-	text = item->name;
+	const char *text = item->name;
+	char *newline;
 	if (!(newline = strchr (text, '\n')))
 		DrawString (RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y, text);
 	else
@@ -695,14 +663,14 @@ void menuFramework_t::Push ()
 	cls.key_dest = key_menu;
 }
 
-void M_ForceMenuOff (void)
+void M_ForceMenuOff ()
 {
 	//?? should call for each opened menu "virtual OnClose()" for freeing menu data
 	//?? now: will leak resources, when open some resource-allocating menu and typing
 	//??      "disconnect" from console
-	m_current = NULL;
-	cls.key_dest = key_game;
+	m_current   = NULL;
 	m_menudepth = 0;
+	cls.key_dest = key_game;
 	Key_ClearStates ();
 	CL_Pause (false);
 	SCR_ShowConsole (false, true);	// immediately hide console
@@ -789,13 +757,7 @@ bool menuFramework_t::Init ()
 }
 
 
-/*
-=================
-M_Draw
-=================
-*/
-
-void M_Draw (void)
+void M_Draw ()
 {
 	if (!m_current) return;
 
@@ -806,11 +768,6 @@ void M_Draw (void)
 }
 
 
-/*
-=================
-M_Keydown
-=================
-*/
 void M_Keydown (int key)
 {
 	if (!m_current) return;

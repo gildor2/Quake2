@@ -49,9 +49,8 @@ CORE_API int appSprintf (char *dest, int size, const char *fmt, ...) PRINTF(3,4)
 CORE_API bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase = false);
 CORE_API bool appIsWildcard (const char *string);
 
-//?? rename to appStrdup()
-CORE_API char *CopyString (const char *str);
-CORE_API char *CopyString (const char *str, CMemoryChain *chain);
+CORE_API char *appStrdup (const char *str);
+CORE_API char *appStrdup (const char *str, CMemoryChain *chain);
 
 
 /*-----------------------------------------------------------------------------

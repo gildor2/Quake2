@@ -266,13 +266,10 @@ static bool SetMd3Skin (const char *skinName, CModelSkin &skin)
 		// special processing of "nodraw" shader
 		const char *n = strrchr (p+1, '/');
 		if (n) n++; else n = p+1;
-		if (!strnicmp (n, "nodraw", 6))
+		if (!strnicmp (n, "nodraw", 6) && (n[6] == 0 || n[6] == '.'))	// "nodraw" or "nodraw.ext"
 		{
-			if (n[6] == 0 || n[6] == '.')	// "nodraw" or "nodraw.ext"
-			{
-				Com_DPrintf("nodraw for %s/%s\n", skinName, line);
-				continue;
-			}
+			Com_DPrintf("nodraw for %s/%s\n", skinName, line);
+			continue;
 		}
 
 		CBasicImage *shader = RE_RegisterSkin (p+1);
@@ -339,8 +336,8 @@ static void cAnimFixedTorso (int argc, char **argv)
 
 
 static const CSimpleCommand animCommands[] = {
-	{"footsteps",	NULL},				//!! use it
-	{"headoffset",	NULL},				// used in Q3 for HUD only
+	{"footsteps",	NULL},						//!! use it
+	{"headoffset",	NULL},						// used in Q3 for HUD only
 	{"sex",			cAnimGender},
 	{"fixedlegs",	cAnimFixedLegs},
 	{"fixedtorso",	cAnimFixedTorso}
@@ -355,7 +352,7 @@ static void LoadAnimationCfg (clientInfo_t &ci, const char *filename)
 	animation_t *anims = ci.animations;
 	int frameSkip = 0;
 
-	ci.modelGender = 'm';								// male; default
+	ci.modelGender = 'm';						// male; default
 
 	CSimpleParser text;
 	text.InitFromBuf (buf);
@@ -363,7 +360,7 @@ static void LoadAnimationCfg (clientInfo_t &ci, const char *filename)
 	while (const char *line = text.GetLine ())
 	{
 		// execute line
-		if (line[0] >= '0' && line[0] <= '9')		// numbers => frame numbers
+		if (line[0] >= '0' && line[0] <= '9')	// numbers => frame numbers
 		{
 			if (animNumber >= MAX_ANIMATIONS)
 			{
@@ -525,6 +522,7 @@ static const animInfo_t animInfo[] = {
 
 /* LEGS_TURN */		{	LEGS_TURN		},
 
+// --- Q3TA extensions ---
 /* TORSO_GETFLAG */	{	TORSO_STAND		},
 /* TORSO_GUARDBASE */{	TORSO_STAND		},
 /* TORSO_PATROL */	{	TORSO_STAND		},
@@ -680,7 +678,7 @@ static const CSimpleCommand weapCommands[] = {
 	{"skin",	cWeapSkin	},
 	{"scale",	cWeapScale	},
 	{"offset",	cWeapOffset	}
-	//?? add flashOffset
+	//?? add flashOffset + flash shader (or special fx file)
 };
 
 
@@ -956,7 +954,7 @@ static void SwingAngle (float dst, float tolerance, float clamp, float speed, fl
 // clamp angle to [dst-clamp .. dst+clamp]
 static bool ClampAngle (float dst, float clamp, float &angle)
 {
-	float swing = AngleSubtract (dst, angle);
+	float swing    = AngleSubtract (dst, angle);
 	float absSwing = fabs (swing);
 	if (absSwing <= clamp) return false;
 

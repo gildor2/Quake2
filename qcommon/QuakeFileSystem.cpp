@@ -9,6 +9,9 @@
 // debugging
 #include "OutputDeviceFile.h"
 
+#define PAK_EXTENSION	"pak"			// may be few extensions, separated with comma
+// for quake3 should use "pk3"
+
 #define FS_LOG	"fs.log"
 static cvar_t	*fs_logFile;
 static COutputDevice *FSLog;
@@ -84,8 +87,8 @@ public:
 	void MountGame (const char *name)
 	{
 		if (fs_cddir->string[0])
-			Mount (va("%s/%s/*.pak", fs_cddir->string, *GDefMountPoint));
-		Mount (va("./%s/*.pak", *GDefMountPoint));
+			Mount (va("%s/%s/*." PAK_EXTENSION, fs_cddir->string, *GDefMountPoint));
+		Mount (va("./%s/*." PAK_EXTENSION, *GDefMountPoint));
 	}
 
 	// return "true" when game was changed
@@ -108,9 +111,9 @@ public:
 		}
 		if (GameDir != BASEDIRNAME)		// base dir not umounted
 		{
-			Umount (va("./%s/*.pak", *GameDir));
+			Umount (va("./%s/*." PAK_EXTENSION, *GameDir));
 			if (fs_cddir->string[0])
-				Umount (va("%s/%s/*.pak", fs_cddir->string, *GameDir));
+				Umount (va("%s/%s/*." PAK_EXTENSION, fs_cddir->string, *GameDir));
 		}
 		GameDir.filename (name);
 		GDefMountPoint = GameDir;

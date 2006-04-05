@@ -2,19 +2,20 @@ PROBLEMS/BUGS (LINUX/CYGWIN):
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ? build.sh: timing info format incorrect (linux) -- 31.01.2006: all OK?!
 - linux testapp.cpp display warning about gets(); cygwin - no warning! (linker message)
+! libs.a/libs.lib: should change name to contain platform name, add linux to libs/build.sh
 
-GCC 4.0 BUGS:
+GCC 4.0+ BUGS:
 ~~~~~~~~~~~~~
-  - when creating mapfile, names not demangled
-    * move demangling from "ld" to "syminfo/make"
-  - visibility: `#pragma GCC visibility' not affects builtin functions, so - conflicts ... (displays warnings about trying to hide
-    built-in visible function `operator new')
+  - (4.1:exists) when creating mapfile, names not demangled
+    * demangling was moved from "ld" to "syminfo/make"
+  - (4.1:exists) visibility: `#pragma GCC visibility' not affects builtin functions, so - conflicts ... (displays warnings about
+    trying to hide built-in visible function `operator new')
     - should use "-fvisibility..." cmdline instead of "#pragma GCC visibility ..."; make auto-detect of gcc4 from makefile:
       GCC_VER = $(shell echo __GNUC__ | gcc -E -xc - | tail -n 1)
       # also: __GCC_MINOR__
       ifeq ($(GCC_VER),4) / ifneq () ... (no -gt/-lt etc -- should use $(shell if [...] ...;))
-  - inlining: not inlined most of functions (can check with `-Winlines') - compiler says 'max-inline-insns-single reached', which,
-    by info page, should be inline-limit/2 (by default, inline-limit=600 -- by info page)
+  - (4.1:exists) inlining: not inlined most of functions (can check with `-Winlines') - compiler says 'max-inline-insns-single reached',
+    which, by info page, should be inline-limit/2 (by default, inline-limit=600 -- by info page)
     * may be fixed by inserting `--finline-limit=600', which is default (by documentation) value (should be automatic!)
     NOTE: inlining required for `operator new' and similar functions to take advantage of `mem_dump' console functions --
       * fixed using FORCEINLINE; other inline functions not inlined anyway (-Winline)!
@@ -27,8 +28,8 @@ min GCC version: 3.4.0
     ... not tested more
 
 
-FIRST TODO (for crash detection):
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TODO:
+~~~~~
 - fast math - make ability to turn off with #define (for debug; may be, GCC optimizes good by self ...)
 - floor/ceil/round: not so fast ... (check GCC FAST_MATH ...); appRound() via lrint() rounds 2.5 and 4.5 to 3 (same as VC ...)
 - assert(cond) or UT-like check() and verify()
@@ -61,18 +62,18 @@ To port application to Linux require following steps:
 - compile dedicated server (1.cygwin 2.linux)
 - verify network compatibility with Win32
 - ...
-- create empty sound driver, use it for "nosound=1"
+- create empty sound driver, use it for "nosound=1" (?)
 - port input+windowing -> SDL (may use cygwin+sdl !)
 - ...
 - separate sound driver from client code
 - create OpenAL sound driver, use for win32 too
-? may be, create SDL sound driver too (in a case of absent OpenAL driver)
+? may be, create SDL sound driver too (in a case of absece OpenAL library)
 - ...
 
 
 To allow binaries to work under any Linux version/distribution:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- avoid dynamic linkage with C++ libraries (libstdc++.so.6 etc)
+- use static linkage with C++ libraries (libstdc++.so.6 etc)
   - libstdc++.so: should be dynamic to allow inter-module exceptions (not used here)
   * tried linux of 2001 year (kernel 2.2, KDE 2.1, libc is v6) -- libc.so.6 requires LIBC2_... exports
     (so - build with static libc too? -- or static/shared versions?)

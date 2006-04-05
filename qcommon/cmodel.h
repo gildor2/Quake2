@@ -78,25 +78,25 @@ struct bspfile_t
 	CMemoryChain *extraChain;
 
 	// entstring
-	int			entDataSize;
-	char		*entities;
+	int			entStrSize;
+	const char	*entStr;
 
 	// geometry
 	int			numPlanes;
-	dplane_t	*planes;
+	dPlane_t	*planes;
 
 	int			numVertexes;
-	dvertex_t	*vertexes;
+	CVec3		*vertexes;
 
 	// BSP
 	int			visDataSize;
-	dvis_t		*visibility;
+	dBsp2Vis_t	*vis;
 
 	int			numNodes;
-	dnode_t		*nodes;
+	dBsp2Node_t	*nodes;
 
 	int			numLeafs;
-	dleaf_t		*leafs;
+	dBsp2Leaf_t	*leafs;
 
 	int			numLeaffaces;
 	unsigned short *leaffaces;
@@ -105,16 +105,16 @@ struct bspfile_t
 	unsigned short *leafbrushes;
 
 	int			numEdges;
-	dedge_t		*edges;
+	dEdge_t		*edges;
 
 	int			numSurfedges;
 	int			*surfedges;
 
 	int			numBrushes;
-	dbrush_t	*brushes;
+	dBsp2Brush_t *brushes;
 
 	int			numBrushsides;
-	dbrushside_t *brushsides;
+	dBsp2Brushside_t *brushsides;
 
 	int			numAreas;
 	darea_t		*areas;
@@ -127,10 +127,10 @@ struct bspfile_t
 
 	// faces
 	int			numTexinfo;
-	texinfo_t	*texinfo;
+	dBsp2Texinfo_t *texinfo;
 
 	int			numFaces;
-	dface_t		*faces;
+	dFace_t		*faces;
 
 	// lighting
 	int			lightDataSize;
@@ -172,7 +172,6 @@ extern bspfile_t *map_bspfile;
 
 
 //--bspfile_t *LoadBspFile (char *filename, bool clientload, unsigned *checksum);
-char *ProcessEntstring (char *entString);
 
 
 #endif // CMODEL_H

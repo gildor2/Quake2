@@ -14,8 +14,8 @@ TString<64> GDefMountPoint;
 static const char *SkipRootDir (const char *filename)
 {
 	if (filename[0] != '.') return filename;
-	if (filename[1] ==  0 ) return filename+1;	// really, ""
-	if (filename[1] == '/') return filename+2;	// skip "./"
+	if (filename[1] ==  0 ) return filename+1;	// "." -> ""
+	if (filename[1] == '/') return filename+2;	// skip "./" ("./filename" -> "filename")
 	return filename;							// possibly, this is "../"
 }
 
@@ -100,6 +100,7 @@ CFile *appOpenFile (const char *filename)
 #if !LITTLE_ENDIAN
 int CFile::ByteOrderRead (void *Buffer, int Size)
 {
+	// read data to Buffer in reverse order
 	for (int i = Size - 1; i >= 0; i--)
 		Read ((byte*)Buffer+i, 1);
 }
@@ -438,7 +439,7 @@ CFile *CFileSystem::OpenFile (const char *filename, unsigned flags)
 		const char *localFilename = SubtractPath (Name, it->MountPoint);
 		if (!localFilename) continue;			// not in this container
 		CFile *File = it->OpenFile (localFilename);
-		if (!File) continue;					// search in
+		if (!File) continue;					// search in next container
 		// copy filename (as local file system name)
 		File->Owner = *it;
 		File->Name  = localFilename;
@@ -518,7 +519,7 @@ void *CFileSystem::LoadFile (const char *filename, unsigned *size)
 	//!! should (may) accept following forms:
 	//!! ? umount pak0.pak -- name w/o path --> umount defMountPoint/pak0.pak
 	//!! * umount path/pak0.pak -- exact item
-	//!! * umount path/mask -- all matched items (CHECK this form !)
+	//!! * umount path/mask -- all matched items
 }
 
 static void cCat (bool usage, int argc, char **argv)

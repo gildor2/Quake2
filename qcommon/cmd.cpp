@@ -285,7 +285,7 @@ static void Cmd_Alias_f (bool usage, int argc, char **argv)
 			strcat (cmd, " ");
 	}
 
-	a->value = CopyString (cmd);
+	a->value = appStrdup (cmd);
 }
 
 
@@ -452,7 +452,7 @@ static void TokenizeString (const char *text)
 		if (!text) break;
 
 		if (_argc < ARRAY_COUNT(_argv))
-			_argv[_argc++] = CopyString (com_token);
+			_argv[_argc++] = appStrdup (com_token);
 	}
 
 	// set rest of argv[] array to ""

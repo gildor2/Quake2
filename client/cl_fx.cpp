@@ -54,10 +54,8 @@ static void RunLightStyles ()
 			ls->value = ls->map[0];
 		else
 		{
-			int pos = ofs % ls->length;
-			int pos1 = pos + 1;
-			if (pos1 >= ls->length) pos1 = 0;
-
+			int pos  = ofs % ls->length;
+			int pos1 = (pos >= ls->length) ? 0 : pos + 1;
 			ls->value = appRound (Lerp<float> (ls->map[pos], ls->map[pos1], cl.lerpfrac));
 		}
 	}
@@ -67,7 +65,7 @@ static void RunLightStyles ()
 void CL_SetLightstyle (int i, const char *s)
 {
 	int len = strlen (s);
-	if (len >= MAX_QPATH)
+	if (len >= sizeof(cl_lightstyles[0].map))
 		Com_DropError ("Lightstyle length = %d", len);
 
 	cl_lightstyles[i].length = len;

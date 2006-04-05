@@ -425,10 +425,6 @@ void UnlockArraysEXT (void);
 #alias GL_EXT_texture_rectangle
 #cvar gl_ext_texture_rectangle
 
-//?? unused
-#name GL_NV_fog_distance
-#cvar gl_ext_fog_distance_nv
-
 #name GL_EXT_texture_lod_bias
 
 #platform win32

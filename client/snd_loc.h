@@ -138,10 +138,8 @@ extern cvar_t	*s_volume;
 extern cvar_t	*s_nosound;
 extern cvar_t	*s_loadas8bit;
 extern cvar_t	*s_khz;
-extern cvar_t	*s_show;
-extern cvar_t	*s_mixahead;
 extern cvar_t	*s_testsound;
-extern cvar_t	*s_primary;
+extern cvar_t	*s_primary;		//?? win32-only
 
 void S_InitScaletable (void);
 

@@ -62,8 +62,10 @@ static void handle_signal (int signum, siginfo_t *info, void *ctx)
 		str = "Termination Request (SIGTERM)";
 		break;
 	case SIGHUP:
-		str = "Terminal Hangup (SIGHUP)";
-		break;
+//		str = "Terminal Hangup (SIGHUP)";
+		GLogHook = GNull;			// disable output to terminal, which is hang
+		GIsRequestingExit = true;
+		return;						// do not log error (silent exit)
 	case SIGFPE:
 		str = "FPU Exception (SIGFPE)";
 		dump = true;
@@ -158,7 +160,7 @@ void appHookExceptions ()
 {
 #if __linux__
 	// to catch stack overflow we require to setup alternative stack for signal handlers
-	static int altstack[4096];
+	static int altstack[32768];		// WARNING: should be enough to hold OutputDevice.cpp::BUFFER_LEN (stack buffer for sprintf())
 	stack_t ss;
 	ss.ss_sp    = &altstack;
 	ss.ss_size  = sizeof(altstack);
@@ -166,6 +168,7 @@ void appHookExceptions ()
 	if (sigaltstack (&ss, NULL))
 		appPrintf ("sigaltstack() failed\n");
 #endif
+	int i;
 	// hook ctrl-c (SIGINT)
 	HookSignal (SIGINT, handle_ctrlc);
 	// hook other signals
@@ -173,6 +176,21 @@ void appHookExceptions ()
 		SIGTERM, SIGHUP, SIGFPE, SIGILL,
 		SIGSEGV, /*SIGABRT,*/ SIGTRAP, SIGSYS
 	};
-	for (int i = 0; i < ARRAY_COUNT(signals); i++)
+	for (i = 0; i < ARRAY_COUNT(signals); i++)
 		HookSignal (signals[i], handle_signal);
+#if 0
+	-- does not works: when running app in background (with '&' suffix) -- app became unstoppable
+	// disable some signals
+	static short signals2[] = {
+		SIGTSTP, SIGTTIN, SIGTTOU
+	};
+	for (i = 0; i < ARRAY_COUNT(signals2); i++)
+	{
+		struct sigaction sa;
+		sigemptyset (&sa.sa_mask);
+		sa.sa_handler = SIG_IGN;
+		sa.sa_flags   = 0;
+		sigaction (signals2[i], &sa, NULL);
+	}
+#endif
 }

@@ -539,7 +539,7 @@ struct optionsMenu_t : menuFramework_t
 	static menuList_t	s_khz;
 	static menuList_t	s_8bit;
 	static menuList_t	s_reverse;
-	static menuList_t	compatibility_list;
+	static menuList_t	compatibility_list;		//?? win32-only
 
 	static void CrosshairFunc( void *unused )
 	{
@@ -2574,7 +2574,7 @@ struct videoMenu_t : menuFramework_t
 	static menuList_t	textureBits;		// gl_textureBits
 	static menuList_t	textureFilter;		// gl_texturemode
 
-	static float old_gamma;
+	static float old_gamma, old_contrast, old_bright;
 
 	static void ScreenSizeCallback (void *s)
 	{
@@ -2640,7 +2640,8 @@ struct videoMenu_t : menuFramework_t
 	static void CancelChanges (void *)
 	{
 		Cvar_SetValue ("r_gamma", old_gamma);
-		//!! restore contrast+brightness too
+		Cvar_SetValue ("r_contrast", old_contrast);
+		Cvar_SetValue ("r_brightness", old_bright);
 		m_current->Pop ();
 	}
 
@@ -2685,7 +2686,9 @@ CVAR_END
 		banner = "video";
 
 		// save current gamma (for cancel action)
-		old_gamma = r_gamma->value;
+		old_gamma    = r_gamma->value;
+		old_contrast = r_contrast->value;
+		old_bright   = r_brightness->value;
 
 		int y = 0;
 		MENU_SPIN(mode_list, y+=10, "video mode", NULL, resolutions);
@@ -2776,7 +2779,7 @@ menuList_t	videoMenu_t::fastSky;
 menuSlider_t	videoMenu_t::tq_slider;
 menuList_t	videoMenu_t::textureBits;
 menuList_t	videoMenu_t::textureFilter;
-float videoMenu_t::old_gamma;
+float videoMenu_t::old_gamma, videoMenu_t::old_contrast, videoMenu_t::old_bright;
 
 
 static void Menu_Video_f (void)

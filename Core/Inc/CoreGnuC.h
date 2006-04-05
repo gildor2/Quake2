@@ -43,6 +43,7 @@ typedef unsigned int		address_t;
 // nothing exported by default
 //!! currently, will produce a lots of warnings abount "operator new/delete" marked w/o "visible"
 //!! (at least, with gcc 4.0.0); no warnings, when used "-fvisibility=hidden" + "-fvisibility-inlines-hidden"
+//?? requires pragma `pop' ?
 //#pragma GCC visibility push(hidden)
 #endif
 
@@ -180,7 +181,7 @@ public:
 	CGuardContext (const char *msg);
 	~CGuardContext ();
 	// register context and execute code
-	bool CGuardContext::Exec (const char *msg);
+	bool Exec (const char *msg);
 };
 
 class CORE_API CGuardContext2 : public CGuardContext

@@ -286,7 +286,7 @@ inline void ReadDelta (const void *prev, void *next, const deltaInfo_t *info, in
 
 #define STRUC	entityStateEx_t
 static const deltaInfo_t entityStateDelta [] = {
-N(	modelindex,		BYTE,	U_MODEL, 0  ),
+N(	modelindex,		BYTE,	U_MODEL,  0  ),
 N(	modelindex2,	BYTE,	U_MODEL2, 0  ),
 N(	modelindex3,	BYTE,	U_MODEL3, 0  ),
 N(	modelindex4,	BYTE,	U_MODEL4, 0  ),
@@ -306,7 +306,7 @@ N(	old_origin[2],	FSHORT, U_OLDORIGIN, NET_POS_SCALER  ),
 N(	sound,			BYTE,	U_SOUND, 0  ),
 N(	event,			BYTE,	U_EVENT, 0  ),					// special: delta from 0
 N(	solid,			SHORT,	U_SOLID, 0  ),
-N(	anim,			DWORD,	U_ANIM,	0	)
+N(	anim,			DWORD,	U_ANIM,	 0	)
 };
 #undef STRUC
 

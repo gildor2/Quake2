@@ -17,7 +17,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-// cl_parse.cpp  -- parse a message received from the server
 
 #include "client.h"
 
@@ -48,15 +47,12 @@ const char *svc_strings[svc_last] =
 	"svc_frame"
 };
 
-/*
-=====================================================================
 
-  SERVER CONNECTING MESSAGES
+/*-----------------------------------------------------------------------------
+	Server connecting messages
+-----------------------------------------------------------------------------*/
 
-=====================================================================
-*/
-
-static void ParseServerData (void)
+static void ParseServerData ()
 {
 	Com_DPrintf ("Serverdata packet received.\n");
 
@@ -109,16 +105,15 @@ static void ParseServerData (void)
 	else
 	{
 		appPrintf (S_RED"\n\n====================================\n\n");
-//		appPrintf (S_RED"\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
 		appPrintf (S_RED"%s\n", str);			// display map message
 
-		// need to prep refresh at next oportunity
+		// need to prep renderer at next oportunity
 		cl.rendererReady = false;
 	}
 }
 
 
-static void ParseBaseline (void)
+static void ParseBaseline ()
 {
 	clEntityState_t nullstate;
 	memset (&nullstate, 0, sizeof(nullstate));
@@ -158,42 +153,34 @@ void CL_UpdatePlayerClientInfo ()
 }
 
 
-/*
-================
-ParseConfigString
-================
-*/
-static void ParseConfigString (void)
+static void ParseConfigString ()
 {
-	int		i;
-	char	*s;
-	char	olds[MAX_QPATH];
-
-	i = MSG_ReadShort (&net_message);
+	// read configstring index
+	int i = MSG_ReadShort (&net_message);
 	if (i < 0 || i >= MAX_CONFIGSTRINGS)
-		Com_DropError ("configstring > MAX_CONFIGSTRINGS");
-	s = MSG_ReadString(&net_message);
-
+		Com_DropError ("bad configstring #: %d", i);
+	// remember old string value (used for detection of clientinfo changes)
+	char olds[MAX_QPATH];
 	appStrncpyz (olds, cl.configstrings[i], sizeof(olds));
+	// read new configstring
+	char *s = cl.configstrings[i];
+	strcpy (s, MSG_ReadString (&net_message));
 
-	strcpy (cl.configstrings[i], s);
-
-	// do something apropriate
-
+	// process string
 	if (i >= CS_LIGHTS && i < CS_LIGHTS+MAX_LIGHTSTYLES)
-		CL_SetLightstyle (i - CS_LIGHTS, cl.configstrings[i]);
+		CL_SetLightstyle (i - CS_LIGHTS, s);
 	else if (i == CS_CDTRACK)
 	{
 		if (cl.rendererReady)
-			CDAudio_Play (atoi(cl.configstrings[CS_CDTRACK]), true);
+			CDAudio_Play (atoi(s), true);
 	}
 	else if (i >= CS_MODELS && i < CS_MODELS+MAX_MODELS)
 	{
 		if (cl.rendererReady)
 		{
-			cl.model_draw[i-CS_MODELS] = RE_RegisterModel (cl.configstrings[i]);
-			if (cl.configstrings[i][0] == '*')
-				cl.model_clip[i-CS_MODELS] = CM_InlineModel (cl.configstrings[i]);
+			cl.model_draw[i-CS_MODELS] = RE_RegisterModel (s);
+			if (s[0] == '*')
+				cl.model_clip[i-CS_MODELS] = CM_InlineModel (s);
 			else
 				cl.model_clip[i-CS_MODELS] = NULL;
 		}
@@ -201,12 +188,12 @@ static void ParseConfigString (void)
 	else if (i >= CS_SOUNDS && i < CS_SOUNDS+MAX_SOUNDS)
 	{
 		if (cl.rendererReady)
-			cl.sound_precache[i-CS_SOUNDS] = S_RegisterSound (cl.configstrings[i]);
+			cl.sound_precache[i-CS_SOUNDS] = S_RegisterSound (s);
 	}
 	else if (i >= CS_IMAGES && i < CS_IMAGES+MAX_IMAGES)
 	{
 		if (cl.rendererReady)
-			cl.image_precache[i-CS_IMAGES] = RE_RegisterPic (va("pics/%s", cl.configstrings[i]));
+			cl.image_precache[i-CS_IMAGES] = RE_RegisterPic (va("pics/%s", s));
 	}
 	else if (i >= CS_PLAYERSKINS && i < CS_PLAYERSKINS+MAX_CLIENTS)
 	{
@@ -216,24 +203,20 @@ static void ParseConfigString (void)
 }
 
 
-/*
-=====================================================================
-
-ACTION MESSAGES
-
-=====================================================================
-*/
+/*-----------------------------------------------------------------------------
+	In-game server messages
+-----------------------------------------------------------------------------*/
 
 static void ParseStartSoundPacket ()
 {
-	int flags = MSG_ReadByte (&net_message);
+	int flags     = MSG_ReadByte (&net_message);
 	int sound_num = MSG_ReadByte (&net_message);
 
-	float volume = (flags & SND_VOLUME) ? MSG_ReadByte (&net_message) / 255.0 : DEFAULT_SOUND_PACKET_VOLUME;
+	float volume =      (flags & SND_VOLUME)      ? MSG_ReadByte (&net_message) / 255.0 : DEFAULT_SOUND_PACKET_VOLUME;
 	float attenuation = (flags & SND_ATTENUATION) ? MSG_ReadByte (&net_message) / 64.0 : DEFAULT_SOUND_PACKET_ATTENUATION;
-	float ofs = (flags & SND_OFFSET) ? MSG_ReadByte (&net_message) / 1000.0 : 0;
+	float ofs =         (flags & SND_OFFSET)      ? MSG_ReadByte (&net_message) / 1000.0 : 0;
 
-	int 	channel, ent;
+	int channel, ent;
 	if (flags & SND_ENT)
 	{	// entity reletive
 		channel = MSG_ReadShort(&net_message);
@@ -244,10 +227,7 @@ static void ParseStartSoundPacket ()
 		channel &= 7;
 	}
 	else
-	{
-		ent = 0;
-		channel = 0;
-	}
+		ent = channel = 0;
 
 	CVec3	pos_v;
 	CVec3	*pos;
@@ -266,7 +246,7 @@ static void ParseStartSoundPacket ()
 }
 
 
-static void AddNetgraph (void)
+static void AddNetgraph ()
 {
 	int		i;
 
@@ -284,14 +264,14 @@ static void AddNetgraph (void)
 }
 
 
-void CL_ParseServerMessage (void)
+void CL_ParseServerMessage ()
 {
 	int cmd = svc_bad;
 	guard(CL_ParseServerMessage);
 
 	// if recording demos, copy the message out
 	if (cl_shownet->integer == 1)
-		appPrintf ("%i ",net_message.cursize);
+		appPrintf ("%d ",net_message.cursize);
 	else if (cl_shownet->integer >= 2)
 		appPrintf ("------------------\n");
 

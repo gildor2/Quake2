@@ -8,7 +8,7 @@
 #define __UNIX__	1
 #endif
 
-#ifndef __CYGWIN__
+#if !__CYGWIN__
 #define stricmp		strcasecmp
 #define strnicmp	strncasecmp
 #endif

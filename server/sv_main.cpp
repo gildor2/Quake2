@@ -831,7 +831,7 @@ void SV_PostprocessFrame ()
 				}
 
 				// check for idle (camper) sounds
-				int leaf = CM_PointLeafnum (pm_origin);
+				int leaf  = CM_PointLeafnum (pm_origin);
 				int clust = CM_LeafCluster (leaf);
 				int sfxstate = 2;
 				if (!clust)
@@ -839,7 +839,7 @@ void SV_PostprocessFrame ()
 
 				if (clust != cl->lastcluster || cl->sfxstate != sfxstate || (CM_LeafContents (leaf) & MASK_WATER))
 				{	// changed cluster or state - not camping
-					cl->sfxstate = sfxstate;
+					cl->sfxstate    = sfxstate;
 					cl->lastcluster = clust;
 					cl->nextsfxtime = t + CAMPER_TIMEOUT + rand()%CAMPER_TIMEOUT_DELTA;
 					continue;

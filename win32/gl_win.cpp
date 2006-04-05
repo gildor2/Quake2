@@ -5,7 +5,7 @@
 #include "gl_win.h"
 
 
-extern bool FullscreenApp;	//!! cannot be accessed when !STATIC_BUILD
+extern bool FullscreenApp;	//!! cannot be accessed when STATIC_BUILD=0
 
 
 namespace OpenGLDrv {
@@ -53,10 +53,13 @@ static void RestoreGamma ()
 	if (!gammaStored) return;
 	HWND hwnd = GetDesktopWindow ();
 	HDC hdc = GetDC (hwnd);
-//	DebugPrintf("restore gamma\n");//!!
+#if 0
+	DebugPrintf("restore gamma\n");
+	if (!SetDeviceGammaRamp (hdc, gammaRamp))
+		DebugPrintf ("Cannot restore gamma!\n");
+#else
 	SetDeviceGammaRamp (hdc, gammaRamp);
-//	if (!SetDeviceGammaRamp (hdc, gammaRamp))
-//		DebugPrintf ("Cannot restore gamma!\n");//!!
+#endif
 	ReleaseDC (hwnd, hdc);
 }
 
@@ -64,24 +67,27 @@ static void RestoreGamma ()
 // Called from GLimp_SetGamma() and AppActivate()
 static void UpdateGamma ()
 {
-//	DebugPrintf("updata gamma\n");//!!
 	if (!gammaValid) return;
+#if 0
+	DebugPrintf("updata gamma\n");
+	if (!SetDeviceGammaRamp (gl_hDC, newGamma))
+		DebugPrintf ("Cannot update gamma!\n");
+#else
 	SetDeviceGammaRamp (gl_hDC, newGamma);
-//	if (!SetDeviceGammaRamp (gl_hDC, newGamma))
-//		DebugPrintf ("Cannot update gamma!\n");	//!!
+#endif
 }
 
 
-//#define FIND_GAMMA			// define for replace GAMMA_ANGLE and GAMMA_OFFSET with 'a' and 'b' cvars
-//#define FIND_GAMMA2
+//#define FIND_GAMMA	1		// define for replace GAMMA_ANGLE and GAMMA_OFFSET with 'a' and 'b' cvars
+//#define FIND_GAMMA2	1
 
 void GLimp_SetGamma (float gamma)
 {
-#ifdef FIND_GAMMA
+#if FIND_GAMMA
+	EXEC_ONCE(appWPrintf("Find gamma mode!\n"));
 	float	a, b;			// y = ax + b
-
 	a = Cvar_Get("a","1")->value;
-#	ifndef FIND_GAMMA2
+#	if !FIND_GAMMA2
 	b = Cvar_Get("b","0.5")->value;
 #	else
 	b = Cvar_Get("b","-0.5")->value;
@@ -113,7 +119,7 @@ void GLimp_SetGamma (float gamma)
 		if (GIsWin2K)
 		{
 			// Win2K/XP performs checking of gamma ramp and may reject it
-#ifndef FIND_GAMMA
+#if !FIND_GAMMA
 			// clamp gamma curve with line 'y=x*GAMMA_ANGLE+GAMMA_OFFSET'
 #define GAMMA_ANGLE		1
 #define GAMMA_OFFSET	0.5
@@ -123,15 +129,15 @@ void GLimp_SetGamma (float gamma)
 #define GAMMA_OFFSET2	-0.5
 			m = i * (GAMMA_ANGLE2*256) + (int)(GAMMA_OFFSET2*65536);
 			if (v < m) v = m;
-#else
-#	ifndef FIND_GAMMA2
-			m = appRound (i * a * 256 + b * 65535);
+#else // FIND_GAMMA
+#	if !FIND_GAMMA2
+			int m = appRound (i * a * 256 + b * 65535);
 			if (v > m) v = m;
 #	else
-			m = appRound (i * a * 256 + b * 65535);
+			int m = appRound (i * a * 256 + b * 65535);
 			if (v < m) v = m;
 #	endif
-#endif
+#endif // FIND_GAMMA
 		}
 		v = bound(v, 0, 65535);
 		newGamma[i] = newGamma[i+256] = newGamma[i+512] = v;

@@ -24,9 +24,9 @@ bool Vid_GetModeInfo (int *width, int *height, int mode);
 
 //--------- images ----------
 int ImageExists (const char *name, int stop_mask = IMAGE_ANY);
-void LoadPCX (const char *name, byte *&pic, byte *&palette, int &width, int &height);
-void LoadTGA (const char *name, byte *&pic, int &width, int &height);
-void LoadJPG (const char *name, byte *&pic, int &width, int &height);
+byte* LoadPCX (const char *name, int &width, int &height, byte *&palette);
+byte* LoadTGA (const char *name, int &width, int &height);
+byte* LoadJPG (const char *name, int &width, int &height);
 bool WriteTGA (const char *name, byte *pic, int width, int height);
 bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQuality);
 

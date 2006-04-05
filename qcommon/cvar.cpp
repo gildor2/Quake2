@@ -133,7 +133,7 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 			if (!(flags & CVAR_NODEFAULT))
 			{
 				if (!var->resetString)
-					var->resetString = CopyString (var_value, cvar_chain);	// save "default" value
+					var->resetString = appStrdup (var_value, cvar_chain);	// save "default" value
 				else if (stricmp (var->resetString, var_value))
 					appWPrintf ("Different default value for cvar %s: %s != %s\n", var_name, var_value, var->resetString);
 			}
@@ -184,7 +184,7 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 	}
 
 	var = new (cvar_chain) cvar_t;
-	var->name = CopyString (var_name, cvar_chain);
+	var->name = appStrdup (var_name, cvar_chain);
 
 	if (cvar_t::initialized < 2 && Com_CheckCmdlineVar (var_name))
 	{	// variable overriden with commandline as "1"
@@ -206,7 +206,7 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 	hashTable[hash] = var;
 
 	if (!(flags & (CVAR_NODEFAULT|CVAR_USER_CREATED)))
-		var->resetString = CopyString (var_value, cvar_chain);
+		var->resetString = appStrdup (var_value, cvar_chain);
 
 	var->flags = flags & CVAR_FLAG_MASK;
 
@@ -315,7 +315,7 @@ static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bo
 					return var;										// disable changing of latched cvars from demos
 
 				appPrintf ("%s will be changed after restart\n", var_name);
-				var->latchedString = CopyString (value);
+				var->latchedString = appStrdup (value);
 			}
 			else
 				Cvar_SetString (var, value);
@@ -476,7 +476,7 @@ static void Cvar_Set_f (bool usage, int argc, char **argv)
 			Cvar_SetWithFlags (argv[1], argv[2], CVAR_SERVERINFO, CVAR_USERINFO);	// +s -u
 			break;
 		default:
-			appWPrintf ("Invalid flag for set: %c\n", flag);
+			appWPrintf ("Invalid flag for 'set': %c\n", flag);
 			return;
 		}
 	}
@@ -550,12 +550,12 @@ void Cvar_WriteVariables (COutputDevice *Out, int includeMask, int excludeMask, 
 			continue;		// holds default value
 
 		char type;
-		if (!(var->flags & (CVAR_SERVERINFO|CVAR_USERINFO)))
-			type = 'a';
-		else if (var->flags & CVAR_SERVERINFO)
+		if (var->flags & CVAR_SERVERINFO)
 			type = 's';
-		else
+		else if (var->flags & CVAR_USERINFO)
 			type = 'u';
+		else
+			type = 'a';
 		if (!logged)
 		{
 			Out->Printf (header);
@@ -589,12 +589,12 @@ static void Cvar_List_f (bool usage, int argc, char **argv)
 		const char *color = "";
 		if (flags & CVAR_USER_CREATED)
 		{
-			s[0] = '*';
+			s[0]  = '*';
 			color = S_CYAN;
 		}
 		else if (flags & CVAR_GAME_CREATED)
 		{
-			s[0] = 'G';
+			s[0]  = 'G';
 			color = S_MAGENTA;
 		}
 		if (flags & CVAR_ARCHIVE)		s[1] = 'A';
@@ -602,7 +602,7 @@ static void Cvar_List_f (bool usage, int argc, char **argv)
 		if (flags & CVAR_SERVERINFO)	s[3] = 'S';
 		if (flags & CVAR_NOSET)
 		{
-			s[4] = '-';
+			s[4]  = '-';
 			color = S_RED;
 		}
 		else if (flags & CVAR_LATCH)
@@ -732,10 +732,8 @@ static void Cvar_Toggle_f (bool usage, int argc, char **argv)
 	}
 
 	cvar_t *var = Cvar_FindVar (argv[1]);
-	if (!var || !var->value)
-		Cvar_Set2 (argv[1], "1", CVAR_USER_CREATED|CVAR_NODEFAULT, false);
-	else
-		Cvar_Set2 (argv[1], "0", CVAR_USER_CREATED|CVAR_NODEFAULT, false);
+	const char *val = (!var || !var->value) ? "1" : "0";
+	Cvar_Set2 (argv[1], val, CVAR_USER_CREATED|CVAR_NODEFAULT, false);
 }
 
 
@@ -746,12 +744,12 @@ static void Cvar_Cycle_f (bool usage, int argc, char **argv)
 
 	if (!stricmp (argv[1], "-r"))
 	{
-		revert = true;
+		revert     = true;
 		firstValue = 3;
 	}
 	else
 	{
-		revert = false;
+		revert     = false;
 		firstValue = 2;
 	}
 	int numValues = argc - firstValue;
@@ -807,14 +805,14 @@ static void Cvar_Init ()
 {
 	cvar_chain = new CMemoryChain;
 
-	RegisterCommand ("set", Cvar_Set_f);
+	RegisterCommand ("set",  Cvar_Set_f);
 	RegisterCommand ("seta", Cvar_Seta_f);
 	RegisterCommand ("setu", Cvar_Setu_f);
 	RegisterCommand ("sets", Cvar_Sets_f);
 	RegisterCommand ("reset", Cvar_Reset_f);
 	RegisterCommand ("cvarlist", Cvar_List_f);
-	RegisterCommand ("add", Cvar_Add_f);
-	RegisterCommand ("scale", Cvar_Scale_f);
+	RegisterCommand ("add",    Cvar_Add_f);
+	RegisterCommand ("scale",  Cvar_Scale_f);
 	RegisterCommand ("toggle", Cvar_Toggle_f);
-	RegisterCommand ("cycle", Cvar_Cycle_f);
+	RegisterCommand ("cycle",  Cvar_Cycle_f);
 }

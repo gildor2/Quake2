@@ -23,24 +23,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "cmodel.h"
 
 
-extern	CRenderModel	*cl_mod_powerscreen;
-
-/*
-=========================================================================
-
-FRAME PARSING
-
-=========================================================================
-*/
+extern CRenderModel *cl_mod_powerscreen;
 
 
-/*
-==================
-CL_ParseDelta
-
-Can go from either a baseline or a previous packet_entity
-==================
-*/
+// Can go from either a baseline or a previous packet_entity
 void CL_ParseDelta (clEntityState_t *from, clEntityState_t *to, int number, unsigned bits, bool baseline)
 {
 	guard(CL_ParseDelta);
@@ -79,7 +65,7 @@ void CL_ParseDelta (clEntityState_t *from, clEntityState_t *to, int number, unsi
 				m->bounds.GetCenter (v);
 				UnTransformPoint (to->origin, to->axis, v, to->center);
 				to->radius = m->radius;
-				to->valid = true;
+				to->valid  = true;
 			}
 		}
 	}
@@ -87,14 +73,8 @@ void CL_ParseDelta (clEntityState_t *from, clEntityState_t *to, int number, unsi
 	unguard;
 }
 
-/*
-==================
-CL_DeltaEntity
 
-Parses deltas from the given base and adds the resulting entity
-to the current frame
-==================
-*/
+// Parses deltas from the given base and adds the resulting entity to the current frame
 static void CL_DeltaEntity (frame_t *frame, int newnum, clEntityState_t *old, unsigned bits)
 {
 	centity_t &ent = cl_entities[newnum];
@@ -110,7 +90,7 @@ static void CL_DeltaEntity (frame_t *frame, int newnum, clEntityState_t *old, un
 		state.modelindex2 != ent.current.modelindex2 ||
 		state.modelindex3 != ent.current.modelindex3 ||
 		state.modelindex4 != ent.current.modelindex4 ||
-		fabs(state.origin[0] - ent.current.origin[0]) > 256 ||	// whole map max 4096, 1/10 map/sec speed is 409
+		fabs(state.origin[0] - ent.current.origin[0]) > 256 ||	// whole map max 4096, 1/10 map/sec speed is 409 ... (reduce??)
 		fabs(state.origin[1] - ent.current.origin[1]) > 256 ||
 		fabs(state.origin[2] - ent.current.origin[2]) > 256 ||
 		state.event == EV_PLAYER_TELEPORT ||
@@ -130,39 +110,32 @@ static void CL_DeltaEntity (frame_t *frame, int newnum, clEntityState_t *old, un
 			ent.prev.origin = state.old_origin;
 		// init some non-transferred fields (reset entity)
 		ent.prevTrail = ent.prev.origin;
-		ent.trailLen = 0;
+		ent.trailLen  = 0;
 	}
 	else
 		ent.prev = ent.current;		// normal delta: prev = current, current = new
 
 	ent.serverframe = cl.frame.serverframe;
-	ent.current = state;
+	ent.current     = state;
 }
 
-/*
-==================
-CL_ParsePacketEntities
 
-An svc_packetentities has just been parsed, deal with the
-rest of the data stream.
-==================
-*/
+// An svc_packetentities has just been parsed, deal with the rest of the data stream.
 static void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 {
 	clEntityState_t *oldstate;
-	int		oldindex, oldnum, old_num_entities;
+	int		oldnum;
 
 	newframe->parse_entities = cl.parse_entities;
-	newframe->num_entities = 0;
+	newframe->num_entities   = 0;
 
-	oldindex = 0;
-	old_num_entities = oldframe ? oldframe->num_entities : 0;
+	int oldindex = 0;
+	int old_num_entities = oldframe ? oldframe->num_entities : 0;
 
 	while (true)
 	{
 		unsigned bits;
 		bool	remove;
-
 		int newnum = MSG_ReadEntityBits (&net_message, &bits, &remove);
 		if (net_message.readcount > net_message.cursize)
 			Com_DropError ("CL_ParsePacketEntities: end of message");
@@ -192,7 +165,7 @@ static void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 				break;
 			}
 			oldstate = &cl_parse_entities[(oldframe->parse_entities+oldindex) & (MAX_PARSE_ENTITIES-1)];
-			oldnum = oldstate->number;
+			oldnum   = oldstate->number;
 		}
 
 		if (remove)
@@ -243,18 +216,11 @@ static void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 }
 
 
-
-/*
-==================
-CL_FireEntityEvents
-
-==================
-*/
 static void CL_FireEntityEvents (frame_t *frame)
 {
-	for (int pnum = 0 ; pnum<frame->num_entities ; pnum++)
+	for (int pnum = 0; pnum < frame->num_entities; pnum++)
 	{
-		int num = (frame->parse_entities + pnum)&(MAX_PARSE_ENTITIES-1);
+		int num = (frame->parse_entities + pnum) & (MAX_PARSE_ENTITIES-1);
 		clEntityState_t *s1 = &cl_parse_entities[num];
 		if (s1->event)
 			CL_EntityEvent (s1);
@@ -266,15 +232,8 @@ static void CL_FireEntityEvents (frame_t *frame)
 }
 
 
-/*
-================
-CL_ParseFrame
-================
-*/
-void CL_ParseFrame (void)
+void CL_ParseFrame ()
 {
-	frame_t		*old;
-
 	memset (&cl.frame, 0, sizeof(cl.frame));
 
 	cl.frame.serverframe = MSG_ReadLong (&net_message);
@@ -295,6 +254,7 @@ void CL_ParseFrame (void)
 	// no longer have available, we must suck up the rest of
 	// the frame, but not use it, then ask for a non-compressed
 	// message
+	frame_t *old;
 	if (cl.frame.deltaframe <= 0)
 	{
 		cl.frame.valid = true;				// uncompressed frame
@@ -306,16 +266,16 @@ void CL_ParseFrame (void)
 		old = &cl.frames[cl.frame.deltaframe & UPDATE_MASK];
 		if (!old->valid)
 		{	// should never happen
-			appPrintf ("Delta from invalid frame (not supposed to happen!).\n");
+			appWPrintf ("Delta from invalid frame (not supposed to happen!).\n");
 		}
 		if (old->serverframe != cl.frame.deltaframe)
 		{	// The frame that the server did the delta from
 			// is too old, so we can't reconstruct it properly.
-			appPrintf ("Delta frame too old.\n");
+			appWPrintf ("Delta frame too old.\n");
 		}
 		else if (cl.parse_entities - old->parse_entities > MAX_PARSE_ENTITIES-128)
 		{
-			appPrintf ("Delta parse_entities too old.\n");
+			appWPrintf ("Delta parse_entities too old.\n");
 		}
 		else
 			cl.frame.valid = true;			// valid delta parse
@@ -324,12 +284,12 @@ void CL_ParseFrame (void)
 	// clamp time
 	if (cl.time > cl.frame.servertime)
 	{
-		cl.time = cl.frame.servertime;
+		cl.time  = cl.frame.servertime;
 		cl.ftime = cl.time / 1000.0f;
 	}
 	else if (cl.time < cl.frame.servertime - 100)
 	{
-		cl.time = cl.frame.servertime - 100;
+		cl.time  = cl.frame.servertime - 100;
 		cl.ftime = cl.time / 1000.0f;
 	}
 
@@ -387,14 +347,11 @@ void CL_ParseFrame (void)
 
 static void GetEntityInfo (int entityNum, clEntityState_t * &st, unsigned &eff, unsigned &rfx)
 {
-	int		effects, renderfx;
-	clEntityState_t *state;
-
-	state = &cl_parse_entities[(cl.frame.parse_entities + entityNum) & (MAX_PARSE_ENTITIES-1)];
+	clEntityState_t *state = &cl_parse_entities[(cl.frame.parse_entities + entityNum) & (MAX_PARSE_ENTITIES-1)];
 	//?? is state == cl_entities[entityNum] ? no ... but why ?
 	// -- if (memcmp (state, &cl_entities[entityNum].current, sizeof(clEntityState_t))) appWPrintf("%d\n");
-	effects = state->effects;
-	renderfx = state->renderfx;
+	unsigned effects  = state->effects;
+	unsigned renderfx = state->renderfx;
 
 	// convert some EF_XXX to EF_COLOR_SHELL+RF_XXX
 	if (effects & (EF_PENT|EF_QUAD|EF_DOUBLE|EF_HALF_DAMAGE))
@@ -426,7 +383,7 @@ static void GetEntityInfo (int entityNum, clEntityState_t * &st, unsigned &eff, 
 
 		if (renderfx & RF_SHELL_DOUBLE)
 		{
-				// lose the yellow shell if we have a red, blue, or green shell
+			// lose the yellow shell if we have a red, blue, or green shell
 			if (renderfx & (RF_SHELL_RED|RF_SHELL_BLUE|RF_SHELL_GREEN))
 				renderfx &= ~RF_SHELL_DOUBLE;
 			// if we have a red shell, turn it to purple by adding blue
@@ -448,19 +405,14 @@ static void GetEntityInfo (int entityNum, clEntityState_t * &st, unsigned &eff, 
 }
 
 
-/*
-==============
-CL_AddViewWeapon
-==============
-*/
 static void AddViewWeapon (int renderfx)
 {
-	player_state_t *ps = &cl.frame.playerstate;
-	player_state_t *ops = &cl.oldFrame->playerstate;
-
 	// allow the gun to be completely removed
 	if (!cl_gun->integer) return;
 	if (hand->integer == 2) return;
+
+	player_state_t *ps  = &cl.frame.playerstate;
+	player_state_t *ops = &cl.oldFrame->playerstate;
 
 	// don't draw gun if in wide angle view
 	if (ps->fov > 90) return;
@@ -489,11 +441,8 @@ static void AddViewWeapon (int renderfx)
 	else
 #endif
 	{
-		gun.frame = ps->gunframe;
-		if (gun.frame == 0)
-			gun.oldframe = 0;				// just changed weapons, don't lerp from old
-		else
-			gun.oldframe = ops->gunframe;
+		gun.frame    = ps->gunframe;
+		gun.oldframe = (gun.frame) ? ops->gunframe : 0; // do not lerp when just changed weapons (frame==0)
 	}
 
 	gun.flags = RF_MINLIGHT|RF_DEPTHHACK|RF_WEAPONMODEL;
@@ -536,7 +485,7 @@ void CL_AddEntityBox (clEntityState_t *st, unsigned rgba)
 }
 
 
-static void CL_AddDebugLines (void)
+static void CL_AddDebugLines ()
 {
 	if (!cl_showbboxes->integer) return;
 
@@ -555,12 +504,7 @@ static void CL_AddDebugLines (void)
 }
 
 
-/*
-===============
-CL_AddPacketEntities
-===============
-*/
-static void CL_AddPacketEntities (void)
+static void CL_AddPacketEntities ()
 {
 	// bonus items rotate at a fixed rate
 	float autorotate = AngleMod(cl.ftime * 100);
@@ -624,7 +568,9 @@ static void CL_AddPacketEntities (void)
 			ent.model   = cl.model_draw[st->modelindex];
 		}
 
-		// only used for black hole model right now, FIXME: do better
+		// only used for black hole model
+		//?? model: models/objects/black/tris.md2
+		//?? also used with RF_BEAM, but this flag already processed
 		//?? use shader
 		if (renderfx == RF_TRANSLUCENT)
 			ent.alpha = 0.7f;
@@ -643,11 +589,10 @@ static void CL_AddPacketEntities (void)
 		// XATRIX
 		else if (effects & EF_SPINNINGLIGHTS)
 		{
-			CVec3 forward, start;
-
 			ent.angles[0] = 0;
 			ent.angles[1] = AngleMod(cl.time/2) + st->angles[1];
 			ent.angles[2] = 180;
+			CVec3 forward, start;
 			AngleVectors (ent.angles, &forward, NULL, NULL);
 			VectorMA (ent.pos.origin, 64, forward, start);
 			V_AddLight (start, 100, 1, 0, 0);
@@ -677,10 +622,10 @@ static void CL_AddPacketEntities (void)
 					V_AddLight (ent.pos.origin, 100, 1.0, 0.1, 0.1);
 				else if (effects & EF_FLAG2)
 					V_AddLight (ent.pos.origin, 100, 0.1, 0.1, 1.0);
-				else if (effects & EF_TAGTRAIL)							//PGM
-					V_AddLight (ent.pos.origin, 100, 1.0, 1.0, 0.0);	//PGM
-				else if (effects & EF_TRACKERTRAIL)						//PGM
-					V_AddLight (ent.pos.origin, 100, -1.0, -1.0, -1.0);	//PGM
+				else if (effects & EF_TAGTRAIL)
+					V_AddLight (ent.pos.origin, 100, 1.0, 1.0, 0.0);
+				else if (effects & EF_TRACKERTRAIL)
+					V_AddLight (ent.pos.origin, 100, -1.0, -1.0, -1.0);
 
 				AddViewWeapon (renderfx);
 				ParsePlayerEntity (cent, *ci, st, ent, NULL, 0);		// do not compute entities, but update animation frames
@@ -699,7 +644,7 @@ static void CL_AddPacketEntities (void)
 			ent.flags |= RF_TRANSLUCENT;
 			ent.alpha = 0.6;
 		}
-
+		// ROGUE
 		if (effects & EF_SPHERETRANS)
 		{
 			//?? models/items/spawngro/tris.md2, models/items/spawngro2/tris.md2
@@ -755,7 +700,9 @@ static void CL_AddPacketEntities (void)
 			// add power screen for entity
 			ent.model = cl_mod_powerscreen;
 			ent.frame = ent.oldframe = 0;
-			//?? shader
+			//?? model is "models/items/armor/effect/tris.md2"
+			//?? shader; will create 2 ents: semi-translucent rect and 'shell_green' box;
+			//?? can remove rect and keep shell only? (create shader anyway, no RF_SHELL effect)
 			ent.flags |= RF_TRANSLUCENT|RF_SHELL_GREEN;
 			ent.alpha = 0.3f;
 			AddEntityWithEffects (&ent, ent.flags | RF_SHELL_GREEN);
@@ -771,7 +718,7 @@ static void CL_AddPacketEntities (void)
 		// PGM - Do not reorder EF_BLASTER and EF_HYPERBLASTER.
 		// EF_BLASTER | EF_TRACKER is a special case for EF_BLASTER2... Cheese!
 		else if (effects & EF_BLASTER) {
-			if (effects & EF_TRACKER)	// lame... problematic?
+			if (effects & EF_TRACKER)						// lame... problematic?
 			{
 				CL_BlasterTrail2 (cent);
 				V_AddLight (ent.pos.origin, 200, 0, 1, 0);
@@ -782,23 +729,26 @@ static void CL_AddPacketEntities (void)
 				V_AddLight (ent.pos.origin, 200, 1, 1, 0);
 			}
 		} else if (effects & EF_HYPERBLASTER) {
-			if (effects & EF_TRACKER)						// PGM	overloaded for blaster2.
+			if (effects & EF_TRACKER)						// PGM overloaded for blaster2.
 				V_AddLight (ent.pos.origin, 200, 0, 1, 0);	// PGM
 			else											// PGM
 				V_AddLight (ent.pos.origin, 200, 1, 1, 0);
 		} else if (effects & (EF_GIB|EF_GREENGIB|EF_GRENADE)) {
+			// smoke trail
 			CL_DiminishingTrail (cent, effects);
 		} else if (effects & EF_FLIES) {
 			CL_FlyEffect (cent);
 		} else if (effects & EF_BFG) {
 			if (effects & EF_ANIM_ALLFAST)
 			{
+				// flying BFG ball
 				CL_BfgParticles (ent.pos.origin);
 				float extra = frand () / 2;
 				V_AddLight (ent.pos.origin, 200, extra, 1, extra);
 			}
 			else
 			{
+				// BFG explosion
 				static const float bfg_lightramp[7] = {200, 300, 400, 600, 300, 150, 75};
 				float intens = Lerp (bfg_lightramp[st->frame], bfg_lightramp[st->frame+1], cl.lerpfrac);
 				float bright = st->frame > 2 ? (5.0f - st->frame - cl.lerpfrac) / (5 - 2) : 1;
@@ -860,10 +810,9 @@ void CL_OffsetThirdPersonView ()
 {
 	CVec3	forward, pos;
 	trace_t	trace;
-	float	camDist;
 
 	// algorithm was taken from FAKK2
-	camDist = max(cl_cameraDist->value, CAMERA_MINIMUM_DISTANCE);
+	float camDist = max(cl_cameraDist->value, CAMERA_MINIMUM_DISTANCE);
 #if FIXED_VIEW
 	sscanf (Cvar_VariableString("3rd"), "%f %f %f", VECTOR_ARG(&cl.refdef.viewangles));
 #endif
@@ -889,9 +838,9 @@ void CL_OffsetThirdPersonView ()
 			angles[PITCH] += 2;
 			AngleVectors (angles, &forward, NULL, NULL);
 			VectorMA (cl.refdef.vieworg, -camDist, forward, pos);
-			pos[2] += cl_cameraheight->value;
+			pos[2] += cl_cameraHeight->value;
 
-			trace = CM_BoxTrace (cl.refdef.vieworg, pos, bounds, 0, MASK_SHOT|MASK_WATER);
+			CM_BoxTrace (trace, cl.refdef.vieworg, pos, bounds, 0, MASK_SHOT|MASK_WATER);
 			pos = trace.endpos;
 			dist = VectorDistance (pos, cl.refdef.vieworg);
 			if (dist >= CAMERA_MINIMUM_DISTANCE)
@@ -907,21 +856,14 @@ void CL_OffsetThirdPersonView ()
 }
 
 
-/*
-===============
-CL_CalcViewValues
-
-Sets cl.refdef view values
-===============
-*/
-static void CL_CalcViewValues (void)
+// Sets cl.refdef view values
+static void CL_CalcViewValues ()
 {
 	int			i;
-	player_state_t	*ps, *ops;
 
 	// find the previous frame to interpolate from
-	ps = &cl.frame.playerstate;
-	ops = &cl.oldFrame->playerstate;
+	player_state_t *ps  = &cl.frame.playerstate;
+	player_state_t *ops = &cl.oldFrame->playerstate;
 
 	// see if the player entity was teleported this frame
 	if (abs(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256*8 ||
@@ -993,14 +935,9 @@ static void CL_CalcViewValues (void)
 	AngleVectors (cl.refdef.viewangles, &cl.v_forward, &cl.v_right, &cl.v_up);
 }
 
-/*
-===============
-CL_AddEntities
 
-Emits all entities, particles, and lights to the refresh
-===============
-*/
-void CL_AddEntities (void)
+// Emits all entities, particles, and lights to the renderer
+void CL_AddEntities ()
 {
 	guard(CL_AddEntities);
 

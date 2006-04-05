@@ -71,14 +71,14 @@ playsound_t	s_pendingplays;
 
 static int	s_beginofs;
 
-cvar_t		*s_volume;
-cvar_t		*s_testsound;
-cvar_t		*s_loadas8bit;
-cvar_t		*s_khz;
-cvar_t		*s_reverse_stereo;
-cvar_t		*s_show;
-cvar_t		*s_mixahead;
-cvar_t		*s_primary;
+cvar_t	*s_volume;
+cvar_t	*s_testsound;
+cvar_t	*s_loadas8bit;
+cvar_t	*s_khz;
+cvar_t	*s_primary;
+static cvar_t	*s_reverse_stereo;
+static cvar_t	*s_show;
+static cvar_t	*s_mixahead;
 
 
 int		s_rawend;
@@ -106,11 +106,6 @@ void S_SoundInfo_f(void)
 }
 
 
-/*
-================
-S_Init
-================
-*/
 void S_Init (void)
 {
 	cvar_t *cv = Cvar_Get ("nosound", "0", 0);
@@ -145,7 +140,7 @@ CVAR_END
 		sound_started = true;
 		num_sfx = 0;
 
-		soundtime = 0;
+		soundtime   = 0;
 		paintedtime = 0;
 
 		appPrintf ("sound sampling rate: %d\n", dma.speed);
@@ -195,12 +190,7 @@ void S_Shutdown (void)
 // Load a sound
 // =======================================================================
 
-/*
-==================
-S_FindName
 
-==================
-*/
 static sfx_t *S_FindName (const char *name, bool create)
 {
 	guard(S_FindName);
@@ -253,12 +243,6 @@ static sfx_t *S_FindName (const char *name, bool create)
 }
 
 
-/*
-==================
-S_AliasName
-
-==================
-*/
 static sfx_t *S_AliasName (const char *aliasname, const char *truename)
 {
 	guard(S_AliasName);
@@ -294,22 +278,13 @@ static sfx_t *S_AliasName (const char *aliasname, const char *truename)
 }
 
 
-/*
-=====================
-S_BeginRegistration
-=====================
-*/
 void S_BeginRegistration (void)
 {
 	s_registration_sequence++;
 	s_registering = true;
 }
 
-/*
-==================
-S_RegisterSound
-==================
-*/
+
 sfx_t *S_RegisterSound (const char *name)
 {
 	if (!sound_started) return NULL;
@@ -327,12 +302,6 @@ sfx_t *S_RegisterSound (const char *name)
 }
 
 
-/*
-=====================
-S_EndRegistration
-
-=====================
-*/
 void S_EndRegistration (void)
 {
 	int		i;
@@ -366,11 +335,6 @@ void S_EndRegistration (void)
 
 //=============================================================================
 
-/*
-=================
-S_PickChannel
-=================
-*/
 channel_t *S_PickChannel (int entnum, int entchannel)
 {
     int			ch_idx;
@@ -414,13 +378,8 @@ channel_t *S_PickChannel (int entnum, int entchannel)
     return ch;
 }
 
-/*
-=================
-S_SpatializeOrigin
 
-Used for spatializing channels and autosounds
-=================
-*/
+// Used for spatializing channels and autosounds
 static void S_SpatializeOrigin (const CVec3 &origin, float master_vol, float dist_mult, int *left_vol, int *right_vol)
 {
 	if (cls.state != ca_active)
@@ -470,12 +429,6 @@ static void S_SpatializeOrigin (const CVec3 &origin, float master_vol, float dis
 		*left_vol = 0;
 }
 
-/*
-=================
-S_Spatialize
-=================
-*/
-
 
 // Called to get the sound spatialization origin
 static void GetEntitySoundOrigin (int ent, CVec3 &org)
@@ -488,8 +441,6 @@ static void GetEntitySoundOrigin (int ent, CVec3 &org)
 
 void S_Spatialize(channel_t *ch)
 {
-	CVec3		origin;
-
 	// anything coming from the view entity will always be full volume
 	if (ch->entnum == cl.playernum+1)
 	{
@@ -498,6 +449,7 @@ void S_Spatialize(channel_t *ch)
 		return;
 	}
 
+	CVec3	origin;
 	if (ch->fixed_origin)
 	{
 		origin = ch->origin;
@@ -509,16 +461,9 @@ void S_Spatialize(channel_t *ch)
 }
 
 
-/*
-=================
-S_AllocPlaysound
-=================
-*/
 playsound_t *S_AllocPlaysound (void)
 {
-	playsound_t	*ps;
-
-	ps = s_freeplays.next;
+	playsound_t	*ps = s_freeplays.next;
 	if (ps == &s_freeplays)
 		return NULL;		// no free playsounds
 
@@ -530,11 +475,6 @@ playsound_t *S_AllocPlaysound (void)
 }
 
 
-/*
-=================
-S_FreePlaysound
-=================
-*/
 void S_FreePlaysound (playsound_t *ps)
 {
 	// unlink from channel
@@ -676,8 +616,7 @@ void S_StartSound (const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, 
 
 	// make the playsound_t
 	playsound_t *ps = S_AllocPlaysound ();
-	if (!ps)
-		return;
+	if (!ps) return;
 
 	if (origin)
 	{
@@ -687,11 +626,11 @@ void S_StartSound (const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, 
 	else
 		ps->fixed_origin = false;
 
-	ps->entnum = entnum;
-	ps->entchannel = entchannel;
+	ps->entnum      = entnum;
+	ps->entchannel  = entchannel;
 	ps->attenuation = attenuation;
-	ps->volume = vol;
-	ps->sfx = sfx;
+	ps->volume      = vol;
+	ps->sfx         = sfx;
 
 	// drift s_beginofs
 	int start = appRound (cl.frame.servertime / 1000.0f * dma.speed + s_beginofs);
@@ -728,11 +667,6 @@ void S_StartSound (const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, 
 }
 
 
-/*
-==================
-S_StartLocalSound
-==================
-*/
 void S_StartLocalSound (const char *sound)
 {
 	if (!sound_started)
@@ -748,20 +682,14 @@ void S_StartLocalSound (const char *sound)
 }
 
 
-/*
-==================
-S_ClearBuffer
-==================
-*/
-void S_ClearBuffer (void)
+void S_ClearBuffer ()
 {
-	int		clear;
-
 	if (!sound_started)
 		return;
 
 	s_rawend = 0;
 
+	int clear;
 	if (dma.samplebits == 8)
 		clear = 0x80;
 	else
@@ -773,24 +701,17 @@ void S_ClearBuffer (void)
 	SNDDMA_Submit ();
 }
 
-/*
-==================
-S_StopAllSounds_f
-==================
-*/
-void S_StopAllSounds_f (void)
-{
-	int		i;
 
-	if (!sound_started)
-		return;
+void S_StopAllSounds_f ()
+{
+	if (!sound_started) return;
 
 	// clear all the playsounds
 	memset(s_playsounds, 0, sizeof(s_playsounds));
-	s_freeplays.next = s_freeplays.prev = &s_freeplays;
+	s_freeplays.next    = s_freeplays.prev    = &s_freeplays;
 	s_pendingplays.next = s_pendingplays.prev = &s_pendingplays;
 
-	for (i = 0; i < MAX_PLAYSOUNDS; i++)
+	for (int i = 0; i < MAX_PLAYSOUNDS; i++)
 	{
 		s_playsounds[i].prev = &s_freeplays;
 		s_playsounds[i].next = s_freeplays.next;
@@ -881,13 +802,7 @@ void S_AddLoopSounds ()
 
 //=============================================================================
 
-/*
-============
-S_RawSamples
-
-Cinematic streaming and voice over network
-============
-*/
+// Cinematic streaming and voice over network
 void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 {
 	int		i;
@@ -900,7 +815,6 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 		s_rawend = paintedtime;
 	float scale = (float)rate / dma.speed;
 
-//appPrintf ("%i < %i < %i\n", soundtime, paintedtime, s_rawend);
 	if (channels == 2 && width == 2)
 	{
 		if (scale == 1.0)
@@ -970,13 +884,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 
 //=============================================================================
 
-/*
-============
-S_Update
-
-Called once each time through the main loop
-============
-*/
+// Called once each time through the main loop
 void S_Update(const CVec3 &origin, const CVec3 &right)
 {
 	int		i;
@@ -988,7 +896,7 @@ void S_Update(const CVec3 &origin, const CVec3 &right)
 		S_InitScaletable ();
 
 	listener_origin = origin;
-	listener_right = right;
+	listener_right  = right;
 
 	// update spatialization for dynamic sounds
 	channel_t *ch = channels;
@@ -1012,14 +920,11 @@ void S_Update(const CVec3 &origin, const CVec3 &right)
 	// add loopsounds
 	S_AddLoopSounds ();
 
-	//
 	// debugging output
-	//
 	if (s_show->integer == 2)
 	{
 		int total = 0;
-		ch = channels;
-		for (i=0 ; i<MAX_CHANNELS; i++, ch++)
+		for (i = 0, ch = channels; i < MAX_CHANNELS; i++, ch++)
 			if (ch->sfx && (ch->leftvol || ch->rightvol) )
 			{
 				appPrintf ("%3i %3i %s\n", ch->leftvol, ch->rightvol, *ch->sfx->Name);
@@ -1033,18 +938,16 @@ void S_Update(const CVec3 &origin, const CVec3 &right)
 	S_Update_();
 }
 
-void GetSoundtime(void)
+void GetSoundtime ()
 {
-	int		samplepos;
-	static	int		buffers;
-	static	int		oldsamplepos;
-	int		fullsamples;
+	static int buffers;
+	static int oldsamplepos;
 
-	fullsamples = dma.samples / dma.channels;
+	int fullsamples = dma.samples / dma.channels;
 
-// it is possible to miscount buffers if it has wrapped twice between
-// calls to S_Update.  Oh well.
-	samplepos = SNDDMA_GetDMAPos();
+	// it is possible to miscount buffers if it has wrapped twice between
+	// calls to S_Update.  Oh well.
+	int samplepos = SNDDMA_GetDMAPos();
 
 	if (samplepos < oldsamplepos)
 	{
@@ -1063,20 +966,15 @@ void GetSoundtime(void)
 }
 
 
-void S_Update_(void)
+void S_Update_()
 {
-	unsigned endtime;
-	int		samps;
-
-	if (!sound_started)
-		return;
-
 	guard(S_Update_);
+
+	if (!sound_started) return;
 
 	SNDDMA_BeginPainting ();
 
-	if (!dma.buffer)
-		return;
+	if (!dma.buffer) return;
 
 	// Updates DMA time
 	GetSoundtime();
@@ -1089,11 +987,11 @@ void S_Update_(void)
 	}
 
 	// mix ahead of current position
-	endtime = soundtime + appRound (s_mixahead->value * dma.speed);
+	unsigned endtime = soundtime + appRound (s_mixahead->value * dma.speed);
 
 	// mix to an even submission block size
 	endtime = Align (endtime, dma.submission_chunk);
-	samps = dma.samples >> (dma.channels-1);
+	int samps = dma.samples >> (dma.channels-1);
 	if (endtime - soundtime > samps)
 		endtime = soundtime + samps;
 

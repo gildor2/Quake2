@@ -857,7 +857,7 @@ void	SV_Frame (float msec);
 #define	SURF_SPECULAR			0x4000		// have a bug in KP's q_shared.h: SPECULAR and DIFFUSE consts are 0x400 and 0x800
 #define	SURF_DIFFUSE			0x8000
 
-#define SURF_AUTOFLARE			0x2000		// just free flag (should use extra struc for dtexinfo_t !!)
+#define SURF_AUTOFLARE			0x2000		// just free flag (should use extra struc for dBsp2Texinfo_t !!)
 
 
 

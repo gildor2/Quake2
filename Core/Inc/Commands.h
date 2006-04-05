@@ -11,7 +11,7 @@
 
 CORE_API bool RegisterCommand (const char *name, void(*func)(), unsigned flags = 0);
 CORE_API bool UnregisterCommand (const char *name);
-CORE_API bool ExecuteCommand (const char *str); //?? make it local for Commands.cpp
+CORE_API bool ExecuteCommand (const char *str);
 
 
 inline bool RegisterCommand (const char *name, void(*func)(bool), unsigned flags = 0)

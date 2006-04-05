@@ -601,9 +601,6 @@ void GL_EnableFog (bool enable)
 			glFogf (GL_FOG_END, gl_fogEnd);
 			break;
 		}
-
-		if (GL_SUPPORT(QGL_NV_FOG_DISTANCE))
-			glFogf (GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
 		gl_state.fogEnabled = true;
 	}
 	else

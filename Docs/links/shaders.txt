@@ -1,0 +1,8 @@
+- PS1.X shader compiler:
+  - ogre: "RenderSystems\GL\src\atifs" (for ATI 8500+ only, PS 1.4)
+  - crystal space: "plugins\video\render3d\shader\shaderplugins\glshader_ps1" (NV+ATI, PS 1.X)
+  - xengine: "src\Core\ShaderCompilers", "src\Renderers\RendererXXX\XFragmentShader*.cpp" (any shaders on any hardware)
+
+Links:
+http://nifelheim.dyndns.org/~cocidius/ps14toATIfs/ - library for loading DX8.1 pixel shaders into OpenGL/ATI (8500+)
+http://developer.nvidia.com/object/nvparse.html - (2001) library for loading in OpenGL/NV PS1.1 (and few other formats)

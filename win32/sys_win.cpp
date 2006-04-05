@@ -1,6 +1,6 @@
 #include "WinPrivate.h"
 #include "../client/client.h"		//!! for editLine[], CompleteCommand() + COutputDeviceCon
-#include <float.h>					// for _controlfp()
+//#include <float.h>					// for _controlfp()
 
 #include "OutputDeviceMem.h"
 
@@ -63,8 +63,8 @@ public:
 #if !IS_CONSOLE_APP
 		AllocConsole ();
 #endif
-		hConInput  = GetStdHandle (STD_INPUT_HANDLE);		//?? not OutputDevice-stuff
-		hOutput = GetStdHandle (STD_OUTPUT_HANDLE);
+		hConInput = GetStdHandle (STD_INPUT_HANDLE);		//?? not OutputDevice-stuff
+		hOutput   = GetStdHandle (STD_OUTPUT_HANDLE);
 		Register ();
 		//!! should set error handler (Ctrl-C etc)
 	}

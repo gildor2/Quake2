@@ -1,7 +1,7 @@
 #include "CorePrivate.h"
 
 #define MAX_LOGGERS		32
-#define BUFFER_LEN		4096
+#define BUFFER_LEN		16384		// allocated in stack, so - not very small, but not too large ...
 
 COutputDevice *GLogHook = NULL;
 
@@ -59,8 +59,7 @@ void COutputDevice::Printf (const char *fmt, ...)
 	char buf[BUFFER_LEN];
 	int len = vsnprintf (ARRAY_ARG(buf), fmt, argptr);
 	va_end (argptr);
-	if (len < 0 || len >= sizeof(buf) - 1)
-		return;
+	if (len < 0 || len >= sizeof(buf) - 1) return;		//?? may be, write anyway
 
 	if (NoColors) appUncolorizeString (buf, buf); // in-place
 	Write (buf);
@@ -112,7 +111,7 @@ void appPrintf (const char *fmt, ...)
 	char buf[BUFFER_LEN];
 	int len = vsnprintf (ARRAY_ARG(buf), fmt, argptr);
 	va_end (argptr);
-	if (len < 0 || len >= sizeof(buf) - 1) return;		//?? may be, write anyway ...
+	if (len < 0 || len >= sizeof(buf) - 1) return;		//?? may be, write anyway
 
 	if (GIsFatalError)					// force to work without hooks
 		GLogHook = NULL;
@@ -142,6 +141,6 @@ void appWPrintf (const char *fmt, ...)
 	int len = vsnprintf (ARRAY_ARG(buf), fmt, argptr);
 	va_end (argptr);
 
-	if (len < 0 || len >= sizeof(buf) - 1) return;		//?? may be, write anyway ...
+	if (len < 0 || len >= sizeof(buf) - 1) return;		//?? may be, write anyway
 	appPrintf (S_YELLOW"%s", buf);
 }
