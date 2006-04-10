@@ -1481,35 +1481,37 @@ static node_t *WalkBspTree ()
 			}
 		}
 
-
-		// node is leaf
-		if (!firstLeaf)
-			firstLeaf = node;
-		else
-			lastLeaf->drawNext = node;
-		lastLeaf = node;
-		STAT(gl_stats.frustLeafs++);
-
-		node->frame        = drawFrame;
-		node->frustumMask  = frustumMask;
-		node->drawEntity   = NULL;
-		node->drawParticle = NULL;
-		node->drawBeam     = NULL;
-		// mark dlights on leaf surfaces
-		if (dlightMask)
+		if (node->numLeafFaces)		// Q1/HL maps may have leafs without visible faces (mostly, leaf #0)
 		{
-			int		i;
-			surfaceBase_t **psurf, *surf;
+			// node is leaf
+			if (!firstLeaf)
+				firstLeaf = node;
+			else
+				lastLeaf->drawNext = node;
+			lastLeaf = node;
+			STAT(gl_stats.frustLeafs++);
 
-			for (i = 0, psurf = node->leafFaces; i < node->numLeafFaces; i++, psurf++)
+			node->frame        = drawFrame;
+			node->frustumMask  = frustumMask;
+			node->drawEntity   = NULL;
+			node->drawParticle = NULL;
+			node->drawBeam     = NULL;
+			// mark dlights on leaf surfaces
+			if (dlightMask)
 			{
-				surf = *psurf;
-				if (surf->dlightFrame == drawFrame)
-					surf->dlightMask |= dlightMask;
-				else
+				int		i;
+				surfaceBase_t **psurf, *surf;
+
+				for (i = 0, psurf = node->leafFaces; i < node->numLeafFaces; i++, psurf++)
 				{
-					surf->dlightMask = dlightMask;
-					surf->dlightFrame = drawFrame;
+					surf = *psurf;
+					if (surf->dlightFrame == drawFrame)
+						surf->dlightMask |= dlightMask;
+					else
+					{
+						surf->dlightMask = dlightMask;
+						surf->dlightFrame = drawFrame;
+					}
 				}
 			}
 		}

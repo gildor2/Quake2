@@ -289,7 +289,7 @@ struct CBox
 	void Clear ();						// set mins>maxs (negative volume)
 	void Expand (const CVec3 &p);		// expand mins/maxs by point p
 	void Expand (const CBox &b);		// include box b into volume
-	void GetCenter (CVec3 &p);			// compute center point
+	void GetCenter (CVec3 &p) const;	// compute center point
 	// returns 1 when box placed on a normal-looking side of plane, 2 when on opposite side,
 	// and 3 (1+2) when box intersects plane
 	int OnPlaneSide (const cplane_t &plane) const;

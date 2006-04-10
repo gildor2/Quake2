@@ -653,6 +653,18 @@ static void DrawSurfInfo ()
 
 static void DrawOriginInfo ()
 {
+//!!!!! TEST !!!!!!!
+extern bool SHOW_TRACE;
+trace_t trace;
+CBox bounds = {{-32,-32,-32}, {32,32,32}};
+SHOW_TRACE=true;
+CM_BoxTrace (trace, cl.refdef.vieworg, cl.refdef.vieworg, bounds, 0, MASK_ALL);
+if (trace.allsolid)
+{
+RE_DrawTextLeft (va("trace: %g %g %g", VECTOR_ARG(trace.plane.normal)));
+DecodeContents (trace.contents);
+}
+
 	RE_DrawTextLeft ("Player position:\n----------------", RGB(0.4,0.4,0.6));
 	RE_DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), RGB(0.2,0.4,0.1));
 
@@ -662,8 +674,9 @@ static void DrawOriginInfo ()
 
 	int i = CM_PointLeafnum (cl.refdef.vieworg);
 	RE_DrawTextLeft (va("Leaf: %d, cluster: %d, area: %d", i, CM_LeafCluster (i), CM_LeafArea (i)), RGB(0.2,0.4,0.1));
-	DecodeContents (CM_PointContents (cl.refdef.vieworg, 0));
+	DecodeContents (CM_LeafContents (i));
 	RE_DrawTextLeft ("", RGB(0,0,0));	// empty line
+SHOW_TRACE=false;//!!!!
 }
 
 #endif // NO_DEBUG

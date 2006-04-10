@@ -64,7 +64,7 @@ struct splash_t
 };
 
 
-typedef enum {map_q2, map_kp, map_hl} mapType_t;
+typedef enum {map_q2, map_kp, map_q1, map_hl} mapType_t;
 typedef enum {fog_no, fog_linear, fog_exp, fog_exp2} fogMode_t;
 
 
@@ -77,26 +77,38 @@ struct bspfile_t
 	unsigned	length;
 	CMemoryChain *extraChain;
 
-	// entstring
 	int			entStrSize;
 	const char	*entStr;
 
-	// geometry
 	int			numPlanes;
 	dPlane_t	*planes;
 
 	int			numVertexes;
 	CVec3		*vertexes;
 
-	// BSP
+	int			numModels;
+	cmodel_t	*models;
+
+	int			lightDataSize;
+	byte		*lighting;
+
+	int			numFaces;
+	dFace_t		*faces;
+
 	int			visDataSize;
 	dBsp2Vis_t	*vis;
 
 	int			numNodes;
-	dBsp2Node_t	*nodes;
+	union {
+		dBsp2Node_t	*nodes2;
+		dBsp1Node_t	*nodes1;
+	};
 
 	int			numLeafs;
-	dBsp2Leaf_t	*leafs;
+	union {
+		dBsp2Leaf_t	*leafs2;
+		dBsp1Leaf_t *leafs1;
+	};
 
 	int			numLeaffaces;
 	unsigned short *leaffaces;
@@ -122,19 +134,15 @@ struct bspfile_t
 	int			numAreaportals;
 	dareaportal_t *areaportals;
 
-	int			numModels;
-	cmodel_t	*models;
-
-	// faces
 	int			numTexinfo;
-	dBsp2Texinfo_t *texinfo;
+	union {
+		dBsp2Texinfo_t *texinfo2;
+		dBsp1Texinfo_t *texinfo1;
+	};
 
-	int			numFaces;
-	dFace_t		*faces;
+	dBsp1MiptexLump_t *miptex1;
 
-	// lighting
-	int			lightDataSize;
-	byte		*lighting;
+	//--------- extended data -----------------------------
 
 	int			numFlares;
 	lightFlare_t *flares;

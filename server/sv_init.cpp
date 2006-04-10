@@ -23,12 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 server_static_t	svs;				// persistant server info
 server_t		sv;					// local server
 
-/*
-================
-SV_FindIndex
-
-================
-*/
 int SV_FindIndex (const char *name, int start, int max, bool create)
 {
 	guard(SV_FindIndex);
@@ -44,7 +38,7 @@ int SV_FindIndex (const char *name, int start, int max, bool create)
 		return 0;
 
 	if (i == max)
-		Com_DropError ("*Index: overflow");
+		Com_DropError ("SV_FindIndex(%s): overflow (max=%d)", name, max);
 
 	strncpy (sv.configstrings[start+i], name, sizeof(sv.configstrings[i]));		//?? not NULL-terminated ?
 
@@ -78,16 +72,9 @@ int SV_ImageIndex (const char *name)
 }
 
 
-/*
-================
-SV_CreateBaseline
-
-Entity baselines are used to compress the update messages
-to the clients -- only the fields that differ from the
-baseline will be transmitted
-================
-*/
-void SV_CreateBaseline (void)
+// Entity baselines are used to compress the update messages to the clients -- only
+// the fields that differ from the baseline will be transmitted
+void SV_CreateBaseline ()
 {
 	for (int e = 1; e < ge->num_edicts ; e++)
 	{
@@ -107,12 +94,7 @@ void SV_CreateBaseline (void)
 }
 
 
-/*
-=================
-SV_CheckForSavegame
-=================
-*/
-static void SV_CheckForSavegame (void)
+static void SV_CheckForSavegame ()
 {
 	if (sv_noreload->integer)
 		return;
@@ -148,15 +130,7 @@ static void SV_CheckForSavegame (void)
 }
 
 
-/*
-================
-SV_SpawnServer
-
-Change the server to a new map, taking all connected
-clients along with it.
-
-================
-*/
+// Change the server to a new map, taking all connected clients along with it.
 void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate, bool attractloop, bool loadgame)
 {
 	int			i;
@@ -179,9 +153,9 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 
 	// wipe the entire per-level structure
 	memset (&sv, 0, sizeof(sv));
-	svs.realtime = 0;
+	svs.realtime  = 0;
 	svs.realtimef = 0;
-	sv.loadgame = loadgame;
+	sv.loadgame    = loadgame;
 	sv.attractloop = attractloop;
 
 	// save name for levels that don't set message
@@ -264,13 +238,8 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	unguard;
 }
 
-/*
-==============
-SV_InitGame
 
-A brand new game has been started
-==============
-*/
+// A brand new game has been started
 void SV_InitGame ()
 {
 	guard(SV_InitGame);

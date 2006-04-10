@@ -1,5 +1,5 @@
 #include "client.h"
-#include "qfiles.h"			// we analyze some file structures to extract model/skin info
+#include "cmodel.h"
 
 /*?? What we can do here (with extended protocol):
  *	1. compress data with zlib
@@ -472,10 +472,13 @@ static void RequestNextDownload ()
 		extern int			numTexinfo;
 		extern csurface_t	*map_surfaces;
 
-		if (allow_download->integer && allow_download_maps->integer)
-			while (precache_tex < numTexinfo)
-				if (!CheckOrDownloadFile("textures/%s.wal", map_surfaces[precache_tex++].fullName))	//??? WAL -- more complex, may be shader ...
-					return; // started a download
+		if (map_bspfile->type != map_q1 && map_bspfile->type != map_hl)	// no downloading HL (wad file) no Q1 (embedded) textures
+		{
+			if (allow_download->integer && allow_download_maps->integer)
+				while (precache_tex < numTexinfo)
+					if (!CheckOrDownloadFile("textures/%s.wal", map_surfaces[precache_tex++].fullName))	//??? WAL -- more complex, may be shader ...
+						return; // started a download
+		}
 		precache_check = DCS_SKIP_ALL;
 	}
 

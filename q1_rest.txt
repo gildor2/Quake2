@@ -1,0 +1,30 @@
+* lightmaps: q1: when no lightmap on non-warp surface, it will be completely dark ?
+
+- BrushTrace()
+- BoxTrace() -- TraceToLeaf() + TestInLeaf()
+
+- texture loading:
+  * from map (q1)
+  - from wad (hl)
+  - should delete all textures (map textures) on next map loading:
+    - q1: embedded textures: should delete all on map change (different maps -- may be different textures
+      with the same name)
+    - hl: wad textures: different maps => different wads ...
+
+- surface flags (translucent, sky, warp ...)
+  + check 'Docs/hl.txt'
+- surface sounds (hl)
+
+- entities
+
+- ambient sounds (see dBsp1Leaf_t)
+
+- .mdl models for Q1 (torch etc)
+
+- visinfo
+- check player trace bounds + viewheight for q1/hl
+- hl: increase entity limit (CS_... -- SV_FindIndex())
+* hl: sky in entity
+- q1/hl: check lightstyle strings
+? force ext protocol for clients
+- check animation cycle in q1 and hl for '+0texture'

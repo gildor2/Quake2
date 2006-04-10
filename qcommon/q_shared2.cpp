@@ -326,7 +326,7 @@ void CBox::Expand (const CBox &b)
 	}
 }
 
-void CBox::GetCenter (CVec3 &p)
+void CBox::GetCenter (CVec3 &p) const
 {
 	for (int i = 0; i < 3; i++)
 		p[i] = (mins[i] + maxs[i]) / 2;

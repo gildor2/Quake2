@@ -752,6 +752,15 @@ image_t *CreateImage (const char *name, void *pic, int width, int height, unsign
 }
 
 
+image_t *CreateImage8 (const char *name, void *pic, int width, int height, unsigned flags, unsigned *palette)
+{
+	byte *pic32 = Convert8to32bit ((byte*)pic, width, height, palette);
+	image_t *img = CreateImage (name, pic32, width, height, flags);
+	delete pic32;
+	return img;
+}
+
+
 void LoadDelayedImages ()
 {
 	int		i;

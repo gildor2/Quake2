@@ -250,6 +250,7 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 	int		visRowSize;
 	byte	*visInfo;
 	// lights
+	bool	monoLightmap;		// "true" for q1 maps
 	CMemoryChain *lightGridChain;
 	lightCell_t **lightGrid;
 	int		numLightCells;

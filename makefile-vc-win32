@@ -215,12 +215,12 @@ TestApp/TestApp.exe : $(TEST_DIRS) $(TEST)
 #	compiling source files
 #------------------------------------------------------------------------------
 
-OPT_STATIC = -W3 -O1 -GX- -D MAX_DEBUG=0 -D STATIC_BUILD -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
+OPT_STATIC = -W3 -O1 -GX- -D MAX_DEBUG=1 -D STATIC_BUILD -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
 
 Release/obj-win32/q2stat/md4.obj : qcommon/md4.cpp
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/md4.obj" qcommon/md4.cpp
 
-OPT_DEDICATED = -W3 -O1 -GX- -D MAX_DEBUG=0 -D STATIC_BUILD -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
+OPT_DEDICATED = -W3 -O1 -GX- -D MAX_DEBUG=1 -D STATIC_BUILD -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
 
 Release/obj-win32/dedstat/md4.obj : qcommon/md4.cpp
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/md4.obj" qcommon/md4.cpp
@@ -261,7 +261,7 @@ Release/obj-win32/q2stat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEP
 Release/obj-win32/dedstat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
 
-OPT_TEST = -W3 -O1 -GX- -D MAX_DEBUG=0 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
+OPT_TEST = -W3 -O1 -GX- -D MAX_DEBUG=1 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
 	Core/../lib/zlib/zlib.h \
@@ -1548,6 +1548,9 @@ DEPENDS = \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
 
+Release/obj-win32/q2stat/cl_download.obj : client/cl_download.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_download.obj" client/cl_download.cpp
+
 Release/obj-win32/q2stat/cl_ents.obj : client/cl_ents.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_ents.obj" client/cl_ents.cpp
 
@@ -1641,10 +1644,10 @@ DEPENDS = \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h
+	win32/WinPrivate.h
 
-Release/obj-win32/q2stat/cl_download.obj : client/cl_download.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_download.obj" client/cl_download.cpp
+Release/obj-win32/q2stat/cd_win.obj : win32/cd_win.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cd_win.obj" win32/cd_win.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -1662,28 +1665,21 @@ DEPENDS = \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
-	client/cdaudio.h \
-	client/cl_fx.h \
-	client/cl_input.h \
-	client/cl_playermodel.h \
-	client/cl_scrn.h \
-	client/client.h \
-	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
-	client/keys.h \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/sound.h \
-	client/vid.h \
-	qcommon/protocol.h \
+	qcommon/cmodel.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
-	win32/WinPrivate.h
+	qcommon/qfiles.h
 
-Release/obj-win32/q2stat/cd_win.obj : win32/cd_win.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cd_win.obj" win32/cd_win.cpp
+Release/obj-win32/q2stat/cmodel.obj : qcommon/cmodel.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cmodel.obj" qcommon/cmodel.cpp
+
+Release/obj-win32/dedstat/cmodel.obj : qcommon/cmodel.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/cmodel.obj" qcommon/cmodel.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -1840,12 +1836,6 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
-
-Release/obj-win32/q2stat/cmodel.obj : qcommon/cmodel.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cmodel.obj" qcommon/cmodel.cpp
-
-Release/obj-win32/dedstat/cmodel.obj : qcommon/cmodel.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/cmodel.obj" qcommon/cmodel.cpp
 
 Release/obj-win32/q2stat/model.obj : qcommon/model.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/model.obj" qcommon/model.cpp

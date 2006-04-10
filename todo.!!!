@@ -206,7 +206,6 @@ BSP:
 ? commands spmap, devmap etc. (set "cheats" and "deathmatch" vars before SV_Map())
 - advanced "map" command syntax: add scaling and mirroring (separate scale each axis, mirror - X *= -1 ?)
   "map [-dev] [-sp] [-mirror] [-scale] <name>" (?!)
-? Q1 map support (easier than HL; requires renderer ability to load textures from BSP)
 
 *** BUGS ***
 - 3rd person view: ground3_beta3, dist=300, enter dark place (near ladder) between street lamp and garage: garage

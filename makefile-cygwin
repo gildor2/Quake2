@@ -1496,6 +1496,9 @@ DEPENDS_34 = \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
 
+Release/obj-cygwin/q2stat/cl_download.o : client/cl_download.cpp $(DEPENDS_34)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_download.o client/cl_download.cpp
+
 Release/obj-cygwin/q2stat/cl_ents.o : client/cl_ents.cpp $(DEPENDS_34)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_ents.o client/cl_ents.cpp
 
@@ -1589,10 +1592,10 @@ DEPENDS_36 = \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h
+	win32/WinPrivate.h
 
-Release/obj-cygwin/q2stat/cl_download.o : client/cl_download.cpp $(DEPENDS_36)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_download.o client/cl_download.cpp
+Release/obj-cygwin/q2stat/cd_win.o : win32/cd_win.cpp $(DEPENDS_36)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cd_win.o win32/cd_win.cpp
 
 DEPENDS_37 = \
 	Core/Inc/Build.h \
@@ -1610,28 +1613,21 @@ DEPENDS_37 = \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
-	client/cdaudio.h \
-	client/cl_fx.h \
-	client/cl_input.h \
-	client/cl_playermodel.h \
-	client/cl_scrn.h \
-	client/client.h \
-	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
-	client/keys.h \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	client/sound.h \
-	client/vid.h \
-	qcommon/protocol.h \
+	qcommon/cmodel.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
-	win32/WinPrivate.h
+	qcommon/qfiles.h
 
-Release/obj-cygwin/q2stat/cd_win.o : win32/cd_win.cpp $(DEPENDS_37)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cd_win.o win32/cd_win.cpp
+Release/obj-cygwin/q2stat/cmodel.o : qcommon/cmodel.cpp $(DEPENDS_37)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cmodel.o qcommon/cmodel.cpp
+
+Release/obj-cygwin/dedstat/cmodel.o : qcommon/cmodel.cpp $(DEPENDS_37)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/cmodel.o qcommon/cmodel.cpp
 
 DEPENDS_38 = \
 	Core/Inc/Build.h \
@@ -1788,12 +1784,6 @@ DEPENDS_42 = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
-
-Release/obj-cygwin/q2stat/cmodel.o : qcommon/cmodel.cpp $(DEPENDS_42)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cmodel.o qcommon/cmodel.cpp
-
-Release/obj-cygwin/dedstat/cmodel.o : qcommon/cmodel.cpp $(DEPENDS_42)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/cmodel.o qcommon/cmodel.cpp
 
 Release/obj-cygwin/q2stat/model.o : qcommon/model.cpp $(DEPENDS_42)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/model.o qcommon/model.cpp

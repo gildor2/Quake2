@@ -49,6 +49,7 @@ lightmapBlock_t *LM_NextBlock ();
 void LM_CheckMinlight (dynamicLightmap_t *dl);
 bool LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl);
 void LM_PutBlock (dynamicLightmap_t *dl);
+void LM_PutBlock1 (dynamicLightmap_t *dl);		// monochrome version for Quake1 lightmaps
 void LM_SortLightStyles (dynamicLightmap_t *dl);
 void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dlightMask);
 bool LM_IsMonotone (dynamicLightmap_t *lm, color_t *avg);

@@ -64,6 +64,7 @@ void	LoadDelayedImages ();
 
 // creating images
 image_t *CreateImage (const char *name, void *pic, int width, int height, unsigned flags);
+image_t *CreateImage8 (const char *name, void *pic, int width, int height, unsigned flags, unsigned *palette);
 image_t *FindImage (const char *name, unsigned flags);
 
 // video support

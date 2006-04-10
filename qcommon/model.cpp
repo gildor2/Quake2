@@ -1,50 +1,71 @@
 #include "qcommon.h"
 #include "cmodel.h"
 
+//#undef LITTLE_ENDIAN		// test Swap() functions
+
+//!! move to common headers
+inline void LTL(short &v)
+{
+	v = LittleShort (v);
+}
+inline void LTL(unsigned short &v)
+{
+	v = LittleShort (v);
+}
+inline void LTL(int &v)
+{
+	v = LittleLong (v);
+}
+inline void LTL(unsigned &v)
+{
+	v = LittleLong (v);
+}
+inline void LTL(float &v)
+{
+	v = LittleFloat (v);
+}
+inline void LTL(CVec3 &v)
+{
+	for (int i = 0; i < 3; i++)
+		v[i] = LittleFloat (v[i]);
+}
 
 static bspfile_t bspfile;
-static dBsp2Hdr_t *header;
+static lump_t *lumps;
 
 // forwards
 static const char *ProcessEntstring (const char *entString);
 
 
-//?? Should perform SwapBlock() (as in Q3 bsp tools)
+//?? move swappers to qfiles.h as methods for structures
 #if !LITTLE_ENDIAN
 static void SwapQ2BspFile (bspfile_t *f)
 {
 	int		i, j;
 
+	//!! ERROR HERE: should swap models before loading as cmodel_t!!
 	// models
 	for (i = 0; i < f->numModels; i++)
 	{
 		cmodel_t *d = &f->models[i];
-		d->firstface = LittleLong (d->firstface);
-		d->numfaces  = LittleLong (d->numfaces);
-		d->headnode  = LittleLong (d->headnode);
+		LTL(d->firstface);
+		LTL(d->numfaces);
+		LTL(d->headnode);
 
-		for (j = 0; j < 3; j++)
-		{
-			d->bounds.mins[j] = LittleFloat(d->bounds.mins[j]);
-			d->bounds.maxs[j] = LittleFloat(d->bounds.maxs[j]);
-//			d->origin[j]      = LittleFloat(d->origin[j]);
-		}
+		LTL(d->bounds.mins);
+		LTL(d->bounds.maxs);
+//		LTL(d->origin);
 	}
 
 	// vertexes
 	for (i = 0; i < f->numVertexes; i++)
-	{
-		for (j = 0; j < 3; j++)
-			f->vertexes[i].point[j] = LittleFloat (f->vertexes[i].point[j]);
-	}
+		LTL(f->vertexes[i]);
 
 	// planes
 	for (i = 0; i < f->numPlanes; i++)
 	{
-		for (j = 0; j < 3; j++)
-			f->planes[i].normal[j] = LittleFloat (f->planes[i].normal[j]);
-		f->planes[i].dist = LittleFloat (f->planes[i].dist);
-		f->planes[i].type = LittleLong (f->planes[i].type);
+		LTL(f->planes[i].normal);
+		LTL(f->planes[i].dist);
 	}
 
 	// texinfos
@@ -53,115 +74,125 @@ static void SwapQ2BspFile (bspfile_t *f)
 		dBsp2Texinfo_t *d = &f->texinfo[i];
 		float *vec = &d->vecs[0].vec[0];	// hack to get all ([3]+1)[2] == 8 components of dBsp2Texinfo_t.vecs[]
 		for (j = 0; j < 8; j++)
-			vec[j] = LittleFloat (vec[j]);
-		d->flags = LittleLong (d->flags);
-		d->value = LittleLong (d->value);
-		d->nexttexinfo = LittleLong (d->nexttexinfo);
+			LTL(vec[j]);
+		LTL(d->flags);
+		LTL(d->value);
+		LTL(d->nexttexinfo);
 	}
 
 	// faces
 	for (i = 0; i < f->numFaces; i++)
 	{
-		f->faces[i].texinfo   = LittleShort (f->faces[i].texinfo);
-		f->faces[i].planenum  = LittleShort (f->faces[i].planenum);
-		f->faces[i].side      = LittleShort (f->faces[i].side);
-		f->faces[i].lightofs  = LittleLong (f->faces[i].lightofs);
-		f->faces[i].firstedge = LittleLong (f->faces[i].firstedge);
-		f->faces[i].numedges  = LittleShort (f->faces[i].numedges);
+		dFace_t &face = f->faces[i];
+		LTL(face.texinfo);
+		LTL(face.planenum);
+		LTL(face.side);
+		LTL(face.lightofs);
+		LTL(face.firstedge);
+		LTL(face.numedges);
 	}
 
 	// nodes
 	for (i = 0; i < f->numNodes; i++)
 	{
-		f->nodes[i].planenum = LittleLong (f->nodes[i].planenum);
+		dBsp2Node_t &node = f->nodes2[i];
+		LTL(node.planenum);
 		for (j = 0; j < 3; j++)
 		{
-			f->nodes[i].mins[j] = LittleShort (f->nodes[i].mins[j]);
-			f->nodes[i].maxs[j] = LittleShort (f->nodes[i].maxs[j]);
+			LTL(node.mins[j]);
+			LTL(node.maxs[j]);
 		}
-		f->nodes[i].children[0] = LittleLong (f->nodes[i].children[0]);
-		f->nodes[i].children[1] = LittleLong (f->nodes[i].children[1]);
-		f->nodes[i].firstface   = LittleShort (f->nodes[i].firstface);
-		f->nodes[i].numfaces    = LittleShort (f->nodes[i].numfaces);
+		LTL(node.children[0]);
+		LTL(node.children[1]);
+		LTL(node.firstface);
+		LTL(node.numfaces);
 	}
 
 	// leafs
 	for (i = 0; i < f->numLeafs; i++)
 	{
-		f->leafs[i].contents = LittleLong (f->leafs[i].contents);
-		f->leafs[i].cluster  = LittleShort (f->leafs[i].cluster);
-		f->leafs[i].area     = LittleShort (f->leafs[i].area);
+		dBsp2Leaf_t &leaf = f->leafs2[i];
+		LTL(leaf.contents);
+		LTL(leaf.cluster);
+		LTL(leaf.area);
 		for (j = 0; j < 3; j++)
 		{
-			f->leafs[i].mins[j] = LittleShort (f->leafs[i].mins[j]);
-			f->leafs[i].maxs[j] = LittleShort (f->leafs[i].maxs[j]);
+			LTL(leaf.mins[j]);
+			LTL(leaf.maxs[j]);
 		}
 
-		f->leafs[i].firstleafface  = LittleShort (f->leafs[i].firstleafface);
-		f->leafs[i].numleaffaces   = LittleShort (f->leafs[i].numleaffaces);
-		f->leafs[i].firstleafbrush = LittleShort (f->leafs[i].firstleafbrush);
-		f->leafs[i].numleafbrushes = LittleShort (f->leafs[i].numleafbrushes);
+		LTL(leaf.firstleafface);
+		LTL(leaf.numleaffaces);
+		LTL(leaf.firstleafbrush);
+		LTL(leaf.numleafbrushes);
 	}
 
 	// leaffaces
 	for (i = 0; i < f->numLeaffaces; i++)
-		f->leaffaces[i] = LittleShort (f->leaffaces[i]);
+		LTL(f->leaffaces[i]);
 
 	// leafbrushes
 	for (i = 0; i < f->numLeafbrushes; i++)
-		f->leafbrushes[i] = LittleShort (f->leafbrushes[i]);
+		LTL(f->leafbrushes[i]);
 
 	// surfedges
 	for (i = 0; i < f->numSurfedges; i++)
-		f->surfedges[i] = LittleLong (f->surfedges[i]);
+		LTL(f->surfedges[i]);
 
 	// edges
 	for (i = 0; i < f->numEdges; i++)
 	{
-		f->edges[i].v[0] = LittleShort (f->edges[i].v[0]);
-		f->edges[i].v[1] = LittleShort (f->edges[i].v[1]);
+		LTL(f->edges[i].v[0]);
+		LTL(f->edges[i].v[1]);
 	}
 
 	// brushes
 	for (i = 0; i < f->numBrushes; i++)
 	{
-		f->brushes[i].firstside = LittleLong (f->brushes[i].firstside);
-		f->brushes[i].numsides  = LittleLong (f->brushes[i].numsides);
-		f->brushes[i].contents  = LittleLong (f->brushes[i].contents);
+		LTL(f->brushes[i].firstside);
+		LTL(f->brushes[i].numsides);
+		LTL(f->brushes[i].contents);
 	}
 
 	// areas
 	for (i = 0; i < f->numAreas; i++)
 	{
-		f->areas[i].numareaportals  = LittleLong (f->areas[i].numareaportals);
-		f->areas[i].firstareaportal = LittleLong (f->areas[i].firstareaportal);
+		LTL(f->areas[i].numareaportals);
+		LTL(f->areas[i].firstareaportal);
 	}
 
 	// areasportals
 	for (i = 0; i < f->numAreaportals; i++)
 	{
-		f->areaportals[i].portalnum = LittleLong (f->areaportals[i].portalnum);
-		f->areaportals[i].otherarea = LittleLong (f->areaportals[i].otherarea);
+		LTL(f->areaportals[i].portalnum);
+		LTL(f->areaportals[i].otherarea);
 	}
 
 	// brushsides
 	for (i = 0; i < f->numBrushsides; i++)
 	{
-		f->brushsides[i].planenum = LittleShort (f->brushsides[i].planenum);
-		f->brushsides[i].texinfo  = LittleShort (f->brushsides[i].texinfo);
+		LTL(f->brushsides[i].planenum);
+		LTL(f->brushsides[i].texinfo);
 	}
 
 	// visibility
 	if (f->visDataSize)		// should process this only when map have visibility data
 	{
-		j = f->visibility->numclusters = LittleLong (f->visibility->numclusters);
+		LTL(f->vis->numclusters);
+		j = f->vis->numclusters;
 		for (i = 0; i < j ; i++)
 		{
-			f->visibility->bitofs[i][0] = LittleLong (f->visibility->bitofs[i][0]);
-			f->visibility->bitofs[i][1] = LittleLong (f->visibility->bitofs[i][1]);
+			LTL(f->vis->bitofs[i][0]);
+			LTL(f->vis->bitofs[i][1]);
 		}
 	}
 }
+
+static void SwapQ1BspFile (bspfile_t *f)
+{
+	//!! implement this
+}
+
 #endif // LITTLE_ENDIAN
 
 static void ProcessQ2BspFile (bspfile_t *f)
@@ -184,7 +215,7 @@ static void ProcessQ2BspFile (bspfile_t *f)
 	// texinfo: lowercase all filenames and remove leading "." and "/"
 	for (i = 0; i < f->numTexinfo; i++)
 	{
-		dBsp2Texinfo_t *d = &f->texinfo[i];
+		dBsp2Texinfo_t *d = &f->texinfo2[i];
 		char *s = d->texture;
 		for (j = 0; j < sizeof(d->texture); j++, s++)
 			*s = toLower (*s);
@@ -220,16 +251,33 @@ static void LoadQ2Submodels (bspfile_t *f, dBsp2Model_t *data)
 	}
 }
 
+static void LoadQ1Submodels (bspfile_t *f, dBsp1Model_t *data)
+{
+	if (f->numModels < 1)
+		Com_DropError ("Map with no models");
+
+	cmodel_t *out = f->models = new (f->extraChain) cmodel_t[f->numModels];
+	for (int i = 0; i < f->numModels; i++, data++, out++)
+	{
+		out->bounds    = data->bounds;
+		out->radius    = VectorDistance (out->bounds.mins, out->bounds.maxs) / 2;
+		out->headnode  = data->headnode[0];
+		out->flags     = 0;
+		out->firstface = data->firstface;
+		out->numfaces  = data->numfaces;
+		//?? dBsp1Model_t have unused field "origin"
+	}
+}
 
 static int CheckLump (int lump, void **ptr, int size)
 {
-	int length = header->lumps[lump].filelen;
-	int ofs    = header->lumps[lump].fileofs;
+	int length = lumps[lump].filelen;
+	int ofs    = lumps[lump].fileofs;
 
 	if (length % size)
 		Com_DropError ("LoadBSPFile: incorrect lump size");
 
-	*ptr = (byte *)header + ofs;
+	*ptr = bspfile.file + ofs;
 
 	return length / size;
 }
@@ -239,18 +287,20 @@ void LoadQ2BspFile ()
 {
 	guard(LoadQ2BspFile);
 
-	header = (dBsp2Hdr_t *) bspfile.file;
+	dBsp2Hdr_t *header = (dBsp2Hdr_t *) bspfile.file;
+	lumps = header->lumps;
 
 #if !LITTLE_ENDIAN
 	// swap the header
 	for (int i = 0; i < sizeof(dBsp2Hdr_t) / 4; i++)
-		((int *)header)[i] = LittleLong (((int *)header)[i]);
+		((int *)bspfile.file)[i] = LittleLong (((int *)bspfile.file)[i]);
 #endif
 
 	if (header->version != BSP2_VERSION)
 		Com_DropError ("%s is version %d, not " STR(BSP2_VERSION) "\n", bspfile.name, header->version);
 
 	bspfile.type = map_q2;
+	Com_DPrintf ("Loading Q2 bsp %s\n", bspfile.name);
 
 #define C(num,field,count,type) \
 	bspfile.count = CheckLump(Q2LUMP_##num, (void**)&bspfile.field, sizeof(type))
@@ -259,9 +309,9 @@ void LoadQ2BspFile ()
 
 	C(VERTEXES, vertexes, numVertexes, CVec3);
 	C(PLANES, planes, numPlanes, dPlane_t);
-	C(LEAFS, leafs, numLeafs, dBsp2Leaf_t);
-	C(NODES, nodes, numNodes, dBsp2Node_t);
-	C(TEXINFO, texinfo, numTexinfo, dBsp2Texinfo_t);
+	C(LEAFS, leafs2, numLeafs, dBsp2Leaf_t);
+	C(NODES, nodes2, numNodes, dBsp2Node_t);
+	C(TEXINFO, texinfo2, numTexinfo, dBsp2Texinfo_t);
 	C(FACES, faces, numFaces, dFace_t);
 	C(LEAFFACES, leaffaces, numLeaffaces, unsigned short);
 	C(LEAFBRUSHES, leafbrushes, numLeafbrushes, unsigned short);
@@ -286,11 +336,73 @@ void LoadQ2BspFile ()
 #if 0
 	bspfile.entDataSize = C(ENTITIES, entities, char);
 #else
-#undef C
 	bspfile.entStr = ProcessEntstring ((char*)header + header->lumps[Q2LUMP_ENTITIES].fileofs);
 	bspfile.entStrSize = strlen (bspfile.entStr);
 #endif
 
+#undef C
+	unguard;
+}
+
+
+void LoadQ1BspFile ()
+{
+	guard(LoadQ1BspFile);
+
+	dBsp1Hdr_t *header = (dBsp1Hdr_t *) bspfile.file;
+	lumps = header->lumps;
+
+#if !LITTLE_ENDIAN
+	// swap the header
+	for (int i = 0; i < sizeof(dBsp1Hdr_t) / 4; i++)
+		((int *)bspfile.file)[i] = LittleLong (((int *)bspfile.file)[i]);
+#endif
+
+	if (header->version == BSP1_VERSION)
+		bspfile.type = map_q1;
+	else
+		bspfile.type = map_hl;
+	Com_DPrintf ("Loading %s bsp %s\n", bspfile.type == map_q1 ? "Q1" : "HL", bspfile.name);
+
+#define C(num,field,count,type) \
+	bspfile.count = CheckLump(Q1LUMP_##num, (void**)&bspfile.field, sizeof(type))
+	C(LIGHTING, lighting, lightDataSize, byte);
+//!!	C(VISIBILITY, vis, visDataSize, byte);
+
+	C(VERTEXES, vertexes, numVertexes, CVec3);
+	C(PLANES, planes, numPlanes, dPlane_t);
+	C(LEAFS, leafs1, numLeafs, dBsp1Leaf_t);
+	C(NODES, nodes1, numNodes, dBsp1Node_t);
+	C(TEXINFO, texinfo1, numTexinfo, dBsp1Texinfo_t);
+	C(FACES, faces, numFaces, dFace_t);
+	C(MARKSURFACES, leaffaces, numLeaffaces, unsigned short);
+	C(SURFEDGES, surfedges, numSurfedges, int);
+	C(EDGES, edges, numEdges, dEdge_t);
+
+	bspfile.miptex1 = (dBsp1MiptexLump_t*)(bspfile.file + lumps[Q1LUMP_TEXTURES].fileofs);
+#if !LITTLE_ENDIAN
+	//!! swap miptex1 lump
+#endif
+
+	dBsp1Model_t *models;
+	bspfile.numModels = CheckLump (Q1LUMP_MODELS, (void**)&models, sizeof(dBsp1Model_t));	// not in bspfile_t struc
+	LoadQ1Submodels (&bspfile, models);
+
+#if !LITTLE_ENDIAN
+	// swap everything
+	SwapQ1BspFile (&bspfile);
+#endif
+//??	ProcessQ1BspFile (&bspfile);
+
+	// load entstring after all: we may require to change something
+#if 0
+	bspfile.entDataSize = C(ENTITIES, entities, char);
+#else
+	bspfile.entStr = ProcessEntstring ((char*)header + header->lumps[Q1LUMP_ENTITIES].fileofs);
+	bspfile.entStrSize = strlen (bspfile.entStr);
+#endif
+
+#undef C
 	unguard;
 }
 
@@ -333,11 +445,10 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 		case BSP2_IDENT:
 			LoadQ2BspFile ();
 			return &bspfile;
-#if 0
+		case BSP1_VERSION:
 		case BSPHL_VERSION:
-			LoadHLBspFile ();
+			LoadQ1BspFile ();
 			return &bspfile;
-#endif
 	}
 	// error
 	delete bspfile.file;
@@ -784,7 +895,7 @@ static bool ProcessEntity ()
 				bool found = false;
 				int i;
 				dBsp2Texinfo_t *d;
-				for (i = 0, d = bspfile.texinfo; i < bspfile.numTexinfo; i++, d++)
+				for (i = 0, d = bspfile.texinfo2; i < bspfile.numTexinfo; i++, d++)
 					if (appMatchWildcard (d->texture, name, true) && ((d->flags & testmask) == testflags))
 					{
 						d->flags = d->flags & ~testmask | flags;
@@ -833,6 +944,8 @@ static bool ProcessEntity ()
 	{
 		if (bspfile.type == map_kp && !FindField ("sky"))
 			AddField ("sky", "sr");		// set default Kingpin sky
+		if (bspfile.type == map_hl && (f = FindField ("skyname")))
+			strcpy (f->name, "sky");
 		if (f = FindField ("fogval"))
 		{
 			GetVector (f->value, bspfile.fogColor);

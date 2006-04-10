@@ -367,6 +367,182 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 }
 
 
+//-------------------------- surface loading ----------------------------------
+
+static unsigned SurfFlagsToShaderFlags2 (unsigned flags)
+{
+	int f = SHADER_WALL;
+	if (flags & SURF_ALPHA)		f |= SHADER_ALPHA;
+	if (flags & SURF_TRANS33)	f |= SHADER_TRANS33;
+	if (flags & SURF_TRANS66)	f |= SHADER_TRANS66;
+	if (flags & SURF_SKY && gl_showSky->integer != 2) f |= SHADER_SKY;
+	if (flags & SURF_FLOWING)	f |= SHADER_SCROLL;
+	if (flags & SURF_WARP)		f |= SHADER_TURB;
+	if (flags & SURF_SPECULAR)	f |= SHADER_ENVMAP;
+	if (flags & SURF_DIFFUSE)	f |= SHADER_ENVMAP2;
+	return f;
+}
+
+
+static bool CanEnvmap (const dFace_t *surf, int headnode, CVec3 **pverts, int numVerts)
+{
+//	if (!gl_autoReflect->integer)		??
+//		return false;
+
+	CVec3	mid, p1, p2;
+
+	// find middle point
+	mid.Zero ();
+	for (int i = 0; i < numVerts; i++)
+		VectorAdd (mid, (*pverts[i]), mid);
+	assert(numVerts);
+	float scale = 1.0f / numVerts;
+	mid.Scale (scale);
+	// get trace points
+	CVec3 &norm = (map.planes + surf->planenum)->normal;
+	// vector with length 1 is not enough for non-axial surfaces
+	VectorMA (mid,  2, norm, p1);
+	VectorMA (mid, -2, norm, p2);
+	// perform trace
+	trace_t	trace;
+	if (!surf->side)
+		CM_BoxTrace (trace, p1, p2, nullBox, headnode, MASK_SOLID);
+	else
+		CM_BoxTrace (trace, p2, p1, nullBox, headnode, MASK_SOLID);
+	if (trace.fraction < 1 && !(trace.contents & CONTENTS_MIST))	//?? make MYST to be non-"alpha=f(angle)"-dependent
+		return true;
+
+	return false;
+}
+
+
+static shader_t *CreateSurfShader2 (unsigned sflags, const dBsp2Texinfo_t *stex, const dBsp2Texinfo_t *mapTextures)
+{
+	if (sflags & SHADER_SKY) return gl_skyShader;
+
+	/*---------- check for texture animation ----------*/
+	char textures[MAX_QPATH * MAX_STAGE_TEXTURES];
+	const dBsp2Texinfo_t *ptex = stex;
+	char *pname = textures;
+	int numTextures = 0;
+	while (true)
+	{
+		pname += appSprintf (pname, MAX_QPATH, "textures/%s", ptex->texture) + 1;	// length(format)+1
+		numTextures++;
+
+		int n = ptex->nexttexinfo;
+		if (n < 0) break;			// no animations
+		ptex = mapTextures + n;
+		if (ptex == stex) break;	// loop
+	}
+	*pname = 0;						// make zero (NULL string) after ASCIIZ string
+
+	if (numTextures > MAX_STAGE_TEXTURES)
+		appWPrintf ("%s: animation chain is too long (%d)\n", stex->texture, numTextures);
+	else if (numTextures > 1)
+		sflags |= SHADER_ANIM;
+
+	return FindShader (textures, sflags);
+}
+
+
+static unsigned *GetQ1Palette ()
+{
+	static unsigned q1palette[256];
+	static bool loaded = false;
+
+	if (loaded) return q1palette;
+	loaded = true;
+
+	// get the palette
+	byte *pal = (byte*)GFileSystem->LoadFile ("gfx/palette.lmp");
+//	if (!pal) //-- file always exists now (resource)
+//		Com_DropError ("Can not load gfx/palette");
+
+	const byte *p = pal;
+	for (int i = 0; i < 256; i++, p += 3)
+	{
+		unsigned v = RGB255(p[0], p[1], p[2]);
+		q1palette[i] = LittleLong(v);
+	}
+	q1palette[255] &= LittleLong(0x00FFFFFF);		// #255 is transparent (alpha = 0)
+
+	// free image
+	delete pal;
+	return q1palette;
+}
+
+
+static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
+{
+	TString<MAX_QPATH> Name;
+	Name.sprintf ("textures/%s", stex->texture);
+
+	//!! NOTE: temporaty version, should add animation chains ('+0texture')
+	// try external texture
+	shader_t *shader = FindShader (Name, sflags|SHADER_CHECK);
+	if (shader) return shader;
+	// find miptex
+	int miptex = stex->value;		// set in LoadSurfaces1() (cmodel.cpp)
+	dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)map_bspfile->miptex1 + map_bspfile->miptex1->dataofs[miptex] );
+	if (!tex->offsets[0])
+	{
+		// use wad file! (half-life map)
+		//!!
+
+		return FindShader (Name, sflags);	//!!!!
+	}
+	// find and load inline texture + load shader again
+	unsigned *palette = NULL;
+	if (bspfile->type == map_q1)
+		palette = GetQ1Palette ();
+	CreateImage8 (Name, (byte*)(tex+1), tex->width, tex->height, IMAGE_PICMIP|IMAGE_MIPMAP|IMAGE_WORLD, palette);
+	return FindShader (Name, sflags);
+}
+
+
+static void InitSurfaceLightmap2 (const dFace_t *face, surfacePlanar_t *surf, float mins[2], float maxs[2])
+{
+	int		size[2];				// lightmap size
+	int		imins[2], imaxs[2];		// int mins/maxs, aligned to lightmap grid
+	int		i;
+
+	// round mins/maxs to a lightmap cell size
+	imins[0] = appFloor(mins[0] / 16.0f) * 16;
+	imins[1] = appFloor(mins[1] / 16.0f) * 16;
+	imaxs[0] = appCeil(maxs[0] / 16.0f) * 16;
+	imaxs[1] = appCeil(maxs[1] / 16.0f) * 16;
+	// calculate lightmap size
+	size[0] = (imaxs[0] - imins[0]) / 16 + 1;
+	size[1] = (imaxs[1] - imins[1]) / 16 + 1;
+
+	vertex_t *v = surf->verts;
+	for (i = 0; i < surf->numVerts; i++, v++)
+	{
+		v->lm[0] = (v->lm[0] - imins[0]) / 16 + 0.5;	// divide to lightmap unit size and shift
+		v->lm[1] = (v->lm[1] - imins[1]) / 16 + 0.5;
+		v->lm2[0] = v->lm[0] - 0.5;
+		v->lm2[1] = v->lm[1] - 0.5;
+	}
+	// create dynamic lightmap
+	dynamicLightmap_t *lm = new (map.dataChain) dynamicLightmap_t;
+	surf->lightmap = lm;
+	lm->w = size[0];
+	lm->h = size[1];
+	for (i = 0; i < 4; i++)			// enum styles
+	{
+		int st = face->styles[i];
+		if (st == 255) break;
+		lm->style[i]    = st;
+		lm->modulate[i] = (i == 0 ? 128 : 0);			// initial state
+		lm->source[i]   = (!map.monoLightmap)			// just offset in map lightData
+			? (byte*)NULL + face->lightofs + i * size[0] * size[1] * 3	// Q2/HL
+			: (byte*)NULL + face->lightofs + i * size[0] * size[1];		// Q1
+	}
+	lm->numStyles = i;
+}
+
+
 static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *surfedges, const dEdge_t *edges,
 	CVec3 *verts, const dBsp2Texinfo_t *tex, const cmodel_t *models, int numModels)
 {
@@ -392,15 +568,7 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 
 		/*---- Generate shader with name and SURF_XXX flags ----*/
 		const dBsp2Texinfo_t *stex = tex + surfs->texinfo;
-		int sflags = SHADER_WALL;
-		if (stex->flags & SURF_ALPHA)	sflags |= SHADER_ALPHA;
-		if (stex->flags & SURF_TRANS33)	sflags |= SHADER_TRANS33;
-		if (stex->flags & SURF_TRANS66)	sflags |= SHADER_TRANS66;
-		if (stex->flags & SURF_SKY && gl_showSky->integer != 2) sflags |= SHADER_SKY;
-		if (stex->flags & SURF_FLOWING)	sflags |= SHADER_SCROLL;
-		if (stex->flags & SURF_WARP)	sflags |= SHADER_TURB;
-		if (stex->flags & SURF_SPECULAR) sflags |= SHADER_ENVMAP;
-		if (stex->flags & SURF_DIFFUSE) sflags |= SHADER_ENVMAP2;
+		unsigned sflags = SurfFlagsToShaderFlags2 (stex->flags);
 
 		// find owner model
 		const cmodel_t *owner;
@@ -414,40 +582,18 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 #if 0
 		if (Cvar_VariableInt("dlmodels"))	//??
 		{
-				if (owner->flags & CMODEL_MOVABLE && !(sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA)))
-					sflags = SHADER_SKIN;
+			if (owner->flags & CMODEL_MOVABLE && !(sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA)))
+				sflags = SHADER_SKIN;
 		}
 #endif
 
 		// check covered contents and update shader flags
-		if (stex->flags & (SURF_TRANS33|SURF_TRANS66) && !(stex->flags &
-			(SURF_SPECULAR|SURF_DIFFUSE|SURF_WARP|SURF_FLOWING)))		// && gl_autoReflect ??
+		if (sflags & (SHADER_TRANS33|SHADER_TRANS66) && !(sflags &
+			(SHADER_ENVMAP|SHADER_ENVMAP2|SHADER_TURB|SHADER_SCROLL)))	// && gl_autoReflect ??
 		{
-			CVec3	mid, p1, p2;
-
-			int headnode = owner->headnode;
-			// find middle point
-			mid.Zero ();
-			for (j = 0; j < numVerts; j++)
-				VectorAdd (mid, (*pverts[j]), mid);
-			assert(numVerts);
-			float scale = 1.0f / numVerts;
-			mid.Scale (scale);
-			// get trace points
-			CVec3 &norm = (map.planes + surfs->planenum)->normal;
-			// vector with length 1 is not enough for non-axial surfaces
-			VectorMA (mid, 2, norm, p1);
-			VectorMA (mid, -2, norm, p2);
-			// perform trace
-			trace_t	trace;
-			if (!surfs->side)
-				CM_BoxTrace (trace, p1, p2, nullBox, headnode, MASK_SOLID);
-			else
-				CM_BoxTrace (trace, p2, p1, nullBox, headnode, MASK_SOLID);
-			if (trace.fraction < 1 && !(trace.contents & CONTENTS_MIST))	//?? make MYST to be non-"alpha=f(angle)"-dependent
+			if (CanEnvmap (surfs, owner->headnode, pverts, numVerts))
 				sflags |= SHADER_ENVMAP;
 		}
-
 
 		// check for shader lightmap
 		bool needLightmap = false;
@@ -478,33 +624,22 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 			}
 		}
 
-		/*---------- check for texture animation ----------*/
-		char textures[MAX_QPATH * MAX_STAGE_TEXTURES];
-		const dBsp2Texinfo_t *ptex = stex;
-		char *pname = textures;
-		int numTextures = 0;
-		while (true)
+		// q1/hl can use lightofs==-1
+		bool darkLightmap = false;
+		if ((bspfile->type == map_q1 || bspfile->type == map_hl) &&
+			(surfs->lightofs == -1) && ((sflags & (SHADER_WALL|SHADER_LIGHTMAP|SHADER_TURB)) == SHADER_WALL))
 		{
-			pname += appSprintf (pname, MAX_QPATH, "textures/%s", ptex->texture) + 1;	// length(format)+1
-			numTextures++;
-
-			int n = ptex->nexttexinfo;
-			if (n < 0) break;			// no animations
-			ptex = tex + n;
-			if (ptex == stex) break;	// loop
+			needLightmap = true;
+			darkLightmap = true;
 		}
-		*pname = 0;						// make zero (NULL string) after ASCIIZ string
-
-		if (numTextures > MAX_STAGE_TEXTURES)
-			appWPrintf ("%s: animation chain is too long (%d)\n", stex->texture, numTextures);
-		else if (numTextures > 1)
-			sflags |= SHADER_ANIM;
-
 		if (needLightmap)
 			sflags |= SHADER_LIGHTMAP;
 
-		shader_t *shader = (sflags & SHADER_SKY) ? gl_skyShader : FindShader (textures, sflags);
-		//!! update sflags from this (created) shader -- it may be scripted (with different flags)
+		// create shader for surface
+		shader_t *shader = (bspfile->type == map_q2 || bspfile->type == map_kp)
+			? CreateSurfShader2 (sflags, stex, tex)
+			: CreateSurfShader1 (sflags, stex);
+		//?? update sflags from this (created) shader -- it may be scripted (with different flags)
 
 		if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA|SHADER_TURB|SHADER_SKY))
 			numVerts = RemoveCollinearPoints (pverts, numVerts);
@@ -516,7 +651,7 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 		int numTris;
 		if (shader->tessSize)
 		{
-			numTris = SubdividePlane (pverts, numVerts, shader->tessSize);
+			numTris  = SubdividePlane (pverts, numVerts, shader->tessSize);
 			numVerts = subdivNumVerts;
 		}
 		else
@@ -525,6 +660,7 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 		int numIndexes = numTris * 3;
 
 		/*------- Prepare for vertex generation ----------------*/
+		// alloc new surface
 		surfacePlanar_t *s = (surfacePlanar_t*) map.dataChain->Alloc (sizeof(surfacePlanar_t) + sizeof(vertex_t)*numVerts + sizeof(int)*numIndexes);
 		CALL_CONSTRUCTOR(s);
 		s->shader = shader;
@@ -545,14 +681,11 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 		s->indexes    = (int *) (s->verts+numVerts);
 
 		/*-------------- Generate indexes ----------------------*/
-		int *pindex = s->indexes;
 		if (shader->tessSize)
-		{
-			GetSubdivideIndexes (pindex);
-			FreeSubdividedPlane ();
-		}
+			GetSubdivideIndexes (s->indexes);
 		else
 		{
+			int *pindex = s->indexes;
 			for (j = 0; j < numTris; j++)
 			{
 				*pindex++ = 0;
@@ -565,81 +698,59 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 		vertex_t *v = s->verts;
 		// ClearBounds2D (mins, maxs)
 		float mins[2], maxs[2];				// surface extents
-		mins[0] = mins[1] = BIG_NUMBER;
+		mins[0] = mins[1] =  BIG_NUMBER;
 		maxs[0] = maxs[1] = -BIG_NUMBER;
 		s->bounds.Clear ();
 		// Enumerate vertexes
 		for (j = 0; j < numVerts; j++, pedge++, v++)
 		{
 			v->xyz = *pverts[j];
-			if (!(sflags & SHADER_SKY))
+			if (sflags & SHADER_SKY) continue;
+
+			float v1 = dot (v->xyz, stex->vecs[0].vec) + stex->vecs[0].offset;
+			float v2 = dot (v->xyz, stex->vecs[1].vec) + stex->vecs[1].offset;
+			// Update bounds
+			EXPAND_BOUNDS(v1, mins[0], maxs[0]);
+			EXPAND_BOUNDS(v2, mins[1], maxs[1]);
+			s->bounds.Expand (v->xyz);
+			// Texture coordinates
+			if (!(sflags & SHADER_TURB)) //?? (!shader->tessSize)
 			{
-				float v1 = dot (v->xyz, stex->vecs[0].vec) + stex->vecs[0].offset;
-				float v2 = dot (v->xyz, stex->vecs[1].vec) + stex->vecs[1].offset;
-				/*----------- Update bounds --------------*/
-				EXPAND_BOUNDS(v1, mins[0], maxs[0]);
-				EXPAND_BOUNDS(v2, mins[1], maxs[1]);
-				s->bounds.Expand (v->xyz);
-				/*-------- Texture coordinates -----------*/
-				if (!(sflags & SHADER_TURB)) //?? (!shader->tessSize)
-				{
-					assert(shader->width > 0 && shader->height > 0);
-					v->st[0] = v1 / shader->width;
-					v->st[1] = v2 / shader->height;
-				}
-				else
-				{
-					v->st[0] = v1 - stex->vecs[0].offset;
-					v->st[1] = v2 - stex->vecs[1].offset;
-				}
-				// save intermediate data for lightmap texcoords
-				v->lm[0] = v1;
-				v->lm[1] = v2;
-				/*---------- Vertex color ----------------*/
-				v->c.rgba = RGBA(1,1,1,1);
+				assert(shader->width > 0 && shader->height > 0);
+				v->st[0] = v1 / shader->width;
+				v->st[1] = v2 / shader->height;
 			}
+			else
+			{
+				v->st[0] = v1 - stex->vecs[0].offset;
+				v->st[1] = v2 - stex->vecs[1].offset;
+			}
+			// save intermediate data for lightmap texcoords
+			v->lm[0] = v1;
+			v->lm[1] = v2;
+			// Vertex color
+			v->c.rgba = RGBA(1,1,1,1);
 		}
 
 		/*----------------- Lightmap -------------------*/
+		s->lightmap = NULL;
 		if (needLightmap)
+			InitSurfaceLightmap2 (surfs, s, mins, maxs);
+		// special case for q1/hl lightmap without data: dark lightmap
+		// (other map formats -- fullbright texture)
+		if (darkLightmap)
 		{
-			int		size[2];		// lightmap size
-			int		imins[2], imaxs[2];		// int mins/maxs, aligned to lightmap grid
-
-			// round mins/maxs to a lightmap cell size
-			imins[0] = appFloor(mins[0] / 16.0f) * 16;
-			imins[1] = appFloor(mins[1] / 16.0f) * 16;
-			imaxs[0] = appCeil(maxs[0] / 16.0f) * 16;
-			imaxs[1] = appCeil(maxs[1] / 16.0f) * 16;
-			// calculate lightmap size
-			size[0] = (imaxs[0] - imins[0]) / 16 + 1;
-			size[1] = (imaxs[1] - imins[1]) / 16 + 1;
-
+			dynamicLightmap_t *lm = s->lightmap;
+			lm->w = 0;
+			lm->h = 0;
+			static byte dark[] = { 0, 0, 0 };
+			lm->source[0] = (byte*)(dark - bspfile->lighting);	// hack: offset from lighting start
 			v = s->verts;
 			for (j = 0; j < numVerts; j++, v++)
 			{
-				v->lm[0] = (v->lm[0] - imins[0]) / 16 + 0.5;	// divide to lightmap unit size and shift
-				v->lm[1] = (v->lm[1] - imins[1]) / 16 + 0.5;
-				v->lm2[0] = v->lm[0] - 0.5;
-				v->lm2[1] = v->lm[1] - 0.5;
+				v->lm[0] = v->lm[1] = v->lm2[0] = v->lm2[1] = 0;
 			}
-			// create dynamic lightmap
-			dynamicLightmap_t *lm = new (map.dataChain) dynamicLightmap_t;
-			s->lightmap = lm;
-			for (j = 0; j < 4; j++)			// enum styles
-			{
-				int st = surfs->styles[j];
-				if (st == 255) break;
-				lm->style[j] = st;
-				lm->modulate[j] = (j == 0 ? 128 : 0);			// initial state
-				lm->source[j] = (byte*)NULL + surfs->lightofs + j * size[0] * size[1] * 3;	// just offset in map lightData
-			}
-			lm->numStyles = j;
-			lm->w = size[0];
-			lm->h = size[1];
 		}
-		else
-			s->lightmap = NULL;
 
 		BuildPlanarSurfAxis (s);
 		if (stex->flags & SURF_LIGHT)		//!! + sky when ambient <> 0
@@ -652,9 +763,15 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 			if (stex->flags & SURF_AUTOFLARE && !(stex->flags & SURF_SKY))
 				BuildSurfFlare (s, img ? &img->color : &defColor, area);
 		}
+
+		// free allocated poly
+		if (shader->tessSize)
+			FreeSubdividedPlane ();
 	}
 }
 
+
+//------------------------ loading surface lightmaps --------------------------
 
 static int LightmapCompare (const void *s1, const void *s2)
 {
@@ -691,6 +808,8 @@ static int ShaderCompare (const void *s1, const void *s2)
 
 static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 {
+	guard(GenerateLightmaps2);
+
 	int		i, k;
 	surfacePlanar_t *s;
 	dynamicLightmap_t *dl;
@@ -713,6 +832,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			for (k = 0; k < dl->numStyles; k++)
 				dl->source[k] += (unsigned)lightData;
 
+			if (map.monoLightmap) continue;	//?? q1 map
 			// optimize lightmaps
 			color_t avg;
 			if (LM_IsMonotone (dl, &avg))
@@ -764,11 +884,16 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 		if (!dl) continue;
 
 		bool bad = false;
-		int lmSize = dl->w * dl->h * dl->numStyles * 3;
+		int lmSize = (!map.monoLightmap)
+			? dl->w * dl->h * dl->numStyles * 3			// Q2, HL
+			: dl->w * dl->h * dl->numStyles;			// Q1
 		if (dl->source[0] + lmSize > lightData + lightDataSize)
-			bad = true;		// out of bsp file
+			bad = true;				// out of bsp file
 		else if (ptr && ptr > dl->source[0] && (s->shader->style & SHADER_TRYLIGHTMAP))
-			bad = true;		// erased by previous block
+			bad = true;				// erased by previous block
+
+		if (bad && dl->source[0] && dl->w == 0 && dl->h == 0)
+			bad = false;			// dark lightmap, q1/hl
 
 		//?? add check: if current is "try" interlaced with next "not try (normal)" - current is "bad"
 
@@ -780,8 +905,8 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 				// later (in this function), just don't create vertex colors for this surface
 				Com_DPrintf ("Disable lm for %s\n", *s->shader->Name);
 				SetShaderLightmap (s->shader, LIGHTMAP_NONE);
-//				appPrintf ("  diff: %d\n", ptr - lm->source);
-//				appPrintf ("  w: %d  h: %d  st: %d\n", lm->w, lm->h, lm->numStyles);
+//				appPrintf ("  diff: %d\n", ptr - dl->source[0]);
+//				appPrintf ("  w: %d  h: %d  st: %d\n", dl->w, dl->h, dl->numStyles);
 			}
 			continue;
 		}
@@ -792,7 +917,8 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 
 		// after this examination. we can resort lightstyles (cannot do this earlier because used source[0])
 		LM_SortLightStyles (dl);
-		LM_CheckMinlight (dl);
+		if (!map.monoLightmap)
+			LM_CheckMinlight (dl);		//?? q1 minlight ?
 		// set shader lightstyles
 		if (s->shader->lightmapNumber >= 0)
 		{
@@ -852,7 +978,6 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			int i2;
 			for (i2 = i + 1; i2 < map.numFaces; i2++)
 				if (sortedSurfaces[i2]->shader != shader) break;
-
 			int nextIndex = i2;
 
 			// try to allocate all surfaces in a single lightmap block
@@ -893,7 +1018,10 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 					LM_Flush (bl);				// finilize block
 					bl = LM_NextBlock ();
 				}
-				LM_PutBlock (dl);
+				if (!map.monoLightmap)
+					LM_PutBlock (dl);
+				else
+					LM_PutBlock1 (dl);
 			}
 
 			i = nextIndex;
@@ -922,6 +1050,8 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			}
 		}
 	}
+
+	unguard;
 }
 
 
@@ -940,61 +1070,63 @@ static void LoadLeafSurfaces2 (const unsigned short *data, int count)
 static void LoadVisinfo2 (const dBsp2Vis_t *data, int size)
 {
 	int		rowSize;
-
 	map.visRowSize = rowSize = (map.numClusters + 7) >> 3;
-	if (size)
-	{
-		byte *dst = map.visInfo = new (map.dataChain) byte [rowSize * map.numClusters];
-		for (int i = 0; i < map.numClusters; i++)
-		{
-			int pos = data->bitofs[i][DVIS_PVS];
-			if (pos != -1)
-			{
-				byte *src = (byte*)data + pos;
-				// decompress vis
-				int j = rowSize;
-				while (j)
-				{
-					byte	c;
 
-					if (c = *src++)
-					{	// non-zero byte
-						*dst++ = c;
-						j--;
-					}
-					else
-					{	// zero byte -- decompress RLE data (with filler 0)
-						c = *src++;				// count
-						c = min(c, j);			// should not be, but ...
-						j -= c;
-						while (c--)
-							*dst++ = 0;
-					}
-				}
+	if (!size)
+	{
+		if (map.numClusters > 0)
+		{
+			map.numClusters = 0;
+//??		if (developer->integer) -- cvar is not in renderer
+				appWPrintf ("WARNING: map with cluster info but without visinfo\n");
+		}
+		return;
+	}
+
+	byte *dst = map.visInfo = new (map.dataChain) byte [rowSize * map.numClusters];
+	for (int i = 0; i < map.numClusters; i++)
+	{
+		int pos = data->bitofs[i][DVIS_PVS];
+		if (pos == -1)
+		{
+			memset (dst, 0xFF, rowSize);	// all visible
+			dst += rowSize;
+			continue;
+		}
+
+		byte *src = (byte*)data + pos;
+		// decompress vis
+		for (int j = rowSize; j; /*empty*/)
+		{
+			byte	c;
+
+			if (c = *src++)
+			{	// non-zero byte
+				*dst++ = c;
+				j--;
 			}
 			else
-			{
-				memset (dst, 0xFF, rowSize);	// all visible
-				dst += rowSize;
+			{	// zero byte -- decompress RLE data (with filler 0)
+				c = *src++;				// count
+				c = min(c, j);			// should not be, but ...
+				j -= c;
+				while (c--)
+					*dst++ = 0;
 			}
 		}
-	}
-	else if (map.numClusters > 0)
-	{
-		map.numClusters = 0;
-//??	if (developer->integer) -- cvar is not in renderer
-			appWPrintf ("WARNING: map with cluster info but without visinfo\n");
 	}
 }
 
 
 static void LoadBsp2 (const bspfile_t *bsp)
 {
+	guard(LoadBsp2);
+
 	// Load planes
 	LoadPlanes (bsp->planes, bsp->numPlanes, sizeof(dPlane_t));
 	// Load surfaces
 START_PROFILE(LoadSurfaces2)
-	LoadSurfaces2 (bsp->faces, bsp->numFaces, bsp->surfedges, bsp->edges, bsp->vertexes, bsp->texinfo, bsp->models, bsp->numModels);
+	LoadSurfaces2 (bsp->faces, bsp->numFaces, bsp->surfedges, bsp->edges, bsp->vertexes, bsp->texinfo2, bsp->models, bsp->numModels);
 END_PROFILE
 	LoadLeafSurfaces2 (bsp->leaffaces, bsp->numLeaffaces);
 START_PROFILE(GenerateLightmaps2)
@@ -1002,7 +1134,7 @@ START_PROFILE(GenerateLightmaps2)
 END_PROFILE
 	// Load bsp (leafs and nodes)
 START_PROFILE(LoadLeafsNodes2)
-	LoadLeafsNodes2 (bsp->nodes, bsp->numNodes, bsp->leafs, bsp->numLeafs);
+	LoadLeafsNodes2 (bsp->nodes2, bsp->numNodes, bsp->leafs2, bsp->numLeafs);
 END_PROFILE
 START_PROFILE(LoadVisinfo2)
 	LoadVisinfo2 (bsp->vis, bsp->visDataSize);
@@ -1014,17 +1146,17 @@ END_PROFILE
 	switch (bsp->fogMode)
 	{
 	case fog_exp:
-		gl_fogMode = GL_EXP;
+		gl_fogMode    = GL_EXP;
 		gl_fogDensity = bsp->fogDens;
 		break;
 	case fog_exp2:
-		gl_fogMode = GL_EXP2;
+		gl_fogMode    = GL_EXP2;
 		gl_fogDensity = bsp->fogDens;
 		break;
 	case fog_linear:
-		gl_fogMode = GL_LINEAR;
-		gl_fogStart = bsp->fogStart;
-		gl_fogEnd = bsp->fogEnd;
+		gl_fogMode    = GL_LINEAR;
+		gl_fogStart   = bsp->fogStart;
+		gl_fogEnd     = bsp->fogEnd;
 		break;
 	default:
 		gl_fogMode = 0;
@@ -1034,8 +1166,103 @@ END_PROFILE
 	else
 		gl_fogColor[0] = gl_fogColor[1] = gl_fogColor[2] = 0;
 	gl_fogColor[3] = 1;
+
+	unguard;
 }
 
+
+/*-----------------------------------------------------------------------------
+	Loading Quake1 BSP file
+-----------------------------------------------------------------------------*/
+
+// code is (almost) the same as for LoadLeafsNodes2(), but uses index "1" instead of "2"
+static void LoadLeafsNodes1 (const dBsp1Node_t *nodes, int numNodes, const dBsp1Leaf_t *leafs, int numLeafs)
+{
+	node_t	*out;
+	int		i, j;
+
+	map.numNodes     = numNodes;
+	map.numLeafNodes = numLeafs + numNodes;
+	map.nodes = out = new (map.dataChain) node_t [numNodes + numLeafs];
+
+	// Load nodes
+	for (i = 0; i < numNodes; i++, nodes++, out++)
+	{
+		out->isNode = true;
+		out->plane = map.planes + nodes->planenum;
+		// setup children[]
+		for (j = 0; j < 2; j++)
+		{
+			int p = nodes->children[j];
+			if (p >= 0)
+				out->children[j] = map.nodes + p;
+			else
+				out->children[j] = map.nodes + map.numNodes + (-1 - p);
+		}
+		// copy/convert mins/maxs
+		for (j = 0; j < 3; j++)
+		{
+			out->bounds.mins[j] = nodes->mins[j];	// make "float out->bounds = short nodes->bounds"
+			out->bounds.maxs[j] = nodes->maxs[j];
+		}
+	}
+
+	// Load leafs
+	for (i = 0; i < numLeafs; i++, leafs++, out++)
+	{
+		out->isNode = false;
+
+		int p = -1;		//??i;	//?? leafs->cluster;
+		out->cluster = p;
+		if (p >= map.numClusters)
+			map.numClusters = p + 1;
+		out->area = 0;			//?? leafs->area;
+		// copy/convert mins/maxs
+		for (j = 0; j < 3; j++)
+		{
+			out->bounds.mins[j] = leafs->mins[j];	// make "float out->bounds = short leaf->bounds"
+			out->bounds.maxs[j] = leafs->maxs[j];
+		}
+		// setup leafFaces
+		out->leafFaces = map.leafFaces + leafs->firstleafface;
+		out->numLeafFaces = leafs->numleaffaces;
+	}
+
+	// Setup node/leaf parents
+	SetNodeParent (map.nodes, NULL);
+	SetNodesAlpha ();
+}
+
+
+static void LoadBsp1 (const bspfile_t *bsp)
+{
+	guard(LoadBsp1);
+
+	if (bsp->type == map_q1) map.monoLightmap = true;
+
+	// Load planes
+	LoadPlanes (bsp->planes, bsp->numPlanes, sizeof(dPlane_t));
+	// Load surfaces
+START_PROFILE(LoadSurfaces2)
+	LoadSurfaces2 (bsp->faces, bsp->numFaces, bsp->surfedges, bsp->edges, bsp->vertexes, bsp->texinfo2, bsp->models, bsp->numModels);
+END_PROFILE
+	LoadLeafSurfaces2 (bsp->leaffaces, bsp->numLeaffaces);
+START_PROFILE(GenerateLightmaps2)
+	GenerateLightmaps2 (bsp->lighting, bsp->lightDataSize);
+END_PROFILE
+	// Load bsp (leafs and nodes)
+START_PROFILE(LoadLeafsNodes1)
+	LoadLeafsNodes1 (bsp->nodes1, bsp->numNodes, bsp->leafs1, bsp->numLeafs);
+END_PROFILE
+START_PROFILE(LoadVisinfo1)
+	LoadVisinfo2 (bsp->vis, bsp->visDataSize);	//!! other
+END_PROFILE
+START_PROFILE(LoadInlineModels2)
+	LoadInlineModels2 (bsp->models, bsp->numModels);
+END_PROFILE
+
+	unguard;
+}
 
 /*-----------------------------------------------------------------------------
 	LoadWorldMap()
@@ -1050,9 +1277,9 @@ void LoadWorldMap (const char *name)
 
 	// map must be reloaded to update shaders (which are restarted every LoadWorld())
 //	if (Name2 == map.Name)
-//		return;		// map is not changed
+//		return;						// map is not changed
 
-	FreeModels ();
+	FreeModels ();					// will zero `map'
 	map.Name = Name2;
 	map.dataChain = new CMemoryChain;
 
@@ -1065,7 +1292,7 @@ void LoadWorldMap (const char *name)
 	if (bspfile->sunColor[0] + bspfile->sunColor[1] + bspfile->sunColor[2])		// sun color was overrided
 		map.sunColor = bspfile->sunColor;
 	NormalizeColor (map.sunColor, map.sunColor);
-	map.sunVec = bspfile->sunVec;
+	map.sunVec     = bspfile->sunVec;
 	map.sunAmbient = bspfile->sunAmbient;
 	if (bspfile->sunAmbient[0] + bspfile->sunAmbient[1] + bspfile->sunAmbient[2] > 0)
 		map.haveSunAmbient = true;
@@ -1084,6 +1311,11 @@ void LoadWorldMap (const char *name)
 			map.ambientLight[2] = lmMinlight.c[2] * 2;
 			Com_DPrintf ("Used minlight from lightmap {%d, %d, %d}\n", VECTOR_ARG(lmMinlight.c));
 		}
+		break;
+	case map_q1:
+	case map_hl:
+		LoadBsp1 (bspfile);
+		//?? ambient light?
 		break;
 	default:
 		Com_DropError ("R_LoadWorldMap: unknown BSP type");

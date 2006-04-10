@@ -1,5 +1,7 @@
 # script file; perl highlighting
 
+MAX_DEBUG = 1		#!! while implementing Q1/HL map support
+
 NOSHARED  = 1			#!!!! shared; currently, shared build is not possible: Core is not yet finished
 				#!! make only 1 of STATIC/SHARED builds (not both in single makefile) - no problems with filenames etc ...
 				#!! + add "STATIC=1|0" to COM_DEFINES

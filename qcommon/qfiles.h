@@ -1,3 +1,6 @@
+#ifndef QFILES_H
+#define QFILES_H
+
 /*-----------------------------------------------------------------------------
 	.MD2 model file format
 -----------------------------------------------------------------------------*/
@@ -285,7 +288,7 @@ enum
 	Q2LUMP_AREAS,					// darea_t[]
 	Q2LUMP_AREAPORTALS,				// dareaportal_t[]
 
-	LUMP_COUNT						// should be last
+	Q2LUMP_COUNT					// should be last
 };
 
 
@@ -293,7 +296,7 @@ struct dBsp2Hdr_t
 {
 	unsigned ident;					// BSP2_IDENT
 	unsigned version;				// BSP2_VERSION
-	lump_t	lumps[LUMP_COUNT];
+	lump_t	lumps[Q2LUMP_COUNT];
 };
 
 struct dBsp2Model_t
@@ -322,8 +325,7 @@ struct dBsp2Node_t
 {
 	int		planenum;
 	int		children[2];			// negative numbers are -(leafs+1), not nodes
-	short	mins[3];				// for frustom culling
-	short	maxs[3];
+	short	mins[3], maxs[3];		// for frustom culling
 	unsigned short firstface;		// unused
 	unsigned short numfaces;		// unused
 };
@@ -335,8 +337,7 @@ struct dBsp2Leaf_t
 	short	cluster;
 	short	area;
 
-	short	mins[3];				// for frustum culling
-	short	maxs[3];
+	short	mins[3], maxs[3];		// for frustum culling
 
 	unsigned short firstleafface;
 	unsigned short numleaffaces;
@@ -462,21 +463,21 @@ enum
 	Q1LUMP_VERTEXES,		//* CVec3[]
 	Q1LUMP_VISIBILITY,		//??
 	Q1LUMP_NODES,			//?  dBsp2Node_t / hl_dnode_t (int/short children[2])
-	Q1LUMP_TEXINFO,
+	Q1LUMP_TEXINFO,			// dBsp1Texinfo_t[]
 	Q1LUMP_FACES,			//?  dFace_t
 	Q1LUMP_LIGHTING,		//* byte[] (q1: monochrome, hl: rgb)
 	Q1LUMP_CLIPNODES,
 	Q1LUMP_LEAFS,			//!!  dBsp2Leaf_t / hl_dleaf_t
-	Q1LUMP_MARKSURFACES,	//*  short
-	Q1LUMP_EDGES,			//*  dEdge_t
-	Q1LUMP_SURFEDGES,		//*  int
+	Q1LUMP_MARKSURFACES,	//* short[] == Q2LUMP_LEAFFACES
+	Q1LUMP_EDGES,			//* dEdge_t[]
+	Q1LUMP_SURFEDGES,		//* int[]
 	Q1LUMP_MODELS,			//?  dBsp2Model_t / hl_dmodel_t (HL has unused "visleafs" and headnode[1..3])
 
 	Q1LUMP_COUNT			// should be last
 };
 
 
-struct dBsp1Hdr_r
+struct dBsp1Hdr_t
 {
 	unsigned version;		// BSP1_VERSION or BSPHL_VERSION
 	lump_t	lumps[Q1LUMP_COUNT];
@@ -487,7 +488,7 @@ struct dBsp1Hdr_r
 struct dBsp1Model_t
 {
 	CBox	bounds;
-	CVec3	origin;
+	CVec3	origin;						//?? unused? (check)
 	int		headnode[Q1_MAP_HULLS]; 	// used mostly headnode[0]; other - for entity clipping
 	int		visleafs;					// not including the solid leaf 0 (UNUSED field!)
 	int		firstface, numfaces;
@@ -496,6 +497,7 @@ struct dBsp1Model_t
 
 #define	Q1_NUM_AMBIENTS		4			// automatic ambient sounds
 
+// Q1/HL contents
 #define	Q1_CONTENTS_EMPTY			-1
 #define	Q1_CONTENTS_SOLID			-2
 #define	Q1_CONTENTS_WATER			-3
@@ -515,60 +517,64 @@ struct dBsp1Model_t
 #define Q1_CONTENTS_TRANSLUCENT		-15
 
 
-typedef struct
+struct dBsp1MiptexLump_t
 {
 	int		nummiptex;
-	int		dataofs[4];			// dataofs[nummiptex]
-} hl_dmiptexlump_t;
+	int		dataofs[1];				// dataofs[nummiptex]; offsets from start of this lump
+};
 
 
-typedef struct
+struct dBsp1Miptex_t
 {
 	char	name[16];
 	unsigned width, height;
-	unsigned offsets[4];		// 4 mip maps stored (==0 if external WAD file)
-} hl_miptex_t;
+	unsigned offsets[4];			// 4 mip maps stored (==0 if external WAD file in HL); note: q1 ignores offset
+									// value, it uses data after structure end
+};
 
 
-typedef struct
+struct dBsp1Texinfo_t
 {
-	float	vecs[2][4];			// [s/t][xyz offset]
+	struct {						// axis for s/t computation
+		CVec3	vec;
+		float	offset;
+	} vecs[2];
 	int		miptex;
-	int		flags;
-} hl_texinfo_t;
-
-
-// leaf 0 is the generic CONTENTS_SOLID leaf, used for all solid areas
-// all other leafs need visibility info
-struct dBsp1Leaf_t
-{
-	int		contents;			// one of Q1_CONTENTS_XXXX
-	int		visofs;				// -1 => no visibility info
-
-	short	mins[3], maxs[3];	// for frustum culling
-
-	unsigned short firstmarksurface;
-	unsigned short nummarksurfaces;
-
-	byte	ambient_level[Q1_NUM_AMBIENTS];
+	unsigned flags;					// 0 or TEX_SPECIAL==1 only (no significant meaning)
 };
 
 
 struct dBsp1Node_t
 {
 	int		planenum;
-	short	children[2];		// negative numbers are -(leafs+1), not nodes
-	short	mins[3], maxs[3];	// for frustum culling
-	unsigned short firstface;
-	unsigned short numfaces;
+	short	children[2];			// negative numbers are -(leafs+1), not nodes
+	short	mins[3], maxs[3];		// for frustum culling
+	unsigned short firstface;		// unused
+	unsigned short numfaces;		// unused
 };
 
 
-typedef struct
+// leaf 0 is the generic CONTENTS_SOLID leaf, used for all solid areas
+// all other leafs need visibility info
+struct dBsp1Leaf_t
+{
+	int		contents;				// one of Q1_CONTENTS_XXXX
+	int		visofs;					// -1 => no visibility info
+
+	short	mins[3], maxs[3];		// for frustum culling
+
+	unsigned short firstleafface;	// old name: "firstmarksurface"
+	unsigned short numleaffaces;	// old name: "nummarksurfaces"
+
+	byte	ambient_level[Q1_NUM_AMBIENTS];
+};
+
+
+struct dBsp1Clipnode_t				// unused
 {
 	int		planenum;
-	short	children[2];	// negative numbers are contents
-} hl_dclipnode_t;
+	short	children[2];			// negative numbers are contents
+};
 
 
 /*-----------------------------------------------------------------------------
@@ -578,3 +584,6 @@ typedef struct
 // NOTE: dbrush_t and dbrushside_t == dBsp2... with exception: texinfo -> shader
 // dheader_t == dBsp2Hdr_t
 // dnode_t == dBsp2Node_t w/o unused fields (firstface/numfaces)
+
+
+#endif // QFILES_H

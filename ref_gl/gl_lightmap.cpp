@@ -4,6 +4,7 @@
 #include "gl_image.h"
 #include "gl_math.h"
 
+//#define LM_DEBUG	1		// colorize uninitialized/placed lightmaps
 
 namespace OpenGLDrv {
 
@@ -68,13 +69,21 @@ lightmapBlock_t *LM_NewBlock ()
 		Com_FatalError ("LM_NewBlock: MAX_LIGHTMAPS hit");
 	lightmapBlock_t &lm = lmBlocks[lightmapsNum - 1];
 	// init fields
-	lm.index  = lightmapsNum;
-	lm.image  = NULL;
-	lm.empty  = true;
-	lm.filled = false;
+	lm.index     = lightmapsNum;
+	lm.image     = NULL;
+	lm.empty     = true;
+	lm.filled    = false;
 	// alloc data blocks
-	lm.pic = new byte [LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4];
+	lm.pic       = new byte [LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4];
 	lm.allocated = new int [LIGHTMAP_SIZE];
+
+#if LM_DEBUG
+	byte *p = lm.pic;
+	for (int i = 0; i < LIGHTMAP_SIZE*LIGHTMAP_SIZE; i++)
+	{
+		*p++=128; *p++=16; *p++=16; *p++=255;
+	}
+#endif
 
 	return &lm;
 }
@@ -120,6 +129,10 @@ void LM_CheckMinlight (dynamicLightmap_t *dl)
 
 bool LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl)
 {
+	guardSlow(LM_AllocBlock);
+	assert(lm);
+	assert(dl);
+
 	int w = dl->w2 + 1;					// make a border around lightmap
 	int h = dl->h + 1;
 
@@ -153,6 +166,7 @@ bool LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl)
 	dl->block = lm;
 
 	return true;
+	unguardSlow;
 }
 
 
@@ -231,6 +245,7 @@ static void CopyLightmap (byte *dst, byte *src, int w, int h, int stride, byte a
 		{
 			for (x = 0; x < w; x++)
 			{
+#if !LM_DEBUG
 				if (sat != 1.0f)
 				{
 					float	r, g, b, light;
@@ -251,6 +266,9 @@ static void CopyLightmap (byte *dst, byte *src, int w, int h, int stride, byte a
 					*dst++ = *src++;
 					*dst++ = *src++;
 				}
+#else
+				*dst++=32; *dst++=32; *dst++=128;
+#endif
 				*dst++ = a;
 			}
 			dst += stride;
@@ -261,6 +279,9 @@ static void CopyLightmap (byte *dst, byte *src, int w, int h, int stride, byte a
 
 void LM_PutBlock (dynamicLightmap_t *dl)
 {
+	guardSlow(LM_PutBlock);
+	assert(dl);
+
 	int stride = (LIGHTMAP_SIZE - dl->w) * 4;
 
 	// put main lightmap (style 0, slow)
@@ -282,6 +303,59 @@ void LM_PutBlock (dynamicLightmap_t *dl)
 
 	// mark lightmap block as used
 	dl->block->empty = false;
+	unguardSlow;
+}
+
+
+static void CopyLightmap1 (byte *dst, byte *src, int w, int h, int stride, byte a)
+{
+	for (int y = 0; y < h; y++)
+	{
+		for (int x = 0; x < w; x++)
+		{
+			// get color (intensity)
+			byte b = *src++;
+			// put color
+#if !LM_DEBUG
+			*dst++ = b; *dst++ = b; *dst++ = b;		// put rgb
+#else
+			*dst++=32; *dst++=32; *dst++=128;
+#endif
+			*dst++ = a;								// put a
+		}
+		dst += stride;
+	}
+}
+
+
+// similar to LM_PutBlock(), but uses CopyLightmap1() instead of CopyLightmap()
+// (monochrome lightmaps, Quake1 map format)
+void LM_PutBlock1 (dynamicLightmap_t *dl)
+{
+	guardSlow(LM_PutBlock1);
+	assert(dl);
+	int stride = (LIGHTMAP_SIZE - dl->w) * 4;
+
+	// put main lightmap (style 0, slow)
+	byte *dst = dl->block->pic + (dl->t * LIGHTMAP_SIZE + dl->s) * 4;
+	CopyLightmap1 (dst, dl->source[0], dl->w, dl->h, stride, 0);		// alpha (flag: no additional scale)
+
+	// put fast dynamic lightmaps
+	int numFast = 0;
+	for (int i = 0; i < dl->numStyles; i++)
+	{
+		if (!IS_FAST_STYLE(dl->style[i])) continue;
+
+		numFast++;
+		dst = dl->block->pic + (dl->t * LIGHTMAP_SIZE + dl->s + dl->w * numFast) * 4;
+		// alpha (flag: modulate by 2)
+		// required, because backend will modulate texture by 0..1, which corresponds lightstyle=0..2
+		CopyLightmap1 (dst, dl->source[i], dl->w, dl->h, stride, 255);
+	}
+
+	// mark lightmap block as used
+	dl->block->empty = false;
+	unguardSlow;
 }
 
 
@@ -293,23 +367,22 @@ void LM_SortLightStyles (dynamicLightmap_t *dl)
 	for (int i = 0; i < dl->numStyles - 1; i++)	// at iteration "i == dl->numStyles-1" all already will be sorted
 	{
 		int min = i;
-		int j;
-		for (j = i + 1; j < dl->numStyles; j++)
+		for (int j = i + 1; j < dl->numStyles; j++)
 			if (dl->style[j] < dl->style[i]) min = j;
 		if (min == i) continue;		// in place
 		// exchange styles [i] and [j]
-		byte *source = dl->source[i];
-		dl->source[i] = dl->source[j];
-		dl->source[j] = source;
-		byte style = dl->style[i];
-		dl->style[i] = dl->style[j];
-		dl->style[j] = style;
+		Exchange (dl->source[i], dl->source[min]);
+		Exchange (dl->style[i],  dl->style[min]);
 	}
 }
 
 
 void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dlightMask)
 {
+	guardSlow(UpdateDynamicLightmap);
+	assert(surf);
+	assert(surf->lightmap);
+
 	byte	pic[LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4];
 	int		i, x, z;
 	unsigned r, g, b;
@@ -331,16 +404,26 @@ void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dli
 			// apply scaled lightmap
 			// test results: when using table for "scale*src >> 7" -- computations will be ~1/7 faster
 			int count = dl->w * dl->h;
-			for (x = 0; x < count; x++)
-			{
-				// modulate lightmap: scale==0 -> by 0, scale==128 - by 1; scale==255 - by 2 (to be exact, 2.0-1/256)
-				r = dst[0] + (scale * *src++ >> 7);
-				g = dst[1] + (scale * *src++ >> 7);
-				b = dst[2] + (scale * *src++ >> 7);
-				NORMALIZE_COLOR255(r, g, b);
-				*dst++ = r; *dst++ = g; *dst++ = b;
-				dst++;
-			}
+			if (!map.monoLightmap)
+				for (x = 0; x < count; x++)
+				{
+					// modulate lightmap: scale==0 -> by 0, scale==128 - by 1; scale==255 - by 2 (to be exact, 2.0-1/256)
+					r = dst[0] + (scale * *src++ >> 7);
+					g = dst[1] + (scale * *src++ >> 7);
+					b = dst[2] + (scale * *src++ >> 7);
+					NORMALIZE_COLOR255(r, g, b);
+					*dst++ = r; *dst++ = g; *dst++ = b;
+					dst++;
+				}
+			else
+				for (x = 0; x < count; x++)
+				{
+					// modulate lightmap: scale==0 -> by 0, scale==128 - by 1; scale==255 - by 2 (to be exact, 2.0-1/256)
+					r = dst[0] + (scale * *src++ >> 7);
+					if (r > 255) r = 255;		// almost 'NORMALIZE' ...
+					*dst++ = r; *dst++ = r; *dst++ = r;
+					dst++;
+				}
 		}
 		STAT(unclock(gl_stats.dynLightmap));
 		//!! WARNING: lightmap is not saturated here
@@ -363,7 +446,9 @@ void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dli
 
 				// calculate vertex color as weighted average of 4 points
 				scale = dl->modulate[z] * 2 >> gl_config.overbright;
-				byte *point = dl->source[z] + (appFloor (v->lm2[1]) * dl->w + appFloor (v->lm2[0])) * 3;
+				byte *point = (!map.monoLightmap)
+					? dl->source[z] + (appFloor (v->lm2[1]) * dl->w + appFloor (v->lm2[0])) * 3
+					: dl->source[z] + (appFloor (v->lm2[1]) * dl->w + appFloor (v->lm2[0]));
 				// calculate s/t weights
 				frac_s = appRound (v->lm2[0] * 128) & 127;
 				frac_t = appRound (v->lm2[1] * 128) & 127;
@@ -387,11 +472,22 @@ void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dli
 			g >>= 21;
 			b >>= 21;
 
-			NORMALIZE_COLOR255(r, g, b);
-			v->c.c[0] = r;
-			v->c.c[1] = g;
-			v->c.c[2] = b;
-			SaturateColor4b (&v->c);		//?? better - saturate "dl->source[]"
+			if (!map.monoLightmap)
+			{
+				NORMALIZE_COLOR255(r, g, b);
+				v->c.c[0] = r;
+				v->c.c[1] = g;
+				v->c.c[2] = b;
+				SaturateColor4b (&v->c);		//?? better - saturate "dl->source[]"
+			}
+			else
+			{
+				// monochrome lightmap: use 1st (single) component only
+				// do not worry about using point[1],point[2] in STEP() macro above:
+				// it will not point outside of loaded bsp file, and their values are
+				// ignored anyway ...
+				v->c.c[0] = v->c.c[1] = v->c.c[2] = r;
+			}
 		}
 		// apply vertex dlights
 		if (dlightMask)
@@ -423,6 +519,8 @@ void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dli
 			}
 		}
 	}
+
+	unguardSlow;
 }
 
 
