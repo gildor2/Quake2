@@ -4,9 +4,18 @@
 
 // -- namespace declared in "OpenGLDrv.h" -- namespace OpenGLDrv {
 
+// Hardware identitiers for some special cases
+// should be a bit mask for easier checking multiple platforms at one step
+#define HW_GENERIC		0x00000000	// any `unknown' platform
+#define HW_NV			0x00000001	// any NVidia videocard
+#define HW_GF2MX		0x00000002	// GeForce2 MX
+#define HW_ATI			0x00010000	// any ATi videocard
+// NOTE: (HW_GF2MX & HW_NV) == 0
+
 
 struct glconfig_t
 {
+	unsigned platformId;			// HW_xxx ...
 	int		maxTextureSize;
 	int		maxRectTextureSize;
 	unsigned extensionMask;			// for GL_SUPPORT() macro (used extensions)

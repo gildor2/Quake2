@@ -294,7 +294,6 @@ HW occlusion:
 QGL system:
   - gl_logFile:
     ? remove "GL_" and "gl" prefixes (to look like OpenGL spec)
-    ? add error checking after commands (qgl.in: ERROR)
 
 
 BUGS:

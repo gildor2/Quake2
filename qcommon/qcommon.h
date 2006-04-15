@@ -59,7 +59,7 @@ struct cplane_t;
 //--------------- some constants ------------------------------
 
 // version number
-#define	VERSION			4.15
+#define	VERSION			4.16
 
 #if _WIN32
 

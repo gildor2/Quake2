@@ -475,29 +475,93 @@ static unsigned *GetQ1Palette ()
 
 static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 {
+	if (stex->texture[0] == '+')
+	{
+		sflags |= SHADER_ANIM;
+		if (!stex->texture[1])
+		{
+			appWPrintf ("CreateSurfShader1(): bad anim texture name: %s\n", stex->texture);
+			return gl_defaultShader;
+		}
+	}
+
 	TString<MAX_QPATH> Name;
 	Name.sprintf ("textures/%s", stex->texture);
 
-	//!! NOTE: temporaty version, should add animation chains ('+0texture')
-	// try external texture
-	shader_t *shader = FindShader (Name, sflags|SHADER_CHECK);
+	// check: may be, shader already loaded
+	shader_t *shader = FindShader (Name, sflags|SHADER_CHECKLOADED);
 	if (shader) return shader;
-	// find miptex
-	int miptex = stex->value;		// set in LoadSurfaces1() (cmodel.cpp)
-	dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)map_bspfile->miptex1 + map_bspfile->miptex1->dataofs[miptex] );
-	if (!tex->offsets[0])
-	{
-		// use wad file! (half-life map)
-		//!!
 
-		return FindShader (Name, sflags);	//!!!!
+	// try external shader/texture
+	shader = FindShader (Name, sflags|SHADER_CHECK);
+	if (shader) return shader;
+
+	// HERE: shader not yet loaded and have no external texture replacement
+
+	int miptex = stex->value;				// set in LoadSurfaces1() (cmodel.cpp)
+	if (miptex < 0)
+	{
+		appWPrintf ("CreateSurfShader1(%s): bad miptex index %d\n", *Name, miptex);
+		return gl_defaultShader;
 	}
-	// find and load inline texture + load shader again
-	unsigned *palette = NULL;
-	if (bspfile->type == map_q1)
-		palette = GetQ1Palette ();
-	CreateImage8 (Name, (byte*)(tex+1), tex->width, tex->height, IMAGE_PICMIP|IMAGE_MIPMAP|IMAGE_WORLD, palette);
-	return FindShader (Name, sflags);
+
+	char textures[MAX_QPATH * MAX_STAGE_TEXTURES];
+	char *pname = textures;
+
+	while (true)
+	{
+		if (miptex < 0)
+		{
+			// generate next name for animation
+			// Name = "textures/+0name" -- '+' at idx 9, digit at idx 10
+			assert(Name[9] == '+');			// should be animated texture
+			if (Name[10] == '9')
+				Name[10] = 'a';
+			else
+				Name[10]++;
+			// check miptex lump to find appropriate name (find 'miptex' index)
+			for (int i = 0; i < map_bspfile->miptex1->nummiptex; i++)
+				if (!(stricmp ((char*)map_bspfile->miptex1 + map_bspfile->miptex1->dataofs[i], Name+9)))
+				{
+					// found
+					miptex = i;
+					break;
+				}
+		}
+		if (miptex < 0) break;				// no more textures for animation
+
+		// find miptex
+		//!! if imageName[0] == '+' -- find sequenced images and build array of names, + add flag SHADER_ANIM
+		dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)map_bspfile->miptex1 + map_bspfile->miptex1->dataofs[miptex] );
+		if (!tex->offsets[0])
+		{
+			// use wad file! (half-life map)
+			//!!
+
+			//!! CreateImage8 (Name, ......);
+		}
+		else
+		{
+			// find and load inline texture + load shader again
+			unsigned *palette = NULL;
+			if (bspfile->type == map_q1)
+				palette = GetQ1Palette ();		//!! else - get palette from texture (after 4 mipmaps) -- RBG->RGBA
+			CreateImage8 (Name, (byte*)(tex+1), tex->width, tex->height, IMAGE_PICMIP|IMAGE_MIPMAP|IMAGE_WORLD, palette);
+		}
+
+		// add Name to textures[]
+		strcpy (pname, Name);
+		pname = strchr (pname, 0) + 1;
+
+		if (!(sflags & SHADER_ANIM)) break;	// not animated shader
+		miptex = -1;						// force next anim texture to be searched
+
+	}
+	*pname = 0;								// make zero (NULL string) after ASCIIZ string
+	shader = FindShader (textures, sflags);
+	if (sflags & SHADER_ANIM)
+		SetShaderAnimFreq (shader, 5);		// q1 animation frequency
+	return shader;
 }
 
 
@@ -519,10 +583,10 @@ static void InitSurfaceLightmap2 (const dFace_t *face, surfacePlanar_t *surf, fl
 	vertex_t *v = surf->verts;
 	for (i = 0; i < surf->numVerts; i++, v++)
 	{
-		v->lm[0] = (v->lm[0] - imins[0]) / 16 + 0.5;	// divide to lightmap unit size and shift
-		v->lm[1] = (v->lm[1] - imins[1]) / 16 + 0.5;
-		v->lm2[0] = v->lm[0] - 0.5;
-		v->lm2[1] = v->lm[1] - 0.5;
+		v->lm2[0] = (v->lm[0] - imins[0]) / 16;			// divide to lightmap unit size
+		v->lm2[1] = (v->lm[1] - imins[1]) / 16;
+		v->lm[0]  = v->lm2[0] + 0.5f;					// shift to texel center
+		v->lm[1]  = v->lm2[1] + 0.5f;
 	}
 	// create dynamic lightmap
 	dynamicLightmap_t *lm = new (map.dataChain) dynamicLightmap_t;
@@ -618,20 +682,27 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 			}
 			else
 			{
-				if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA|SHADER_TURB))
-					sflags |= SHADER_TRYLIGHTMAP;
 				needLightmap = true;
+				if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA|SHADER_TURB))
+				{
+					if (surfs->lightofs > 0)	// when uninitialized by radiocity, will be 0 (not "-1")
+						sflags |= SHADER_TRYLIGHTMAP;
+					else
+						needLightmap = false;
+				}
 			}
 		}
 
-		// q1/hl can use lightofs==-1
+		// q1/hl can use lightofs==-1 to indicate dark lightmap
 		bool darkLightmap = false;
 		if ((bspfile->type == map_q1 || bspfile->type == map_hl) &&
-			(surfs->lightofs == -1) && ((sflags & (SHADER_WALL|SHADER_LIGHTMAP|SHADER_TURB)) == SHADER_WALL))
+			(sflags & (SHADER_WALL|SHADER_LIGHTMAP|SHADER_TURB)) == SHADER_WALL &&
+			surfs->lightofs == -1)
 		{
 			needLightmap = true;
 			darkLightmap = true;
 		}
+
 		if (needLightmap)
 			sflags |= SHADER_LIGHTMAP;
 
@@ -744,12 +815,14 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 			lm->w = 0;
 			lm->h = 0;
 			static byte dark[] = { 0, 0, 0 };
-			lm->source[0] = (byte*)(dark - bspfile->lighting);	// hack: offset from lighting start
+			lm->source[0] = dark;		// hack: offset from lighting start
 			v = s->verts;
 			for (j = 0; j < numVerts; j++, v++)
 			{
-				v->lm[0] = v->lm[1] = v->lm2[0] = v->lm2[1] = 0;
+				v->lm[0] = v->lm[1] = 0.5f;
+				v->lm2[0] = v->lm2[1] = 0;
 			}
+			lm->externalSource = true;
 		}
 
 		BuildPlanarSurfAxis (s);
@@ -830,7 +903,8 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 		{
 			// convert lightmap offset to pointer
 			for (k = 0; k < dl->numStyles; k++)
-				dl->source[k] += (unsigned)lightData;
+				if (!dl->externalSource)
+					dl->source[k] += (unsigned)lightData;
 
 			if (map.monoLightmap) continue;	//?? q1 map
 			// optimize lightmaps
@@ -892,8 +966,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 		else if (ptr && ptr > dl->source[0] && (s->shader->style & SHADER_TRYLIGHTMAP))
 			bad = true;				// erased by previous block
 
-		if (bad && dl->source[0] && dl->w == 0 && dl->h == 0)
-			bad = false;			// dark lightmap, q1/hl
+		if (dl->externalSource) bad = false;
 
 		//?? add check: if current is "try" interlaced with next "not try (normal)" - current is "bad"
 
@@ -923,6 +996,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 		if (s->shader->lightmapNumber >= 0)
 		{
 			int styles = 0;
+			bool fastOnly = true;
 			dl->w2 = dl->w;
 			dl->numFastStyles = 0;
 			for (k = dl->numStyles - 1; k >= 0; k--)
@@ -934,8 +1008,10 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 					dl->w2 += dl->w;
 					dl->numFastStyles++;
 				}
+				else
+					fastOnly = false;
 			}
-			if (styles) s->shader = SetShaderLightstyles (s->shader, styles);
+			if (styles) s->shader = SetShaderLightstyles (s->shader, styles, fastOnly);
 		}
 	}
 

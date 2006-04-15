@@ -85,6 +85,7 @@ STATIC = \
 	Release/obj-win32/q2stat/pmove.o \
 	Release/obj-win32/q2stat/q_shared2.o \
 	Release/obj-win32/q2stat/QuakeFileSystem.o \
+	Release/obj-win32/q2stat/MapBrush.o \
 	Release/obj-win32/q2stat/cd_win.o \
 	Release/obj-win32/q2stat/in_win.o \
 	Release/obj-win32/q2stat/net_wins.o \
@@ -168,6 +169,7 @@ DEDICATED = \
 	Release/obj-win32/dedstat/pmove.o \
 	Release/obj-win32/dedstat/q_shared2.o \
 	Release/obj-win32/dedstat/QuakeFileSystem.o \
+	Release/obj-win32/dedstat/MapBrush.o \
 	Release/obj-win32/dedstat/net_wins.o \
 	Release/obj-win32/dedstat/sys_win.o
 
@@ -1670,6 +1672,7 @@ DEPENDS_39 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/MapBrush.h \
 	qcommon/cmodel.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
@@ -1794,6 +1797,34 @@ DEPENDS_43 = \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
+	qcommon/MapBrush.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/MapBrush.o : qcommon/MapBrush.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/MapBrush.o qcommon/MapBrush.cpp
+
+Release/obj-win32/dedstat/MapBrush.o : qcommon/MapBrush.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/MapBrush.o qcommon/MapBrush.cpp
+
+DEPENDS_44 = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
@@ -1802,19 +1833,19 @@ DEPENDS_43 = \
 	server/game.h \
 	server/server.h
 
-Release/obj-win32/q2stat/sv_game.o : server/sv_game.cpp $(DEPENDS_43)
+Release/obj-win32/q2stat/sv_game.o : server/sv_game.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_game.o server/sv_game.cpp
 
-Release/obj-win32/dedstat/sv_game.o : server/sv_game.cpp $(DEPENDS_43)
+Release/obj-win32/dedstat/sv_game.o : server/sv_game.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_game.o server/sv_game.cpp
 
-Release/obj-win32/q2stat/sv_world.o : server/sv_world.cpp $(DEPENDS_43)
+Release/obj-win32/q2stat/sv_world.o : server/sv_world.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_world.o server/sv_world.cpp
 
-Release/obj-win32/dedstat/sv_world.o : server/sv_world.cpp $(DEPENDS_43)
+Release/obj-win32/dedstat/sv_world.o : server/sv_world.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_world.o server/sv_world.cpp
 
-DEPENDS_44 = \
+DEPENDS_45 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1837,13 +1868,13 @@ DEPENDS_44 = \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
 
-Release/obj-win32/q2stat/model.o : qcommon/model.cpp $(DEPENDS_44)
+Release/obj-win32/q2stat/model.o : qcommon/model.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/model.o qcommon/model.cpp
 
-Release/obj-win32/dedstat/model.o : qcommon/model.cpp $(DEPENDS_44)
+Release/obj-win32/dedstat/model.o : qcommon/model.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/model.o qcommon/model.cpp
 
-DEPENDS_45 = \
+DEPENDS_46 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1867,37 +1898,37 @@ DEPENDS_45 = \
 	server/game.h \
 	server/server.h
 
-Release/obj-win32/q2stat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_45)
+Release/obj-win32/q2stat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_anim.o server/sv_anim.cpp
 
-Release/obj-win32/dedstat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_45)
+Release/obj-win32/dedstat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_anim.o server/sv_anim.cpp
 
-Release/obj-win32/q2stat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_45)
+Release/obj-win32/q2stat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_ents.o server/sv_ents.cpp
 
-Release/obj-win32/dedstat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_45)
+Release/obj-win32/dedstat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_ents.o server/sv_ents.cpp
 
-Release/obj-win32/q2stat/sv_init.o : server/sv_init.cpp $(DEPENDS_45)
+Release/obj-win32/q2stat/sv_init.o : server/sv_init.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_init.o server/sv_init.cpp
 
-Release/obj-win32/dedstat/sv_init.o : server/sv_init.cpp $(DEPENDS_45)
+Release/obj-win32/dedstat/sv_init.o : server/sv_init.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_init.o server/sv_init.cpp
 
-Release/obj-win32/q2stat/sv_send.o : server/sv_send.cpp $(DEPENDS_45)
+Release/obj-win32/q2stat/sv_send.o : server/sv_send.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_send.o server/sv_send.cpp
 
-Release/obj-win32/dedstat/sv_send.o : server/sv_send.cpp $(DEPENDS_45)
+Release/obj-win32/dedstat/sv_send.o : server/sv_send.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_send.o server/sv_send.cpp
 
-Release/obj-win32/q2stat/sv_user.o : server/sv_user.cpp $(DEPENDS_45)
+Release/obj-win32/q2stat/sv_user.o : server/sv_user.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_user.o server/sv_user.cpp
 
-Release/obj-win32/dedstat/sv_user.o : server/sv_user.cpp $(DEPENDS_45)
+Release/obj-win32/dedstat/sv_user.o : server/sv_user.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_user.o server/sv_user.cpp
 
-DEPENDS_46 = \
+DEPENDS_47 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1918,73 +1949,73 @@ DEPENDS_46 = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-win32/q2stat/ref_vars.o : client/ref_vars.cpp $(DEPENDS_46)
+Release/obj-win32/q2stat/ref_vars.o : client/ref_vars.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/ref_vars.o client/ref_vars.cpp
 
-Release/obj-win32/q2stat/anorms.o : qcommon/anorms.cpp $(DEPENDS_46)
+Release/obj-win32/q2stat/anorms.o : qcommon/anorms.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/anorms.o qcommon/anorms.cpp
 
-Release/obj-win32/dedstat/anorms.o : qcommon/anorms.cpp $(DEPENDS_46)
+Release/obj-win32/dedstat/anorms.o : qcommon/anorms.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/anorms.o qcommon/anorms.cpp
 
-Release/obj-win32/q2stat/cmd.o : qcommon/cmd.cpp $(DEPENDS_46)
+Release/obj-win32/q2stat/cmd.o : qcommon/cmd.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/cmd.o qcommon/cmd.cpp
 
-Release/obj-win32/dedstat/cmd.o : qcommon/cmd.cpp $(DEPENDS_46)
+Release/obj-win32/dedstat/cmd.o : qcommon/cmd.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/cmd.o qcommon/cmd.cpp
 
-Release/obj-win32/q2stat/crc.o : qcommon/crc.cpp $(DEPENDS_46)
+Release/obj-win32/q2stat/crc.o : qcommon/crc.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/crc.o qcommon/crc.cpp
 
-Release/obj-win32/dedstat/crc.o : qcommon/crc.cpp $(DEPENDS_46)
+Release/obj-win32/dedstat/crc.o : qcommon/crc.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/crc.o qcommon/crc.cpp
 
-Release/obj-win32/q2stat/cvar.o : qcommon/cvar.cpp $(DEPENDS_46)
+Release/obj-win32/q2stat/cvar.o : qcommon/cvar.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/cvar.o qcommon/cvar.cpp
 
-Release/obj-win32/dedstat/cvar.o : qcommon/cvar.cpp $(DEPENDS_46)
+Release/obj-win32/dedstat/cvar.o : qcommon/cvar.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/cvar.o qcommon/cvar.cpp
 
-Release/obj-win32/q2stat/entdelta.o : qcommon/entdelta.cpp $(DEPENDS_46)
+Release/obj-win32/q2stat/entdelta.o : qcommon/entdelta.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/entdelta.o qcommon/entdelta.cpp
 
-Release/obj-win32/dedstat/entdelta.o : qcommon/entdelta.cpp $(DEPENDS_46)
+Release/obj-win32/dedstat/entdelta.o : qcommon/entdelta.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/entdelta.o qcommon/entdelta.cpp
 
-Release/obj-win32/q2stat/msg.o : qcommon/msg.cpp $(DEPENDS_46)
+Release/obj-win32/q2stat/msg.o : qcommon/msg.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/msg.o qcommon/msg.cpp
 
-Release/obj-win32/dedstat/msg.o : qcommon/msg.cpp $(DEPENDS_46)
+Release/obj-win32/dedstat/msg.o : qcommon/msg.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/msg.o qcommon/msg.cpp
 
-Release/obj-win32/q2stat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_46)
+Release/obj-win32/q2stat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/net_chan.o qcommon/net_chan.cpp
 
-Release/obj-win32/dedstat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_46)
+Release/obj-win32/dedstat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/net_chan.o qcommon/net_chan.cpp
 
-Release/obj-win32/q2stat/pmove.o : qcommon/pmove.cpp $(DEPENDS_46)
+Release/obj-win32/q2stat/pmove.o : qcommon/pmove.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/pmove.o qcommon/pmove.cpp
 
-Release/obj-win32/dedstat/pmove.o : qcommon/pmove.cpp $(DEPENDS_46)
+Release/obj-win32/dedstat/pmove.o : qcommon/pmove.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/pmove.o qcommon/pmove.cpp
 
-Release/obj-win32/dedstat/sv_dedicated.o : server/sv_dedicated.cpp $(DEPENDS_46)
+Release/obj-win32/dedstat/sv_dedicated.o : server/sv_dedicated.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_dedicated.o server/sv_dedicated.cpp
 
-Release/obj-win32/q2stat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_46)
+Release/obj-win32/q2stat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_tokenize.o server/sv_tokenize.cpp
 
-Release/obj-win32/dedstat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_46)
+Release/obj-win32/dedstat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_tokenize.o server/sv_tokenize.cpp
 
-Release/obj-win32/q2stat/net_wins.o : win32/net_wins.cpp $(DEPENDS_46)
+Release/obj-win32/q2stat/net_wins.o : win32/net_wins.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/net_wins.o win32/net_wins.cpp
 
-Release/obj-win32/dedstat/net_wins.o : win32/net_wins.cpp $(DEPENDS_46)
+Release/obj-win32/dedstat/net_wins.o : win32/net_wins.cpp $(DEPENDS_47)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/net_wins.o win32/net_wins.cpp
 
-DEPENDS_47 = \
+DEPENDS_48 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -2002,16 +2033,16 @@ DEPENDS_47 = \
 	Core/Inc/TextContainer.h \
 	qcommon/q_shared2.h
 
-Release/obj-win32/q2stat/q_shared2.o : qcommon/q_shared2.cpp $(DEPENDS_47)
+Release/obj-win32/q2stat/q_shared2.o : qcommon/q_shared2.cpp $(DEPENDS_48)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/q_shared2.o qcommon/q_shared2.cpp
 
-Release/obj-win32/dedstat/q_shared2.o : qcommon/q_shared2.cpp $(DEPENDS_47)
+Release/obj-win32/dedstat/q_shared2.o : qcommon/q_shared2.cpp $(DEPENDS_48)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/q_shared2.o qcommon/q_shared2.cpp
 
-DEPENDS_48 = \
+DEPENDS_49 = \
 	resource/archive.res
 
-Release/obj-win32/q2stat/makeres.o : resource/makeres.asm $(DEPENDS_48)
+Release/obj-win32/q2stat/makeres.o : resource/makeres.asm $(DEPENDS_49)
 	nasm -f coff -i resource/ -o "Release/obj-win32/q2stat/makeres.o" resource/makeres.asm
 
 #------------------------------------------------------------------------------

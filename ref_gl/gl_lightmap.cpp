@@ -267,7 +267,7 @@ static void CopyLightmap (byte *dst, byte *src, int w, int h, int stride, byte a
 					*dst++ = *src++;
 				}
 #else
-				*dst++=32; *dst++=32; *dst++=128;
+				*dst++=32; *dst++=128; *dst++=128;
 #endif
 				*dst++ = a;
 			}
@@ -281,7 +281,6 @@ void LM_PutBlock (dynamicLightmap_t *dl)
 {
 	guardSlow(LM_PutBlock);
 	assert(dl);
-
 	int stride = (LIGHTMAP_SIZE - dl->w) * 4;
 
 	// put main lightmap (style 0, slow)

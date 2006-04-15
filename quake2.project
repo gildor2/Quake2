@@ -153,6 +153,7 @@ COMMON = {
 	$D/pmove.cpp
 	$D/q_shared2.cpp
 	$D/QuakeFileSystem.cpp
+	$D/MapBrush.cpp
 }
 
 D = ref_gl

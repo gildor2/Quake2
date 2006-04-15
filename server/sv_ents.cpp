@@ -213,6 +213,16 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 
 		if (sv_labels->integer)
 		{
+			const char *modelname = "";
+			CVec3 org;
+			org = state.origin;
+			if (state.modelindex != 255)
+			{
+				modelname = sv.configstrings[CS_MODELS+state.modelindex];
+				if (modelname[0] == '*')
+					ent->bounds.GetCenter (org);
+			}
+
 			//?? possible bug: in multiplayer, BuildClientFrame() will be called for each client, and labels
 			//?? will be displayed multiple times
 			if (state.modelindex == 255)
@@ -220,13 +230,14 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 				int legs, torso, angle1;
 				float angle2;
 				state.GetAnim (legs, torso, angle1, angle2);
-				SV_DrawText3D (state.origin, va("ent %d cl %04X\nframe %d\nanim %d+%d/%d+%g",
+				SV_DrawText3D (org, va("ent: %d cl: %04X\nframe: %d\nanim: %d+%d/%d+%g",
 					e, state.skinnum,
 					state.frame,
 					legs, torso, angle1, angle2));
 			}
 			else
-				SV_DrawText3D (state.origin, va("ent %d cl %04X\nframe %d", e, state.skinnum, state.frame), RGB(1,0,0));
+				SV_DrawText3D (org, va("ent: %d cl: %04X\nframe: %d\nmdl: %s",
+					e, state.skinnum, state.frame, modelname), RGB(1,0,0));
 		}
 #if 0
 		if (ent->client)

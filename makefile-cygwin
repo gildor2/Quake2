@@ -85,6 +85,7 @@ STATIC = \
 	Release/obj-cygwin/q2stat/pmove.o \
 	Release/obj-cygwin/q2stat/q_shared2.o \
 	Release/obj-cygwin/q2stat/QuakeFileSystem.o \
+	Release/obj-cygwin/q2stat/MapBrush.o \
 	Release/obj-cygwin/q2stat/cd_win.o \
 	Release/obj-cygwin/q2stat/in_win.o \
 	Release/obj-cygwin/q2stat/net_wins.o \
@@ -167,6 +168,7 @@ DEDICATED = \
 	Release/obj-cygwin/dedstat/pmove.o \
 	Release/obj-cygwin/dedstat/q_shared2.o \
 	Release/obj-cygwin/dedstat/QuakeFileSystem.o \
+	Release/obj-cygwin/dedstat/MapBrush.o \
 	Release/obj-cygwin/dedstat/net_wins.o \
 	Release/obj-cygwin/dedstat/sys_win.o
 
@@ -1618,6 +1620,7 @@ DEPENDS_37 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/MapBrush.h \
 	qcommon/cmodel.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
@@ -1742,6 +1745,34 @@ DEPENDS_41 = \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
+	qcommon/MapBrush.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj-cygwin/q2stat/MapBrush.o : qcommon/MapBrush.cpp $(DEPENDS_41)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/MapBrush.o qcommon/MapBrush.cpp
+
+Release/obj-cygwin/dedstat/MapBrush.o : qcommon/MapBrush.cpp $(DEPENDS_41)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/MapBrush.o qcommon/MapBrush.cpp
+
+DEPENDS_42 = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
@@ -1750,19 +1781,19 @@ DEPENDS_41 = \
 	server/game.h \
 	server/server.h
 
-Release/obj-cygwin/q2stat/sv_game.o : server/sv_game.cpp $(DEPENDS_41)
+Release/obj-cygwin/q2stat/sv_game.o : server/sv_game.cpp $(DEPENDS_42)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_game.o server/sv_game.cpp
 
-Release/obj-cygwin/dedstat/sv_game.o : server/sv_game.cpp $(DEPENDS_41)
+Release/obj-cygwin/dedstat/sv_game.o : server/sv_game.cpp $(DEPENDS_42)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_game.o server/sv_game.cpp
 
-Release/obj-cygwin/q2stat/sv_world.o : server/sv_world.cpp $(DEPENDS_41)
+Release/obj-cygwin/q2stat/sv_world.o : server/sv_world.cpp $(DEPENDS_42)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_world.o server/sv_world.cpp
 
-Release/obj-cygwin/dedstat/sv_world.o : server/sv_world.cpp $(DEPENDS_41)
+Release/obj-cygwin/dedstat/sv_world.o : server/sv_world.cpp $(DEPENDS_42)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_world.o server/sv_world.cpp
 
-DEPENDS_42 = \
+DEPENDS_43 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1785,13 +1816,13 @@ DEPENDS_42 = \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
 
-Release/obj-cygwin/q2stat/model.o : qcommon/model.cpp $(DEPENDS_42)
+Release/obj-cygwin/q2stat/model.o : qcommon/model.cpp $(DEPENDS_43)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/model.o qcommon/model.cpp
 
-Release/obj-cygwin/dedstat/model.o : qcommon/model.cpp $(DEPENDS_42)
+Release/obj-cygwin/dedstat/model.o : qcommon/model.cpp $(DEPENDS_43)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/model.o qcommon/model.cpp
 
-DEPENDS_43 = \
+DEPENDS_44 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1815,37 +1846,37 @@ DEPENDS_43 = \
 	server/game.h \
 	server/server.h
 
-Release/obj-cygwin/q2stat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_43)
+Release/obj-cygwin/q2stat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_anim.o server/sv_anim.cpp
 
-Release/obj-cygwin/dedstat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_43)
+Release/obj-cygwin/dedstat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_anim.o server/sv_anim.cpp
 
-Release/obj-cygwin/q2stat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_43)
+Release/obj-cygwin/q2stat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_ents.o server/sv_ents.cpp
 
-Release/obj-cygwin/dedstat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_43)
+Release/obj-cygwin/dedstat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_ents.o server/sv_ents.cpp
 
-Release/obj-cygwin/q2stat/sv_init.o : server/sv_init.cpp $(DEPENDS_43)
+Release/obj-cygwin/q2stat/sv_init.o : server/sv_init.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_init.o server/sv_init.cpp
 
-Release/obj-cygwin/dedstat/sv_init.o : server/sv_init.cpp $(DEPENDS_43)
+Release/obj-cygwin/dedstat/sv_init.o : server/sv_init.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_init.o server/sv_init.cpp
 
-Release/obj-cygwin/q2stat/sv_send.o : server/sv_send.cpp $(DEPENDS_43)
+Release/obj-cygwin/q2stat/sv_send.o : server/sv_send.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_send.o server/sv_send.cpp
 
-Release/obj-cygwin/dedstat/sv_send.o : server/sv_send.cpp $(DEPENDS_43)
+Release/obj-cygwin/dedstat/sv_send.o : server/sv_send.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_send.o server/sv_send.cpp
 
-Release/obj-cygwin/q2stat/sv_user.o : server/sv_user.cpp $(DEPENDS_43)
+Release/obj-cygwin/q2stat/sv_user.o : server/sv_user.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_user.o server/sv_user.cpp
 
-Release/obj-cygwin/dedstat/sv_user.o : server/sv_user.cpp $(DEPENDS_43)
+Release/obj-cygwin/dedstat/sv_user.o : server/sv_user.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_user.o server/sv_user.cpp
 
-DEPENDS_44 = \
+DEPENDS_45 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1866,73 +1897,73 @@ DEPENDS_44 = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-cygwin/q2stat/ref_vars.o : client/ref_vars.cpp $(DEPENDS_44)
+Release/obj-cygwin/q2stat/ref_vars.o : client/ref_vars.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/ref_vars.o client/ref_vars.cpp
 
-Release/obj-cygwin/q2stat/anorms.o : qcommon/anorms.cpp $(DEPENDS_44)
+Release/obj-cygwin/q2stat/anorms.o : qcommon/anorms.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/anorms.o qcommon/anorms.cpp
 
-Release/obj-cygwin/dedstat/anorms.o : qcommon/anorms.cpp $(DEPENDS_44)
+Release/obj-cygwin/dedstat/anorms.o : qcommon/anorms.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/anorms.o qcommon/anorms.cpp
 
-Release/obj-cygwin/q2stat/cmd.o : qcommon/cmd.cpp $(DEPENDS_44)
+Release/obj-cygwin/q2stat/cmd.o : qcommon/cmd.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cmd.o qcommon/cmd.cpp
 
-Release/obj-cygwin/dedstat/cmd.o : qcommon/cmd.cpp $(DEPENDS_44)
+Release/obj-cygwin/dedstat/cmd.o : qcommon/cmd.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/cmd.o qcommon/cmd.cpp
 
-Release/obj-cygwin/q2stat/crc.o : qcommon/crc.cpp $(DEPENDS_44)
+Release/obj-cygwin/q2stat/crc.o : qcommon/crc.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/crc.o qcommon/crc.cpp
 
-Release/obj-cygwin/dedstat/crc.o : qcommon/crc.cpp $(DEPENDS_44)
+Release/obj-cygwin/dedstat/crc.o : qcommon/crc.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/crc.o qcommon/crc.cpp
 
-Release/obj-cygwin/q2stat/cvar.o : qcommon/cvar.cpp $(DEPENDS_44)
+Release/obj-cygwin/q2stat/cvar.o : qcommon/cvar.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cvar.o qcommon/cvar.cpp
 
-Release/obj-cygwin/dedstat/cvar.o : qcommon/cvar.cpp $(DEPENDS_44)
+Release/obj-cygwin/dedstat/cvar.o : qcommon/cvar.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/cvar.o qcommon/cvar.cpp
 
-Release/obj-cygwin/q2stat/entdelta.o : qcommon/entdelta.cpp $(DEPENDS_44)
+Release/obj-cygwin/q2stat/entdelta.o : qcommon/entdelta.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/entdelta.o qcommon/entdelta.cpp
 
-Release/obj-cygwin/dedstat/entdelta.o : qcommon/entdelta.cpp $(DEPENDS_44)
+Release/obj-cygwin/dedstat/entdelta.o : qcommon/entdelta.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/entdelta.o qcommon/entdelta.cpp
 
-Release/obj-cygwin/q2stat/msg.o : qcommon/msg.cpp $(DEPENDS_44)
+Release/obj-cygwin/q2stat/msg.o : qcommon/msg.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/msg.o qcommon/msg.cpp
 
-Release/obj-cygwin/dedstat/msg.o : qcommon/msg.cpp $(DEPENDS_44)
+Release/obj-cygwin/dedstat/msg.o : qcommon/msg.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/msg.o qcommon/msg.cpp
 
-Release/obj-cygwin/q2stat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_44)
+Release/obj-cygwin/q2stat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/net_chan.o qcommon/net_chan.cpp
 
-Release/obj-cygwin/dedstat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_44)
+Release/obj-cygwin/dedstat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/net_chan.o qcommon/net_chan.cpp
 
-Release/obj-cygwin/q2stat/pmove.o : qcommon/pmove.cpp $(DEPENDS_44)
+Release/obj-cygwin/q2stat/pmove.o : qcommon/pmove.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/pmove.o qcommon/pmove.cpp
 
-Release/obj-cygwin/dedstat/pmove.o : qcommon/pmove.cpp $(DEPENDS_44)
+Release/obj-cygwin/dedstat/pmove.o : qcommon/pmove.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/pmove.o qcommon/pmove.cpp
 
-Release/obj-cygwin/dedstat/sv_dedicated.o : server/sv_dedicated.cpp $(DEPENDS_44)
+Release/obj-cygwin/dedstat/sv_dedicated.o : server/sv_dedicated.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_dedicated.o server/sv_dedicated.cpp
 
-Release/obj-cygwin/q2stat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_44)
+Release/obj-cygwin/q2stat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_tokenize.o server/sv_tokenize.cpp
 
-Release/obj-cygwin/dedstat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_44)
+Release/obj-cygwin/dedstat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_tokenize.o server/sv_tokenize.cpp
 
-Release/obj-cygwin/q2stat/net_wins.o : win32/net_wins.cpp $(DEPENDS_44)
+Release/obj-cygwin/q2stat/net_wins.o : win32/net_wins.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/net_wins.o win32/net_wins.cpp
 
-Release/obj-cygwin/dedstat/net_wins.o : win32/net_wins.cpp $(DEPENDS_44)
+Release/obj-cygwin/dedstat/net_wins.o : win32/net_wins.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/net_wins.o win32/net_wins.cpp
 
-DEPENDS_45 = \
+DEPENDS_46 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1950,16 +1981,16 @@ DEPENDS_45 = \
 	Core/Inc/TextContainer.h \
 	qcommon/q_shared2.h
 
-Release/obj-cygwin/q2stat/q_shared2.o : qcommon/q_shared2.cpp $(DEPENDS_45)
+Release/obj-cygwin/q2stat/q_shared2.o : qcommon/q_shared2.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/q_shared2.o qcommon/q_shared2.cpp
 
-Release/obj-cygwin/dedstat/q_shared2.o : qcommon/q_shared2.cpp $(DEPENDS_45)
+Release/obj-cygwin/dedstat/q_shared2.o : qcommon/q_shared2.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/q_shared2.o qcommon/q_shared2.cpp
 
-DEPENDS_46 = \
+DEPENDS_47 = \
 	resource/archive.res
 
-Release/obj-cygwin/q2stat/makeres.o : resource/makeres.asm $(DEPENDS_46)
+Release/obj-cygwin/q2stat/makeres.o : resource/makeres.asm $(DEPENDS_47)
 	nasm -f elf -i resource/ -o "Release/obj-cygwin/q2stat/makeres.o" resource/makeres.asm
 
 #------------------------------------------------------------------------------

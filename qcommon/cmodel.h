@@ -125,7 +125,7 @@ struct bspfile_t
 	int			numBrushes;
 	dBsp2Brush_t *brushes;
 
-	int			numBrushsides;
+	int			numBrushSides;
 	dBsp2Brushside_t *brushsides;
 
 	int			numAreas;

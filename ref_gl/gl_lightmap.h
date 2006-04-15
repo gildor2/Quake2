@@ -32,6 +32,7 @@ struct dynamicLightmap_t
 	byte	*source[4];			// points to "byte rgb[w*h][3]"
 	short	w, h;				// size of source
 	short	w2;					// width of whole lightmap block (including fast dynamic lightmaps)
+	bool	externalSource;		// when "true", lightmap not comes from bsp file (generated)
 	// info for uploading lightmap
 	short	s, t;				// glTexSubimage to (s,t)-(s+w,t+h)
 	lightmapBlock_t *block;

@@ -100,7 +100,7 @@ void Fogfv (GLenum pname, const GLfloat *params) ARGS
 //void GetBooleanv (GLenum pname, GLboolean *params);
 //void GetClipPlane (GLenum plane, GLdouble *equation);
 //void GetDoublev (GLenum pname, GLdouble *params);
-//GLenum GetError (void);
+GLenum GetError (void) NOLOG
 //void GetFloatv (GLenum pname, GLfloat *params);
 void GetIntegerv (GLenum pname, GLint *params);
 //void GetLightfv (GLenum light, GLenum pname, GLfloat *params);

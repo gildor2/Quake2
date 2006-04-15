@@ -53,7 +53,7 @@
 
 - bugs with deathmatch mode
   - map "dm_dukecity_beta":
-    - disco: neon lamp text should not disappear
+    - disco: neon lamp text should not disappear (bug with "dirty" only, all OK with "baseq2" -- in func_wall+func_timer implementation)
   ? g_misc.c::SP_light() -- disabled lights with style>=32
 
 ? crash on map change/game load with Anachronox map : crash when door/elevator moving somewhere on level -- absolute pointers ?
@@ -108,6 +108,8 @@ HARDWARE:
     WM_SYNCPAINT, WM_NCPAINT, WM_ERASEBKGND, WM_PAINT; Q3 have no this problem, UT2004 (GL) have.
     * FIXED: set TOPMOST wnd attribute with SetWindowPos(), not with SetWindowLong(); when restore from minimized state - update
       gamma in AppActivate() using "r_gamma->modified=true" i.e. in 1st rendering frame, not using UpdateGamma() call
+    - this issue appears, when pressing Alt-Tab from game few times until app will be selected again (no switch to another app
+      will be performed, but gamma will be damaged)
   - during video playback (different task/app, using overlay), map textures will disappear (lightmaps only); when fire from
     blaster (dlight) - some textures appear; may be reversed effect: have textures, but with dlight disappears;
     no bug, when no 2D display at all, and when not using multitexture; vid_restart does not helps; when closing video player,
@@ -122,7 +124,7 @@ HARDWARE:
   - GF FX5200 + det.56.72, compiled_vertex_array: have geometry bugs when mixing non-CVA & CVA rendering (disappear with
     gl_showtris=1); workaround: CVA is ALWAYS used (i.e. for 1-pass rendering too); ATI have no this bug
   - GF FX5200: GL_EXT_texture_compression_s3tc: font image, compressed into DXT1 (with 1-bit alpha) have visual bugs (pink color on
-    letters); no bug with DXT5
+    letters); no bug with DXT5 (same bugs with GF2MX)
   - when app not focused (and. may be, during video playback), wglSwapBuffers() may fail (turned fatal error -> warning)
 ? texture rectangle (ATI; NV untested): when "*video" created as regular texture and uploaded as rect texture, after displaying
   video (exec alias "d1" -- video+demo) when level loading, displayed black rect instead of "loading" banner
@@ -131,17 +133,18 @@ HARDWARE:
 
 COMPILERS:
 ~~~~~~~~~~
-- (VisualC++ 6) when compiling renderer with !STATIC_BUILD:
-  - "unguard" will be linked to "NORETURN struc.appUnwindThrow()"; VC ignores NORETURN here,
-    and will display warning C4715 (not all control paths return value)
-  - FS_LoadFile(filename, &len) have arg "unsigned *len"; using this via structure will produce warning C4700
-    (local variable used without having been initialized)
+- (VisualC++ 6)
+  - when compiling renderer with !STATIC_BUILD:
+    - "unguard" will be linked to "NORETURN struc.appUnwindThrow()"; VC ignores NORETURN here,
+      and will display warning C4715 (not all control paths return value)
+    - FS_LoadFile(filename, &len) have arg "unsigned *len"; using this via structure will produce warning C4700
+      (local variable used without having been initialized)
   ? "dot(const CVec3 &, const CVec3 &)" is not inlined, but "DotProduct(const float*, const float *)" inlined ...
     When mark function as "__forceinline" - it will be inlined.
     Reason: "dot()" uses overloaded inline "operator []", and compiler prevents from inlining nested inline functions.
     Compiler even ignores "#pragma inline_depth(8)" and "/Ob1" options ... Workaround: do not use "operator []" - access
     to members directly (as field)
-    VisualC++ have no such problem, but when VC6 inlined dot() everywhere, VC7 inlined most of calls, but some calls
+    VisualC++7 have no such problem, but when VC6 inlined dot() everywhere, VC7 inlined most of calls, but some calls
     made as call to separate function.
   - not understand template classes as friends (VC7 - OK)
 - (VisualC++ 7) -- cannot use default arguments for functions, which are part of structure

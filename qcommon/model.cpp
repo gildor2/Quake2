@@ -169,7 +169,7 @@ static void SwapQ2BspFile (bspfile_t *f)
 	}
 
 	// brushsides
-	for (i = 0; i < f->numBrushsides; i++)
+	for (i = 0; i < f->numBrushSides; i++)
 	{
 		LTL(f->brushsides[i].planenum);
 		LTL(f->brushsides[i].texinfo);
@@ -230,6 +230,53 @@ static void ProcessQ2BspFile (bspfile_t *f)
 	for (i = 0; i < f->numFaces; i++)
 		if (f->faces[i].lightofs > f->lightDataSize)
 			f->faces[i].lightofs = -1;
+}
+
+
+static void ProcessQ1BspFile (bspfile_t *f)
+{
+	int i, j;
+
+	// models: inflate mins/maxs by 1
+	//?? this is to avoid precision errors ?
+	for (i = 0; i < f->numModels; i++)
+	{
+		cmodel_t *d = &f->models[i];
+
+		for (j = 0; j < 3; j++)
+		{
+			d->bounds.mins[j] -= 1;
+			d->bounds.maxs[j] += 1;
+		}
+	}
+	for (i = 0; i < f->numFaces; i++)
+	{
+		dFace_t &face = f->faces[i];
+		// silly check for correct lightmaps
+		if (face.lightofs > f->lightDataSize)
+			face.lightofs = -1;
+#if 0
+		// check: q1 surface may be without slow lightstyle - should insert one
+		bool found = 0;
+		for (j = 0; j < 4; j++)
+		{
+			int st = face.styles[j];
+			if (st == 255) break;
+			if (st == 0 || st >= 32)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (found) continue;
+		// insert slow lightstyle 0 with lightofs == -1
+		for (j = 3; j > 0; j++)
+		{
+			face.styles[j] = face.styles[j-1];
+			face.light
+		}
+#endif
+	}
 }
 
 
@@ -318,7 +365,7 @@ void LoadQ2BspFile ()
 	C(SURFEDGES, surfedges, numSurfedges, int);
 	C(EDGES, edges, numEdges, dEdge_t);
 	C(BRUSHES, brushes, numBrushes, dBsp2Brush_t);
-	C(BRUSHSIDES, brushsides, numBrushsides, dBsp2Brushside_t);
+	C(BRUSHSIDES, brushsides, numBrushSides, dBsp2Brushside_t);
 	C(AREAS, areas, numAreas, darea_t);
 	C(AREAPORTALS, areaportals, numAreaportals, dareaportal_t);
 
@@ -392,7 +439,7 @@ void LoadQ1BspFile ()
 	// swap everything
 	SwapQ1BspFile (&bspfile);
 #endif
-//??	ProcessQ1BspFile (&bspfile);
+	ProcessQ1BspFile (&bspfile);
 
 	// load entstring after all: we may require to change something
 #if 0

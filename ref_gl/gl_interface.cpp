@@ -18,19 +18,19 @@ glstate_t	gl_state;
 #define ARB_MASK		(TEXENV_FUNC_MASK|TEXENV_MUL2|TEXENV_SRC0_MASK|TEXENV_SRC1_MASK)
 
 
-typedef struct
+struct texEnvInfo_t
 {
 	unsigned mask;
 	GLint	mode1;
 	GLint	mode2;
-} texEnvInfo_t;
+};
 
-typedef struct
+struct texEnvSource_t
 {
 	GLenum	src;
 	GLenum	op_rgb;
 	GLenum	op_a;
-} texEnvSource_t;
+};
 
 
 // Used fields for TexEnv for each function
@@ -217,6 +217,13 @@ void GL_Bind (const image_t *tex)
 	{
 		if (gl_state.textureTarget[tmu] != tex->target)
 		{
+			// switch texture target
+			if ((gl_config.platformId & HW_GF2MX) && tex->alphaType) // BUG001 FIX
+			{
+				LOG_STRING("// fix BUG001\n");
+				// bind any TEXTURE_2D texture within alpha channel
+				glBindTexture (GL_TEXTURE_2D, gl_dlightImage->texnum);
+			}
 			if (gl_state.textureTarget[tmu])
 				glDisable (gl_state.textureTarget[tmu]);
 			glEnable (tex->target);
@@ -228,6 +235,10 @@ void GL_Bind (const image_t *tex)
 		gl_state.currentBinds[tmu] = tex;
 		LOG_STRING(va("// GL_Bind(%s)\n", *tex->Name));
 		glBindTexture (tex->target, tex->texnum);
+#if MAX_DEBUG
+		GLenum err = glGetError ();
+		if (err) appWPrintf ("Bind: error with %s\n", *tex->Name);
+#endif
 		STAT(gl_stats.numBinds++);
 	}
 }
@@ -251,6 +262,10 @@ void GL_BindForce (const image_t *tex)
 	gl_state.currentBinds[tmu] = tex;
 	LOG_STRING(va("// GL_Bind(%s)\n", *tex->Name));
 	glBindTexture (tex->target, tex->texnum);
+#if MAX_DEBUG
+	GLenum err = glGetError ();
+	if (err) appWPrintf ("BindForce: error with %s\n", *tex->Name);
+#endif
 	STAT(gl_stats.numBinds++);
 }
 

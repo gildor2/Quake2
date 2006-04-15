@@ -1,0 +1,7 @@
+- allow custom targets:
+  - 'out "test"' -> print to makefile
+  ? should print after other text is out
+- allow "install" target (via "out") ?
+- "exit" command (break makefile creation; no needs to generate error - already have "error" cmd)
+  ? exit should simply return EOF for source file ("!exit" ??)
+  * this will allow creation of makefiles with "install" target only

@@ -230,6 +230,15 @@ void *CMemoryChain::Alloc (size_t size, int alignment)
 }
 
 
+int CMemoryChain::GetSize ()
+{
+	int n = 0;
+	for (CMemoryChain *c = this; c; c = c->next)
+		n += c->size;
+	return n;
+}
+
+
 #if MEM_STATS
 static void Cmd_Meminfo ()
 {

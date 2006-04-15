@@ -48,6 +48,8 @@ public:
 	void *operator new (size_t size, int dataSize = MEM_CHUNK_SIZE);
 	// deleting chain
 	void operator delete (void *ptr);
+	// stats
+	int GetSize ();
 };
 
 

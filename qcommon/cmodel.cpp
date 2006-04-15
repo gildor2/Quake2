@@ -29,8 +29,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include "qcommon.h"
+
 #include "../client/ref.h"	//!!!!! using RE_DrawTextXxx () for debug <------ REMOVE!
+bool SHOW_TRACE; //!!!! REMOVE
+
 #include "cmodel.h"
+#include "MapBrush.h"
 
 
 struct cnode_t
@@ -166,8 +170,7 @@ static void ReadSurfMaterials (const char *filename)
 		material_t	m;
 
 		// s points to material name string
-		char c = toLower (s[0]);
-		switch (c)
+		switch (toLower (s[0]))
 		{
 #define T(c,mat) case c: m = MATERIAL_##mat; break;
 		T('m',METAL);
@@ -415,7 +418,7 @@ static void LoadAreas (darea_t *data, int size)
 {
 	darea_t *in = data;
 
-	carea_t		*out;
+	carea_t *out;
 	out = map_areas = new (dataChain) carea_t [size];
 	numAreas = size;
 
@@ -452,14 +455,14 @@ inline void LoadEntityString (const char *data, int size)
 
 static void LoadQ2Map (bspfile_t *bsp)
 {
+	LoadPlanes (bsp->planes, bsp->numPlanes);
+	LoadNodes2 (bsp->nodes2, bsp->numNodes);
 	LoadSurfaces2 (bsp->texinfo2, bsp->numTexinfo);
 	LoadLeafs2 (bsp->leafs2, bsp->numLeafs);
 	LoadLeafBrushes (bsp->leafbrushes, bsp->numLeafbrushes);
-	LoadPlanes (bsp->planes, bsp->numPlanes);
 	LoadBrushes2 (bsp->brushes, bsp->numBrushes);
-	LoadBrushSides2 (bsp->brushsides, bsp->numBrushsides);
+	LoadBrushSides2 (bsp->brushsides, bsp->numBrushSides);
 	LoadSubmodels (bsp->models, bsp->numModels);
-	LoadNodes2 (bsp->nodes2, bsp->numNodes);
 	LoadAreas (bsp->areas, bsp->numAreas);
 	LoadAreaPortals (bsp->areaportals, bsp->numAreaportals);
 	LoadVisibility2 (bsp->vis, bsp->visDataSize);
@@ -500,13 +503,9 @@ static void LoadSurfaces1 (dBsp1Texinfo_t *data, int size)
 			flags |= SURF_WARP;
 		else if (!strncmp (out->texture, "sky", 3))
 			flags |= SURF_SKY;
-		else if (out->texture[0] == '+')
-		{
-			//!! animated texture
-		}
 		out->flags = flags;
 		out->value = miptex;		// index in textures lump
-		out->nexttexinfo = -1;		//?? no next texture
+		out->nexttexinfo = -1;		// no next texture: animation will be processed later
 	}
 	// load Q2 textures
 	LoadSurfaces2 (map_bspfile->texinfo2, size);
@@ -536,16 +535,33 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 {
 	if (size < 1) Com_DropError ("Map with no leafs");
 
-	dBsp2Leaf_t *out;
-	out = map_leafs = new (dataChain) dBsp2Leaf_t [size + 1];	// extra for box hull
-	numLeafs = size;
-
 	int i;
+
+	// count number of leafs, which should be generated: q1 bsp uses single leaf with
+	// CONTENTS_SOLID - so, we should clone this leaf ...
+	int numSolidLeafs = 0;
+	for (i = 0; i < numNodes; i++)
+	{
+		cnode_t *node = map_nodes + i;
+		// leaf[0] should be CONTENTS_SOLID (checked below)
+		// count number of links to leaf[0] and replace with new leaf index
+		// (leafs will be generated later)
+		if (node->children[0] == -1)
+			node->children[0] = -1 - (size + numSolidLeafs++);
+		if (node->children[1] == -1)
+			node->children[1] = -1 - (size + numSolidLeafs++);
+	}
+	Com_DPrintf ("Found %d solid leafs (have %d normal leafs)\n", numSolidLeafs, size);
+
+	dBsp2Leaf_t *out;
+	out = map_leafs = new (dataChain) dBsp2Leaf_t [size + numSolidLeafs + 1];	// extra for box hull
+	numLeafs = size + numSolidLeafs;
+
 	dBsp1Leaf_t *in;
 	emptyLeaf = -1;
 	for (i = 0, in = data; i < size; i++, in++, out++)
 	{
-		memcpy (out->mins, in->mins, sizeof(short)*6);	// copy mins[]+maxs[]
+//		memcpy (out->mins, in->mins, sizeof(short)*6);	// copy mins[]+maxs[] -- unused here
 		// find corresponding Q2 contents
 		static const int q1Contents[] =
 		{
@@ -572,13 +588,30 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 		out->numleafbrushes = 0;
 
 		//!! use in->visofs for cluster generation
-		out->cluster = -1;
+		out->cluster = 0;	//?? different! use visinfo
 		//?? use in->ambient_level[]
 		// find empty leaf
 		if (!out->contents && emptyLeaf < 0)
 			emptyLeaf = i;
 		//?? find max cluster num
 	}
+	numclusters = 1;		//?? different!
+
+	// generate solid leafs
+	for (i = 0; i < numSolidLeafs; i++, out++)
+	{
+		out->contents       = CONTENTS_SOLID;
+		out->area           = 0;
+		out->firstleafbrush = i;
+		out->numleafbrushes = 1;
+		out->cluster        = 0;	//?? or -1 ?
+	}
+
+	// create leafbrushes
+	map_leafBrushes = new (dataChain) unsigned short [numSolidLeafs+1]; // extra for box hull
+	numLeafBrushes = numBrushes = numSolidLeafs;
+	for (i = 0; i < numSolidLeafs; i++)
+		map_leafBrushes[i] = i;
 
 #if 0
 	int minCounts[16], surfCounts[16], leafCounts[16];
@@ -609,31 +642,182 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 }
 
 
+static cplane_t *FindPlane (const CVec3 &norm, float dist)
+{
+	cplane_t *p2 = map_planes;
+	for (int i = 0; i < numPlanes; i++, p2++)
+	{
+		if (p2->dist   != dist) continue;
+		if (p2->normal == norm) return p2;
+	}
+	//?? can remember new planes too, and use them when possible
+	p2 = new (dataChain) cplane_t;
+	p2->normal = norm;
+	p2->dist   = dist;
+	p2->SetType ();
+	p2->SetSignbits ();
+	return p2;
+}
+
+static cplane_t *FindBackplane (cplane_t *plane)
+{
+	cplane_t *p2 = map_planes;
+	CVec3 norm;
+	VectorNegate (plane->normal, norm);
+	float dist = -plane->dist;
+	for (int i = 0; i < numPlanes; i++, p2++)
+	{
+		if (p2->dist   != dist) continue;
+		if (p2->normal == norm) return p2;
+	}
+	//?? can remember new planes too, and use them when possible
+	p2 = new (dataChain) cplane_t;
+	p2->normal = norm;
+	p2->dist   = dist;
+	p2->SetType ();
+	p2->SetSignbits ();
+	return p2;
+}
+
+
+static void BuildBrushes1 (int numLeafsOrig)
+{
+	guard(BuildBrushes1);
+
+	// prepare
+	CBrush::mem = new CMemoryChain;
+	int64 time = appCycles64 ();
+
+	numBrushes = numLeafs - numLeafsOrig;
+	map_brushes = new (dataChain) cbrush_t [numBrushes+1];	// extra for box hull
+
+	int numBuiltBrushes = 0;
+	numBrushSides = 0;
+	CBrush *leafBrushes[MAX_MAP_LEAFS];
+	memset (leafBrushes, 0, sizeof(leafBrushes));
+	for (int model = 0; model < numcmodels; model++)
+	{
+		int	stack[MAX_TREE_DEPTH], sptr = 0;		// stack
+		CBrush *stack2[MAX_TREE_DEPTH];
+		int nodenum = map_cmodels[model].headnode;
+
+#define BSIZE		65536
+		// create large brush: should be allocated dynamically, because it will
+		// be modified and stored to leafBrushes[]
+		static const CBox largeBounds = {{-BSIZE,-BSIZE,-BSIZE}, {BSIZE,BSIZE,BSIZE}};
+		CBrush *brush = new (CBrush::mem) CBrush (largeBounds);
+
+		while (true)
+		{
+extern CBrush *drawBrush;
+			if (nodenum < 0)
+			{
+				int leafnum = -1 - nodenum;
+if (leafnum == numLeafsOrig+2285) {
+drawBrush = brush;
+appPrintf(S_GREEN"BRUSH: %X\ndepth:%d\n", brush, sptr);
+brush->Dump();
+};
+				assert(leafnum > 0 && leafnum < numLeafs);	// leaf[0] should be replaced
+				const dBsp2Leaf_t *leaf = map_leafs + leafnum;
+				if (leaf->contents == CONTENTS_SOLID)
+				{
+					assert(leafnum >= numLeafsOrig);
+					// remember brush
+					assert(!leafBrushes[leafnum]);
+					// build bevels for correct trace() against box
+					brush->AddBevels (FindPlane);
+//if (leafnum == numLeafsOrig+582) {
+//appPrintf(S_GREEN"BEVELED:\n");
+//brush->Dump();
+//}
+					leafBrushes[leafnum] = brush;
+					// count number of brush sides
+					for (CBrushSide *s = brush->sides; s; s = s->next)
+						if (s->plane->dist != BSIZE)
+							numBrushSides++;
+				}
+
+				if (!sptr)
+					break;							// whole tree visited
+				else
+				{
+					sptr--;
+					nodenum = stack[sptr];
+					brush   = stack2[sptr];
+					continue;
+				}
+			}
+
+			const cnode_t &node = map_nodes[nodenum];
+			// split brush with plane
+			CBrush *backBrush = brush->Split (node.plane);
+			if (!backBrush) Com_DropError ("NULL brush");
+			// remember back side ...
+			stack[sptr]  = node.children[1];
+			stack2[sptr] = backBrush;
+			sptr++;
+			// and continue with front side
+			nodenum = node.children[0];
+		}
+	}
+
+	// alloc brushsides
+	map_brushSides = new (dataChain) cbrushside_t [numBrushSides+6];	// extra for box hull
+
+	// convert CBrush to cbrush_t and cbrushside_t
+	int brushSideIdx = 0;
+	cbrushside_t *bs = map_brushSides;
+	cbrush_t *dst = map_brushes;
+	for (int i = numLeafsOrig; i < numLeafs; i++, dst++)
+	{
+		assert(map_leafBrushes[map_leafs[i].firstleafbrush] == dst - map_brushes);
+		dst->contents = CONTENTS_SOLID;
+		CBrush *brush = leafBrushes[i];
+		if (!brush)
+		{
+			Com_DPrintf ("brush %d not generated\n", i);
+			continue;
+		}
+		dst->firstbrushside = brushSideIdx;
+		for (CBrushSide *s = brush->sides; s; s = s->next)
+			if (s->plane->dist != BSIZE)			// ignore largeBounds sides
+			{
+				bs->plane   = (s->back) ? FindBackplane (s->plane) : s->plane;
+				bs->surface = &nullsurface;			//?? texture
+				bs++; brushSideIdx++;				// next brushside
+				dst->numsides++;
+			}
+	}
+
+	// finish
+	time = appCycles64 () - time;
+	Com_DPrintf ("Built %d brushes in %g msec, used temporary memory %dKb\n",
+		numBrushes, appDeltaCyclesToMsecf (time), CBrush::mem->GetSize() >> 10);
+//!!	delete CBrush::mem;
+
+	unguard;
+}
+
+
 static void LoadQ1Map (bspfile_t *bsp)
 {
+	LoadPlanes (bsp->planes, bsp->numPlanes);
+	LoadNodes1 (bsp->nodes1, bsp->numNodes);
 	LoadSurfaces1 (bsp->texinfo1, bsp->numTexinfo);
 	LoadLeafs1 (bsp->leafs1, bsp->numLeafs);
-	LoadPlanes (bsp->planes, bsp->numPlanes);
 	LoadSubmodels (bsp->models, bsp->numModels);
-	LoadNodes1 (bsp->nodes1, bsp->numNodes);
-//	LoadVisibility1 (&header->lumps[HL_LUMP_VISIBILITY]);
+	BuildBrushes1 (bsp->numLeafs);
+//!!	LoadVisibility1 (&header->lumps[HL_LUMP_VISIBILITY]);
 
 #if MAX_DEBUG
 	if (map_cmodels[0].headnode)
 		Com_DropError ("Q1/HL map has invalid headnode = %d", map_cmodels[0].headnode);
 #endif
 
-	// place for box hull
-	static cbrush_t q1Brushes[1];
-	static cbrushside_t q1BrushSides[6];
-	static unsigned short q1LeafBrushes[1];
-	map_brushes     = q1Brushes;
-	map_brushSides  = q1BrushSides;
-	map_leafBrushes = q1LeafBrushes;
-	numBrushes = numBrushSides = numLeafBrushes = 0;
-
 	//!!!! TEMP
-	numvisibility = 0;
+	map_visibility = NULL;
+	numvisibility  = 0;
 	//!!!! ^^^^
 
 	// Q1 areas: simulate loading (create 1 area)
@@ -852,12 +1036,8 @@ int	CM_HeadnodeForBox (const CBox &box)
 	Point info
 -----------------------------------------------------------------------------*/
 
-bool SHOW_TRACE=false; //!!!!
-
 int CM_PointLeafnum (const CVec3 &p, int num)
 {
-if (SHOW_TRACE)
-RE_DrawTextLeft(va("point: %g %g %g",VECTOR_ARG(p)),RGB(0,0,0));
 	guard(CM_PointLeafnum);
 	if (!numNodes) return 0;			// map is not yet loaded
 	while (num >= 0)
@@ -865,14 +1045,6 @@ RE_DrawTextLeft(va("point: %g %g %g",VECTOR_ARG(p)),RGB(0,0,0));
 		cnode_t *node = map_nodes + num;
 		float d = node->plane->DistanceTo (p);
 		num = node->children[IsNegative(d)];
-//!!!
-if (SHOW_TRACE) {
-cplane_t *plane=node->plane;
-if (IsNegative(d))
-RE_DrawTextLeft(va("(%d): %g %g %g / %g  (%g)",num,VECTOR_ARG(plane->normal),plane->dist, d),RGB(0,1,1));
-else
-RE_DrawTextLeft(va("(%d): %g %g %g / %g  (%g)",num,VECTOR_ARG(plane->normal),plane->dist, d),RGB(0,1,1));
-}
 	}
 
 	c_pointcontents++;					// stats
@@ -1032,7 +1204,7 @@ static void ClipBoxToBrush (const cbrush_t &brush)
 
 	for (i = 0, side = &map_brushSides[brush.firstbrushside]; i < brush.numsides; i++, side++)
 	{
-		float	d1, d2, dist, f;
+		float	d1, d2, dist;
 
 		cplane_t *plane = side->plane;
 
@@ -1074,6 +1246,8 @@ static void ClipBoxToBrush (const cbrush_t &brush)
 			d1 = dot(plane->normal, tr.start) - dist;
 			d2 = dot(plane->normal, tr.end) - dist;
 		}
+if (SHOW_TRACE) RE_DrawTextLeft(va("plane: %g %g %g : %g -- d1=%g d2=%g (%s)",
+VECTOR_ARG(plane->normal),plane->dist, d1, d2, side->surface->fullName),RGB(1,0,0));
 		// d1 and d2: 0 -- on plane, <0 -- inside brush plane, >0 -- outside brush plane
 
 		if (d1 > 0 && d2 > 0)
@@ -1082,6 +1256,7 @@ static void ClipBoxToBrush (const cbrush_t &brush)
 			 * 1) d1 > d2    -- enterfrac will be > 1
 			 * 2) d1 < d2    -- leavefrac will be < 0
 			 */
+if (SHOW_TRACE) RE_DrawTextLeft("d1>0 && d2>0",RGB(0,1,0));
 			return;
 		}
 
@@ -1092,6 +1267,7 @@ static void ClipBoxToBrush (const cbrush_t &brush)
 		if (d2 > 0) getout   = true;	// endpoint is not inside this brush
 
 		// crosses face
+		float f;
 		if (d1 > d2)
 		{	// enter
 			f = (d1-DIST_EPSILON) / (d1 - d2);
@@ -1109,17 +1285,24 @@ static void ClipBoxToBrush (const cbrush_t &brush)
 				leavefrac = f;
 		}
 
-		if (enterfrac >= leavefrac) return;		// intersects (at least) 2 faces outside the brush
+if (SHOW_TRACE) RE_DrawTextLeft(va("f=%g => ef=%g : lf=%g",f,enterfrac,leavefrac));
+		if (enterfrac >= leavefrac)
+{
+if (SHOW_TRACE) RE_DrawTextLeft("** END: enterfrac < leavefrac",RGB(0.7,0.6,0.5));
+			return;		// intersects (at least) 2 faces outside the brush
+}
 	}
 
 	if (!startout)
 	{
+if (SHOW_TRACE) RE_DrawTextLeft("** END: startout",RGB(0.7,0.6,0.5));
 		// original point was inside brush
 		tr.trace.startsolid = true;
 		tr.trace.allsolid   = !getout;
 		return;
 	}
 
+if (SHOW_TRACE) RE_DrawTextLeft(va("** END: ef=%g (>-1 & <%g)",enterfrac,tr.trace.fraction),RGB(0.7,0.6,0.5));
 	if (enterfrac > -1 && enterfrac < tr.trace.fraction)
 	{
 		if (enterfrac < 0)			// when startsolid && allsolid
@@ -1128,6 +1311,7 @@ static void ClipBoxToBrush (const cbrush_t &brush)
 		tr.trace.plane    = *clipplane;
 		tr.trace.surface  = leadside->surface;
 		tr.trace.contents = brush.contents;
+if (SHOW_TRACE) RE_DrawTextLeft(va("* best: plane=%g %g %g / %g", VECTOR_ARG(clipplane->normal),clipplane->dist),RGB(1,0.3,0.3));
 	}
 }
 
@@ -1143,6 +1327,7 @@ static void TraceToLeaf (int leafnum)
 	for (int i = 0; i < leaf->numleafbrushes; i++)
 	{
 		cbrush_t &b = map_brushes[map_leafBrushes[leaf->firstleafbrush + i]];
+if (SHOW_TRACE) RE_DrawTextLeft(va("--- %d cont=%X numSides=%d ---",map_leafBrushes[leaf->firstleafbrush+i], b.contents, b.numsides),RGB(0.3,1,0.3));
 		if (b.traceFrame == traceFrame)
 			continue;					// already checked this brush in another leaf
 		b.traceFrame = traceFrame;
@@ -1231,92 +1416,6 @@ static void TestInLeaf (int leafnum)
 			continue;
 		if (TestBoxInBrush (b)) return;
 	}
-}
-
-/*-----------------------------------------------------------------------------
-	Quake1 & Half-Life trace support
------------------------------------------------------------------------------*/
-
-static cplane_t *InvertPlane (const cplane_t *plane)
-{
-	static cplane_t invPlane;
-	VectorNegate (plane->normal, invPlane.normal);
-	FNegate (plane->dist, invPlane.dist);
-	return &invPlane;
-}
-
-static void BoxTest1 (const CBox &bounds, int headnode)
-{
-	guard(BoxTest1);
-
-	int	stack1[MAX_TREE_DEPTH], sptr = 0;		// stack
-	cplane_t *stack2[MAX_TREE_DEPTH];			// stack
-	int count = 0;
-	int _topnode = -1;
-	int nodenum = headnode;
-	// we should always start with headnode >= 0 (not in leaf), so `plane' will be initialized ...
-	assert(headnode >= 0);
-	cplane_t *plane = NULL;
-
-	//!! HERE: side==2 will use inverted plane, side==1 will use normal plane
-	// NOTE: stack2[] should never contain plane from InvertPlane()
-	while (true)
-	{
-		if (nodenum < 0)
-		{
-			// test leaf contents
-			dBsp2Leaf_t *leaf = &map_leafs[-1 - nodenum];
-			if (leaf->contents & tr.contents)
-			{
-RE_DrawTextLeft(va("leaf: %d",-1-nodenum));
-				// found ...
-				tr.trace.startsolid = tr.trace.allsolid = true;
-				tr.trace.fraction = 0;
-				tr.trace.contents = leaf->contents;
-				tr.trace.plane    = *plane;
-				// tr.trace.surface = ? (already set to nullsurface)
-				return;
-			}
-RE_DrawTextLeft(va("*leaf: %d (%X)",-1-nodenum,leaf->contents));
-
-			// continue tree browsing
-			if (!sptr)
-				break;							// whole tree visited
-			else
-			{
-				sptr--;
-				nodenum = stack1[sptr];
-				plane   = InvertPlane (stack2[sptr]);
-				continue;
-			}
-		}
-
-		const cnode_t &node = map_nodes[nodenum];
-		plane = node.plane;
-CVec3 cnt;bounds.GetCenter(cnt);
-float dst=plane->DistanceTo(cnt);
-		switch (BOX_ON_PLANE_SIDE(bounds, *plane))
-		{
-		case 1:
-			nodenum = node.children[0];
-RE_DrawTextLeft(va("1(%d): %g %g %g / %g   (%g)",nodenum,VECTOR_ARG(plane->normal),plane->dist,dst));
-			break;
-		case 2:
-			nodenum = node.children[1];
-RE_DrawTextLeft(va("2(%d): %g %g %g / %g   (%g)",nodenum,VECTOR_ARG(plane->normal),plane->dist,dst));
-			plane   = InvertPlane (plane);
-			break;
-		default:
-RE_DrawTextLeft(va("ON(%d): %g %g %g / %g -> %d,%d  (%g)",nodenum,VECTOR_ARG(plane->normal),plane->dist,node.children[0],node.children[1],dst));
-			// go down both
-			nodenum = node.children[0];
-			stack1[sptr] = node.children[1];
-			stack2[sptr] = node.plane;
-			sptr++;
-		}
-	}
-
-	unguard;
 }
 
 
@@ -1499,18 +1598,13 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CB
 			box.maxs[i] = start[i] + tr.bounds.maxs[i] + 1;
 		}
 
-		if (map_bspfile->type == map_q1 || map_bspfile->type == map_hl)
-			BoxTest1 (box, headnode);
-		else
+		int leafs[1024];
+		int numLeafs = CM_BoxLeafnums (box, ARRAY_ARG(leafs), NULL, headnode);
+		for (i = 0; i < numLeafs; i++)
 		{
-			int leafs[1024];
-			int numLeafs = CM_BoxLeafnums (box, ARRAY_ARG(leafs), NULL, headnode);
-			for (i = 0; i < numLeafs; i++)
-			{
-				TestInLeaf (leafs[i]);
-				if (tr.trace.allsolid)	// always set when 1st intersection by CM_TestBoxInBrush()
-					break;
-			}
+			TestInLeaf (leafs[i]);
+			if (tr.trace.allsolid)	// always set when 1st intersection by CM_TestBoxInBrush()
+				break;
 		}
 		tr.trace.endpos = start;
 		trace = tr.trace;

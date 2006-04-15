@@ -1,0 +1,8 @@
+BUG001: NV, GeForce2 MX, WinXP, GL_NV_texture_rectangle:
+* tested 10.04.2006 with drivers 84.21 on 2MX/200 and GF2MX/400; tested before with 56.64 on GF2MX/400
+- when mining textures with GL_TEXTURE_2D and GL_TEXTURE_RECTANGLE_NV within a single texture unit,
+  switching texture target from one to another may result in lost alpha-channel of texture (next texture
+  will be painted as it does not contains alpha-channel)
+FIX (found by me):
+a) make all textures to have alpha-channel
+b) when changing texture _target_, bind any texture within alpha-channel and target GL_TEXTURE_2D

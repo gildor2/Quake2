@@ -29,6 +29,7 @@ GRAPHICS
 * "pier2": minlight (cmdline)
 * "ruins3": minlight
 - "urban": have "light" in entstring, but, seems, no ambient while radiocity
+* "e1m1" (q1): have dynamic lightmaps without slow lightstyles (with fast styles only)
 ------------------------------
 - "tchurch-beta3": too many dynamic lightmaps (slower than oldgl; oldgl is slow)
 ------------------------------

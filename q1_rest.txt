@@ -1,7 +1,7 @@
 * lightmaps: q1: when no lightmap on non-warp surface, it will be completely dark ?
 
-- BrushTrace()
-- BoxTrace() -- TraceToLeaf() + TestInLeaf()
+* BrushTrace()
+* BoxTrace() -- TraceToLeaf() + TestInLeaf()
 
 - texture loading:
   * from map (q1)
@@ -27,4 +27,7 @@
 * hl: sky in entity
 - q1/hl: check lightstyle strings
 ? force ext protocol for clients
-- check animation cycle in q1 and hl for '+0texture'
+
+?! ents: convert q1 NPC to q2 NPC
+- check HL animMap.freq (HL viewer: 10 Hz; Q1 - 5 Hz; Q2 - 2 Hz)
+- hl: map 'bounce' have large water area with lightmaps; water activetad by special texture?

@@ -232,6 +232,7 @@ public:
 		byte	lightStyles[4];	// 0 - unused; can be 1..31
 		unsigned lightStyles_i;
 	};
+	bool	fastStylesOnly;		// when true, surfaces with this shader will not have static lightmaps (dark)
 	int		sortIndex;
 	int		sortParam;			// values from sortParam_t
 	int		sortParam2;			// secondary sort values (main image, lightmap num etc.)
@@ -344,9 +345,14 @@ void	ResetShaders ();				// should be called every time before loading a new map
 #define SHADER_CHECKLOADED	0x80000000	// if shader loaded, return it, else - NULL
 
 shader_t *FindShader (const char *name, unsigned style = 0);
+
+// modify current shader, possibly duplicate shader and modify its copy
 shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber);
-shader_t *SetShaderLightstyles (shader_t *shader, unsigned styles);
+shader_t *SetShaderLightstyles (shader_t *shader, unsigned styles, bool fastOnly);
 shader_t *GetAlphaShader (shader_t *shader);
+
+void SetShaderAnimFreq (shader_t *shader, int freq);
+
 shader_t *GetShaderByNum (int num);		//?? for backend: sort index -> shader
 
 

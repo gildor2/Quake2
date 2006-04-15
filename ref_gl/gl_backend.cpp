@@ -8,6 +8,12 @@
 #include "gl_buffers.h"
 #include "protocol.h"		//!! for RF_XXX consts only (FULLBRIGHT, BBOX, DEPTHHACK)!
 
+
+//!!!!! REMOVE !!!!!!
+#include "MapBrush.h"
+CBrush *drawBrush;
+
+
 namespace OpenGLDrv {
 
 
@@ -753,11 +759,9 @@ static void PreprocessShader (shader_t *sh)
 			{
 				if (!(mask & 1)) continue;
 
-				st->mapImage[0] = gl_dlightImage;
-				if (!numTmpStages)
-					st->glState = lmStage->glState;
-				else
-					st->glState = BLEND(1,1);		// src + dst
+				st->mapImage[0]    = gl_dlightImage;
+				// set glState
+				st->glState        = (!numTmpStages) ? lmStage->glState : BLEND(1,1); // src+dst
 				// set rgba
 				st->alphaGenType   = ALPHAGEN_CONST;
 				st->rgbGenType     = RGBGEN_CONST;
@@ -779,14 +783,12 @@ static void PreprocessShader (shader_t *sh)
 			for (i = 0; i <= 4; i++)		// last iteration reserved for main (slow) lightmap
 			{
 				byte style = (i < 4 ? currentShader->lightStyles[i] : 0);	// if shader have less than 4 styles, we will get 0 earlier
+				if (!style && currentShader->fastStylesOnly) break;
 
 				// set image
-				st->mapImage[0] = lmStage->mapImage[0];
+				st->mapImage[0]  = lmStage->mapImage[0];
 				// set glState
-				if (!numTmpStages)
-					st->glState = lmStage->glState;
-				else
-					st->glState = BLEND(1,1);		// src + dst
+				st->glState      = (!numTmpStages) ? lmStage->glState : BLEND(1,1); // src+dst
 				// set rgba
 				st->alphaGenType = ALPHAGEN_CONST;
 				st->rgbGenType   = RGBGEN_CONST;
@@ -827,23 +829,19 @@ static void PreprocessShader (shader_t *sh)
 		// select stage image from animation
 		if (stage->numAnimTextures > 1)
 		{
-			int		n;
-
+			int n;
 			if (currentEntity == &gl_entities[ENTITYNUM_WORLD] || !stage->frameFromEntity)
 				n = appFloor (vp.time * stage->animMapFreq);
 			else
 				n = currentEntity->frame;
 			const image_t *img = st->mapImage[0] = stage->mapImage[n % stage->numAnimTextures];
 			// determine: whether image have alpha-channel
-			if (img && img->alphaType)
-				st->imgNoAlpha = false;
-			else
-				st->imgNoAlpha = true;
+			st->imgNoAlpha = !(img && img->alphaType);
 		}
 
 		/*---------- fullbright/lightmap ---------------*/
 		// fix glState if current stage is first after lightmap with r_fullbright!=0
-		if (debugMode == DEBUG_FULLBRIGHT && glState != -1)
+		if (debugMode == DEBUG_FULLBRIGHT && glState != 0xFFFFFFFF)
 		{
 			st->glState = glState;
 			glState = 0xFFFFFFFF;
@@ -1249,7 +1247,7 @@ static void FlushShader ()
 	if (!gl_numIndexes) return;					// buffer is empty
 	if (!currentShader->numStages) return;		// wrong shader?
 
-//	DrawTextLeft (va("FlushShader(%s, %d, %d)\n", *currentShader->Name, numVerts, numIndexes));//!!!
+//	DrawTextLeft (va("FlushShader(%s, %d, %d)\n", *currentShader->Name, gl_numVerts, gl_numIndexes));//!!!
 	LOG_STRING (va("*** FlushShader(%s, %d, %d) ***\n", *currentShader->Name, gl_numVerts, gl_numIndexes));
 
 	PreprocessShader (currentShader);
@@ -2005,6 +2003,34 @@ void BK_DrawScene ()
 		ShowLights ();
 #endif
 
+#if 1
+//!!!!!
+	if (drawBrush)
+	{
+		DrawTextLeft ("BRUSH!");
+		glLoadMatrixf (&vp.modelMatrix[0][0]);
+		GL_SetMultitexture (0);
+		GL_CullFace (CULL_NONE);
+		GL_State (BLEND(/*S_ALPHA,M_S_ALPHA*/1,1)|GLSTATE_DEPTHWRITE);
+		GL_DepthRange (DEPTH_NEAR);
+		glDisableClientState (GL_COLOR_ARRAY);
+		for (CBrushSide *s = drawBrush->sides; s; s = s->next)
+		{
+			glColor4f (0.1, 0.1, 0.3, 0.4);
+			glBegin (GL_TRIANGLE_FAN);
+			CBrushVert *v;
+			for (v = s->verts; v; v = v->next)
+				glVertex3f (VECTOR_ARG((*v->v)));
+			glEnd ();
+//			FlashColor ();
+			glColor3f (1,0,0);
+			glBegin (GL_LINE_LOOP);
+			for (v = s->verts; v; v = v->next)
+				glVertex3f (VECTOR_ARG((*v->v)));
+			glEnd ();
+		}
+	}
+#endif
 	if (gl_finish->integer == 2) glFinish ();
 
 	unguard;

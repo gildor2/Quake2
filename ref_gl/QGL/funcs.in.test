@@ -10,6 +10,7 @@ void Test3 (void); 	// and again
 void *Ptr3 (void) NAME Ptr3A;
 const GLubyte * GetString (GLenum name);
 GLboolean AreTexturesResident (GLsizei n, const GLuint *textures, GLboolean *residences);
+const char *NoLog (int a, char b) NOLOG
 
 #platform win32
 void wglTestFunc (float tst) ARGS

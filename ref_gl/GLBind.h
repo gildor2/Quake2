@@ -27,6 +27,7 @@ struct GL_t
 	void	(APIENTRY * Finish) (void);
 	void	(APIENTRY * Fogf) (GLenum pname, GLfloat param);
 	void	(APIENTRY * Fogfv) (GLenum pname, const GLfloat *params);
+	GLenum	(APIENTRY * GetError) (void);
 	void	(APIENTRY * GetIntegerv) (GLenum pname, GLint *params);
 	const GLubyte *	(APIENTRY * GetString) (GLenum name);
 	void	(APIENTRY * LoadIdentity) (void);
@@ -114,6 +115,7 @@ extern GL_t GL;
 #define glFinish	GL.Finish
 #define glFogf	GL.Fogf
 #define glFogfv	GL.Fogfv
+#define glGetError	GL.GetError
 #define glGetIntegerv	GL.GetIntegerv
 #define glGetString	GL.GetString
 #define glLoadIdentity	GL.LoadIdentity

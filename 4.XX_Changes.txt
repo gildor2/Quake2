@@ -224,6 +224,7 @@ Configuration
               quake2 -nointro -nosound -timedemo -demomap demo1 -set nextserver quit
 - support for Quake3 player models; simply put model.pk3 into baseq2 directory and rename file to .pak
   (or use "loadpak model.pk3" command); this feature requires extended protocol support
+- support for Kingpin, Quake1 and Half-Life maps
 
 Server
 ------

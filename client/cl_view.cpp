@@ -570,11 +570,6 @@ static char *ModelName (int modelIndex)
 
 static void DrawSurfInfo ()
 {
-	CVec3	start, end;
-	csurface_t	*surf;
-	CVec3	norm;
-	const char *s;
-
 	static const flagInfo_t surfNames[] = {
 #define T(name)		{SURF_##name, #name}
 		T(LIGHT), T(SLICK), T(SKY), T(WARP),
@@ -602,6 +597,7 @@ static void DrawSurfInfo ()
 		"dirt"
 	};
 
+	CVec3 start, end;
 	start = cl.refdef.vieworg;
 	AngleVectors (cl.refdef.viewangles, &end, NULL, NULL);
 	end.Scale (500);
@@ -609,7 +605,14 @@ static void DrawSurfInfo ()
 
 	unsigned cont = r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER;
 	trace_t	trace;
+extern bool SHOW_TRACE;//!!!!!
+SHOW_TRACE=true;
+//static CBox nullBox = {{-2,-2,-2},{2,2,2}};
+static CBox nullBox = {{-10,-10,-10},{10,10,10}};
+//static CBox nullBox = {{-20,-20,-20},{20,20,20}};
 	CM_BoxTrace (trace, start, end, nullBox, 0, cont);
+	V_AddLight(trace.endpos, 30, 0.3, 1, 0);	//?? keep or remove? intens > trace bounds!
+SHOW_TRACE=false;
 	if (!(r_surfinfo->integer & 2))
 		CL_EntityTrace (trace, start, end, nullBox, cont);
 
@@ -617,16 +620,16 @@ static void DrawSurfInfo ()
 	{
 		RE_DrawTextLeft ("Surface info:\n-------------", RGB(0.4,0.4,0.6));
 		RE_DrawTextLeft (va("Point: %g  %g  %g", VECTOR_ARG(trace.endpos)), RGB(0.2,0.4,0.1));
-		surf = trace.surface;
+		csurface_t *surf = trace.surface;
+		RE_DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARG(trace.plane.normal)), RGB(0.2,0.4,0.1));
 		if (surf->fullName[0])		// non-null surface
 		{
 			RE_DrawTextLeft (va("Texture: %s", surf->fullName), RGB(0.2,0.4,0.1));
-			norm = trace.plane.normal;
-			RE_DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARG(norm)), RGB(0.2,0.4,0.1));
 			if (surf->value)
 				RE_DrawTextLeft (va("Value: %d", surf->value), RGB(0.2,0.4,0.1));
 			DrawFlag (surf->flags, ARRAY_ARG(surfNames), "SURF_");
 			// material
+			const char *s;
 			if (surf->material >= MATERIAL_FIRST && surf->material <= MATERIAL_LAST)
 				s = materialNames[surf->material];
 			else
@@ -653,18 +656,6 @@ static void DrawSurfInfo ()
 
 static void DrawOriginInfo ()
 {
-//!!!!! TEST !!!!!!!
-extern bool SHOW_TRACE;
-trace_t trace;
-CBox bounds = {{-32,-32,-32}, {32,32,32}};
-SHOW_TRACE=true;
-CM_BoxTrace (trace, cl.refdef.vieworg, cl.refdef.vieworg, bounds, 0, MASK_ALL);
-if (trace.allsolid)
-{
-RE_DrawTextLeft (va("trace: %g %g %g", VECTOR_ARG(trace.plane.normal)));
-DecodeContents (trace.contents);
-}
-
 	RE_DrawTextLeft ("Player position:\n----------------", RGB(0.4,0.4,0.6));
 	RE_DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), RGB(0.2,0.4,0.1));
 
@@ -676,7 +667,6 @@ DecodeContents (trace.contents);
 	RE_DrawTextLeft (va("Leaf: %d, cluster: %d, area: %d", i, CM_LeafCluster (i), CM_LeafArea (i)), RGB(0.2,0.4,0.1));
 	DecodeContents (CM_LeafContents (i));
 	RE_DrawTextLeft ("", RGB(0,0,0));	// empty line
-SHOW_TRACE=false;//!!!!
 }
 
 #endif // NO_DEBUG

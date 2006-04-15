@@ -4,7 +4,8 @@
 #	Defines
 #------------------------------------------------------------------------------
 
-sub TEST {0}	# 0|1 - work|test
+sub TEST {0}		# 0|1 - work | test
+sub LOG_ERRS {0}	# 0|1 - normal log | log errors only
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -196,6 +197,31 @@ EOF
 			$i++;
 		}
 
+		if (LOG_ERRS) {
+			# special mode: log errors only
+			# generate call to a library function
+			my $void = $type =~ /\w*void$/;		# may be GLvoid
+			if (!$void) {
+				print (CODE "\t$type ret = ");
+			} else {
+				print (CODE "\t");
+			}
+			print (CODE "lib.$func (");
+			# make arguments for call
+			$i = 0;
+			for $s (@parm)
+			{
+				print (CODE ", ") if $i > 0;
+				print (CODE $s);
+				$i++;
+			}
+			print (CODE ");\n");
+			print (CODE "\tGLenum err = lib.GetError ();\n\tif (err) $log\"ERROR: %X in %s\\n\", err, \"$funcname\");\n");
+			print (CODE "\treturn ret;\n") if !$void;
+			print (CODE "}\n");
+			return;
+		}
+
 		# generate logging
 		if ($end =~ /ARGS/)
 		{
@@ -237,6 +263,8 @@ EOF
                 $i++;
 			}
 			print (CODE ");\n");
+		} elsif ($end =~ /NOLOG/) {
+			# nothing
 		} elsif ($end =~ /;/) {
 			#................... log function name only ..........................
 			print (CODE "\t$log\"%s\\n\", \"", $funcname, "\");\n");	# make fprintf(..., "%s", "glFunction\n");

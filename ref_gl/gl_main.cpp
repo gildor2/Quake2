@@ -291,6 +291,30 @@ bool Init ()
 		return false;
 	}
 
+	/*------------------- Check platform -----------------------*/
+	//?? move to gl_interface.cpp ??
+	//!! add cvar to disable videocard detection (for bugtest)
+	const char *vendor = (const char*)glGetString (GL_VENDOR);
+	const char *render = (const char*)glGetString (GL_RENDERER);
+	if (!strnicmp (vendor, "NVIDIA ", 7))
+	{
+		Com_DPrintf ("NV");
+		gl_config.platformId = HW_NV;
+		if (!strnicmp (render, "GeForce2 MX", 11))
+		{
+			Com_DPrintf ("/GF2MX");
+			gl_config.platformId |= HW_GF2MX;
+		}
+	}
+	else if (!strnicmp (vendor, "ATI ", 4))
+	{
+		Com_DPrintf ("ATI");
+		gl_config.platformId = HW_ATI;
+	}
+	else
+		Com_DPrintf ("GENERIC");
+	Com_DPrintf (" video detected\n");
+
 	/*------------------ Check extensions ----------------------*/
 	//?? move this part to gl_interface.cpp ??
 	QGL_InitExtensions ();
@@ -335,7 +359,7 @@ bool Init ()
 	{
 		gl_config.formatSolid  = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 		gl_config.formatAlpha  = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;	// DXT5 - compressed alpha; DXT3 - uncompressed alpha
-		gl_config.formatAlpha1 = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;	// RGBA DXT1 - 1bit alpha (bugs with GF FX5200), DXT5 - 8bit alpha
+		gl_config.formatAlpha1 = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;	// RGBA DXT1 - 1bit alpha (bugs with NV), DXT5 - 8bit alpha
 	}
 
 	if (GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))

@@ -482,14 +482,15 @@ shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber)
 }
 
 
-shader_t *SetShaderLightstyles (shader_t *shader, unsigned styles)
+shader_t *SetShaderLightstyles (shader_t *shader, unsigned styles, bool fastOnly)
 {
 	if (!styles || gl_config.vertexLight) return shader;
 
 	TString<64> NewName;
 	NewName = shader->Name;
 	char *s = NewName.chr (0);			// find string end
-	*s++ = '$';
+	*s++ = '$';							// delimiter
+	if (fastOnly) *s++ = '-';			// "no slow lightstyles" flag
 
 	for (unsigned m = styles; m; m >>= 8)
 	{
@@ -506,8 +507,9 @@ shader_t *SetShaderLightstyles (shader_t *shader, unsigned styles)
 	if (newshader) return newshader;
 
 	ExtractShader (shader);
-	sh.Name          = NewName;
-	sh.lightStyles_i = styles;
+	sh.Name           = NewName;
+	sh.lightStyles_i  = styles;
+	sh.fastStylesOnly = fastOnly;
 	return CreateShader ();
 }
 
@@ -544,6 +546,24 @@ shader_t *GetAlphaShader (shader_t *shader)
 
 	shader->alphaShader = FinishShader ();
 	return shader->alphaShader;
+}
+
+
+void SetShaderAnimFreq (shader_t *shader, int freq)
+{
+	int i;
+	shaderStage_t **pstage;
+	assert(shader);
+	if (shader->Name[0] == '*') return;	// system shader
+	for (i = 0, pstage = shader->stages; i < shader->numStages; i++, pstage++)
+	{
+		shaderStage_t *st = *pstage;
+		if (st->numAnimTextures > 1)
+		{
+			st->animMapFreq     = freq;
+			st->frameFromEntity = false;
+		}
+	}
 }
 
 
@@ -727,7 +747,7 @@ shader_t *FindShader (const char *name, unsigned style)
 	if (style & SHADER_ANIM)
 	{
 		const char *pname = strchr (name, 0) + 1;
-		stage->animMapFreq = 2;			// standard Quake2 animation frequency
+		stage->animMapFreq     = 2;		// standard Quake2 animation frequency
 		stage->frameFromEntity = true;	// entities can animate with a different frames than world
 		for (int i = 1; *pname && i < MAX_STAGE_TEXTURES; i++, pname = strchr(pname, 0)+1)
 		{
