@@ -744,6 +744,7 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/MapBrush.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
@@ -1559,6 +1560,9 @@ Release/obj-win32/q2stat/cl_ents.obj : client/cl_ents.cpp $(DEPENDS)
 Release/obj-win32/q2stat/cl_pred.obj : client/cl_pred.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_pred.obj" client/cl_pred.cpp
 
+Release/obj-win32/q2stat/cl_view.obj : client/cl_view.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_view.obj" client/cl_view.cpp
+
 DEPENDS = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
@@ -1608,9 +1612,6 @@ Release/obj-win32/q2stat/cl_playermodel.obj : client/cl_playermodel.cpp $(DEPEND
 
 Release/obj-win32/q2stat/cl_scrn.obj : client/cl_scrn.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_scrn.obj" client/cl_scrn.cpp
-
-Release/obj-win32/q2stat/cl_view.obj : client/cl_view.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_view.obj" client/cl_view.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \

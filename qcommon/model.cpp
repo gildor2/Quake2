@@ -230,6 +230,12 @@ static void ProcessQ2BspFile (bspfile_t *f)
 	for (i = 0; i < f->numFaces; i++)
 		if (f->faces[i].lightofs > f->lightDataSize)
 			f->faces[i].lightofs = -1;
+
+	// get numClusters (have in dBsp2Vis_t, but Q2 recomputes this ...)
+	f->numClusters = 0;
+	for (i = 0; i < f->numLeafs; i++)
+		if (f->leafs2[i].cluster >= f->numClusters)
+			f->numClusters = f->leafs2[i].cluster + 1;
 }
 
 
@@ -255,27 +261,6 @@ static void ProcessQ1BspFile (bspfile_t *f)
 		// silly check for correct lightmaps
 		if (face.lightofs > f->lightDataSize)
 			face.lightofs = -1;
-#if 0
-		// check: q1 surface may be without slow lightstyle - should insert one
-		bool found = 0;
-		for (j = 0; j < 4; j++)
-		{
-			int st = face.styles[j];
-			if (st == 255) break;
-			if (st == 0 || st >= 32)
-			{
-				found = true;
-				break;
-			}
-		}
-		if (found) continue;
-		// insert slow lightstyle 0 with lightofs == -1
-		for (j = 3; j > 0; j++)
-		{
-			face.styles[j] = face.styles[j-1];
-			face.light
-		}
-#endif
 	}
 }
 
@@ -316,6 +301,86 @@ static void LoadQ1Submodels (bspfile_t *f, dBsp1Model_t *data)
 	}
 }
 
+static void DecompressVis (byte *dst, void *vis, int pos, int rowSize)
+{
+	if (pos == -1)
+	{
+		memset (dst, 0xFF, rowSize);	// all visible
+		dst += rowSize;
+		return;
+	}
+
+	byte *src = (byte*)vis + pos;
+	// decompress vis
+	for (int j = rowSize; j; /*empty*/)
+	{
+		byte c = *src++;
+		if (c)
+		{	// non-zero byte
+			*dst++ = c;
+			j--;
+		}
+		else
+		{	// zero byte -- decompress RLE data (with filler 0)
+			c = *src++;				// count
+			c = min(c, j);			// should not be, but ...
+			j -= c;
+			while (c--)
+				*dst++ = 0;
+		}
+	}
+}
+
+static void LoadQ2Vis (bspfile_t *f, dBsp2Vis_t *vis, int size)
+{
+	if (!size)
+	{
+		if (f->numClusters > 1)
+		{
+			if (developer->integer)
+				appWPrintf ("WARNING: map with cluster info but without visinfo\n");
+		}
+		f->numClusters = 0;
+		f->visInfo     = NULL;
+		return;
+	}
+	// NOTE: 'size' is ignored later
+
+	int rowSize;
+	f->visRowSize = rowSize = (f->numClusters + 7) >> 3;
+
+	// decompress visinfo
+	byte *dst = new (f->extraChain) byte [rowSize * f->numClusters];
+	f->visInfo = dst;
+	for (int i = 0; i < f->numClusters; i++, dst += rowSize)
+		DecompressVis (dst, vis, vis->bitofs[i][DVIS_PVS], rowSize);
+	Com_DPrintf ("Decompressed vis: %d -> %d bytes\n", size, rowSize * f->numClusters);
+}
+
+static void LoadQ1Vis (bspfile_t *f, byte *vis, int size)
+{
+	if (!size)
+	{
+		f->numClusters = 0;
+		f->visInfo     = NULL;
+		return;
+	}
+	// NOTE: 'size' is ignored later
+
+	// create dummy clusters: 1 cluster per 1 leaf
+	f->numClusters = f->numLeafs;
+
+	int rowSize;
+	f->visRowSize = rowSize = (f->numClusters + 7) >> 3;
+	byte *dst = new (f->extraChain) byte [rowSize * f->numClusters];
+	f->visInfo = dst;
+
+	// start from leaf #1 (leaf 0 is CONTENTS_SOLID and have no stored visinfo)
+	for (int i = 1; i < f->numLeafs; i++, dst += rowSize)
+		DecompressVis (dst, vis, f->leafs1[i].visofs, rowSize);
+	Com_DPrintf ("Decompressed vis: %d -> %d bytes\n", size, rowSize * f->numClusters);
+}
+
 static int CheckLump (int lump, void **ptr, int size)
 {
 	int length = lumps[lump].filelen;
@@ -352,8 +417,6 @@ void LoadQ2BspFile ()
 #define C(num,field,count,type) \
 	bspfile.count = CheckLump(Q2LUMP_##num, (void**)&bspfile.field, sizeof(type))
 	C(LIGHTING, lighting, lightDataSize, byte);
-	C(VISIBILITY, vis, visDataSize, byte);
-
 	C(VERTEXES, vertexes, numVertexes, CVec3);
 	C(PLANES, planes, numPlanes, dPlane_t);
 	C(LEAFS, leafs2, numLeafs, dBsp2Leaf_t);
@@ -379,6 +442,10 @@ void LoadQ2BspFile ()
 #endif
 	ProcessQ2BspFile (&bspfile);
 
+	// load visinfo
+	dBsp2Vis_t *vis;
+	int visDataSize = CheckLump (Q2LUMP_VISIBILITY, (void**)&vis, 1);
+	LoadQ2Vis (&bspfile, vis, visDataSize);
 	// load entstring after all: we may require to change something
 #if 0
 	bspfile.entDataSize = C(ENTITIES, entities, char);
@@ -414,8 +481,6 @@ void LoadQ1BspFile ()
 #define C(num,field,count,type) \
 	bspfile.count = CheckLump(Q1LUMP_##num, (void**)&bspfile.field, sizeof(type))
 	C(LIGHTING, lighting, lightDataSize, byte);
-//!!	C(VISIBILITY, vis, visDataSize, byte);
-
 	C(VERTEXES, vertexes, numVertexes, CVec3);
 	C(PLANES, planes, numPlanes, dPlane_t);
 	C(LEAFS, leafs1, numLeafs, dBsp1Leaf_t);
@@ -441,6 +506,10 @@ void LoadQ1BspFile ()
 #endif
 	ProcessQ1BspFile (&bspfile);
 
+	// load visinfo
+	byte *vis;
+	int visDataSize = CheckLump (Q1LUMP_VISIBILITY, (void**)&vis, 1);
+	LoadQ1Vis (&bspfile, vis, visDataSize);
 	// load entstring after all: we may require to change something
 #if 0
 	bspfile.entDataSize = C(ENTITIES, entities, char);
@@ -706,12 +775,14 @@ static bool ProcessEntity ()
 
 	// get classname
 	const char *classname = "";
-	if (f = FindField ("classname"))
-		classname = f->value;
+	entField_t *classNameField = FindField ("classname");
+	if (classNameField)
+		classname = classNameField->value;
 	// get spawnflags
 	int spawnflags = 0;
-	if (f = FindField ("spawnflags"))
-		spawnflags = atoi (f->value);
+	entField_t *spawnflagsField = FindField ("spawnflags");
+	if (spawnflagsField)
+		spawnflags = atoi (spawnflagsField->value);
 #if 0
 #define SPAWNFLAG_NOT_DEATHMATCH	0x800
 	if (Cvar_VariableInt("keep_sp") && (spawnflags & SPAWNFLAG_NOT_DEATHMATCH))//!!
@@ -721,33 +792,26 @@ static bool ProcessEntity ()
 	}
 #endif
 	// get origin
-	bool haveOrigin = false;
 	CVec3 origin;
-	if (f = FindField ("origin"))
-	{
-		haveOrigin = true;
-		GetVector (f->value, origin);
-	}
+	entField_t *originField = FindField ("origin");
+	if (originField)
+		GetVector (originField->value, origin);
 	// get inline model
+	cmodel_t *model = NULL;
 	int modelIdx;
-	bool haveModel = false;
 	if (f = FindField ("model"))
 	{
 		sscanf (f->value, "*%d", &modelIdx);
 		if (modelIdx >= bspfile.numModels)
-		{
-			haveModel = false;
 			Com_DPrintf ("invalid model index %d\n", modelIdx);
-		}
 		else
-			haveModel = true;
+			model = &bspfile.models[modelIdx];
 	}
 
 	/*----------- check movable inline models -----------*/
 
-	if (haveModel && modelIdx > 0 && appMatchWildcard (classname,
-		"func_plat,func_*rotating,func_door,func_train"))
-		bspfile.models[modelIdx].flags |= CMODEL_MOVABLE;
+	if (model && appMatchWildcard (classname, "func_plat,func_*rotating,func_door,func_train"))
+		model->flags |= CMODEL_MOVABLE;
 
 	/*---------------- get lighting info ----------------*/
 
@@ -814,7 +878,7 @@ static bool ProcessEntity ()
 				sscanf (f->value, "%d %d %d", VECTOR_ARG(&v));
 				flare->color.rgba = RGB255(v[0],v[1],v[2]);
 			}
-			if (haveModel)
+			if (model)
 				flare->model = modelIdx;
 
 			if (classname[5]) return false;					// flares passed to renderer only (if classname = "light" -> flare+light)
@@ -957,34 +1021,6 @@ static bool ProcessEntity ()
 		return false;
 	}
 
-	if (bspfile.type == map_kp)
-	{
-		// check entities to remove
-		if (!strcmp (classname, "junior"))
-			return false;	// KP "junior" entity
-
-		/*----- check entities with KP RF2_SURF_ALPHA flags ------*/
-		int chk = 0;
-		if (!stricmp (classname, "func_wall"))	//?? case insensitive ?? (check game source, KP game source ...)
-			chk = 32;
-		else if (!stricmp (classname, "func_door"))
-			chk = 128;
-		else if (!stricmp (classname, "func_door_rotating"))
-			chk = 4;
-		else if (!stricmp (classname, "func_explosive") || !stricmp (classname, "func_train") || !stricmp (classname, "func_train_rotating"))
-			chk = 8;
-
-		if ((chk & spawnflags) && haveModel && modelIdx > 0)
-			bspfile.models[modelIdx].flags |= CMODEL_ALPHA;
-
-		// convert func_lift to func_train
-		if (!strcmp (classname, "func_lift"))
-		{
-			f = FindField ("classname");
-			strcpy (f->value, "func_train");
-		}
-	}
-
 	/*---------------------------------------------*/
 
 	if (!strcmp (classname, "worldspawn"))
@@ -1053,11 +1089,127 @@ static bool ProcessEntity ()
 		return true;
 	}
 
+	/*-------------- Quake1 support ---------------*/
+	bool resetSpawnflags = false;
+	bool shiftUp = false;
+#define CHANGE(orig, new)			\
+	if (!strcmp (classname, orig))	\
+		strcpy (classNameField->value, new);
+#define CHANGE0(orig, new)			\
+	if (!strcmp (classname, orig))	\
+	{								\
+		strcpy (classNameField->value, new); \
+		resetSpawnflags = true;		\
+		shiftUp = true;				\
+	}
+	if (bspfile.type == map_q1)
+	{
+		// teleport
+		if (!strcmp (classname, "trigger_teleport"))
+		{
+			strcpy (classNameField->value, "misc_teleporter");
+			if (model)
+			{
+				CVec3 org;
+				model->bounds.GetCenter (org);
+				org[2] = model->bounds.mins[2] - 17;
+				AddField ("origin", va("%g %g %g", VECTOR_ARG(org)));
+			}
+		}
+		else if (!strcmp (classname, "info_teleport_destination"))
+		{
+			strcpy (classNameField->value, "misc_teleporter_dest");
+			origin[2] += 2;
+			strcpy (originField->value, va("%g %g %g", VECTOR_ARG(origin)));
+		}
+		// weapons/ammo
+		// weapon_: q2 have: supershotgun, rocketlauncher, grenadelauncher
+		else CHANGE0("weapon_nailgun", "weapon_machinegun")
+		else CHANGE0("weapon_supernailgun", "weapon_chaingun")
+		else CHANGE0("weapon_lightning", "weapon_railgun")
+		// ammo
+		else CHANGE0("item_shells", "ammo_shells")		// shotguns
+		else CHANGE0("item_spikes", "ammo_bullets")		// nailgun
+		else CHANGE0("item_rockets", "ammo_grenades")	// rocketlauncher, grenadelauncher : ammo_rockets, ammo_grenades
+		//!! NOTE: q1 uses rockets for rocketlauncher and grenadelauncher
+		//!! We should check: if map have grenadelauncher - use ammo_grenades,
+		//!! otherwise use ammo_rockets
+		else CHANGE0("item_cells", "ammo_slugs")		// lightning
+
+		// item_health
+		else if (!strcmp (classname, "item_health"))
+		{
+			if (spawnflags == 1)					// small, "ROTTEN": 15 points
+				strcpy (classNameField->value, "item_health_small");
+			else if (spawnflags == 2)				// mega, "MEGA": 100 points w/o limit
+				strcpy (classNameField->value, "item_health_mega");
+			else									// normal, 25 points
+				strcpy (classNameField->value, "item_health_large");
+			RemoveField ("spawnflags");
+			shiftUp = true;
+		}
+
+		// item_armor
+		else CHANGE0("item_armor1", "item_armor_jacket")	// 0.3/100
+		else CHANGE0("item_armor2", "item_armor_combat") 	// 0.6/150
+		else CHANGE0("item_armorInv", "item_armor_body") 	// 0.8/200
+
+		else CHANGE0("item_artifact_invulnerability", "item_invulnerability")
+		else CHANGE0("item_artifact_envirosuit", "item_enviro")
+		// item_artifact_invisibility
+		else CHANGE0("item_artifact_super_damage", "item_quad")
+		// Q2: item_breather, item_silencer, item_adrenaline, item_bandolier, item_pack
+		// Q2: key_data_cd, key_power_cube, key_pyramid, key_data_spinner, key_pass,
+		// Q2: key_blue_key, key_red_key, key_oommander_head, key_airstrike_target
+
+//		else CHANGE("trigger_secret", "target_secret")	//?? not works
+
+//		else CHANGE("trigger_changelevel", "target_changelevel")
+
+		if (resetSpawnflags && spawnflagsField)
+			strcpy (spawnflagsField->value, "0");
+		if (shiftUp)
+		{
+			origin[2] += 20;
+			strcpy (originField->value, va("%g %g %g", VECTOR_ARG(origin)));
+		}
+	}
+
+	/*-------------- Kingpin support --------------*/
+
+	if (bspfile.type == map_kp)
+	{
+		// check entities to remove
+		if (!strcmp (classname, "junior"))
+			return false;	// KP "junior" entity
+
+		/*----- check entities with KP RF2_SURF_ALPHA flags ------*/
+		int chk = 0;
+		if (!stricmp (classname, "func_wall"))	//?? case insensitive ?? (check game source, KP game source ...)
+			chk = 32;
+		else if (!stricmp (classname, "func_door"))
+			chk = 128;
+		else if (!stricmp (classname, "func_door_rotating"))
+			chk = 4;
+		else if (!stricmp (classname, "func_explosive") || !stricmp (classname, "func_train") || !stricmp (classname, "func_train_rotating"))
+			chk = 8;
+
+		if ((chk & spawnflags) && model)
+			model->flags |= CMODEL_ALPHA;
+
+		// convert func_lift to func_train
+		if (!strcmp (classname, "func_lift"))
+		{
+			f = FindField ("classname");
+			strcpy (f->value, "func_train");
+		}
+	}
+
 	/*---------------------------------------------*/
 
 	if (!strcmp (classname, "target_splash"))
 	{
-		if (haveOrigin)
+		if (originField)
 		{
 			splash_t *spl = new (bspfile.extraChain) splash_t;
 			spl->next = bspfile.splashes;

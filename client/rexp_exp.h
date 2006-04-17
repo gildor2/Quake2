@@ -32,5 +32,10 @@ const refExport_t re = {
 	DrawTextRight,
 	DrawText3D,
 	GetClientLight
+#if !NO_DEBUG
+,
+	DrawBrush
+#endif
+
 };
 

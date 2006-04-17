@@ -39,6 +39,9 @@ struct CBox;
 struct CAxis;
 struct cplane_t;
 
+// empty declarations
+struct CBrush;
+
 
 // image flags
 #define IMAGE_PCX	1
@@ -662,8 +665,7 @@ int		CM_PointContents (const CVec3 &p, int headnode);
 int		CM_TransformedPointContents (const CVec3 &p, int headnode, const CVec3 &origin, const CVec3 &angles);
 int		CM_TransformedPointContents (const CVec3 &p, int headnode, const CVec3 &origin, const CAxis &axis);
 
-byte	*CM_ClusterPVS (int cluster);
-byte	*CM_ClusterPHS (int cluster);
+const byte *CM_ClusterPVS (int cluster);
 
 int		CM_PointLeafnum (const CVec3 &p, int num = 0);
 

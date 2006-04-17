@@ -99,7 +99,6 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 	frame->ps = cl_ent->client->ps;
 
 	SV_FatPVS (org);
-	const byte *clientphs = CM_ClusterPHS (clientcluster);	//?? used for RF_BEAM visibility detection only
 
 	// build up the list of visible entities
 	frame->num_entities = 0;
@@ -128,25 +127,18 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 					continue;		// blocked by a door
 			}
 
-			// beams just check one point for PHS
 			if (ent->s.renderfx & RF_BEAM)
 			{
-				//?? change this; may check beam using its center point and "radius" (if beam is relatively small)
+				// send beams to everyone
+				//?? may check beam using its center point and "radius" (if beam is relatively small)
 				//?? or check `distance_to_beam / beam_size' relation -- if small - send always, if large - use
 				//?? PVS (fatpvs[]) -- will require more complex `ent->clusternums[]' for beams ...
-				int num = ent->clusternums[0];
-				if (!(clientphs[num >> 3] & (1 << (num & 7))))
-					continue;
 			}
 			else
 			{
-				// FIXME: if an ent has a model and a sound, but isn't
-				// in the PVS, only the PHS, clear the model
-				const byte *bitvector = (ent->s.sound) ? fatpvs /*clientphs*/ : fatpvs;
-
 				if (ent->num_clusters == -1)
 				{	// too many leafs for individual check, go by headnode
-					if (!CM_HeadnodeVisible (ent->headnode, bitvector))
+					if (!CM_HeadnodeVisible (ent->headnode, fatpvs))
 						continue;
 				}
 				else
@@ -155,7 +147,7 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 					for (i = 0; i < ent->num_clusters; i++)
 					{
 						int num = ent->clusternums[i];
-						if (bitvector[num >> 3] & (1 << (num & 7)))
+						if (fatpvs[num >> 3] & (1 << (num & 7)))
 							break;
 					}
 					if (i == ent->num_clusters)

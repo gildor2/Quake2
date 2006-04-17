@@ -1016,7 +1016,8 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 
 extern bool trace_skipAlpha;	//!! hack
 
-void SV_TraceHook (trace_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
+// hooked game trace function
+void SV_TraceHook (trace0_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
 {
 	guard(SV_TraceHook);
 
@@ -1030,7 +1031,11 @@ void SV_TraceHook (trace_t &trace, const CVec3 &start, const CVec3 *mins, const 
 	if (mins) bounds.mins = *mins;		// required for game; may be NULL
 	if (maxs) bounds.maxs = *maxs;
 
-	SV_Trace (trace, start, end, bounds, passedict, contentmask);
+	// extended trace
+	trace_t trace1;
+	SV_Trace (trace1, start, end, bounds, passedict, contentmask);
+	// copy base fields to trace0_t
+	trace = trace1;
 	trace_skipAlpha = false;	//!!
 	if (!sv_extProtocol->integer) return;
 

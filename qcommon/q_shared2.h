@@ -22,10 +22,10 @@ enum {
 enum multicast_t
 {
 	MULTICAST_ALL,
-	MULTICAST_PHS,
+	MULTICAST_PHS,					// PHS support removed: == MULTICAST_ALL
 	MULTICAST_PVS,
 	MULTICAST_ALL_R,
-	MULTICAST_PHS_R,
+	MULTICAST_PHS_R,				// .. == MULTICAST_ALL_R
 	MULTICAST_PVS_R
 };
 
@@ -147,6 +147,12 @@ struct CVec3
 		v[0] *= scale;
 		v[1] *= scale;
 		v[2] *= scale;
+	}
+	inline void Add (const CVec3 &a) //?? == "operator += (CVec3&)"
+	{
+		v[0] += a.v[0];
+		v[1] += a.v[1];
+		v[2] += a.v[2];
 	}
 	//!! +ScaleTo(dst)
 	float Normalize ();			// returns vector length
@@ -471,7 +477,7 @@ float	LittleFloat (float l);
 struct csurface_t
 {
 	// standard csurface_t fields (do not change this - used in trace
-	//  functions, which are exported to game !)
+	// functions, which are exported to game !)
 	char	shortName[16];
 	unsigned flags;
 	int		value;
@@ -483,7 +489,10 @@ struct csurface_t
 };
 
 // a trace is returned when a box is swept through the world
-struct trace_t
+// 'trace0_t' used for compatibility with original Q2 mods; engine uses
+// extended structure 'trace_t' (additional fields will be stripped, when
+// passing this structure to game)
+struct trace0_t
 {
 	bool		allsolid;			// if true, plane is not valid
 	byte		pad1[3];			// qboolean pad
@@ -495,6 +504,12 @@ struct trace_t
 	csurface_t	*surface;			// surface hit
 	int			contents;			// contents on other side of surface hit
 	struct edict_s *ent;			// not set by CM_*() functions; unknown type at this point !
+};
+
+// extended trace info
+struct trace_t : trace0_t
+{
+	int			brushNum;			// number of brush, which caused collision (uninitialized == -1)
 };
 
 
@@ -582,7 +597,7 @@ struct pmove_t
 	int			waterlevel;
 
 	// callbacks to test the world
-	trace_t*	(*trace) (trace_t &trace, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end);
+	trace0_t*	(*trace) (trace0_t &trace, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end);
 	int			(*pointcontents) (const CVec3 &point);
 };
 
@@ -609,8 +624,9 @@ enum {
 	CHAN_ITEM,
 	CHAN_BODY,
 	// modifier flags
-	CHAN_NO_PHS_ADD = 8,	// send to all clients, not just ones in PHS (ATTN 0 will also do this)
-	CHAN_RELIABLE = 16		// send by reliable message, not datagram
+	CHAN_NO_PHS_ADD = 8,	// send to all clients, not just ones in PHS (ATTN_NONE will also do this);
+							// since PHS support removed, this flag is ignored
+	CHAN_RELIABLE   = 16	// send by reliable message, not datagram
 };
 
 
@@ -646,9 +662,6 @@ typedef enum
 
 	MATERIAL_COUNT			// must be last
 } material_t;
-
-#define MATERIAL_FIRST	0
-#define MATERIAL_LAST	(MATERIAL_COUNT-1)
 
 
 /*

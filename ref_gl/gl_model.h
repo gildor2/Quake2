@@ -248,7 +248,7 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 	// visibility
 	int		numClusters;
 	int		visRowSize;
-	byte	*visInfo;
+	const byte *visInfo;
 	// lights
 	bool	monoLightmap;		// "true" for q1 maps
 	CMemoryChain *lightGridChain;

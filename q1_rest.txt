@@ -1,8 +1,3 @@
-* lightmaps: q1: when no lightmap on non-warp surface, it will be completely dark ?
-
-* BrushTrace()
-* BoxTrace() -- TraceToLeaf() + TestInLeaf()
-
 - texture loading:
   * from map (q1)
   - from wad (hl)
@@ -15,16 +10,14 @@
   + check 'Docs/hl.txt'
 - surface sounds (hl)
 
-- entities
+- entities (hl)
 
 - ambient sounds (see dBsp1Leaf_t)
 
 - .mdl models for Q1 (torch etc)
 
-- visinfo
 - check player trace bounds + viewheight for q1/hl
 - hl: increase entity limit (CS_... -- SV_FindIndex())
-* hl: sky in entity
 - q1/hl: check lightstyle strings
 ? force ext protocol for clients
 

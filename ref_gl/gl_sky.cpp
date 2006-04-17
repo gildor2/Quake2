@@ -30,7 +30,7 @@ static void ClipSkyPolygon (CVec3 *verts, int numVerts, int stage)
 		CVec3 v = verts[0];
 		const CVec3 *vp = verts + 1;
 		for (i = 1; i < numVerts; i++, vp++)
-			VectorAdd (v, *vp, v);
+			v.Add (*vp);
 		CVec3	av;
 		av.Set (fabs(v[0]), fabs(v[1]), fabs(v[2]));
 		// Here: v = sum vector, av = abs(v)

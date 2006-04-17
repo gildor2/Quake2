@@ -217,7 +217,7 @@ void SV_SendServerinfo (client_t *client);
 void SV_UserinfoChanged (client_t *cl);
 
 sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext);
-void SV_TraceHook (trace_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask);
+void SV_TraceHook (trace0_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask);
 
 
 //

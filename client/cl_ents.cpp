@@ -54,7 +54,7 @@ void CL_ParseDelta (clEntityState_t *from, clEntityState_t *to, int number, unsi
 			VectorAdd (to->origin, d, to->center);
 
 			to->radius = VectorDistance (to->bounds.maxs, to->bounds.mins) / 2;
-			to->valid = true;
+			to->valid  = true;
 		}
 		else
 		{

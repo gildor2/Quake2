@@ -29,6 +29,9 @@ struct refExport_t
 	void	(*DrawTextRight) (const char *text, unsigned rgba);
 	void	(*DrawText3D) (const CVec3 &pos, const char *text, unsigned rgba);
 	float	(*GetClientLight) ();
+#if !NO_DEBUG
+	void	(*DrawBrush) (const CBrush *brush, const char *label, int num);
+#endif
 };
 
 #if !IS_RENDERER
@@ -140,6 +143,12 @@ inline float RE_GetClientLight ()
 {
 	return re.GetClientLight ();
 }
+#if !NO_DEBUG
+inline void RE_DrawBrush (const CBrush *brush, const char *label, int num)
+{
+	re.DrawBrush (brush, label, num);
+}
+#endif
 
 #	else // SINGLE_RENDERER
 
@@ -174,6 +183,9 @@ namespace OpenGLDrv
 #define RE_DrawTextRight	OpenGLDrv::DrawTextRight
 #define RE_DrawText3D	OpenGLDrv::DrawText3D
 #define RE_GetClientLight	OpenGLDrv::GetClientLight
+#if !NO_DEBUG
+#define RE_DrawBrush	OpenGLDrv::DrawBrush
+#endif
 
 #	endif // SINGLE_RENDERER
 #endif // IS_RENDERER

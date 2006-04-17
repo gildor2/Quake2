@@ -441,7 +441,7 @@ void Con_DrawConsole (float frac)
 		lines = viddef.height;
 
 	// draw the background
-#if 1
+#if 0
 //	RE_Fill (0, 0, viddef.width, lines, RGBA(0,0,0.02,Cvar_VariableValue("con_alpha")));
 	RE_Fill (0, 0, viddef.width, lines, RGBA(0,0,0.02,0.75));
 #else

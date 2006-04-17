@@ -95,8 +95,10 @@ struct bspfile_t
 	int			numFaces;
 	dFace_t		*faces;
 
-	int			visDataSize;
-	dBsp2Vis_t	*vis;
+	//?? access to this as methods; remove CM_ClusterPVS(); same for renderer
+	int			visRowSize;
+	const byte	*visInfo;				// byte[cluster][visRowSize]; NULL when no visinfo
+	int			numClusters;			// 0 when no visinfo
 
 	int			numNodes;
 	union {
@@ -180,6 +182,10 @@ extern bspfile_t *map_bspfile;
 
 
 //--bspfile_t *LoadBspFile (char *filename, bool clientload, unsigned *checksum);
+
+#if !NO_DEBUG
+CBrush *CM_BuildBrush (int brushNum, CMemoryChain *mem);
+#endif
 
 
 #endif // CMODEL_H

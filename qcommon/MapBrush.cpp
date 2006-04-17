@@ -1,6 +1,8 @@
 #include "qcommon.h"
 #include "MapBrush.h"
 
+//!! BUG: map 'ground3', r_showBrush=1585 -> SplitPoly(): numOnPlane==3
+
 
 //#define SPLIT_DEBUG		1
 
@@ -160,7 +162,29 @@ static bool SplitPoly (CBrushVert *poly, cplane_t *plane, CBrushVert* &front, CB
 	}
 	if (sides == 5 || sides == 6)					// touching plane, but not crossing plane (7)
 	{
-		assert(numOnPlane <= 2);
+#if 0
+//!!!!!!!!!!!!!!!
+if (numOnPlane > 2)
+{
+appPrintf(S_RED"split %g %g %g / %g\n",VECTOR_ARG(plane->normal),plane->dist);
+int ii;
+for (ii = 0, v = poly; v; v = v->next, ii++)
+	appPrintf(S_RED"... %g %g %g = %d  (%g)\n", VECTOR_ARG((*v->v)), side[ii], dist[ii]);
+numOnPlane = 0;
+front = back = NULL;
+return false;
+assert(0);
+}
+#endif
+#if 0
+		assert(numOnPlane <= 2); -- possible situation, check 'ground3 brush= 1585'
+#else
+		if (numOnPlane > 2)
+		{
+			front = back = NULL;					//?? check
+			return false;
+		}
+#endif
 		// when plane crossing brush on edge, surface will be touched in 2 points;
 		// note: there will be 2 touched surfaces at the same points, so, we should
 		// remember only one of them (either surface, placed on front side of plane,
@@ -193,7 +217,7 @@ static bool SplitPoly (CBrushVert *poly, cplane_t *plane, CBrushVert* &front, CB
 	sidesFirst[0] = sidesFirst[1] = sidesLast[0] = sidesLast[1] = NULL;
 
 #if SPLIT_DEBUG
-	appPrintf ("split by {%g %g %g} %g:\n", VECTOR_ARG(plane->normal), plane->dist);
+	appPrintf ("split\n");
 	int ii;
 	for (ii = 0, v = poly; v; v = v->next, ii++)
 		appPrintf ("... %g %g %g = %d\n", VECTOR_ARG((*v->v)), side[ii]);
@@ -302,6 +326,9 @@ CBrush *CBrush::Split (cplane_t *plane)
 	planeVecs    = newPoly;
 	numPlaneVecs = 0;
 
+#if SPLIT_DEBUG
+	appPrintf (S_GREEN"split by {%g %g %g} %g:\n", VECTOR_ARG(plane->normal), plane->dist);
+#endif
 	CBrushSide *sidesFirst[2], *sidesLast[2];
 	sidesFirst[0] = sidesFirst[1] = sidesLast[0] = sidesLast[1] = NULL;
 
@@ -317,14 +344,18 @@ CBrush *CBrush::Split (cplane_t *plane)
 		CBrushVert *front, *back;
 		if (!SplitPoly (s->verts, plane, front, back))
 		{
-#if SPLIT_DEBUG
-			if (sidesFirst[0] && sidesFirst[1])
-				Com_DropError ("CBrush::Split(): non-convex volume detected");
-#endif
+//#if SPLIT_DEBUG
+//			if (sidesFirst[0] && sidesFirst[1])
+//				Com_DropError ("CBrush::Split(): non-convex volume detected"); ??
+//#endif
 			//?? add support for brush, touched by plane (but: this is incorrect BSP)
 			vecPool = NULL;
 			return NULL;	// brush is not split: one of its sides touching plane
 		}
+
+		// each splitted brush side will produce 2 verts for new side
+		if (numPlaneVecs & 1)
+			Com_DropError ("CBrush::Split(): odd numPlaneVecs");
 
 #define ADD_TO_BRUSH(b,n)	\
 	{						\
@@ -357,18 +388,14 @@ CBrush *CBrush::Split (cplane_t *plane)
 			ADD_TO_BRUSH(clone,1);
 		}
 	}
+
 	// create one more side on 'plane', if (sidesFirst[0] && sidesFirst[1])
-	// each splitted brush side will produce 2 verts for new side
-	if (numPlaneVecs & 1)
-		Com_DropError ("CBrush::Split(): odd numPlaneVecs");
-#if MAX_DEBUG
-	if (numPlaneVecs < 6)
-		Com_DropError ("split: numPlaneVecs = %d\n", numPlaneVecs);
-#endif
 	if (numPlaneVecs)				// else - brush not splitted ...
 	{
 		int i;
 
+		if (numPlaneVecs < 6)
+			Com_DropError ("split: numPlaneVecs = %d\n", numPlaneVecs);
 #if SPLIT_DEBUG
 		// check distance from all planeVecs[] to plane (should be 0)
 		for (i = 0; i < numPlaneVecs; i++)
@@ -439,7 +466,7 @@ CBrush *CBrush::Split (cplane_t *plane)
 		}
 		// here: vec[0] should be equal to vec[last]
 		if (*planeVecs[0] != *planeVecs[numPlaneVecs-1])
-			Com_DropError ("CBrush::Split(): no loop in poly");
+			Com_DropError ("CBrush::Split(): no loop in poly (%d vecs)", numPlaneVecs);
 
 		// build 2 new sides
 		CBrushSide *s1 = new (CBrush::mem) CBrushSide;
@@ -499,9 +526,22 @@ CBrush *CBrush::Split (cplane_t *plane)
 }
 
 
+void CBrush::GetBounds (CBox &bounds)
+{
+	guardSlow(CBrush::GetBounds);
+	bounds.Clear ();
+	for (CBrushSide *s = sides; s; s = s->next)
+		for (CBrushVert *v = s->verts; v; v = v->next)
+			bounds.Expand (*v->v);
+	unguardSlow;
+}
+
+
 void CBrush::AddBevels (cplane_t* (*GetPlane)(const CVec3&, float))
 {
 	guard(CBrush::AddBevels);
+
+	if (!sides) return;
 
 	for (CBrushSide *s1 = sides; s1; s1 = s1->next)
 	{
@@ -530,12 +570,12 @@ void CBrush::AddBevels (cplane_t* (*GetPlane)(const CVec3&, float))
 			// and dot(norm3,norm3) will be >2 (when angle is 90grad, sum of two igentity vecs
 			// will produce vec of len sqrt(2); dot() is square of len ==> 2); otherwise, dot()
 			// will be 0 <= dot < 2
-			if (len >= 2) continue;			// continue to next side - angle between this sides as more than 90
+			if (len >= 1.99) continue;		// continue to next side - angle between this sides as more than 90
 											// (angle between normals is less than 90)
 			if (len == 0) continue;			// two opposite planes ... should not happens in BSP
 			// create new side
 			norm3.Normalize ();
-			float dist = dot (norm3, *vec);
+			float dist = dot (norm3, *vec) + EPSILON;	// +EPSILON: ensure all brush verts on the back side of plane
 			CBrushSide *newSide = new (CBrush::mem) CBrushSide;
 			newSide->plane = GetPlane (norm3, dist);
 			// insert into list
@@ -543,6 +583,52 @@ void CBrush::AddBevels (cplane_t* (*GetPlane)(const CVec3&, float))
 			sides = newSide;
 			// no verts for this side
 		}
+	}
+
+	// add axial sides
+	CBox bounds;
+	GetBounds (bounds);
+	for (int i = 0; i < 6; i++)
+	{
+		int idx    = i >> 1;
+		float dist = (i & 1) ? bounds.maxs[idx] : bounds.mins[idx];
+
+		const float val[] = {-1, 1};		// -1 for mins, +1 for maxs
+		// prepare plane
+		CVec3 norm;
+		norm.Zero ();
+		norm[idx] = val[i & 1];
+		if (!(i&1)) dist = -dist;
+		// prepare backplane
+//		CVec3 norm2;
+//		VectorNegate (norm, norm2);
+		// check: may be, side already present
+		CBrushSide *s;
+		for (s = sides; s; s = s->next)
+		{
+			cplane_t *p = s->plane;
+			if (!s->back)
+			{
+				if (fabs (p->dist - dist) > EPSILON) continue;
+//--				if (p->normal != norm) continue; -- does not works
+				if (p->normal[idx] != val[i&1]) continue;
+			}
+			else
+			{
+				if (fabs (p->dist + dist) > EPSILON) continue;
+//--				if (p->normal != norm2) continue; -- does not works
+				if (p->normal[idx] != -val[i&1]) continue;
+			}
+			break;
+		}
+		if (s) continue;					// found
+
+		// create side
+		CBrushSide *newSide = new (CBrush::mem) CBrushSide;
+		newSide->plane = GetPlane (norm, dist);
+		// insert into list
+		newSide->next  = sides;
+		sides = newSide;
 	}
 
 	unguard;

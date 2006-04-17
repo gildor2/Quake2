@@ -1297,9 +1297,9 @@ static void AddStarBeam (const beam_t *b)
 
 		// setup xyz
 		VectorAdd (b->drawStart, dir1, p->verts[0].xyz);
-		VectorAdd (b->drawEnd, dir1, p->verts[1].xyz);
+		VectorAdd (b->drawEnd,   dir1, p->verts[1].xyz);
 		VectorAdd (b->drawStart, dir2, p->verts[3].xyz);
-		VectorAdd (b->drawEnd, dir2, p->verts[2].xyz);
+		VectorAdd (b->drawEnd,   dir2, p->verts[2].xyz);
 
 		p->verts[0].st[1] = p->verts[3].st[1] = len + st0;
 		p->verts[1].st[1] = p->verts[2].st[1] = st0;
@@ -1716,7 +1716,7 @@ static void DrawFlares ()
 				im->bounds.GetCenter (tmp);
 				// flarePos = e->center - im->center + flarePos
 				VectorSubtract (e->center, tmp, tmp);
-				VectorAdd (flarePos, tmp, flarePos);
+				flarePos.Add (tmp);
 //				DrawTextLeft (va("flare shift: %g %g %g -> flarePos: %g %g %g", VECTOR_ARG(tmp), VECTOR_ARG(flarePos)));
 			}
 			// perform PVS cull for flares with radius 0 (if flare have radius > 0

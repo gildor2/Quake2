@@ -387,11 +387,11 @@ static void SV_GameMap_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	const char *map = argv[1];
-	Com_DPrintf ("SV_GameMap(%s)\n", map);
+	TString<128> Map; Map = argv[1];
+	Com_DPrintf ("SV_GameMap(%s)\n", *Map);
 
 	// check for clearing the current savegame
-	if (map[0] == '*')
+	if (Map[0] == '*')
 	{
 		// wipe all the *.sav files
 		SV_WipeSavegame ("current");
@@ -423,10 +423,10 @@ static void SV_GameMap_f (bool usage, int argc, char **argv)
 	}
 
 	// start up the next map
-	SV_Map (false, map, false );
+	SV_Map (false, Map, false );
 
 	// archive server state
-	appStrncpyz (svs.mapcmd, map, sizeof(svs.mapcmd));
+	appStrncpyz (svs.mapcmd, Map, sizeof(svs.mapcmd));
 
 	// copy off the level to the autosave slot
 	if (!DEDICATED && !sv_deathmatch->integer)

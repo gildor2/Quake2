@@ -99,7 +99,6 @@ MOD COMPATIBILITY:
 
 ----------------------------------------
 
-? check PHS requirement; what Q3 do (checked: in q3 no PHS system at all); check UT; use occluders?
 - option "Screen Flashes" (flash scale ? -- 0 - invisible, 1 - as is)
 - compile option: store configs and savegames (and screenshots?) in "ApplicationData", "MyGames" or inside game directory
   ? Linux: "~/<APP_NAME>/<MOD_NAME>/..." (under user's home directory)
@@ -311,7 +310,6 @@ BSP:
   - add support for "1024x768@70"-like strings (see UT2003 for ideas)
 
 - add marks: bulletholes (?), explosion marks, blood (!), "cheesy shadow" (!), water ripple
-- decompress visinfo (PVS) for client (cmodel); share this with renderer
 ? support for view-dependent LightForPoint()
 
 ------------ COMMON --------------

@@ -37,6 +37,14 @@ static void LoadPlanes (const dPlane_t *data, int count, int stride)
 }
 
 
+inline void LoadVisinfo (const bspfile_t *f)
+{
+	map.visRowSize  = f->visRowSize;
+	map.visInfo     = f->visInfo;
+	map.numClusters = f->numClusters;
+}
+
+
 static void LoadFlares (lightFlare_t *data, int count)
 {
 	gl_flare_t *out;
@@ -290,7 +298,7 @@ static void LoadLeafsNodes2 (const dBsp2Node_t *nodes, int numNodes, const dBsp2
 	for (i = 0; i < numNodes; i++, nodes++, out++)
 	{
 		out->isNode = true;
-		out->plane = map.planes + nodes->planenum;
+		out->plane  = map.planes + nodes->planenum;
 		// setup children[]
 		for (j = 0; j < 2; j++)
 		{
@@ -313,11 +321,8 @@ static void LoadLeafsNodes2 (const dBsp2Node_t *nodes, int numNodes, const dBsp2
 	{
 		out->isNode = false;
 
-		int p = leafs->cluster;
-		out->cluster = p;
-		if (p >= map.numClusters)
-			map.numClusters = p + 1;
-		out->area = leafs->area;
+		out->cluster = leafs->cluster;
+		out->area    = leafs->area;
 		// copy/convert mins/maxs
 		for (j = 0; j < 3; j++)
 		{
@@ -325,7 +330,7 @@ static void LoadLeafsNodes2 (const dBsp2Node_t *nodes, int numNodes, const dBsp2
 			out->bounds.maxs[j] = leafs->maxs[j];
 		}
 		// setup leafFaces
-		out->leafFaces = map.leafFaces + leafs->firstleafface;
+		out->leafFaces    = map.leafFaces + leafs->firstleafface;
 		out->numLeafFaces = leafs->numleaffaces;
 	}
 
@@ -392,12 +397,11 @@ static bool CanEnvmap (const dFace_t *surf, int headnode, CVec3 **pverts, int nu
 	CVec3	mid, p1, p2;
 
 	// find middle point
+	assert(numVerts);
 	mid.Zero ();
 	for (int i = 0; i < numVerts; i++)
-		VectorAdd (mid, (*pverts[i]), mid);
-	assert(numVerts);
-	float scale = 1.0f / numVerts;
-	mid.Scale (scale);
+		mid.Add (*pverts[i]);
+	mid.Scale (1.0f / numVerts);
 	// get trace points
 	CVec3 &norm = (map.planes + surf->planenum)->normal;
 	// vector with length 1 is not enough for non-axial surfaces
@@ -1143,57 +1147,6 @@ static void LoadLeafSurfaces2 (const unsigned short *data, int count)
 }
 
 
-static void LoadVisinfo2 (const dBsp2Vis_t *data, int size)
-{
-	int		rowSize;
-	map.visRowSize = rowSize = (map.numClusters + 7) >> 3;
-
-	if (!size)
-	{
-		if (map.numClusters > 0)
-		{
-			map.numClusters = 0;
-//??		if (developer->integer) -- cvar is not in renderer
-				appWPrintf ("WARNING: map with cluster info but without visinfo\n");
-		}
-		return;
-	}
-
-	byte *dst = map.visInfo = new (map.dataChain) byte [rowSize * map.numClusters];
-	for (int i = 0; i < map.numClusters; i++)
-	{
-		int pos = data->bitofs[i][DVIS_PVS];
-		if (pos == -1)
-		{
-			memset (dst, 0xFF, rowSize);	// all visible
-			dst += rowSize;
-			continue;
-		}
-
-		byte *src = (byte*)data + pos;
-		// decompress vis
-		for (int j = rowSize; j; /*empty*/)
-		{
-			byte	c;
-
-			if (c = *src++)
-			{	// non-zero byte
-				*dst++ = c;
-				j--;
-			}
-			else
-			{	// zero byte -- decompress RLE data (with filler 0)
-				c = *src++;				// count
-				c = min(c, j);			// should not be, but ...
-				j -= c;
-				while (c--)
-					*dst++ = 0;
-			}
-		}
-	}
-}
-
-
 static void LoadBsp2 (const bspfile_t *bsp)
 {
 	guard(LoadBsp2);
@@ -1212,9 +1165,7 @@ END_PROFILE
 START_PROFILE(LoadLeafsNodes2)
 	LoadLeafsNodes2 (bsp->nodes2, bsp->numNodes, bsp->leafs2, bsp->numLeafs);
 END_PROFILE
-START_PROFILE(LoadVisinfo2)
-	LoadVisinfo2 (bsp->vis, bsp->visDataSize);
-END_PROFILE
+	LoadVisinfo (bsp);
 START_PROFILE(LoadInlineModels2)
 	LoadInlineModels2 (bsp->models, bsp->numModels);
 END_PROFILE
@@ -1265,7 +1216,7 @@ static void LoadLeafsNodes1 (const dBsp1Node_t *nodes, int numNodes, const dBsp1
 	for (i = 0; i < numNodes; i++, nodes++, out++)
 	{
 		out->isNode = true;
-		out->plane = map.planes + nodes->planenum;
+		out->plane  = map.planes + nodes->planenum;
 		// setup children[]
 		for (j = 0; j < 2; j++)
 		{
@@ -1288,11 +1239,8 @@ static void LoadLeafsNodes1 (const dBsp1Node_t *nodes, int numNodes, const dBsp1
 	{
 		out->isNode = false;
 
-		int p = -1;		//??i;	//?? leafs->cluster;
-		out->cluster = p;
-		if (p >= map.numClusters)
-			map.numClusters = p + 1;
-		out->area = 0;			//?? leafs->area;
+		out->cluster = i-1;							// leaf[0] have no stored visinfo
+		out->area    = 0;							// no areas in Q1/HL
 		// copy/convert mins/maxs
 		for (j = 0; j < 3; j++)
 		{
@@ -1300,7 +1248,7 @@ static void LoadLeafsNodes1 (const dBsp1Node_t *nodes, int numNodes, const dBsp1
 			out->bounds.maxs[j] = leafs->maxs[j];
 		}
 		// setup leafFaces
-		out->leafFaces = map.leafFaces + leafs->firstleafface;
+		out->leafFaces    = map.leafFaces + leafs->firstleafface;
 		out->numLeafFaces = leafs->numleaffaces;
 	}
 
@@ -1330,9 +1278,7 @@ END_PROFILE
 START_PROFILE(LoadLeafsNodes1)
 	LoadLeafsNodes1 (bsp->nodes1, bsp->numNodes, bsp->leafs1, bsp->numLeafs);
 END_PROFILE
-START_PROFILE(LoadVisinfo1)
-	LoadVisinfo2 (bsp->vis, bsp->visDataSize);	//!! other
-END_PROFILE
+	LoadVisinfo (bsp);
 START_PROFILE(LoadInlineModels2)
 	LoadInlineModels2 (bsp->models, bsp->numModels);
 END_PROFILE

@@ -724,6 +724,7 @@ DEPENDS_15 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/MapBrush.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
@@ -1507,6 +1508,9 @@ Release/obj-cygwin/q2stat/cl_ents.o : client/cl_ents.cpp $(DEPENDS_34)
 Release/obj-cygwin/q2stat/cl_pred.o : client/cl_pred.cpp $(DEPENDS_34)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_pred.o client/cl_pred.cpp
 
+Release/obj-cygwin/q2stat/cl_view.o : client/cl_view.cpp $(DEPENDS_34)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_view.o client/cl_view.cpp
+
 DEPENDS_35 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
@@ -1556,9 +1560,6 @@ Release/obj-cygwin/q2stat/cl_playermodel.o : client/cl_playermodel.cpp $(DEPENDS
 
 Release/obj-cygwin/q2stat/cl_scrn.o : client/cl_scrn.cpp $(DEPENDS_35)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_scrn.o client/cl_scrn.cpp
-
-Release/obj-cygwin/q2stat/cl_view.o : client/cl_view.cpp $(DEPENDS_35)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_view.o client/cl_view.cpp
 
 DEPENDS_36 = \
 	Core/Inc/Build.h \

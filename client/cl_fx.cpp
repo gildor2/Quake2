@@ -1085,7 +1085,7 @@ static void ParticleEffect (const CVec3 &origin, int count, const particleEffect
 	{
 		if ((fx.density > 0) && (fx.density < 1) && (frand () >= fx.density)) // skip freq: >=dens, keep freq: <dens
 		{
-			VectorAdd (org, moveDir, org);
+			org.Add (moveDir);
 			continue;
 		}
 
@@ -1110,7 +1110,7 @@ static void ParticleEffect (const CVec3 &origin, int count, const particleEffect
 		p->accel[2] = fx.gravity;
 		p->alphavel = -1.0f / Lerp (fx.fadeTime1, fx.fadeTime2, frand());
 
-		VectorAdd (org, moveDir, org);
+		org.Add (moveDir);
 	}
 }
 
@@ -1682,7 +1682,7 @@ void CL_RailTrail (const CVec3 &start, const CVec3 &end)
 			p->vel[j] = dir[j] * 6;
 		}
 
-		VectorAdd (move, vec, move);
+		move.Add (vec);
 	}
 
 	// rail core: simple trail
@@ -1789,7 +1789,7 @@ void CL_IonripperTrail (centity_t &ent)
 		p->vel[2] = 0;
 		FNegate (vel0);
 
-		VectorAdd (move, forward, move);
+		move.Add (forward);
 	}
 }
 
@@ -1921,7 +1921,7 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
 				p->vel[j] = 0;
 			}
 		}
-		VectorAdd (move, vec, move);
+		move.Add (vec);
 	}
 }
 
@@ -2007,7 +2007,7 @@ void CL_TrackerTrail (centity_t &ent)
 		VectorMA (move, 8 * cos(dist), up, p->org);
 		p->vel.Set (0, 0, 5);
 
-		VectorAdd (move, vec, move);
+		move.Add (vec);
 	}
 }
 

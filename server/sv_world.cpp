@@ -232,8 +232,8 @@ void SV_LinkEdict (edict_t *ent)
 		ex.bounds.mins.Set (-i, -i, -j);
 		ex.bounds.maxs.Set (i, i, k - 32);
 		ex.bounds.GetCenter (ex.center);
-		VectorAdd (ex.center, ent->s.origin, ex.center);
-		ex.model = NULL;
+		ex.center.Add (ent->s.origin);
+		ex.model  = NULL;
 		ex.radius = VectorDistance (ex.bounds.maxs, ex.bounds.mins) / 2;
 	}
 	else if (ent->solid == SOLID_BSP)

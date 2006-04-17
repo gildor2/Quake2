@@ -153,19 +153,23 @@ void CL_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bo
 }
 
 
-static trace_t* CL_PMTrace (trace_t &trace, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end)
+static trace0_t* CL_PMTrace (trace0_t &trace, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end)
 {
 	guard(CL_PMTrace);
 	// check against world
 	CBox bounds;
 	bounds.mins = mins;
 	bounds.maxs = maxs;
-	CM_BoxTrace (trace, start, end, bounds, 0, MASK_PLAYERSOLID);
-	if (trace.fraction < 1.0)
-		trace.ent = (struct edict_s *)1;	//??
+	// extended trace
+	trace_t trace1;
+	CM_BoxTrace (trace1, start, end, bounds, 0, MASK_PLAYERSOLID);
+	if (trace1.fraction < 1.0)
+		trace1.ent = (struct edict_s *)1;	//??
 
 	// check all other solid models
-	CL_EntityTrace (trace, start, end, bounds, MASK_PLAYERSOLID);
+	CL_EntityTrace (trace1, start, end, bounds, MASK_PLAYERSOLID);
+	// copy base fields to trace0_t
+	trace = trace1;
 
 	return &trace;
 	unguard;

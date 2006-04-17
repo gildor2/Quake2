@@ -131,7 +131,6 @@ extern const unsigned colorTable[];		// C_XXX->rgba; used for DrawChar() and Dra
  *    of view source in common case (all reflections), when it will come from "inside wall" ?)
  *    -- use occlusion culling for mirrors ? (OR in most cases of Q3 portals (not mirrors), can use PVS - portals
  *    visible only within a near distance from surface)
- * - get visinfo from client ? (remove visinfo from renderer; call CM_ClusterPVS() when needed ?)
  * - PVS: can perform non-alpha-water-vis-bug avoiding in client (send combined vis)
  */
 

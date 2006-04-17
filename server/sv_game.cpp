@@ -183,9 +183,9 @@ static void G_WriteDir (const CVec3 *dir)
 static qboolean G_inPVS (const CVec3 &p1, const CVec3 &p2)
 {
 	int leafnum1 = CM_PointLeafnum (p1);
+	int leafnum2 = CM_PointLeafnum (p2);
 	const byte *mask = CM_ClusterPVS (CM_LeafCluster (leafnum1));
 
-	int leafnum2 = CM_PointLeafnum (p2);
 	int cluster  = CM_LeafCluster (leafnum2);
 
 	if (mask && (!(mask[cluster >> 3] & (1<<(cluster & 7)))))
@@ -197,17 +197,19 @@ static qboolean G_inPVS (const CVec3 &p1, const CVec3 &p2)
 }
 
 
-// Also checks portalareas so that doors block sound
+// Checks portalareas so that doors block sound
 static qboolean G_inPHS (const CVec3 &p1, const CVec3 &p2)
 {
 	int leafnum1 = CM_PointLeafnum (p1);
+	int leafnum2 = CM_PointLeafnum (p2);
+/* removed 17.04.2006
 	const byte *mask = CM_ClusterPHS (CM_LeafCluster (leafnum1));
 
-	int leafnum2 = CM_PointLeafnum (p2);
 	int cluster  = CM_LeafCluster (leafnum2);
 
 	if (mask && (!(mask[cluster>>3] & (1<<(cluster&7)))))
 		return false;
+*/
 
 	if (!CM_AreasConnected (CM_LeafArea (leafnum1), CM_LeafArea (leafnum2)))
 		return false;		// a door blocks hearing
@@ -235,7 +237,7 @@ static qboolean G_AreasConnected (int area1, int area2)
 }
 
 
-static trace_t* G_Trace (trace_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
+static trace0_t* G_Trace (trace0_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
 {
 	SV_TraceHook (trace, start, mins, maxs, end, passedict, contentmask);
 	return &trace;
@@ -394,8 +396,8 @@ static int PSV_AreaEdicts (const CVec3 &mins, const CVec3 &maxs, edict_t **list,
 {	PROF2(int)	SV_AreaEdicts(mins,maxs,list,maxcount,areatype); EPROF2(2);	}
 #define SV_AreaEdicts PSV_AreaEdicts
 
-static trace_t* PSV_Trace (trace_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
-{	PROF2(trace_t*) G_Trace(trace,start,mins,maxs,end,passedict,contentmask); EPROF2(3); }
+static trace0_t* PSV_Trace (trace0_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
+{	PROF2(trace0_t*) G_Trace(trace,start,mins,maxs,end,passedict,contentmask); EPROF2(3); }
 #define G_Trace PSV_Trace
 
 static int PSV_PointContents (const CVec3 &p)

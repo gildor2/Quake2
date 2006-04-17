@@ -38,3 +38,8 @@ void	DrawText3D (const CVec3 &pos, const char *text, unsigned rgba = 0xFFFFFFFF)
 
 // lighting
 float	GetClientLight ();			// used by server to determine client visibility (AI); change ??
+
+// debugging
+#if !NO_DEBUG
+void	DrawBrush (const CBrush *brush, const char *label, int num);
+#endif

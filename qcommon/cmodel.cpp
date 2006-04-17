@@ -99,9 +99,6 @@ static cmodel_t	*map_cmodels;
 static int		numBrushes;
 static cbrush_t	*map_brushes;
 
-static int		numvisibility;
-static byte		*map_visibility;
-
 static int		numentitychars;
 static const char *map_entitystring;
 
@@ -335,20 +332,11 @@ static void LoadLeafs2 (dBsp2Leaf_t *data, int size)
 #endif
 	numLeafs = size;
 
-	dBsp2Leaf_t *in = data;
-	numclusters = 0;
-
-	int i;
-	// find max cluster num
-	for (i = 0; i < size; i++, in++)
-		if (in->cluster >= numclusters)
-			numclusters = in->cluster + 1;
-
 	if (map_leafs[0].contents != CONTENTS_SOLID)
 		Com_DropError ("map leaf 0 is not CONTENTS_SOLID");
 	// find any empty leaf
 	emptyLeaf = -1;
-	for (i = 1; i < numLeafs; i++)
+	for (int i = 1; i < numLeafs; i++)
 	{
 		if (!map_leafs[i].contents)
 		{
@@ -439,13 +427,6 @@ inline void LoadAreaPortals (dareaportal_t *data, int size)
 }
 
 
-inline void LoadVisibility2 (dBsp2Vis_t *data, int size)
-{
-	numvisibility  = size;
-	map_visibility = size ? (byte *)data : NULL;
-}
-
-
 inline void LoadEntityString (const char *data, int size)
 {
 	numentitychars   = size;
@@ -465,7 +446,6 @@ static void LoadQ2Map (bspfile_t *bsp)
 	LoadSubmodels (bsp->models, bsp->numModels);
 	LoadAreas (bsp->areas, bsp->numAreas);
 	LoadAreaPortals (bsp->areaportals, bsp->numAreaportals);
-	LoadVisibility2 (bsp->vis, bsp->visDataSize);
 	LoadEntityString (bsp->entStr, bsp->entStrSize);
 
 	InitBoxHull ();
@@ -587,15 +567,12 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 		out->area           = 0;
 		out->numleafbrushes = 0;
 
-		//!! use in->visofs for cluster generation
-		out->cluster = 0;	//?? different! use visinfo
+		out->cluster = i-1;				// == leaf number -1 (no visinfo for leaf[0]==SOLID); visinfo generated in models.cpp
 		//?? use in->ambient_level[]
 		// find empty leaf
 		if (!out->contents && emptyLeaf < 0)
 			emptyLeaf = i;
-		//?? find max cluster num
 	}
-	numclusters = 1;		//?? different!
 
 	// generate solid leafs
 	for (i = 0; i < numSolidLeafs; i++, out++)
@@ -680,6 +657,16 @@ static cplane_t *FindBackplane (cplane_t *plane)
 }
 
 
+static CBrush *GetHugeBrush ()
+{
+#define BSIZE		65536
+	// create large brush: should be allocated dynamically, because it will
+	// be modified and stored to leafBrushes[]
+	static const CBox largeBounds = {{-BSIZE,-BSIZE,-BSIZE}, {BSIZE,BSIZE,BSIZE}};
+	return new (CBrush::mem) CBrush (largeBounds);
+}
+
+
 static void BuildBrushes1 (int numLeafsOrig)
 {
 	guard(BuildBrushes1);
@@ -701,23 +688,12 @@ static void BuildBrushes1 (int numLeafsOrig)
 		CBrush *stack2[MAX_TREE_DEPTH];
 		int nodenum = map_cmodels[model].headnode;
 
-#define BSIZE		65536
-		// create large brush: should be allocated dynamically, because it will
-		// be modified and stored to leafBrushes[]
-		static const CBox largeBounds = {{-BSIZE,-BSIZE,-BSIZE}, {BSIZE,BSIZE,BSIZE}};
-		CBrush *brush = new (CBrush::mem) CBrush (largeBounds);
-
+		CBrush *brush = GetHugeBrush ();
 		while (true)
 		{
-extern CBrush *drawBrush;
 			if (nodenum < 0)
 			{
 				int leafnum = -1 - nodenum;
-if (leafnum == numLeafsOrig+2285) {
-drawBrush = brush;
-appPrintf(S_GREEN"BRUSH: %X\ndepth:%d\n", brush, sptr);
-brush->Dump();
-};
 				assert(leafnum > 0 && leafnum < numLeafs);	// leaf[0] should be replaced
 				const dBsp2Leaf_t *leaf = map_leafs + leafnum;
 				if (leaf->contents == CONTENTS_SOLID)
@@ -727,10 +703,6 @@ brush->Dump();
 					assert(!leafBrushes[leafnum]);
 					// build bevels for correct trace() against box
 					brush->AddBevels (FindPlane);
-//if (leafnum == numLeafsOrig+582) {
-//appPrintf(S_GREEN"BEVELED:\n");
-//brush->Dump();
-//}
 					leafBrushes[leafnum] = brush;
 					// count number of brush sides
 					for (CBrushSide *s = brush->sides; s; s = s->next)
@@ -752,7 +724,7 @@ brush->Dump();
 			const cnode_t &node = map_nodes[nodenum];
 			// split brush with plane
 			CBrush *backBrush = brush->Split (node.plane);
-			if (!backBrush) Com_DropError ("NULL brush");
+			if (!backBrush) Com_DropError ("NULL backBrush");
 			// remember back side ...
 			stack[sptr]  = node.children[1];
 			stack2[sptr] = backBrush;
@@ -794,7 +766,7 @@ brush->Dump();
 	time = appCycles64 () - time;
 	Com_DPrintf ("Built %d brushes in %g msec, used temporary memory %dKb\n",
 		numBrushes, appDeltaCyclesToMsecf (time), CBrush::mem->GetSize() >> 10);
-//!!	delete CBrush::mem;
+	delete CBrush::mem;
 
 	unguard;
 }
@@ -808,17 +780,11 @@ static void LoadQ1Map (bspfile_t *bsp)
 	LoadLeafs1 (bsp->leafs1, bsp->numLeafs);
 	LoadSubmodels (bsp->models, bsp->numModels);
 	BuildBrushes1 (bsp->numLeafs);
-//!!	LoadVisibility1 (&header->lumps[HL_LUMP_VISIBILITY]);
 
 #if MAX_DEBUG
 	if (map_cmodels[0].headnode)
 		Com_DropError ("Q1/HL map has invalid headnode = %d", map_cmodels[0].headnode);
 #endif
-
-	//!!!! TEMP
-	map_visibility = NULL;
-	numvisibility  = 0;
-	//!!!! ^^^^
 
 	// Q1 areas: simulate loading (create 1 area)
 	map_areas = new (dataChain) carea_t;
@@ -862,7 +828,7 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 	}
 
 	// free old stuff
-	numPlanes = numNodes = numLeafs = numcmodels = numvisibility = numentitychars = 0;
+	numPlanes = numNodes = numLeafs = numcmodels = numentitychars = 0;
 	map_entitystring = "";
 	map_name[0] = 0;
 	map_bspfile = NULL;
@@ -881,6 +847,8 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 	bspfile_t *bsp = map_bspfile = LoadBspFile (name, clientload, &last_checksum);
 	dataChain = new CMemoryChain;
 	*checksum = last_checksum;
+
+	numclusters = bsp->numClusters;
 
 	switch (bsp->type)
 	{
@@ -901,6 +869,40 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 
 	unguardf(("%s", name));
 }
+
+
+/*-----------------------------------------------------------------------------
+	Debugging brush/node/leaf volumes
+-----------------------------------------------------------------------------*/
+
+#if !NO_DEBUG
+
+CBrush *CM_BuildBrush (int brushNum, CMemoryChain *mem)
+{
+	if (brushNum < 0 || brushNum >= numBrushes) return NULL;
+
+	guard(CM_BuildBrush);
+
+	CBrush::mem = mem;
+	CBrush *brush = GetHugeBrush ();
+
+	cbrush_t &b = map_brushes[brushNum];
+	int i;
+	cbrushside_t *side;
+	for (i = 0, side = &map_brushSides[b.firstbrushside]; i < b.numsides; i++, side++)
+	{
+		cplane_t *plane = side->plane;
+		brush = brush->Split (plane);		// use backside
+		if (!brush) break;					// should not happens
+	}
+
+	CBrush::mem = NULL;
+	return brush;
+
+	unguardf(("%d", brushNum));
+}
+
+#endif
 
 
 //=============================================================================
@@ -1187,12 +1189,13 @@ static struct
 static int traceFrame;		// cannot place into "tr": should increment value between frames ("tr" will be zeroed)
 
 
-static void ClipBoxToBrush (const cbrush_t &brush)
+// return 'true' when brush clipped trace
+static bool ClipBoxToBrush (const cbrush_t &brush)
 {
 	int		i;
 	cbrushside_t *side;
 
-	if (!brush.numsides) return;
+	if (!brush.numsides) return false;
 
 	float enterfrac = -1;
 	float leavefrac = 1;					// used only for validating enterfrac
@@ -1257,7 +1260,7 @@ VECTOR_ARG(plane->normal),plane->dist, d1, d2, side->surface->fullName),RGB(1,0,
 			 * 2) d1 < d2    -- leavefrac will be < 0
 			 */
 if (SHOW_TRACE) RE_DrawTextLeft("d1>0 && d2>0",RGB(0,1,0));
-			return;
+			return false;
 		}
 
 		if (d1 <= 0 && d2 <= 0)			// completely in back of this face
@@ -1289,7 +1292,7 @@ if (SHOW_TRACE) RE_DrawTextLeft(va("f=%g => ef=%g : lf=%g",f,enterfrac,leavefrac
 		if (enterfrac >= leavefrac)
 {
 if (SHOW_TRACE) RE_DrawTextLeft("** END: enterfrac < leavefrac",RGB(0.7,0.6,0.5));
-			return;		// intersects (at least) 2 faces outside the brush
+			return false;			// intersects (at least) 2 faces outside the brush
 }
 	}
 
@@ -1299,7 +1302,7 @@ if (SHOW_TRACE) RE_DrawTextLeft("** END: startout",RGB(0.7,0.6,0.5));
 		// original point was inside brush
 		tr.trace.startsolid = true;
 		tr.trace.allsolid   = !getout;
-		return;
+		return true;
 	}
 
 if (SHOW_TRACE) RE_DrawTextLeft(va("** END: ef=%g (>-1 & <%g)",enterfrac,tr.trace.fraction),RGB(0.7,0.6,0.5));
@@ -1312,7 +1315,10 @@ if (SHOW_TRACE) RE_DrawTextLeft(va("** END: ef=%g (>-1 & <%g)",enterfrac,tr.trac
 		tr.trace.surface  = leadside->surface;
 		tr.trace.contents = brush.contents;
 if (SHOW_TRACE) RE_DrawTextLeft(va("* best: plane=%g %g %g / %g", VECTOR_ARG(clipplane->normal),clipplane->dist),RGB(1,0.3,0.3));
+		return true;
 	}
+
+	return false;
 }
 
 
@@ -1326,7 +1332,8 @@ static void TraceToLeaf (int leafnum)
 	// trace line against all brushes in the leaf
 	for (int i = 0; i < leaf->numleafbrushes; i++)
 	{
-		cbrush_t &b = map_brushes[map_leafBrushes[leaf->firstleafbrush + i]];
+		int brushNum = map_leafBrushes[leaf->firstleafbrush + i];
+		cbrush_t &b = map_brushes[brushNum];
 if (SHOW_TRACE) RE_DrawTextLeft(va("--- %d cont=%X numSides=%d ---",map_leafBrushes[leaf->firstleafbrush+i], b.contents, b.numsides),RGB(0.3,1,0.3));
 		if (b.traceFrame == traceFrame)
 			continue;					// already checked this brush in another leaf
@@ -1336,7 +1343,8 @@ if (SHOW_TRACE) RE_DrawTextLeft(va("--- %d cont=%X numSides=%d ---",map_leafBrus
 		if (trace_skipAlpha && b.contents & CONTENTS_ALPHA)
 			continue;
 
-		ClipBoxToBrush (b);
+		if (ClipBoxToBrush (b))
+			tr.trace.brushNum = brushNum;
 		if (!tr.trace.fraction)		// when startsolid && allsolid
 			return;
 	}
@@ -1407,14 +1415,19 @@ static void TestInLeaf (int leafnum)
 	// trace line against all brushes in the leaf
 	for (int i = 0; i < leaf->numleafbrushes; i++)
 	{
-		cbrush_t &b = map_brushes[map_leafBrushes[leaf->firstleafbrush + i]];
+		int brushNum = map_leafBrushes[leaf->firstleafbrush + i];
+		cbrush_t &b = map_brushes[brushNum];
 		if (b.traceFrame == traceFrame)
 			continue;	// already checked this brush in another leaf
 		b.traceFrame = traceFrame;
 
 		if (!(b.contents & tr.contents))
 			continue;
-		if (TestBoxInBrush (b)) return;
+		if (TestBoxInBrush (b))
+		{
+			tr.trace.brushNum = brushNum;
+			return;
+		}
 	}
 }
 
@@ -1568,7 +1581,8 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CB
 	// fill in a default trace
 	memset (&tr, 0, sizeof(tr));
 	tr.trace.fraction = 1;
-	tr.trace.surface = &nullsurface;
+	tr.trace.surface  = &nullsurface;
+	tr.trace.brushNum = -1;
 
 	if (!numNodes)	// map not loaded
 	{
@@ -1673,7 +1687,7 @@ void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &en
 	if (rotated)
 		UnTransformPoint (origin, axis, trace.endpos, trace.endpos);
 	else
-		VectorAdd (trace.endpos, origin, trace.endpos);
+		trace.endpos.Add (origin);
 
 	unguard;
 }
@@ -1907,72 +1921,22 @@ int CM_RefineBrushTrace (const CVec3 &start, const CVec3 &end, int *brushes, int
 
 
 /*-----------------------------------------------------------------------------
-	PVS / PHS
+	PVS support
 -----------------------------------------------------------------------------*/
 
-static void DecompressVis (const byte *in, byte *out)
-{
-	int rowSize = (numclusters + 7) >> 3;
-
-	if (!in || !numvisibility)
-	{
-		// no vis info, so make all visible
-		memset (out, 0xFF, rowSize);
-		return;
-	}
-
-	byte *out_p = out;
-	do
-	{
-		if (*in)
-		{
-			*out_p++ = *in++;
-			continue;
-		}
-
-		int c = in[1];
-		in += 2;
-		if ((out_p - out) + c > rowSize)
-		{
-			c = rowSize - (out_p - out);
-			Com_DPrintf ("WARNING: Vis decompression overrun\n");
-		}
-		memset (out_p, 0, c);
-		out_p += c;
-	} while (out_p - out < rowSize);
-}
-
-//?? don't need 2 arrays: pvsrow[] and phsrow[]; may be, remove PHS support at all (replace with different API)
-static byte	pvsrow[MAX_MAP_LEAFS/8];
-static byte	phsrow[MAX_MAP_LEAFS/8];
-
-byte *CM_ClusterPVS (int cluster)
+const byte *CM_ClusterPVS (int cluster)
 {
 	guard(CM_ClusterPVS);
 
-	if (cluster <= -1)
-		memset (pvsrow, 0, (numclusters + 7) >> 3);
-	else
+	static byte	pvsrow[MAX_MAP_LEAFS/8];
+	if (cluster <= -1 || !map_bspfile->visInfo)
 	{
-		int i = map_visibility ? ((dBsp2Vis_t *)map_visibility)->bitofs[cluster][DVIS_PVS] : -1;
-		DecompressVis ((i != -1) ? map_visibility + i : NULL, pvsrow);
+		if (pvsrow[0] == 0)
+			memset (pvsrow, 0, (numclusters + 7) >> 3);
+		return pvsrow;
 	}
-	return pvsrow;
-	unguard;
-}
-
-byte *CM_ClusterPHS (int cluster)
-{
-	guard(CM_ClusterPHS);
-
-	if (cluster <= -1)
-		memset (phsrow, 0, (numclusters + 7) >> 3);
 	else
-	{
-		int i = map_visibility ? ((dBsp2Vis_t *)map_visibility)->bitofs[cluster][DVIS_PHS] : -1;
-		DecompressVis ((i != -1) ? map_visibility + i : NULL, phsrow);
-	}
-	return phsrow;
+		return map_bspfile->visInfo + cluster * map_bspfile->visRowSize;
 	unguard;
 }
 

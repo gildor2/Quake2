@@ -423,7 +423,7 @@ static void AddSurfaceLight (const surfLight_t *rl, const CVec3 &origin, const C
 		c[1] = map.sunColor[1] * map.sunAmbient[1] * scale;
 		c[2] = map.sunColor[2] * map.sunAmbient[2] * scale;
 		for (int i = 0; i < 6; i++)
-			VectorAdd (entityColorAxis[i], c, entityColorAxis[i]);
+			entityColorAxis[i].Add (c);
 		needSunAmbient = false;
 	}
 
@@ -477,7 +477,7 @@ static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 	}
 
 	node_t *leaf = PointInLeaf (*origin);
-	byte *row = leaf->cluster < 0 || !map.visInfo ? NULL : map.visInfo + leaf->cluster * map.visRowSize;
+	const byte *row = leaf->cluster < 0 || !map.visInfo ? NULL : map.visInfo + leaf->cluster * map.visRowSize;
 
 	float scale = vp.lightStyles[0].value * AMBIENT_SCALE / 128.0f;
 	for (i = 0; i < 6; i++)
@@ -595,7 +595,7 @@ void LightForEntity (refEntity_t *ent)
 			int		coord[3];
 
 			i = PointInLeaf (ent->center)->cluster;
-			byte *row = i < 0 || !map.visInfo ? NULL : map.visInfo + i * map.visRowSize;
+			const byte *row = i < 0 || !map.visInfo ? NULL : map.visInfo + i * map.visRowSize;
 
 			for (i = 0; i < 3; i++)
 			{

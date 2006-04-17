@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //?? combine with cl_tent.cpp and put as cl_scene.cpp ?
 
 #include "client.h"
+#include "cmodel.h"					// for brush debug
 
 #if GUN_DEBUG
 // development tools for weapons
@@ -36,6 +37,7 @@ static cvar_t	*cl_testblend;
 
 static cvar_t	*r_playerpos;
 static cvar_t	*r_surfinfo;
+static cvar_t	*r_showBrush;
 #endif // NO_DEBUG
 static cvar_t	*r_drawfps;
 
@@ -499,11 +501,11 @@ static void Sky_f (bool usage, int argc, char **argv)
 
 //============================================================================
 
-typedef struct
+struct flagInfo_t
 {
-	int		code;
+	unsigned code;
 	const char *name;
-} flagInfo_t;
+};
 
 static void DrawFlag (int flag, const flagInfo_t *info, int numFlags, const char *prefix)
 {
@@ -568,6 +570,9 @@ static char *ModelName (int modelIndex)
 
 #if !NO_DEBUG
 
+static CMemoryChain *debugMem;
+
+
 static void DrawSurfInfo ()
 {
 	static const flagInfo_t surfNames[] = {
@@ -601,23 +606,38 @@ static void DrawSurfInfo ()
 	start = cl.refdef.vieworg;
 	AngleVectors (cl.refdef.viewangles, &end, NULL, NULL);
 	end.Scale (500);
-	VectorAdd (start, end, end);
+	end.Add (start);
 
 	unsigned cont = r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER;
 	trace_t	trace;
-extern bool SHOW_TRACE;//!!!!!
-SHOW_TRACE=true;
+//extern bool SHOW_TRACE;//!!!!!
+//SHOW_TRACE=true;
 //static CBox nullBox = {{-2,-2,-2},{2,2,2}};
-static CBox nullBox = {{-10,-10,-10},{10,10,10}};
+//static CBox nullBox = {{-10,-10,-10},{10,10,10}};
 //static CBox nullBox = {{-20,-20,-20},{20,20,20}};
 	CM_BoxTrace (trace, start, end, nullBox, 0, cont);
-	V_AddLight(trace.endpos, 30, 0.3, 1, 0);	//?? keep or remove? intens > trace bounds!
-SHOW_TRACE=false;
+	V_AddLight (trace.endpos, 5, 0.3, 1, 0);	//?? keep or remove? intens > trace bounds!
+//SHOW_TRACE=false;
 	if (!(r_surfinfo->integer & 2))
 		CL_EntityTrace (trace, start, end, nullBox, cont);
 
 	if (trace.fraction < 1.0)
 	{
+		if (trace.brushNum >= 0)
+		{
+			// brush
+			RE_DrawTextLeft (va("BrushNum: %d", trace.brushNum), RGB(0.2,0.4,0.1));
+			if (r_surfinfo->integer & 8)
+			{
+				// visualize brush
+				if (!debugMem) debugMem = new CMemoryChain;
+				CBrush *brush = CM_BuildBrush (trace.brushNum, debugMem);
+				if (brush)
+					RE_DrawBrush (brush, "brush", trace.brushNum);
+				else
+					RE_DrawTextLeft (va("brush %d: error", trace.brushNum), RGB(1,0,0));
+			}
+		}
 		RE_DrawTextLeft ("Surface info:\n-------------", RGB(0.4,0.4,0.6));
 		RE_DrawTextLeft (va("Point: %g  %g  %g", VECTOR_ARG(trace.endpos)), RGB(0.2,0.4,0.1));
 		csurface_t *surf = trace.surface;
@@ -629,11 +649,8 @@ SHOW_TRACE=false;
 				RE_DrawTextLeft (va("Value: %d", surf->value), RGB(0.2,0.4,0.1));
 			DrawFlag (surf->flags, ARRAY_ARG(surfNames), "SURF_");
 			// material
-			const char *s;
-			if (surf->material >= MATERIAL_FIRST && surf->material <= MATERIAL_LAST)
-				s = materialNames[surf->material];
-			else
-				s = "?? bad ??";
+			const char *s = (surf->material > 0 && surf->material < MATERIAL_COUNT) ?
+				materialNames[surf->material] : "?? bad ??";
 			RE_DrawTextLeft (va("Material: %s", s), RGB(0.3,0.6,0.4));
 		}
 		DecodeContents (trace.contents);
@@ -667,6 +684,19 @@ static void DrawOriginInfo ()
 	RE_DrawTextLeft (va("Leaf: %d, cluster: %d, area: %d", i, CM_LeafCluster (i), CM_LeafArea (i)), RGB(0.2,0.4,0.1));
 	DecodeContents (CM_LeafContents (i));
 	RE_DrawTextLeft ("", RGB(0,0,0));	// empty line
+}
+
+static void DrawBrush ()
+{
+	int brushNum = r_showBrush->integer;
+	if (brushNum < 0) return;
+
+	if (!debugMem) debugMem = new CMemoryChain;
+	CBrush *brush = CM_BuildBrush (brushNum, debugMem);
+	if (brush)
+		RE_DrawBrush (brush, "brush", brushNum);
+	else
+		RE_DrawTextLeft (va("DrawBrush %d: error", brushNum), RGB(1,0,0));
 }
 
 #endif // NO_DEBUG
@@ -859,8 +889,15 @@ bool V_RenderView ()
 		}
 
 		// debug output
+		// free debug memory from previous frame
+		if (debugMem)
+		{
+			delete debugMem;
+			debugMem = NULL;
+		}
 		if (r_playerpos->integer)	DrawOriginInfo ();
 		if (r_surfinfo->integer)	DrawSurfInfo ();
+		DrawBrush ();
 #endif // NO_DEBUG
 
 #if 0
@@ -929,6 +966,7 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(r_playerpos, 0, CVAR_CHEAT),
 	CVAR_VAR(r_surfinfo, 0, CVAR_CHEAT),
+	CVAR_VAR(r_showBrush, -1, CVAR_CHEAT),
 #endif // NO_DEBUG
 
 	CVAR_VAR(r_drawfps, 0, 0),

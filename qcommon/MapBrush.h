@@ -23,6 +23,7 @@ struct CBrush
 	{}
 	CBrush (const CBox &Bounds);
 	CBrush *Split (cplane_t *plane);
+	void GetBounds (CBox &bounds);
 	void AddBevels (cplane_t* (*GetPlane)(const CVec3&, float));
 	// memory pool for all split operations
 	static CMemoryChain *mem;

@@ -80,6 +80,7 @@ Contains third-party libraries:
 - air acceleration works correct (sv_airaccelerate); before: value of cvar was ignored
 - when multiplayer server is paused, it will process other clients anyway (will be paused only local server's
   client)
+- explosions are now visible through non-transparent water (server-side bug)
 
 3. ADDONS
 ~~~~~~~~~
@@ -238,7 +239,7 @@ Server
 Debugging
 ---------
 - "r_surfinfo" variable: when value is non-zero, displaying info about maps surface under crosshair
-  (&2 -> no entities, &4 -> any contents)
+  (&2 -> no entities, &4 -> any contents, &8 -> display surface brush)
 - "r_drawfps" variable: display FPS when it is set
 - "r_playerpos" variable: when it is set to "1", player (spectator) world coordinates are shown
 - "r_sfx_pause 1" stops particles/fx; "r_sfx_pause 2" also disables particle/fx creation

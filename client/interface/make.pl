@@ -249,7 +249,7 @@ struct $typename2
 	int		struc_size;
 EOF
 ;
-Parse ("EmitStruc", "EmitHdrPrep");
+Parse ("EmitStruc", "EmitDefsPrep");
 
 print (DEFS "};\n\n");
 

@@ -8,10 +8,9 @@
 #include "gl_buffers.h"
 #include "protocol.h"		//!! for RF_XXX consts only (FULLBRIGHT, BBOX, DEPTHHACK)!
 
-
-//!!!!! REMOVE !!!!!!
+#if !NO_DEBUG
 #include "MapBrush.h"
-CBrush *drawBrush;
+#endif
 
 
 namespace OpenGLDrv {
@@ -115,7 +114,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 						CVec3 delta;
 						VectorScale (norm, P.base, delta);
 						for (k = 0; k < ex->numVerts; k++, vec++)
-							VectorAdd (vec->xyz, delta, vec->xyz);
+							vec->xyz.Add (delta);
 					}
 				}
 #undef P
@@ -128,7 +127,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 				CVec3 delta;
 				VectorScale (deform->move, f, delta);
 				for (j = 0; j < gl_numVerts; j++, vec++)
-					VectorAdd (vec->xyz, delta, vec->xyz);
+					vec->xyz.Add (delta);
 #undef P
 			}
 			break;
@@ -171,7 +170,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 					// find middle point
 					CVec3 center = vec[0].xyz;
 					for (int k = 1; k < 4; k++)
-						VectorAdd (center, vec[k].xyz, center);
+						center.Add (vec[k].xyz);
 					center.Scale (1.0f/4);								// average
 #if 0
 					// compute current quad axis
@@ -1779,6 +1778,74 @@ bool DrawNormals ()
 	return true;
 }
 
+
+static int numDrawBrushes;
+static const CBrush	*drawBrushes[256];
+static const char	*brushLabels[256];
+static int			brushNums[256];
+
+void DrawBrush (const CBrush *brush, const char *label, int num)
+{
+	if (!brush) return;
+	if (numDrawBrushes >= ARRAY_COUNT(drawBrushes)) return; // array full
+	for (int i = 0; i < numDrawBrushes; i++)
+	{
+		// check for duplicates
+		if (drawBrushes[i] == brush) return;
+		if (brushLabels[i] == label && brushNums[i] == num) return;
+	}
+	drawBrushes[numDrawBrushes] = brush;
+	brushLabels[numDrawBrushes] = label;
+	brushNums[numDrawBrushes]   = num;
+	numDrawBrushes++;
+}
+
+
+static void DrawBrushes ()
+{
+	if (!numDrawBrushes) return;
+
+	glLoadMatrixf (&vp.modelMatrix[0][0]);
+	GL_SetMultitexture (0);
+	GL_CullFace (CULL_NONE);
+	GL_State (BLEND(/*S_ALPHA,M_S_ALPHA*/1,1)|GLSTATE_DEPTHWRITE);
+	GL_DepthRange (DEPTH_NEAR);
+	glDisableClientState (GL_COLOR_ARRAY);
+
+	for (int i = 0; i < numDrawBrushes; i++)
+	{
+		const CBrush *drawBrush = drawBrushes[i];
+		int numVerts = 0;
+		CVec3 center;
+		center.Zero();
+		for (CBrushSide *s = drawBrush->sides; s; s = s->next)
+		{
+			if (!s->verts) continue;	// empty brush side
+			glColor4f (0.1, 0.1, 0.3, 0.4);
+			glBegin (GL_TRIANGLE_FAN);
+			CBrushVert *v;
+			for (v = s->verts; v; v = v->next)
+			{
+				glVertex3f (VECTOR_ARG((*v->v)));
+				// compute center
+				numVerts++;
+				center.Add (*v->v);
+			}
+			glEnd ();
+			glColor3f (1,0,0);
+			glBegin (GL_LINE_LOOP);
+			for (v = s->verts; v; v = v->next)
+				glVertex3f (VECTOR_ARG((*v->v)));
+			glEnd ();
+		}
+		// label
+		center.Scale (1.0f / numVerts);
+		DrawText3D (center, va("%s %d", brushLabels[i], brushNums[i]), RGB(0,0,0));
+	}
+	// next-frame brushes should be added again
+	numDrawBrushes = 0;
+}
+
 #endif // NO_DEBUG
 
 
@@ -2001,36 +2068,10 @@ void BK_DrawScene ()
 
 	if (gl_showLights->integer)
 		ShowLights ();
+
+	DrawBrushes ();
 #endif
 
-#if 1
-//!!!!!
-	if (drawBrush)
-	{
-		DrawTextLeft ("BRUSH!");
-		glLoadMatrixf (&vp.modelMatrix[0][0]);
-		GL_SetMultitexture (0);
-		GL_CullFace (CULL_NONE);
-		GL_State (BLEND(/*S_ALPHA,M_S_ALPHA*/1,1)|GLSTATE_DEPTHWRITE);
-		GL_DepthRange (DEPTH_NEAR);
-		glDisableClientState (GL_COLOR_ARRAY);
-		for (CBrushSide *s = drawBrush->sides; s; s = s->next)
-		{
-			glColor4f (0.1, 0.1, 0.3, 0.4);
-			glBegin (GL_TRIANGLE_FAN);
-			CBrushVert *v;
-			for (v = s->verts; v; v = v->next)
-				glVertex3f (VECTOR_ARG((*v->v)));
-			glEnd ();
-//			FlashColor ();
-			glColor3f (1,0,0);
-			glBegin (GL_LINE_LOOP);
-			for (v = s->verts; v; v = v->next)
-				glVertex3f (VECTOR_ARG((*v->v)));
-			glEnd ();
-		}
-	}
-#endif
 	if (gl_finish->integer == 2) glFinish ();
 
 	unguard;

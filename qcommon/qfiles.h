@@ -1,6 +1,8 @@
 #ifndef QFILES_H
 #define QFILES_H
 
+//?? rename file
+
 /*-----------------------------------------------------------------------------
 	.MD2 model file format
 -----------------------------------------------------------------------------*/
@@ -400,7 +402,7 @@ struct dBsp2Brushside_t
 enum
 {
 	DVIS_PVS,
-	DVIS_PHS
+	DVIS_PHS						// unused
 };
 
 struct dBsp2Vis_t

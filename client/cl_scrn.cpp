@@ -820,7 +820,7 @@ static void ExecuteLayoutString (const char *s)
 			value = cl.frame.playerstate.stats[atoi (COM_Parse (s))];
 			if (value >= MAX_IMAGES)
 				Com_DropError ("Pic >= MAX_IMAGES");
-			if (cl.configstrings[CS_IMAGES+value])
+			if (cl.configstrings[CS_IMAGES+value][0])
 				RE_DrawPic (x, y, va("pics/%s", cl.configstrings[CS_IMAGES+value]));
 		}
 		else if (!strcmp (token, "client"))

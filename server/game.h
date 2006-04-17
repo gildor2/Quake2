@@ -119,7 +119,7 @@ struct game_import_t
 	// disassembly], which can be replaced with safe and compatible construction "trace_t *trace(trace& trace, mins, ...)". Visual C++ uses
 	// this convention too. So, following construction will be incompatible with linux q2 mods, compiled using GCC 3.0+, and this will be
 	// incompatible with id's linux quake2 ...
-	trace_t* (*trace) (trace_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passent, int contentmask);
+	trace0_t* (*trace) (trace0_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passent, int contentmask);
 
 	int		(*pointcontents) (const CVec3 &point);
 	qboolean (*inPVS) (const CVec3 &p1, const CVec3 &p2);
