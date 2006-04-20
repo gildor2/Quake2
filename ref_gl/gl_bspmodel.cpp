@@ -469,11 +469,45 @@ static unsigned *GetQ1Palette ()
 		unsigned v = RGB255(p[0], p[1], p[2]);
 		q1palette[i] = LittleLong(v);
 	}
-	q1palette[255] &= LittleLong(0x00FFFFFF);		// #255 is transparent (alpha = 0)
+//	q1palette[255] &= LittleLong(0x00FFFFFF);		// #255 is transparent (alpha = 0) -- but Q1 uses this for menus/HUD only
 
 	// free image
 	delete pal;
 	return q1palette;
+}
+
+
+static void CreatePalettedImage (const char *name, dBsp1Miptex_t *tex)
+{
+	if (!tex->offsets[0])
+	{
+		// use wad file! (half-life map)
+		//!!
+
+		//!! CreateImage8 (Name, ......);
+	}
+	else
+	{
+		unsigned hlPalette[256];
+		// find and load inline texture + load shader again
+		unsigned *palette = NULL;
+		if (bspfile->type == map_q1)
+			palette = GetQ1Palette ();		//!! else - get palette from texture (after 4 mipmaps) -- RBG->RGBA
+		else
+		{
+			byte *p = (byte*)(tex+1) + tex->width * tex->height * 85 / 64 + 2;	// 1+1/4+1/16+1/64 = (64+16+4+1)/64 = 85/64
+			for (int i = 0; i < 256; i++, p += 3)
+			{
+				unsigned v = RGB255(p[0], p[1], p[2]);
+				if (v == RGB(0,0,1))
+					v = RGBA(0,0,0,0);						// blue -> transparent
+				hlPalette[i] = LittleLong(v);
+			}
+			palette = hlPalette;
+		}
+		if (FindImage (name, IMAGE_PICMIP|IMAGE_MIPMAP|IMAGE_WORLD)) return;	// image may be already created
+		CreateImage8 (name, (byte*)(tex+1), tex->width, tex->height, IMAGE_PICMIP|IMAGE_MIPMAP|IMAGE_WORLD, palette);
+	}
 }
 
 
@@ -496,9 +530,17 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 	shader_t *shader = FindShader (Name, sflags|SHADER_CHECKLOADED);
 	if (shader) return shader;
 
-	// try external shader/texture
-	shader = FindShader (Name, sflags|SHADER_CHECK);
-	if (shader) return shader;
+	if (!(sflags & SHADER_ANIM))
+	{
+		//?? find a way to allow external textures for SHADER_ANIM
+		//?? (currently, will simply create 1-stage shader)
+		//?? (check: should not be collision with HL wad anim textures)
+		// try external shader/texture
+		// note: here we clear SHADER_ANIM flag (not needed for scripts, but
+		// FindShader() will require name[MAX_QPATH][numAnimTextures] array)
+		shader = FindShader (Name, (sflags|SHADER_CHECK) & ~SHADER_ANIM);
+		if (shader) return shader;
+	}
 
 	// HERE: shader not yet loaded and have no external texture replacement
 
@@ -512,6 +554,7 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 	char textures[MAX_QPATH * MAX_STAGE_TEXTURES];
 	char *pname = textures;
 
+	bool wrapped = false;
 	while (true)
 	{
 		if (miptex < 0)
@@ -523,6 +566,8 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 				Name[10] = 'a';
 			else
 				Name[10]++;
+			if (wrapped && Name[10] == stex->texture[1])
+				break;						// all frames found
 			// check miptex lump to find appropriate name (find 'miptex' index)
 			for (int i = 0; i < map_bspfile->miptex1->nummiptex; i++)
 				if (!(stricmp ((char*)map_bspfile->miptex1 + map_bspfile->miptex1->dataofs[i], Name+9)))
@@ -531,28 +576,19 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 					miptex = i;
 					break;
 				}
+			if (miptex < 0 && stex->texture[1] != '0' && !wrapped)
+			{
+				// support for animations, started from non-0 frame
+				wrapped = true;
+				Name[10] = '0'-1;			// next frame will be Name[10]++
+				continue;
+			}
 		}
 		if (miptex < 0) break;				// no more textures for animation
 
 		// find miptex
-		//!! if imageName[0] == '+' -- find sequenced images and build array of names, + add flag SHADER_ANIM
 		dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)map_bspfile->miptex1 + map_bspfile->miptex1->dataofs[miptex] );
-		if (!tex->offsets[0])
-		{
-			// use wad file! (half-life map)
-			//!!
-
-			//!! CreateImage8 (Name, ......);
-		}
-		else
-		{
-			// find and load inline texture + load shader again
-			unsigned *palette = NULL;
-			if (bspfile->type == map_q1)
-				palette = GetQ1Palette ();		//!! else - get palette from texture (after 4 mipmaps) -- RBG->RGBA
-			CreateImage8 (Name, (byte*)(tex+1), tex->width, tex->height, IMAGE_PICMIP|IMAGE_MIPMAP|IMAGE_WORLD, palette);
-		}
-
+		CreatePalettedImage (Name, tex);
 		// add Name to textures[]
 		strcpy (pname, Name);
 		pname = strchr (pname, 0) + 1;
@@ -562,6 +598,8 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 
 	}
 	*pname = 0;								// make zero (NULL string) after ASCIIZ string
+	// create shader
+
 	shader = FindShader (textures, sflags);
 	if (sflags & SHADER_ANIM)
 		SetShaderAnimFreq (shader, 5);		// q1 animation frequency

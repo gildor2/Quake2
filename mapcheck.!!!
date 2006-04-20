@@ -33,6 +33,10 @@ GRAPHICS
 ------------------------------
 - "tchurch-beta3": too many dynamic lightmaps (slower than oldgl; oldgl is slow)
 ------------------------------
+* Q1: czg02 - have fall=3 lights
+* Q1: efdm10 - have non-transparent water with broken vis (as in Q2)
+* Q1: bcdm1 - map without visinfo
+- Q1: hookse - have animated textures, started not from frame #0
 
 MISC
 ~~~~

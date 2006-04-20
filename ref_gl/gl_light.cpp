@@ -165,7 +165,7 @@ void ShowLights ()
 			glEnd ();
 		}
 		if (gl_showLights->integer == 2)
-			DrawText3D (sl->origin, va("%g", sl->intens), RGBS(sl->color[0], sl->color[1], sl->color[2]));
+			DrawText3D (sl->origin, va("%g\nfall:%d", sl->intens, sl->type), RGBS(sl->color[0], sl->color[1], sl->color[2]));
 	}
 
 	surfLight_t *rl;
@@ -272,7 +272,7 @@ static void AddPointLight (const gl_slight_t *sl, const CVec3 &origin, const CAx
 	dif.Scale (scale);
 
 	float linearScale = LINEAR_SCALE;
-	float invScale = INV_SCALE;
+	float invScale    = INV_SCALE;
 	if (sl->spot)
 	{
 		float dot2 = dot (dif, sl->spotDir);
@@ -282,7 +282,7 @@ static void AddPointLight (const gl_slight_t *sl, const CVec3 &origin, const CAx
 			dot2 = dot2 * sl->focus - (sl->focus - 1);
 			if (dot2 <= 0) return;
 			linearScale = dot2 * LINEAR_SCALE;
-			invScale = dot2 * INV_SCALE;
+			invScale    = dot2 * INV_SCALE;
 		}
 	}
 
@@ -298,6 +298,9 @@ static void AddPointLight (const gl_slight_t *sl, const CVec3 &origin, const CAx
 	case sl_inverse2:
 		if (dist < 1) dist = 1;
 		scale = LIGHT_INV2_POINTLIGHT(sl->intens, dist, invScale);
+		break;
+	case sl_nofade:
+		scale = sl->intens;
 		break;
 	default:
 		scale = 0;										// unknown type
@@ -912,7 +915,9 @@ void PostLoadLights ()
 		case sl_inverse2:
 			f = DISTANCE_INV2_POINTLIGHT(sl->intens, MIN_POINT_LIGHT, INV_SCALE);
 			sl->maxDist2 = f * f;
-			appPrintf ("inv2 slight at %g %g %g\n", VECTOR_ARG(sl->origin));
+			//!! wanna check this on a real map
+			if (map_bspfile->type == map_q2 || map_bspfile->type == map_kp)
+				DebugPrintf ("%s: inv2 slight at %g %g %g\n", *map.Name, VECTOR_ARG(sl->origin));
 			break;
 		default:
 			Com_DPrintf ("unknown point sl.type (\"_falloff\") at %g %g %g\n", VECTOR_ARG(sl->origin));
@@ -922,6 +927,9 @@ void PostLoadLights ()
 			if (sl->fade < 0.01f) sl->fade = 0.01f;
 			f = DISTANCE_LINEAR_POINTLIGHT(sl->intens, sl->fade, MIN_POINT_LIGHT, LINEAR_SCALE);
 			sl->maxDist2 = f * f;
+			break;
+		case sl_nofade:
+			sl->maxDist2 = BIG_NUMBER;		// infinite
 			break;
 		}
 	}

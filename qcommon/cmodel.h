@@ -36,7 +36,7 @@ struct lightFlare_t
 
 // static map light
 
-typedef enum {sl_linear, sl_inverse, sl_inverse2} slightType_t;
+typedef enum {sl_linear, sl_inverse, sl_inverse2, sl_nofade} slightType_t;
 
 struct slight_t
 {

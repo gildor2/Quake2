@@ -476,11 +476,12 @@ static void LoadSurfaces1 (dBsp1Texinfo_t *data, int size)
 		appStrncpyz (out->texture, tex->name, sizeof(out->texture));
 		memcpy (out->vecs, in->vecs, sizeof(out->vecs));
 		// compute surface flags
-		//!! HL flags too (anim etc -- check Docs/hl.txt)
 		unsigned flags = 0;
 		if ((out->texture[0] == '*' && map_bspfile->type == map_q1) ||
 			(out->texture[0] == '!' && map_bspfile->type == map_hl))
 			flags |= SURF_WARP;
+		else if (out->texture[0] == '{' && map_bspfile->type == map_hl)
+			flags |= SURF_ALPHA;
 		else if (!strncmp (out->texture, "sky", 3))
 			flags |= SURF_SKY;
 		out->flags = flags;
@@ -539,6 +540,7 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 
 	dBsp1Leaf_t *in;
 	emptyLeaf = -1;
+	int numClipLeafs = 0;
 	for (i = 0, in = data; i < size; i++, in++, out++)
 	{
 //		memcpy (out->mins, in->mins, sizeof(short)*6);	// copy mins[]+maxs[] -- unused here
@@ -567,11 +569,18 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 		out->area           = 0;
 		out->numleafbrushes = 0;
 
-		out->cluster = i-1;				// == leaf number -1 (no visinfo for leaf[0]==SOLID); visinfo generated in models.cpp
+		if (out->contents == CONTENTS_SOLID)
+			out->cluster = -1;
+		else if (map_bspfile->visInfo)
+			out->cluster = i-1;			// == leaf number -1 (no visinfo for leaf[0]==SOLID); visinfo generated in models.cpp
+		// else - cluster = 0
 		//?? use in->ambient_level[]
 		// find empty leaf
 		if (!out->contents && emptyLeaf < 0)
 			emptyLeaf = i;
+		// count other non-empty leafs
+		if (out->contents && out->contents != CONTENTS_SOLID)
+			numClipLeafs++;
 	}
 
 	// generate solid leafs
@@ -579,15 +588,15 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 	{
 		out->contents       = CONTENTS_SOLID;
 		out->area           = 0;
-		out->firstleafbrush = i;
-		out->numleafbrushes = 1;
-		out->cluster        = 0;	//?? or -1 ?
+		out->numleafbrushes = 0;	// will be set to 1 later
+		out->cluster        = -1;
 	}
 
+	numBrushes = numSolidLeafs + numClipLeafs;
 	// create leafbrushes
-	map_leafBrushes = new (dataChain) unsigned short [numSolidLeafs+1]; // extra for box hull
-	numLeafBrushes = numBrushes = numSolidLeafs;
-	for (i = 0; i < numSolidLeafs; i++)
+	map_leafBrushes = new (dataChain) unsigned short [numBrushes+1]; // extra for box hull
+	numLeafBrushes  = numBrushes;
+	for (i = 0; i < numBrushes; i++)
 		map_leafBrushes[i] = i;
 
 #if 0
@@ -675,7 +684,6 @@ static void BuildBrushes1 (int numLeafsOrig)
 	CBrush::mem = new CMemoryChain;
 	int64 time = appCycles64 ();
 
-	numBrushes = numLeafs - numLeafsOrig;
 	map_brushes = new (dataChain) cbrush_t [numBrushes+1];	// extra for box hull
 
 	int numBuiltBrushes = 0;
@@ -696,9 +704,8 @@ static void BuildBrushes1 (int numLeafsOrig)
 				int leafnum = -1 - nodenum;
 				assert(leafnum > 0 && leafnum < numLeafs);	// leaf[0] should be replaced
 				const dBsp2Leaf_t *leaf = map_leafs + leafnum;
-				if (leaf->contents == CONTENTS_SOLID)
+				if (leaf->contents)					// non-empty leafs
 				{
-					assert(leafnum >= numLeafsOrig);
 					// remember brush
 					assert(!leafBrushes[leafnum]);
 					// build bevels for correct trace() against box
@@ -739,18 +746,21 @@ static void BuildBrushes1 (int numLeafsOrig)
 
 	// convert CBrush to cbrush_t and cbrushside_t
 	int brushSideIdx = 0;
-	cbrushside_t *bs = map_brushSides;
-	cbrush_t *dst = map_brushes;
-	for (int i = numLeafsOrig; i < numLeafs; i++, dst++)
+	dBsp2Leaf_t *leaf = map_leafs;
+	cbrushside_t *bs  = map_brushSides;
+	cbrush_t *dst     = map_brushes;
+	for (int i = 0; i < numLeafs; i++, leaf++)
 	{
-		assert(map_leafBrushes[map_leafs[i].firstleafbrush] == dst - map_brushes);
-		dst->contents = CONTENTS_SOLID;
+		if (!leaf->contents || (leaf->contents == CONTENTS_SOLID && i < numLeafsOrig))
+			continue;
+
+		leaf->firstleafbrush = dst - map_brushes;	// == brush number
+		leaf->numleafbrushes = 1;
+
+		dst->contents = leaf->contents;
 		CBrush *brush = leafBrushes[i];
 		if (!brush)
-		{
-			Com_DPrintf ("brush %d not generated\n", i);
-			continue;
-		}
+			Com_DropError ("brush %d not generated", i);
 		dst->firstbrushside = brushSideIdx;
 		for (CBrushSide *s = brush->sides; s; s = s->next)
 			if (s->plane->dist != BSIZE)			// ignore largeBounds sides
@@ -760,6 +770,7 @@ static void BuildBrushes1 (int numLeafsOrig)
 				bs++; brushSideIdx++;				// next brushside
 				dst->numsides++;
 			}
+		dst++;										// next brush
 	}
 
 	// finish
@@ -1929,14 +1940,20 @@ const byte *CM_ClusterPVS (int cluster)
 	guard(CM_ClusterPVS);
 
 	static byte	pvsrow[MAX_MAP_LEAFS/8];
-	if (cluster <= -1 || !map_bspfile->visInfo)
+	if (cluster <= -1)
 	{
-		if (pvsrow[0] == 0)
+		if (pvsrow[0] != 0)
 			memset (pvsrow, 0, (numclusters + 7) >> 3);
 		return pvsrow;
 	}
-	else
-		return map_bspfile->visInfo + cluster * map_bspfile->visRowSize;
+	if (!map_bspfile->visInfo)
+	{
+		// only 1 cluster per whole map
+		static const byte noVisPVS[] = { 255, 255 };	// one byte enough ...
+		return noVisPVS;
+	}
+
+	return map_bspfile->visInfo + cluster * map_bspfile->visRowSize;
 	unguard;
 }
 

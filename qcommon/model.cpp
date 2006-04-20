@@ -335,12 +335,13 @@ static void LoadQ2Vis (bspfile_t *f, dBsp2Vis_t *vis, int size)
 {
 	if (!size)
 	{
+		Com_DPrintf ("No visinfo in map\n");
 		if (f->numClusters > 1)
 		{
 			if (developer->integer)
 				appWPrintf ("WARNING: map with cluster info but without visinfo\n");
 		}
-		f->numClusters = 0;
+		f->numClusters = 1;				// required
 		f->visInfo     = NULL;
 		return;
 	}
@@ -361,7 +362,8 @@ static void LoadQ1Vis (bspfile_t *f, byte *vis, int size)
 {
 	if (!size)
 	{
-		f->numClusters = 0;
+		Com_DPrintf ("No visinfo in map\n");
+		f->numClusters = 1;				// required
 		f->visInfo     = NULL;
 		return;
 	}
@@ -801,6 +803,7 @@ static bool ProcessEntity ()
 	int modelIdx;
 	if (f = FindField ("model"))
 	{
+		//!! note: HL can use different models here (non-inline)
 		sscanf (f->value, "*%d", &modelIdx);
 		if (modelIdx >= bspfile.numModels)
 			Com_DPrintf ("invalid model index %d\n", modelIdx);
@@ -824,6 +827,10 @@ static bool ProcessEntity ()
 		if (f = FindField ("style,_style"))
 			style = atoi (f->value);
 
+		// HL!!: "light": may have pattern (lightstyle: "aazzazz")
+		// HL!!: "light_environment": light from sky (one entity per area)
+		// HL!!: "light_spot"
+
 		/*--------------- lightflares -----------------*/
 
 		if ((!classname[5] || !strcmp (classname + 5, "flare")) && (spawnflags & 2))	// "light" or "lightflare"
@@ -840,7 +847,7 @@ static bool ProcessEntity ()
 			if (f = FindField ("health"))
 				flare->size = atof (f->value);
 			else
-				flare->size = 24;							// default size
+				flare->size = 24;						// default size
 			flare->style = style;
 
 			flare->color.rgba = RGB(1,1,1);
@@ -850,9 +857,9 @@ static bool ProcessEntity ()
 				{
 				case 1:
 					if (bspfile.type == map_kp) DebugPrintf ("HAVE SUN FLARE: %s\n", bspfile.name);//!!
-					flare->radius = -1;						// mark as "sun"
+					flare->radius = -1;					// mark as "sun"
 					flare->color.c[2] = 192;
-					origin.NormalizeFast ();				// just a sun direction
+					origin.NormalizeFast ();			// just a sun direction
 					break;
 				case 2:		// amber
 					flare->color.rgba = RGB255(255, 192, 0);
@@ -871,7 +878,7 @@ static bool ProcessEntity ()
 			flare->origin = origin;
 			if (f = FindField ("radius"))
 				flare->radius = atof (f->value);
-			if (f = FindField ("color"))					// can override sun color ...
+			if (f = FindField ("color"))				// can override sun color ...
 			{
 				// NOTE: cannot scanf() into byte-sized vars
 				int	v[3];
@@ -881,7 +888,7 @@ static bool ProcessEntity ()
 			if (model)
 				flare->model = modelIdx;
 
-			if (classname[5]) return false;					// flares passed to renderer only (if classname = "light" -> flare+light)
+			if (classname[5]) return false;				// flares passed to renderer only (if classname = "light" -> flare+light)
 		}
 
 		/*-------------- light, light_mine -------------*/
@@ -891,28 +898,58 @@ static bool ProcessEntity ()
 		bspfile.slights = slight;
 		bspfile.numSlights++;
 
-		slight->style = style;
+		slight->style  = style;
+		slight->origin = origin;
 
-		if (f = FindField ("light,_light"))
-			slight->intens = atof (f->value);
-		else
-			slight->intens = 300;						// default
-
-		if (f = FindField ("color,_color"))
+		if (bspfile.type != map_hl)
 		{
-			GetVector (f->value, slight->color);
-			NormalizeColor (slight->color, slight->color);
+			// Quake1, Quake2, Kingpin
+			if (f = FindField ("light,_light"))
+				slight->intens = atof (f->value);
+			else
+				slight->intens = 300;					// default
+
+			if (f = FindField ("color,_color"))
+			{
+				GetVector (f->value, slight->color);
+				NormalizeColor (slight->color, slight->color);
+			}
+			else
+				slight->color.Set (1, 1, 1);			// default
+
+			// ArghRad: "_falloff": 0 - linear (default), 1 - 1/dist. 2 - 1/(dist*dist)
+			if (f = FindField ("_falloff"))
+				slight->type = (slightType_t)atoi (f->value);
+			// TyrLite: "delay": 0 - linear, 1 - 1/dist, 2 - 1/(dist*dist), 3 - no fade
+			else if (f = FindField ("delay"))
+			{
+				slight->type = (slightType_t)atoi (f->value);
+				if (slight->type == sl_inverse)
+					slight->intens *= 128;
+				else if (slight->type == sl_inverse2)
+					slight->intens *= 16384;
+			}
+			if (f = FindField ("_wait,_fade,wait"))		// ArghRad + TyrLite
+				slight->fade = atof (f->value);
+			if (!slight->fade) slight->fade = 1;		// default value + disallow "fade==0"
 		}
 		else
-			slight->color.Set (1, 1, 1);				// default
-
-		if (f = FindField ("_falloff"))					// 0 - linear (default), 1 - 1/dist. 2 - 1/(dist*dist)
-			slight->type = (slightType_t)atoi (f->value);
-		if (f = FindField ("_wait,_fade"))
-			slight->fade = atof (f->value);
-		if (!slight->fade) slight->fade = 1;			// default value + disallow "fade==0"
-
-		slight->origin = origin;
+		{
+			// Half-Life light entity
+			if (f = FindField ("_light"))
+			{
+				float bright;
+				int i = sscanf (f->value, "%f %f %f %f", VECTOR_ARG(&slight->color), &bright);
+				if (i == 1)
+					slight->color[1] = slight->color[2] = slight->color[0];
+				else if (i == 4)
+					slight->color.Scale (bright / 255.0f);
+				slight->type   = sl_inverse2;
+				slight->intens = slight->color.Normalize ();
+				slight->intens *= 256*25.6;				// qrad: max * max / 10, but operates with 0..255 values
+			}
+			// else - bad (will be zero)
+		}
 
 		if (f = FindField ("target"))
 		{
@@ -932,6 +969,7 @@ static bool ProcessEntity ()
 //appPrintf(S_RED"sun: %g %g %g (dst: %g %g %g, org: %g %g %g)\n",VECTOR_ARG(bspfile.sunVec),VECTOR_ARG(dst),VECTOR_ARG(slight->spotDir));
 			}
 		}
+
 		if (!strcmp (classname + 5, "_spot") || FindField ("_spotvector,_spotpoint,_mangle,_spotangle"))
 		{
 			CVec3	vec;
@@ -1119,11 +1157,12 @@ static bool ProcessEntity ()
 		else if (!strcmp (classname, "info_teleport_destination"))
 		{
 			strcpy (classNameField->value, "misc_teleporter_dest");
-			origin[2] += 2;
+			origin[2] += 8;
 			strcpy (originField->value, va("%g %g %g", VECTOR_ARG(origin)));
 		}
 		// weapons/ammo
 		// weapon_: q2 have: supershotgun, rocketlauncher, grenadelauncher
+			//!! should reset spawnflags for them!
 		else CHANGE0("weapon_nailgun", "weapon_machinegun")
 		else CHANGE0("weapon_supernailgun", "weapon_chaingun")
 		else CHANGE0("weapon_lightning", "weapon_railgun")
@@ -1165,6 +1204,7 @@ static bool ProcessEntity ()
 //		else CHANGE("trigger_secret", "target_secret")	//?? not works
 
 //		else CHANGE("trigger_changelevel", "target_changelevel")
+		// func_illusionary: should remember outside game lib and display independently
 
 		if (resetSpawnflags && spawnflagsField)
 			strcpy (spawnflagsField->value, "0");

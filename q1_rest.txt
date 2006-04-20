@@ -1,3 +1,8 @@
+! find all CS_NAME usage, check 7th bit for each char, replace with color
+  ! server: do not colorize string for old clients
+! build brushes for other-than-SOLID contents (for all contents != 0)
+? changing HL map: may display old name on loading splash (sometimes name changed after map start? after Com_DropError()?)
+
 - texture loading:
   * from map (q1)
   - from wad (hl)
@@ -9,6 +14,7 @@
 - surface flags (translucent, sky, warp ...)
   + check 'Docs/hl.txt'
 - surface sounds (hl)
+- inplement "func_illusionary" etc (static entities with and without collision; sfx too)
 
 - entities (hl)
 
@@ -23,4 +29,5 @@
 
 ?! ents: convert q1 NPC to q2 NPC
 - check HL animMap.freq (HL viewer: 10 Hz; Q1 - 5 Hz; Q2 - 2 Hz)
-- hl: map 'bounce' have large water area with lightmaps; water activetad by special texture?
+- hl: map 'bounce' have large water area with lightmaps; water activatad by special texture?
+- hl: light_environment; + check "lights.rad" file (SURF_LIGHT analog)

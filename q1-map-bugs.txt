@@ -1,0 +1,14 @@
+a2 - sky bugs (visible parts of maps, which should be occluded)
+basewalk - have "item_health" with "light" field at "914 352 320" as light source
+baldm3 - error on loading (and crash when loading again)
+cruel - VERY dark lighting (lit with "-dist" key?)
+damaul3b - sky issues
+damaul7 - not working teleporter near lava
+dokkur - moving teleport, not function
+efdm1 - cannot load
+efdm10 - infinite teleport + bad map message (colorized string?)
+  !! fix bad message (client-side)
+!! efdm8 - crash in ResampleTexture()
+elbow - cannot start (SP only?)
+frivdev1_3 - infinite teleport
+gendm2 - movable teleports, cannot enter

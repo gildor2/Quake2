@@ -192,6 +192,22 @@ void SV_LinkEdict (edict_t *ent)
 
 	int		i, j, k;
 
+	//!! HOOK - move outside ?
+	if (map_bspfile->type == map_q1)
+	{
+		if (ent->s.modelindex >= 0 && ent->s.modelindex < MAX_MODELS)
+		{
+			// link model hook
+			const char *modelName = sv.configstrings[CS_MODELS + ent->s.modelindex];
+			if (!strcmp (modelName, "models/objects/dmspot/tris.md2"))
+			{
+				// teleporter (source+target) was found
+//				appPrintf (S_CYAN"teleport: %g %g %g\n", VECTOR_ARG(ent->s.origin));
+				return;			// simply do not link model; trigger entity will be added anyway
+			}
+		}
+	}
+
 	if (ent->area.prev)
 		SV_UnlinkEdict (ent);	// unlink from old position (i.e. relink edict)
 
