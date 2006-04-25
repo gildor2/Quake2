@@ -705,6 +705,19 @@ void RenderFrame (refdef_t *fd)
 	entity_t *ent;
 	for (i = 0, ent = fd->entities; i < fd->num_entities; i++, ent++)
 		AddEntity (ent);
+	// add all CMODEL_SHOW inline models
+	inlineModel_t *model = map.models;
+	entity_t tempEnt;
+	memset (&tempEnt, 0, sizeof(tempEnt));
+	tempEnt.pos.axis.FromAngles (tempEnt.angles);
+	for (i = 0; i < map.numModels; i++, model++)
+	{
+		if (!(model->flags & CMODEL_SHOW)) continue;
+		// add model via AddEntity()
+		tempEnt.model = model;
+		AddEntity (&tempEnt);
+	}
+
 	// add dlights
 	vp.dlights      = &gl_dlights[gl_numDlights]; //!! gl_numDlights is always 0 here
 	vp.numDlights   = fd->num_dlights;

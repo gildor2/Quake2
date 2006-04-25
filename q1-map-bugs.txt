@@ -8,7 +8,14 @@ dokkur - moving teleport, not function
 efdm1 - cannot load
 efdm10 - infinite teleport + bad map message (colorized string?)
   !! fix bad message (client-side)
-!! efdm8 - crash in ResampleTexture()
 elbow - cannot start (SP only?)
 frivdev1_3 - infinite teleport
 gendm2 - movable teleports, cannot enter
+-----------------
+HL:
+undertow - have elevator (CONTENTS_CURRENT) + strange (solid) water
+* ccity2 - too much entities
+ahl_engholm - have wall, which not blocks movement
+ahl_casagrande - have walls, which not blocks movement + tree base
+citywar2 - have no spawn points ?
+snark_pit - ugly collision bugs!

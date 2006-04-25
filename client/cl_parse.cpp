@@ -179,10 +179,7 @@ static void ParseConfigString ()
 		if (cl.rendererReady)
 		{
 			cl.model_draw[i-CS_MODELS] = RE_RegisterModel (s);
-			if (s[0] == '*')
-				cl.model_clip[i-CS_MODELS] = CM_InlineModel (s);
-			else
-				cl.model_clip[i-CS_MODELS] = NULL;
+			cl.model_clip[i-CS_MODELS] = (s[0] == '*') ? CM_InlineModel (s) : NULL;
 		}
 	}
 	else if (i >= CS_SOUNDS && i < CS_SOUNDS+MAX_SOUNDS)

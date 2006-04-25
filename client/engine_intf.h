@@ -29,6 +29,7 @@ struct refImport_t
 	void	(*_CM_BoxTrace) (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int headnode, int brushmask);
 	void	(*_CM_TransformedBoxTrace) (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int headnode, int brushmask, const CVec3 &origin, const CVec3 &angles);
 	void	(*_CM_TransformedBoxTrace1) (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int headnode, int brushmask, const CVec3 &origin, const CAxis &axis);
+	void	(*_CM_ClipTraceToModels) (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds, int brushmask);
 	int	(*_CM_BrushTrace) (const CVec3 &start, const CVec3 &end, int *brushes, int maxBrushes);
 	int	(*_CM_RefineBrushTrace) (const CVec3 &start, const CVec3 &end, int *brushes, int numBrushes);
 #if _WIN32
@@ -147,6 +148,10 @@ inline void CM_TransformedBoxTrace (trace_t &tr, const CVec3 &start, const CVec3
 inline void CM_TransformedBoxTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int headnode, int brushmask, const CVec3 &origin, const CAxis &axis)
 {
 	ri._CM_TransformedBoxTrace1 (tr, start, end, bounds, headnode, brushmask, origin, axis);
+}
+inline void CM_ClipTraceToModels (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds, int brushmask)
+{
+	ri._CM_ClipTraceToModels (trace, start, end, bounds, brushmask);
 }
 inline int CM_BrushTrace (const CVec3 &start, const CVec3 &end, int *brushes, int maxBrushes)
 {

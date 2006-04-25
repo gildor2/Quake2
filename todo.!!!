@@ -1,3 +1,5 @@
+? work via proxy server (SOCKS?); check Q3 (was removed SOCKS?)
+  - check "FreeCAP" (www.freecap.ru) - open-source prog, which adds SOCKS caps to any app
 ! server: packets are read with unlimited speed, but sent back only sv_fps (10) times per second
   ? may be, split server->client data into 2 lists: game flow (10 times per second) and secondary flow (connection info,
     downloading data etc -- sent back to 'extProtocol' clients every frame)

@@ -5,8 +5,17 @@
 
 
 // cmodel_t.flags
-#define CMODEL_ALPHA	1
-#define CMODEL_MOVABLE	2
+#define CMODEL_ALPHA		0x001	// all model surfaces will have SURF_ALPHA flag (kingpin)
+#define CMODEL_MOVABLE		0x002	// non-static inline model
+#define CMODEL_SHOW			0x004	// will not be sent to game, should draw automatically (func_illusionary in q1/hl)
+#define CMODEL_WALL			0x008	// will not be sent to game, static collision model
+#define CMODEL_NODRAW		0x010	// do not draw model even when have visible surfaces
+#define CMODEL_LADDER		0x020	// func_ladder in hl
+#define CMODEL_WATER		0x040	// func_water with skin==-3
+#define CMODEL_SLIME		0x080	// func_water with skin==-4
+#define CMODEL_LAVA			0x100	// func_water with skin==-5
+
+#define CMODEL_LOCAL		(CMODEL_SHOW|CMODEL_WALL)	// flags of models, not sent to game (processed by engine)
 
 struct cmodel_t
 {
@@ -14,7 +23,7 @@ struct cmodel_t
 	float	radius;
 	int		headnode;
 	int		firstface, numfaces;
-	unsigned flags;
+	unsigned flags;					// set of CMODEL_XXX flags
 };
 
 

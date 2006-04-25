@@ -57,7 +57,7 @@ int num_cl_weaponmodels;
 
 static void V_ClearScene ()
 {
-	r_numdlights = 0;
+	r_numdlights  = 0;
 	r_numentities = 0;
 }
 
@@ -616,6 +616,8 @@ static void DrawSurfInfo ()
 //static CBox nullBox = {{-10,-10,-10},{10,10,10}};
 //static CBox nullBox = {{-20,-20,-20},{20,20,20}};
 	CM_BoxTrace (trace, start, end, nullBox, 0, cont);
+
+	CM_ClipTraceToModels (trace, start, end, nullBox, cont);
 	V_AddLight (trace.endpos, 5, 0.3, 1, 0);	//?? keep or remove? intens > trace bounds!
 //SHOW_TRACE=false;
 	if (!(r_surfinfo->integer & 2))
@@ -682,7 +684,7 @@ static void DrawOriginInfo ()
 
 	int i = CM_PointLeafnum (cl.refdef.vieworg);
 	RE_DrawTextLeft (va("Leaf: %d, cluster: %d, area: %d", i, CM_LeafCluster (i), CM_LeafArea (i)), RGB(0.2,0.4,0.1));
-	DecodeContents (CM_LeafContents (i));
+	DecodeContents (CM_LeafContents (i) | CM_PointModelContents (cl.refdef.vieworg));
 	RE_DrawTextLeft ("", RGB(0,0,0));	// empty line
 }
 

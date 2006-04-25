@@ -275,7 +275,7 @@ notOccluded:	// we use "goto" for unclock() + return false ...
 }
 
 
-static bool WorldBoxOccluded (const CVec3 &mins, const CVec3 &maxs)	//?? CBox
+static bool WorldBoxOccluded (const CBox &bounds)
 {
 //	static cvar_t *test;
 //	if (!test) test=Cvar_Get("test","32");
@@ -287,9 +287,9 @@ static bool WorldBoxOccluded (const CVec3 &mins, const CVec3 &maxs)	//?? CBox
 	for (int i = 0; i < 8; i++)
 	{
 		CVec3	v;
-		v[0] = (i & 1) ? maxs[0] : mins[0];
-		v[1] = (i & 2) ? maxs[1] : mins[1];
-		v[2] = (i & 4) ? maxs[2] : mins[2];
+		v[0] = (i & 1) ? bounds.maxs[0] : bounds.mins[0];
+		v[1] = (i & 2) ? bounds.maxs[1] : bounds.mins[1];
+		v[2] = (i & 4) ? bounds.maxs[2] : bounds.mins[2];
 
 		if (i == 0)
 			n = CM_BrushTrace (vp.view.origin, v, brushes, NUM_TEST_BRUSHES);	// test->integer);
@@ -830,6 +830,7 @@ void model_t::DrawLabel (refEntity_t *e)
 
 bool inlineModel_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
+	if (flags & CMODEL_NODRAW) return false;
 	CVec3 v;
 	bounds.GetCenter (v);
 	VectorSubtract (bounds.maxs, v, out->size2);		// half-size
@@ -1394,7 +1395,7 @@ static node_t *WalkBspTree ()
 			 *   2. its faster to cull every node, than cull every leaf
 			 */
 			if (gl_oCull->integer == 2)
-				occl = WorldBoxOccluded (node->mins, node->maxs);
+				occl = WorldBoxOccluded (node->bounds);
 			else
 			{	// >= 3
 				static refEntity_t ent;		// just zeroed entity

@@ -1,6 +1,7 @@
+?! func_illusionary: can have "skin" field? (check ahl_cs....bsp)
+
 ! find all CS_NAME usage, check 7th bit for each char, replace with color
   ! server: do not colorize string for old clients
-! build brushes for other-than-SOLID contents (for all contents != 0)
 ? changing HL map: may display old name on loading splash (sometimes name changed after map start? after Com_DropError()?)
 
 - texture loading:
@@ -11,9 +12,7 @@
       with the same name)
     - hl: wad textures: different maps => different wads ...
 
-- surface flags (translucent, sky, warp ...)
-  + check 'Docs/hl.txt'
-- surface sounds (hl)
+- surface sounds (hl) -- requires surface info in Trace()
 - inplement "func_illusionary" etc (static entities with and without collision; sfx too)
 
 - entities (hl)
@@ -22,12 +21,19 @@
 
 - .mdl models for Q1 (torch etc)
 
-- check player trace bounds + viewheight for q1/hl
-- hl: increase entity limit (CS_... -- SV_FindIndex())
+- check player trace bounds + viewheight for q1/hl (q1: looks like same as q2; hl -- needs scaling?!)
+- hl: increase entity limit (CS_... -- SV_FindIndex()) -- may be, by using static entities ("func_illusionary" etc)
 - q1/hl: check lightstyle strings
-? force ext protocol for clients
+	// HL: added
+	// 12 UNDERWATER LIGHT MUTATION
+	// this light only distorts the lightmap - no contribution
+	// is made to the brightness of affected surfaces
+	LIGHT_STYLE(12, "mmnnmmnnnmmnn");
+? FORCE ext protocol for clients, when playing q1/hl map (not required: original q2 will fail to load these maps anyway)
 
 ?! ents: convert q1 NPC to q2 NPC
 - check HL animMap.freq (HL viewer: 10 Hz; Q1 - 5 Hz; Q2 - 2 Hz)
 - hl: map 'bounce' have large water area with lightmaps; water activatad by special texture?
 - hl: light_environment; + check "lights.rad" file (SURF_LIGHT analog)
+- hl: rendermode, renderamt fields
+- hl: water waves

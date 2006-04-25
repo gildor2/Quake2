@@ -125,7 +125,7 @@ bool GetBoxRect (const refEntity_t *ent, const CVec3 &size2, float mins2[2], flo
 	// axis - vp.view.axis, rotated to entity coordinate system
 
 	// ClearBounds2D(mins2, maxs2)
-	mins2[0] = mins2[1] = BIG_NUMBER;
+	mins2[0] = mins2[1] =  BIG_NUMBER;
 	maxs2[0] = maxs2[1] = -BIG_NUMBER;
 
 	// enumerate all box points (can try to optimize: find contour ??)

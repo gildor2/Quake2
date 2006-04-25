@@ -465,7 +465,8 @@ int SV_PointContents (const CVec3 &p)
 	guard(SV_PointContents);
 
 	// get base contents from world
-	unsigned contents = CM_PointContents (p, sv.models[1]->headnode);
+	unsigned contents = CM_PointContents (p, 0);
+	contents |= CM_PointModelContents (p);
 
 	edict_t	*list[MAX_EDICTS];
 	int num = SV_AreaEdicts (p, p, ARRAY_ARG(list), AREA_SOLID);
@@ -475,12 +476,10 @@ int SV_PointContents (const CVec3 &p)
 		edict_t *edict = list[i];
 		entityHull_t *ent = &ents[NUM_FOR_EDICT(edict)];
 
-		unsigned c2;
 		if (ent->model)
-			c2 = CM_TransformedPointContents (p, ent->model->headnode, edict->s.origin, ent->axis);
+			contents |= CM_TransformedPointContents (p, ent->model->headnode, edict->s.origin, ent->axis);
 		else
-			c2 = CM_TransformedPointContents (p, CM_HeadnodeForBox (ent->bounds), edict->s.origin, nullVec3);
-		contents |= c2;
+			contents |= CM_TransformedPointContents (p, CM_HeadnodeForBox (ent->bounds), edict->s.origin, nullVec3);
 	}
 	return contents;
 
@@ -488,11 +487,11 @@ int SV_PointContents (const CVec3 &p)
 }
 
 
-static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, edict_t *passedict, int contentmask)
+static void SV_ClipMoveToEntities (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds, edict_t *passedict, int contentmask)
 {
 	guard(SV_ClipMoveToEntities);
 
-	if (tr.allsolid) return;
+	if (trace.allsolid) return;
 
 	int		i;
 
@@ -539,40 +538,28 @@ static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 
 		if (!(contentmask & CONTENTS_DEADMONSTER) && (edict->svflags & SVF_DEADMONSTER))
 			continue;
 
-		CVec3 center;
-		VectorSubtract (ent.center, start, center);
+		CVec3 eCenter;
+		VectorSubtract (ent.center, start, eCenter);
 		// check position of point projection on line
-		float entPos = dot (center, traceDir);
+		float entPos = dot (eCenter, traceDir);
 		if (entPos < -traceWidth - ent.radius || entPos > traceLen + ent.radius)
 			continue;		// too near / too far
 
 		// check distance between point and line
 		CVec3 tmp;
-		VectorMA (center, -entPos, traceDir, tmp);
+		VectorMA (eCenter, -entPos, traceDir, tmp);
 		float dist2 = dot (tmp, tmp);
 		float dist0 = ent.radius + traceWidth;
 		if (dist2 >= dist0 * dist0) continue;
 
-		trace_t	trace;
+		trace_t	tr;
 		if (ent.model)
-			CM_TransformedBoxTrace (trace, start, end, bounds, ent.model->headnode, contentmask, edict->s.origin, ent.axis);
+			CM_TransformedBoxTrace (tr, start, end, bounds, ent.model->headnode, contentmask, edict->s.origin, ent.axis);
 		else
-			CM_TransformedBoxTrace (trace, start, end, bounds, CM_HeadnodeForBox (ent.bounds), contentmask, edict->s.origin, nullVec3);
-
-		if (trace.allsolid || trace.startsolid || trace.fraction < tr.fraction)
-		{
+			CM_TransformedBoxTrace (tr, start, end, bounds, CM_HeadnodeForBox (ent.bounds), contentmask, edict->s.origin, nullVec3);
+		if (CM_CombineTrace (trace, tr))
 			trace.ent = edict;
-		 	if (tr.startsolid)
-			{
-				tr = trace;
-				tr.startsolid = true;	// keep startsolid "true" (BUT: not keep "false")
-			}
-			else
-				tr = trace;
-		}
-		else if (trace.startsolid)
-			tr.startsolid = true;
-		if (tr.allsolid) return;
+		if (trace.allsolid) return;
 	}
 
 	unguard;
@@ -588,8 +575,12 @@ void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bo
 	// clip to world
 	CM_BoxTrace (tr, start, end, bounds, 0, contentmask);
 
-	tr.ent = ge->edicts;
-	if (!tr.fraction) return;		// blocked by the world
+	tr.ent = ge->edicts;				// entity[0]
+	if (tr.fraction == 0) return;		// blocked by the world
+
+	CM_ClipTraceToModels (tr, start, end, bounds, contentmask);
+	tr.ent = ge->edicts;				// entity[0]
+	if (tr.fraction == 0) return;		// blocked by model
 
 	// clip to other solid entities
 	SV_ClipMoveToEntities (tr, start, end, bounds, passedict, contentmask);

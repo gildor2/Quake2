@@ -332,6 +332,23 @@ void CBox::GetCenter (CVec3 &p) const
 		p[i] = (mins[i] + maxs[i]) / 2;
 }
 
+bool CBox::Contains (const CVec3 &p) const
+{
+	for (int i = 0; i < 3; i++)
+		if (p[i] < mins[i] || p[i] > maxs[i]) return false;
+	return true;
+}
+
+bool CBox::Intersects (const CBox &b) const
+{
+	for (int i = 0; i < 3; i++)
+	{
+		if (mins[i] >= b.maxs[i]) return false;
+		if (maxs[i] <= b.mins[i]) return false;
+	}
+	return true;
+}
+
 // returns 1, 2, or 1 + 2
 int CBox::OnPlaneSide (const cplane_t &p) const
 {

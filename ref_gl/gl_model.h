@@ -305,9 +305,11 @@ public:
 class inlineModel_t : public model_t
 {
 public:
+	//?? can add link to cmodel_t instead of copying most fields
 	CBox	bounds;
 	float	radius;
 	int		headnode;			//?? is Q3 inline models have this ?; used for trace functions only
+	unsigned flags;				// CMODEL_XXX flags
 	surfaceBase_t **faces;
 	int		numFaces;
 	inline inlineModel_t () { type = MODEL_INLINE; };

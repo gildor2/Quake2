@@ -292,10 +292,12 @@ struct CBox
 	// fields
 	CVec3	mins, maxs;
 	// methods
-	void Clear ();						// set mins>maxs (negative volume)
-	void Expand (const CVec3 &p);		// expand mins/maxs by point p
-	void Expand (const CBox &b);		// include box b into volume
-	void GetCenter (CVec3 &p) const;	// compute center point
+	void Clear ();							// set mins>maxs (negative volume)
+	void Expand (const CVec3 &p);			// expand mins/maxs by point p
+	void Expand (const CBox &b);			// include box b into volume
+	void GetCenter (CVec3 &p) const;		// compute center point
+	bool Contains (const CVec3 &p) const;	// true, when point is inside box volume
+	bool Intersects (const CBox &b) const;	// true, when boxes have common volume
 	// returns 1 when box placed on a normal-looking side of plane, 2 when on opposite side,
 	// and 3 (1+2) when box intersects plane
 	int OnPlaneSide (const cplane_t &plane) const;
@@ -494,7 +496,7 @@ struct csurface_t
 // passing this structure to game)
 struct trace0_t
 {
-	bool		allsolid;			// if true, plane is not valid
+	bool		allsolid;			// if true, plane is not valid; if 'true', startsolid is 'true' too
 	byte		pad1[3];			// qboolean pad
 	bool		startsolid;			// if true, the initial point was in a solid area
 	byte		pad2[3];			// qboolean pad

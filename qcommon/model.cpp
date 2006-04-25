@@ -2,6 +2,13 @@
 #include "cmodel.h"
 
 //#undef LITTLE_ENDIAN		// test Swap() functions
+//#define ENT_STATS			1		// display stats about entity class counts
+
+#if MAX_DEBUG
+#undef ENT_STATS
+#define ENT_STATS			1
+#endif
+
 
 //!! move to common headers
 inline void LTL(short &v)
@@ -767,6 +774,13 @@ static const CVec3& FindEntityTarget (const char *name)
 	return nullVec3;		// not found
 }
 
+#if ENT_STATS
+static char entClassNames[64][128];
+static int  entClassCounts[128];
+static int  entClassModelCounts[128];
+int numEntClassNames;
+#endif
+
 
 // Returns "true" if entity should be passed to game
 static bool ProcessEntity ()
@@ -810,6 +824,29 @@ static bool ProcessEntity ()
 		else
 			model = &bspfile.models[modelIdx];
 	}
+
+#if ENT_STATS
+	{
+		int i;
+		for (i = 0; i < numEntClassNames; i++)
+			if (!stricmp (entClassNames[i], classname)) break;
+		if (i >= numEntClassNames)
+		{
+			// not appeared before
+			if (numEntClassNames >= ARRAY_COUNT(entClassCounts))
+			{
+				i = 0;
+				strcpy (entClassNames[0], "<< OVERFLOW >>");
+			}
+			numEntClassNames++;
+			strcpy (entClassNames[i], classname);
+			entClassCounts[i]      = 0;
+			entClassModelCounts[i] = 0;
+		}
+		entClassCounts[i]++;
+		if (model) entClassModelCounts[i]++;
+	}
+#endif
 
 	/*----------- check movable inline models -----------*/
 
@@ -1204,7 +1241,6 @@ static bool ProcessEntity ()
 //		else CHANGE("trigger_secret", "target_secret")	//?? not works
 
 //		else CHANGE("trigger_changelevel", "target_changelevel")
-		// func_illusionary: should remember outside game lib and display independently
 
 		if (resetSpawnflags && spawnflagsField)
 			strcpy (spawnflagsField->value, "0");
@@ -1212,6 +1248,76 @@ static bool ProcessEntity ()
 		{
 			origin[2] += 20;
 			strcpy (originField->value, va("%g %g %g", VECTOR_ARG(origin)));
+		}
+	}
+
+	// q1/hl
+	if (model && !strcmp (classname, "func_illusionary"))
+	{
+		model->flags |= CMODEL_SHOW;
+		return false;									// use in renderer only
+	}
+
+	/*------------- Half-Life support -------------*/
+
+	if (bspfile.type == map_hl)
+	{
+		//?? check: is it possible, that one inline model used by few entities?
+		//?? if so, cannot use CMODEL_LOCAL flag for this model!
+		if (model)
+		{
+			// check ability to remove entity
+			bool canRemove = false;
+			if (!spawnflagsField && !FindField ("*target*"))
+				canRemove = true;
+			else if (f = FindField ("dmg"))
+				canRemove = (strcmp (f->value, "0") == 0);
+			//!! all ents have renderamt (alpha=0..255), renderfx (misc effects), rendermode, rendercolor
+			if (!strcmp (classname, "func_ladder"))
+			{
+				model->flags |= CMODEL_LADDER|CMODEL_NODRAW; // mark model
+				if (canRemove)
+				{
+					model->flags |= CMODEL_WALL;
+					return false;
+				}
+				strcpy (classNameField->value, "func_wall"); // else - replace entity
+			}
+			else if (!strcmp (classname, "func_water"))
+			{
+				if (f = FindField ("skin"))
+				{
+					int type = atoi (f->value);
+					switch (type)
+					{
+					case Q1_CONTENTS_WATER:
+						model->flags |= CMODEL_WATER;
+						break;
+					case Q1_CONTENTS_SLIME:
+						model->flags |= CMODEL_SLIME;
+						break;
+					case Q1_CONTENTS_LAVA:
+						model->flags |= CMODEL_LAVA;
+						break;
+					default:
+						Com_DPrintf ("func_water: bad skin=%s\n", f->value);
+					}
+				}
+				//?? process additional fields
+				if (canRemove)
+				{
+					model->flags |= CMODEL_WALL|CMODEL_SHOW;
+					return false;
+				}
+			}
+			else if (!strcmp (classname, "func_wall"))
+			{
+				if (canRemove)
+				{
+					model->flags |= CMODEL_WALL|CMODEL_SHOW;
+					return false;
+				}
+			}
 		}
 	}
 
@@ -1292,6 +1398,10 @@ static const char *ProcessEntstring (const char *entString)
 		Com_DPrintf ("Kingpin map detected\n");
 	}
 
+#if ENT_STATS
+	numEntClassNames = 0;
+#endif
+
 	// find target entities
 	const char *src = entString;
 	numTargets = 0;
@@ -1307,6 +1417,12 @@ static const char *ProcessEntstring (const char *entString)
 		if (ProcessEntity ())
 			WriteEntity (&dst);
 	}
+
+#if ENT_STATS
+	Com_DPrintf ("---- Entity statistics: ----\n-n--ct-mdl-name-------\n");
+	for (int num = 0; num < numEntClassNames; num++)
+		Com_DPrintf ("%2d %3d %3d %s\n", num+1, entClassCounts[num], entClassModelCounts[num], entClassNames[num]);
+#endif
 
 	// parse patch
 	if (patch)

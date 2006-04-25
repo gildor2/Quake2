@@ -652,6 +652,7 @@ extern bool map_clientLoaded;
 
 cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum);
 cmodel_t *CM_InlineModel (const char *name);	// *1, *2, etc
+cmodel_t *CM_InlineModel (int index);
 
 int		CM_NumClusters ();
 int		CM_NumInlineModels ();
@@ -664,6 +665,8 @@ int		CM_HeadnodeForBox (const CBox &box);
 int		CM_PointContents (const CVec3 &p, int headnode);
 int		CM_TransformedPointContents (const CVec3 &p, int headnode, const CVec3 &origin, const CVec3 &angles);
 int		CM_TransformedPointContents (const CVec3 &p, int headnode, const CVec3 &origin, const CAxis &axis);
+int		CM_PointModelContents (const CVec3 &p);
+bool	CM_CombineTrace (trace_t &trace1, const trace_t &trace2);
 
 const byte *CM_ClusterPVS (int cluster);
 

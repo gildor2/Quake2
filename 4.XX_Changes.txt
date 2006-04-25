@@ -225,7 +225,11 @@ Configuration
               quake2 -nointro -nosound -timedemo -demomap demo1 -set nextserver quit
 - support for Quake3 player models; simply put model.pk3 into baseq2 directory and rename file to .pak
   (or use "loadpak model.pk3" command); this feature requires extended protocol support
+  - to use this feature, you should place *.pk3 files with player models into baseq2 directory and
+    rename those files to *.pak (or use "mount baseq2/*.pk3" command)
 - support for Kingpin, Quake1 and Half-Life maps
+  - to use these maps, you should place them with the same rules, as used for Quake2 maps: *.bsp into
+    maps/* directory etc
 
 Server
 ------

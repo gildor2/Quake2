@@ -51,7 +51,7 @@ struct cbrushside_t
 
 struct cbrush_t
 {
-	int		contents;
+	unsigned contents;
 	int		numsides;
 	int		firstbrushside;
 	int		traceFrame;					// to avoid repeated testings
@@ -447,11 +447,6 @@ static void LoadQ2Map (bspfile_t *bsp)
 	LoadAreas (bsp->areas, bsp->numAreas);
 	LoadAreaPortals (bsp->areaportals, bsp->numAreaportals);
 	LoadEntityString (bsp->entStr, bsp->entStrSize);
-
-	InitBoxHull ();
-
-	memset (portalopen, 0, sizeof(portalopen));
-	FloodAreaConnections ();
 }
 
 
@@ -470,13 +465,23 @@ static void LoadSurfaces1 (dBsp1Texinfo_t *data, int size)
 
 	for (int i = 0; i < size; i++, in++, out++)
 	{
+		unsigned flags = 0;
 		// find miptex
 		int miptex = in->miptex;
-		dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)map_bspfile->miptex1 + map_bspfile->miptex1->dataofs[miptex] );
-		appStrncpyz (out->texture, tex->name, sizeof(out->texture));
+		int offset = map_bspfile->miptex1->dataofs[miptex];
+		if (offset != -1)
+		{
+			dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)map_bspfile->miptex1 + offset );
+			appStrncpyz (out->texture, tex->name, sizeof(out->texture));
+		}
+		else
+		{
+			miptex = -1;
+			out->texture[0] = 0;	// null name
+			flags |= SURF_NODRAW;	// not used, but ...
+		}
 		memcpy (out->vecs, in->vecs, sizeof(out->vecs));
 		// compute surface flags
-		unsigned flags = 0;
 		if ((out->texture[0] == '*' && map_bspfile->type == map_q1) ||
 			(out->texture[0] == '!' && map_bspfile->type == map_hl))
 			flags |= SURF_WARP;
@@ -561,9 +566,10 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 			CONTENTS_CURRENT_270|CONTENTS_WATER,
 			CONTENTS_CURRENT_UP|CONTENTS_WATER,
 			CONTENTS_CURRENT_DOWN|CONTENTS_WATER,
-			CONTENTS_TRANSLUCENT		// -15
+			CONTENTS_TRANSLUCENT,		// -15
+			CONTENTS_LADDER|CONTENTS_SOLID
 		};
-		if (in->contents >= 0 || in->contents < -15)
+		if (in->contents >= 0 || in->contents < -16)
 			Com_DropError ("unknown contents in Q1/HL map: %d", in->contents);
 		out->contents       = q1Contents[-in->contents - 1];	// -1 => 0, -2 => 1 ...
 		out->area           = 0;
@@ -600,13 +606,13 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 		map_leafBrushes[i] = i;
 
 #if 0
-	int minCounts[16], surfCounts[16], leafCounts[16];
-	memset(minCounts,0x7F,16*4);
-	memset(surfCounts,0,16*4);
-	memset(leafCounts,0,16*4);
+	int minCounts[17], surfCounts[17], leafCounts[17];
+	memset(minCounts,0x7F,17*4);
+	memset(surfCounts,0,17*4);
+	memset(leafCounts,0,17*4);
 	const char *q1names[] = {
 		"??", "EMPTY", "SOLID", "WATER", "SLIME", "LAVA", "SKY", "ORIGIN", "CLIP",
-		"CURR_0", "CURR_90", "CURR_180", "CURR_270", "CURR_UP", "CURR_DOWN", "TRANS"
+		"CURR_0", "CURR_90", "CURR_180", "CURR_270", "CURR_UP", "CURR_DOWN", "TRANS", "LADDER"
 	};
 	for (i = 0, in = data; i < size; i++, in++)
 	{
@@ -615,7 +621,7 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 		surfCounts[n] += in->numleaffaces;
 		leafCounts[n]++;
 	}
-	for (i = 0; i < 16; i++)
+	for (i = 0; i < 17; i++)
 		if (leafCounts[i])
 			appPrintf ("%2d/%10s: min=%5d  surf=%5d  leaf=%5d\n", i, q1names[i], minCounts[i], surfCounts[i], leafCounts[i]);
 #endif
@@ -783,6 +789,51 @@ static void BuildBrushes1 (int numLeafsOrig)
 }
 
 
+//?? recursive (use 'stack'?)
+static void SetNodeContents (int nodenum, unsigned contents)
+{
+again:
+	if (nodenum < 0)
+	{
+		// leaf
+		dBsp2Leaf_t &leaf = map_leafs[-1 - nodenum];
+		if (leaf.contents) leaf.contents = contents;
+		// brushes
+		for (int i = 0; i < leaf.numleafbrushes; i++)
+		{
+			//-------------- test brush --------------------
+			int brushNum = map_leafBrushes[leaf.firstleafbrush + i];
+			cbrush_t &b = map_brushes[brushNum];
+			if (b.contents) b.contents = contents;
+		}
+	}
+	else
+	{
+		cnode_t *node = map_nodes + nodenum;
+		SetNodeContents (node->children[0], contents);
+		nodenum = node->children[1];
+		goto again;
+	}
+}
+
+
+static void ProcessModels1 ()
+{
+	cmodel_t *m = map_cmodels;
+	for (int i = 0; i < numcmodels; i++, m++)
+	{
+		if (m->flags & CMODEL_LADDER)
+			SetNodeContents (m->headnode, CONTENTS_LADDER|CONTENTS_SOLID);
+		else if (m->flags & CMODEL_WATER)
+			SetNodeContents (m->headnode, CONTENTS_WATER);
+		else if (m->flags & CMODEL_SLIME)
+			SetNodeContents (m->headnode, CONTENTS_SLIME);
+		else if (m->flags & CMODEL_LAVA)
+			SetNodeContents (m->headnode, CONTENTS_LAVA);
+	}
+}
+
+
 static void LoadQ1Map (bspfile_t *bsp)
 {
 	LoadPlanes (bsp->planes, bsp->numPlanes);
@@ -799,19 +850,16 @@ static void LoadQ1Map (bspfile_t *bsp)
 
 	// Q1 areas: simulate loading (create 1 area)
 	map_areas = new (dataChain) carea_t;
-	numAreas = 1;
-	map_areas[0].numareaportals  = 0;
-	map_areas[0].firstareaportal = 0;
-	map_areas[0].floodvalid      = 0;
-	map_areas[0].floodnum        = 0;
+	numAreas  = 1;
+//	map_areas[0].numareaportals  = 0;
+//	map_areas[0].firstareaportal = 0;
+//	map_areas[0].floodvalid      = 0;
+//	map_areas[0].floodnum        = 0;
 	numareaportals = 0;
 
 	LoadEntityString (bsp->entStr, bsp->entStrSize);
 
-	InitBoxHull ();
-
-	memset (portalopen, 0, sizeof(portalopen));
-	FloodAreaConnections ();
+	ProcessModels1 ();
 }
 
 
@@ -875,6 +923,10 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 		Com_DropError ("unknown bsp->type for %s", name);
 	}
 
+	memset (portalopen, 0, sizeof(portalopen));
+	FloodAreaConnections ();
+	InitBoxHull ();
+
 	strcpy (map_name, name);
 	return &map_cmodels[0];
 
@@ -921,11 +973,13 @@ CBrush *CM_BuildBrush (int brushNum, CMemoryChain *mem)
 cmodel_t *CM_InlineModel (const char *name)
 {
 	if (!name || name[0] != '*') Com_DropError ("CM_InlineModel: bad name");
+	return CM_InlineModel (atoi (name+1));
+}
 
-	int num = atoi (name+1);
-	if (num < 1 || num >= numcmodels) Com_DropError ("CM_InlineModel: bad number");
-
-	return &map_cmodels[num];
+cmodel_t *CM_InlineModel (int index)
+{
+	if (index < 1 || index >= numcmodels) Com_DropError ("CM_InlineModel: bad number");
+	return &map_cmodels[index];
 }
 
 int CM_NumClusters ()
@@ -1727,6 +1781,96 @@ void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &en
 }
 
 
+//?? implement as method of trace_t
+bool CM_CombineTrace (trace_t &trace1, const trace_t &trace2)
+{
+	if (trace1.allsolid)
+		return false;
+
+	bool ret = false;
+
+	if (trace2.allsolid)
+	{
+		trace1.startsolid = true;
+		trace1.allsolid   = true;
+		ret = true;
+	}
+
+	if (trace1.startsolid)
+	{
+		trace1.startsolid = true;
+		ret = true;
+	}
+
+	if (trace2.fraction < trace1.fraction)
+	{
+		bool solid1 = trace1.startsolid;
+		trace1 = trace2;
+		trace1.startsolid |= solid1;
+		return true;
+	}
+
+	return ret;
+}
+
+
+// clip trace to all CMODEL_WALL models
+void CM_ClipTraceToModels (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds, int brushmask)
+{
+	guard(CM_ClipTraceToModels);
+
+	int i;
+
+	CBox traceVolume;
+	for (i = 0; i < 3; i++)
+	{
+		if (start[i] < end[i])
+		{
+			traceVolume.mins[i] = bounds.mins[i] + start[i];
+			traceVolume.maxs[i] = bounds.maxs[i] + end[i];
+		}
+		else
+		{
+			traceVolume.mins[i] = bounds.mins[i] + end[i];
+			traceVolume.maxs[i] = bounds.maxs[i] + start[i];
+		}
+	}
+
+	cmodel_t *model;
+	for (i = 0, model = map_cmodels; i < numcmodels; i++, model++)
+	{
+		if (!(model->flags & CMODEL_WALL)) continue;
+		if (!model->bounds.Intersects (traceVolume)) continue;
+
+		// these entities are not roteted and have origin = {0,0,0}
+		trace_t tr;
+		CM_BoxTrace (tr, start, end, bounds, model->headnode, brushmask);
+		CM_CombineTrace (trace, tr);
+		if (trace.allsolid) return;
+	}
+
+	unguard;
+}
+
+
+int CM_PointModelContents (const CVec3 &p)
+{
+	int contents = 0;
+
+	int i;
+	cmodel_t *model;
+	for (i = 0, model = map_cmodels; i < numcmodels; i++, model++)
+	{
+		if (!(model->flags & CMODEL_WALL)) continue;
+		if (!model->bounds.Contains (p)) continue;
+
+		contents |= map_leafs[CM_PointLeafnum (p, model->headnode)].contents;
+	}
+
+	return contents;
+}
+
+
 /*-----------------------------------------------------------------------------
 	Occlusion test
 -----------------------------------------------------------------------------*/
@@ -1949,7 +2093,7 @@ const byte *CM_ClusterPVS (int cluster)
 	if (!map_bspfile->visInfo)
 	{
 		// only 1 cluster per whole map
-		static const byte noVisPVS[] = { 255, 255 };	// one byte enough ...
+		static const byte noVisPVS[] = { 255, 255, 255, 255 };	// one byte enough ...
 		return noVisPVS;
 	}
 

@@ -357,6 +357,7 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 		out->bounds   = data->bounds;
 		out->radius   = data->radius;
 		out->headnode = data->headnode;
+		out->flags    = data->flags;
 		// create surface list
 		out->numFaces = data->numfaces;
 		out->faces    = new (map.dataChain) surfaceBase_t* [out->numFaces];
@@ -522,6 +523,10 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 			return gl_defaultShader;
 		}
 	}
+
+	// null name (set in cmodel.cpp::LoadSurfaces1()) -> invisible surface
+	//?? any texture or invisible texture ?
+	if (!stex->texture[0]) return gl_defaultShader;
 
 	TString<MAX_QPATH> Name;
 	Name.sprintf ("textures/%s", stex->texture);

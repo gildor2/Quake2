@@ -19,6 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "server.h"
+#include "cmodel.h"
 
 server_static_t	svs;				// persistant server info
 server_t		sv;					// local server
@@ -193,15 +194,21 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 		appSprintf (sv.configstrings[CS_MODELS+1], sizeof(sv.configstrings[CS_MODELS+1]), "maps/%s.bsp", server);
 		sv.models[1] = CM_LoadMap (sv.configstrings[CS_MODELS+1], false, &checksum);
 	}
-	appSprintf (sv.configstrings[CS_MAPCHECKSUM], sizeof(sv.configstrings[CS_MAPCHECKSUM]), "%i", checksum);
+	appSprintf (sv.configstrings[CS_MAPCHECKSUM], sizeof(sv.configstrings[CS_MAPCHECKSUM]), "%d", checksum);
 
 	// clear physics interaction links
 	SV_ClearWorld ();
-
+	// add inline models (skip some models, not needed by game)
+	int modelIndex = 1;
 	for (i = 1; i < CM_NumInlineModels (); i++)
 	{
-		appSprintf (sv.configstrings[CS_MODELS+1+i], sizeof(sv.configstrings[CS_MODELS+1+i]), "*%i", i);
-		sv.models[i+1] = CM_InlineModel (sv.configstrings[CS_MODELS+1+i]);
+		cmodel_t *model = CM_InlineModel (i);
+		if (!(model->flags & CMODEL_LOCAL))
+		{
+			appSprintf (sv.configstrings[CS_MODELS+1+modelIndex], sizeof(sv.configstrings[0]), "*%d", i);
+			sv.models[modelIndex+1] = model;
+			modelIndex++;
+		}
 	}
 
 	// spawn the rest of the entities on the map

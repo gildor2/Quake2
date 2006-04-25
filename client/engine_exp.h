@@ -29,6 +29,7 @@ static const refImport_t ri = {
 	CM_BoxTrace,
 	CM_TransformedBoxTrace,
 	CM_TransformedBoxTrace,
+	CM_ClipTraceToModels,
 	CM_BrushTrace,
 	CM_RefineBrushTrace
 #if _WIN32

@@ -517,6 +517,7 @@ struct dBsp1Model_t
 #define	Q1_CONTENTS_CURRENT_DOWN	-14
 
 #define Q1_CONTENTS_TRANSLUCENT		-15
+#define Q1_CONTENTS_LADDER			-16	// HL, set by func_ladder
 
 
 struct dBsp1MiptexLump_t

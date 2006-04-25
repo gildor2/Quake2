@@ -36,6 +36,7 @@ bspfile_t* LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 void CM_BoxTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int headnode, int brushmask);
 void CM_TransformedBoxTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int headnode, int brushmask, const CVec3 &origin, const CVec3 &angles);
 void CM_TransformedBoxTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int headnode, int brushmask, const CVec3 &origin, const CAxis &axis);
+void CM_ClipTraceToModels (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds, int brushmask);
 int CM_BrushTrace (const CVec3 &start, const CVec3 &end, int *brushes, int maxBrushes);
 int CM_RefineBrushTrace (const CVec3 &start, const CVec3 &end, int *brushes, int numBrushes);
 
