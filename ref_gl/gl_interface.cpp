@@ -218,7 +218,8 @@ void GL_Bind (const image_t *tex)
 		if (gl_state.textureTarget[tmu] != tex->target)
 		{
 			// switch texture target
-			if ((gl_config.platformId & HW_GF2MX) && tex->alphaType) // BUG001 FIX
+			if ((gl_config.platformId & HW_GF2MX) &&
+				tex->alphaType && tex != gl_state.currentBinds[tmu]) // BUG001 FIX
 			{
 				LOG_STRING("// fix BUG001\n");
 				// bind any TEXTURE_2D texture within alpha channel
@@ -229,7 +230,6 @@ void GL_Bind (const image_t *tex)
 			glEnable (tex->target);
 			gl_state.textureTarget[tmu] = tex->target;
 		}
-
 		if (tex == gl_state.currentBinds[tmu]) return;
 
 		gl_state.currentBinds[tmu] = tex;

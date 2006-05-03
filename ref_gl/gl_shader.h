@@ -320,25 +320,26 @@ void	ResetShaders ();				// should be called every time before loading a new map
 #define LIGHTMAP_RESERVE	(1024-1)	// lightmap will be set when valid number specified in subsequent SetShaderLightmap() call
 
 // shader styles for auto-generation (if script is not found)
-#define SHADER_SCROLL		0x0001		// SURF_FLOWING (tcMod scroll -1.4 0)
-#define SHADER_TURB			0x0002		// SURF_WARP (tcMod warp, tessSize 64)
-#define SHADER_TRANS33		0x0004		// SURF_TRANS33 (alphaGen const 0.33, blend)
-#define SHADER_TRANS66		0x0008		// SURF_TRANS66 (alphaGen const 0.66, blend)
-#define SHADER_FORCEALPHA	0x0010		// for alphaGen vertex (image itself may be without alpha-channel)
-#define SHADER_ALPHA		0x0020		// use texture's alpha channel (depends on itage.alphaType: 0->none, 1->alphaTest or blend, 2->blend)
-#define SHADER_WALL			0x0040		// shader used as a wall texture (not GUI 2D image), also do mipmap
-#define SHADER_SKIN			0x0080		// shader used as skin for frame models
-#define SHADER_SKY			0x0100		// SURF_SKY (use surface for sky drawing)
-#define SHADER_ANIM			0x0200		// main stage will contain more than 1 texture (names passed as name1<0>name2<0>...nameN<0><0>)
-#define SHADER_LIGHTMAP		0x0400		// reserve lightmap stage (need GL_SetShaderLightmap() later)
-#define SHADER_TRYLIGHTMAP	0x0800		// usualy not containing lightmap, but if present - generate it
-#define SHADER_ENVMAP		0x1000		// make additional rendering pass with specular environment map
-#define SHADER_ENVMAP2		0x2000		// add diffuse environment map
-#define SHADER_CLAMP		0x4000		// load image with IMAGE_CLAMP flag
-#define SHADER_ABSTRACT		0x8000		// create shader without stages
+#define SHADER_SCROLL		0x00001		// SURF_FLOWING (tcMod scroll -1.4 0)
+#define SHADER_TURB			0x00002		// SURF_WARP (tcMod warp, tessSize 64)
+#define SHADER_TRANS33		0x00004		// SURF_TRANS33 (alphaGen const 0.33, blend)
+#define SHADER_TRANS66		0x00008		// SURF_TRANS66 (alphaGen const 0.66, blend)
+#define SHADER_FORCEALPHA	0x00010		// for alphaGen vertex (image itself may be without alpha-channel)
+#define SHADER_ALPHA		0x00020		// use texture's alpha channel (depends on itage.alphaType: 0->none, 1->alphaTest or blend, 2->blend)
+#define SHADER_ENT_ALPHA	0x00040		// use 'alphaGen entity'; used with SHADER_FORCEALPHA only!
+#define SHADER_WALL			0x00080		// shader used as a wall texture (not GUI 2D image), also do mipmap
+#define SHADER_SKIN			0x00100		// shader used as skin for frame models
+#define SHADER_SKY			0x00200		// SURF_SKY (use surface for sky drawing)
+#define SHADER_ANIM			0x00400		// main stage will contain more than 1 texture (names passed as name1<0>name2<0>...nameN<0><0>)
+#define SHADER_LIGHTMAP		0x00800		// reserve lightmap stage (need GL_SetShaderLightmap() later)
+#define SHADER_TRYLIGHTMAP	0x01000		// usualy not containing lightmap, but if present - generate it
+#define SHADER_ENVMAP		0x02000		// make additional rendering pass with specular environment map
+#define SHADER_ENVMAP2		0x04000		// add diffuse environment map
+#define SHADER_CLAMP		0x08000		// load image with IMAGE_CLAMP flag
+#define SHADER_ABSTRACT		0x10000		// create shader without stages
 
 // mask of styles, stored to shader (exclude hints)
-#define SHADER_STYLEMASK	0x0000FFFF
+#define SHADER_STYLEMASK	0x000FFFFF
 
 // styles (hints) valid for FindShader(), buf not stored in shader_t
 #define SHADER_CHECK		0x40000000	// if shader doesn't exists, FindShader() will return NULL and do not generate error

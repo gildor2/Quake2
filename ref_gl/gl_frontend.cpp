@@ -836,6 +836,11 @@ bool inlineModel_t::InitEntity (entity_t *ent, refEntity_t *out)
 	VectorSubtract (bounds.maxs, v, out->size2);		// half-size
 	out->coord.UnTransformPoint (v, out->center);
 	out->radius = radius;
+	if (color.c[3] != 255)
+	{
+		if (color.c[3] == 0) return false;				// alpha==0, do not draw model
+		out->shaderColor.c[3] = color.c[3];
+	}
 	return true;
 }
 
@@ -1977,11 +1982,35 @@ void AddEntity (entity_t *ent)
 	out->coord = ent->pos;
 	if (ent->model)
 	{
+#if 0
+		-- does not works: vec=={1,0,0} may be represented in memory as {1,0,-0} (-0 is 0x80000000)
+		-- note: fast FNegate(0) => -0 is not a reason of this!
 		if (!memcmp (&ent->pos.origin, &nullVec3, sizeof(CVec3)) &&
 			!memcmp (&ent->pos.axis, &identAxis, sizeof(CAxis)))
 			out->worldMatrix = true;
 		else
 			out->worldMatrix = false;
+		// dump for debug:
+		DrawTextLeft(va("%s: %g %g %g : %g %g %g - %g %g %g - %g %g %g",*ent->model->Name,VECTOR_ARG(ent->pos.origin),
+		VECTOR_ARG(ent->pos.axis[0]),VECTOR_ARG(ent->pos.axis[1]),VECTOR_ARG(ent->pos.axis[2])),RGB(1,1,0));
+#define D(n) \
+	DrawTextLeft(va("%08X %08X %08X",uint_cast_const(n[0]),uint_cast_const(n[1]),uint_cast_const(n[2])));
+		if (ent->model->Name[0] == '*' && !strcmp(ent->model->Name,"*223"))
+		{
+			D(ent->pos.origin);
+			D(nullVec3);
+			D(ent->pos.axis[0]);
+			D(identAxis[0]);
+			D(ent->pos.axis[1]);
+			D(identAxis[1]);
+			D(ent->pos.axis[2]);
+			D(identAxis[2]);
+		}
+#undef D
+#else
+		out->worldMatrix = (ent->pos.origin[0] == 0 && ent->pos.origin[1] == 0 && ent->pos.origin[2] == 0 &&
+							ent->pos.axis[0][0] == 1 && ent->pos.axis[1][1] == 1 && ent->pos.axis[2][2] == 1);
+#endif
 		out->drawScale = (ent->scale) ? ent->scale : 1.0f;	// 0 == 1 == original size
 		out->mirror    = mirror;
 		out->frame     = ent->frame;

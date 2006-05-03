@@ -27,6 +27,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define Com_FatalError	appFatalError
 #define Com_DropError	appNonFatalError
 
+//#define TRACE_DEBUG		1
+
+
 //-------- declarations, required for ref_xxxx.h --------------
 
 // forward declarations; should remove!!
@@ -647,6 +650,10 @@ void	Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, const char *form
 
 struct cmodel_t;		// full declaration in cmodel.h
 
+#if TRACE_DEBUG
+extern bool cm_showTrace;
+#endif
+
 extern char map_name[];
 extern bool map_clientLoaded;
 
@@ -758,6 +765,8 @@ bool	Com_CheckCmdlineVar (const char *name);
 void	Com_Init (const char *cmdline);
 void	Com_Frame (float msec);
 
+extern bool com_isClient, com_isServer;
+
 // this is in the client code, but can be used for debugging from server
 void	SCR_DebugGraph (float value, int color);
 
@@ -780,7 +789,7 @@ void	CL_Shutdown ();
 void	CL_Frame (float msec, float realMsec);
 
 void	Key_Init ();
-void	SCR_BeginLoadingPlaque ();
+void	SCR_BeginLoadingPlaque (bool server = false);
 
 void	SV_Init ();
 void	SV_Shutdown (const char *finalmsg, bool reconnect = false);

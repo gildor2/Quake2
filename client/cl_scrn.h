@@ -3,7 +3,7 @@ void SCR_UpdateScreen ();
 
 void SCR_CenterPrint (const char *str);
 
-//void SCR_BeginLoadingPlaque (); -- declared in qcommon.h
+//void SCR_BeginLoadingPlaque (bool server = false); -- declared in qcommon.h
 void SCR_EndLoadingPlaque (bool force);	//?? is "force" needed ?
 void SCR_LoadingNotify (const char *msg, float frac);
 

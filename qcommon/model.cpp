@@ -1,7 +1,6 @@
 #include "qcommon.h"
 #include "cmodel.h"
 
-//#undef LITTLE_ENDIAN		// test Swap() functions
 //#define ENT_STATS			1		// display stats about entity class counts
 
 #if MAX_DEBUG
@@ -9,33 +8,6 @@
 #define ENT_STATS			1
 #endif
 
-
-//!! move to common headers
-inline void LTL(short &v)
-{
-	v = LittleShort (v);
-}
-inline void LTL(unsigned short &v)
-{
-	v = LittleShort (v);
-}
-inline void LTL(int &v)
-{
-	v = LittleLong (v);
-}
-inline void LTL(unsigned &v)
-{
-	v = LittleLong (v);
-}
-inline void LTL(float &v)
-{
-	v = LittleFloat (v);
-}
-inline void LTL(CVec3 &v)
-{
-	for (int i = 0; i < 3; i++)
-		v[i] = LittleFloat (v[i]);
-}
 
 static bspfile_t bspfile;
 static lump_t *lumps;
@@ -286,6 +258,7 @@ static void LoadQ2Submodels (bspfile_t *f, dBsp2Model_t *data)
 		out->flags     = 0;
 		out->firstface = data->firstface;
 		out->numfaces  = data->numfaces;
+		out->color.rgba = RGBA(1,1,1,1);
 		// dBsp2Model_t have unused field "origin"
 	}
 }
@@ -304,7 +277,8 @@ static void LoadQ1Submodels (bspfile_t *f, dBsp1Model_t *data)
 		out->flags     = 0;
 		out->firstface = data->firstface;
 		out->numfaces  = data->numfaces;
-		//?? dBsp1Model_t have unused field "origin"
+		out->color.rgba = RGBA(1,1,1,1);
+		// dBsp1Model_t have unused field "origin"
 	}
 }
 
@@ -794,6 +768,13 @@ static bool ProcessEntity ()
 	entField_t *classNameField = FindField ("classname");
 	if (classNameField)
 		classname = classNameField->value;
+
+#if 0
+	EXEC_ONCE(appPrintf(S_RED"REMOVING MOST ENTITIES\n"));
+	if (!memcmp (classname, "func_", 5) || !memcmp (classname, "weapon_", 7) || !memcmp (classname, "trigger_", 8) ||
+		!memcmp (classname, "env_", 4) || !memcmp (classname, "ammo_", 5) || !memcmp (classname, "item_", 5)) return false;
+#endif
+
 	// get spawnflags
 	int spawnflags = 0;
 	entField_t *spawnflagsField = FindField ("spawnflags");
@@ -815,14 +796,19 @@ static bool ProcessEntity ()
 	// get inline model
 	cmodel_t *model = NULL;
 	int modelIdx;
-	if (f = FindField ("model"))
+	entField_t *modelField = FindField ("model");
+	if (modelField)
 	{
 		//!! note: HL can use different models here (non-inline)
-		sscanf (f->value, "*%d", &modelIdx);
-		if (modelIdx >= bspfile.numModels)
-			Com_DPrintf ("invalid model index %d\n", modelIdx);
-		else
-			model = &bspfile.models[modelIdx];
+		if (sscanf (modelField->value, "*%d", &modelIdx) == 1)
+		{
+			if (modelIdx >= bspfile.numModels)
+				Com_DPrintf ("invalid model index %d\n", modelIdx);
+			else
+				model = &bspfile.models[modelIdx];
+			if (model && originField)		//!! WARNING: collision is not supported with biased origin
+				model->origin = origin;
+		}
 	}
 
 #if ENT_STATS
@@ -1165,6 +1151,7 @@ static bool ProcessEntity ()
 	}
 
 	/*-------------- Quake1 support ---------------*/
+
 	bool resetSpawnflags = false;
 	bool shiftUp = false;
 #define CHANGE(orig, new)			\
@@ -1251,31 +1238,54 @@ static bool ProcessEntity ()
 		}
 	}
 
-	// q1/hl
-	if (model && !strcmp (classname, "func_illusionary"))
-	{
-		model->flags |= CMODEL_SHOW;
-		return false;									// use in renderer only
-	}
-
 	/*------------- Half-Life support -------------*/
-
 	if (bspfile.type == map_hl)
 	{
+		color_t entColor;
+		entColor.rgba = RGBA(1,1,1,1);
+		// read render properties
+		if (f = FindField ("rendercolor"))
+		{
+#if 0
+			-- used for few "rendermode" types only; not for brush models!
+			int c[3];
+			if (sscanf (f->value, "%f %f %f", VECTOR_ARG(&c)) != 3)
+				c[0] = c[1] = c[2] = 255;
+			entColor.c[0] = c[0];
+			entColor.c[1] = c[1];
+			entColor.c[2] = c[2];
+#endif
+			RemoveField ("rendercolor");
+		}
+		if (f = FindField ("renderamt"))
+		{
+			entColor.c[3] = atoi (f->value);
+			RemoveField ("renderamt");
+		}
+		if (f = FindField ("rendermode"))
+		{
+			int rendermode = atoi (f->value);
+			if (rendermode == 0) entColor.c[3] = 255;	// ignore renderamt in rendermode 0 ("normal")
+			RemoveField ("rendermode");
+		}
+		else
+			entColor.c[3] = 255;						// default rendermode == 0
+
 		//?? check: is it possible, that one inline model used by few entities?
 		//?? if so, cannot use CMODEL_LOCAL flag for this model!
 		if (model)
 		{
+			model->color = entColor;
 			// check ability to remove entity
 			bool canRemove = false;
 			if (!spawnflagsField && !FindField ("*target*"))
 				canRemove = true;
 			else if (f = FindField ("dmg"))
 				canRemove = (strcmp (f->value, "0") == 0);
-			//!! all ents have renderamt (alpha=0..255), renderfx (misc effects), rendermode, rendercolor
 			if (!strcmp (classname, "func_ladder"))
 			{
-				model->flags |= CMODEL_LADDER|CMODEL_NODRAW; // mark model
+				model->flags |= CMODEL_CONTENTS|CMODEL_NODRAW; // mark model
+				model->contents = CONTENTS_LADDER|CONTENTS_SOLID;
 				if (canRemove)
 				{
 					model->flags |= CMODEL_WALL;
@@ -1291,17 +1301,19 @@ static bool ProcessEntity ()
 					switch (type)
 					{
 					case Q1_CONTENTS_WATER:
-						model->flags |= CMODEL_WATER;
+						model->contents = CONTENTS_WATER;
 						break;
 					case Q1_CONTENTS_SLIME:
-						model->flags |= CMODEL_SLIME;
+						model->contents = CONTENTS_SLIME;
 						break;
 					case Q1_CONTENTS_LAVA:
-						model->flags |= CMODEL_LAVA;
+						model->contents = CONTENTS_LAVA;
 						break;
 					default:
 						Com_DPrintf ("func_water: bad skin=%s\n", f->value);
+						model->contents = CONTENTS_SOLID;
 					}
+					model->flags |= CMODEL_CONTENTS;
 				}
 				//?? process additional fields
 				if (canRemove)
@@ -1318,7 +1330,114 @@ static bool ProcessEntity ()
 					return false;
 				}
 			}
+			else if (!strcmp(classname,"func_conveyor"))
+			{
+				// quake2 game have "func_conveyor", but its implementation is not working;
+				// and I have not found any quake2 map with this entity ...
+				// So, we should replace half-life entity with something static
+				if (spawnflagsField) strcpy(spawnflagsField->value,"0");	//??
+				//?? spawnflags & 2 -> visual only (non-solid)
+				// "angle" have encoded CONTENTS_CURRENT_XXX
+				if (f = FindField ("angle"))
+				{
+					static const struct {
+						int angle;
+						unsigned contents;
+					} angleCont[] = {
+						{ -1, CONTENTS_CURRENT_UP},			// ANGLE_UP
+						{ -2, CONTENTS_CURRENT_DOWN},		// ANGLE_DOWN
+						{  0, CONTENTS_CURRENT_0},
+						{ 90, CONTENTS_CURRENT_90},
+						{180, CONTENTS_CURRENT_180},
+						{270, CONTENTS_CURRENT_270}
+					};
+					int a = atoi (f->value);
+					unsigned cont = 0;
+					for (int i = 0; i < ARRAY_COUNT(angleCont); i++)
+						if (angleCont[i].angle == a)
+						{
+							cont = angleCont[i].contents;
+							break;
+						}
+					if (!cont) Com_DPrintf ("func_conveyor: unknown angle %d\n", a);
+					model->contents = cont|CONTENTS_SOLID;
+					model->flags |= CMODEL_CONTENTS;
+				}
+				if (spawnflags & 1)							// "not push" flag
+					model->contents &= ~MASK_CURRENT;
+				if (spawnflags & 2)							//?? may be, WALL, but non-SOLID ? (allow OR of other contents)
+				{
+					model->flags |= CMODEL_SHOW;			// visual only
+					model->contents &= ~CONTENTS_SOLID;
+				}
+				else
+				{
+					model->flags |= CMODEL_WALL|CMODEL_SHOW;
+				}
+				model->flags |= CMODEL_SCROLL;
+				//?? flag: SURF_FLOWING for this entity
+				return false;								// do not send to game
+			}
+			else if (!strcmp (classname, "trigger_push"))
+			{
+//				if (!FindField ("angle") && !FindField ("angles"))
+//					AddField ("angles", "0 0 0");
+				return false;		//?? cannot get this to work
+			}
 		}
+		if (!strcmp (classname, "env_sprite"))
+		{
+			if (!modelField)
+			{
+				Com_DPrintf ("env_sprite without model\n");
+				return false;
+			}
+			// convert standard effects
+			const char *mdl = modelField->value;
+			if (strncmp (mdl, "sprites/", 8) != 0)
+			{
+				Com_DPrintf ("env_sprite: non-sprite model\n");
+				return false;
+			}
+			mdl += 8;										// skip "sprites/"
+			if (strstr (mdl, "flare"))
+			{
+				color_t c;
+				c.rgba = entColor.rgba;
+				if (!strncmp (mdl, "blue", 4))
+					c.rgba = RGB255(0, 192, 255);
+				else if (!strncmp (mdl, "red", 3))
+					c.rgba = RGB255(255, 0, 64);
+				else if (!strncmp (mdl, "yel", 3))
+					c.rgba = RGB255(255, 192, 0);
+
+				lightFlare_t *flare = new (bspfile.extraChain) lightFlare_t;
+				flare->next = bspfile.flares;
+				bspfile.flares = flare;
+				bspfile.numFlares++;
+				flare->size = 48;
+				flare->style = 0;
+				flare->color.rgba = c.rgba;
+
+				flare->origin = origin;
+			}
+			return false;
+		}
+		// func_breakable
+		else if (!strcmp (classname, "func_breakable"))
+		{
+			//!!
+//			strcpy (classNameField->value, "func_explosive");
+			strcpy (classNameField->value, "func_wall");
+			if (spawnflagsField) strcpy (spawnflagsField->value, "0");
+		}
+	}
+
+	// q1/hl
+	if (model && !strcmp (classname, "func_illusionary"))
+	{
+		model->flags |= CMODEL_SHOW;
+		return false;									// use in renderer only
 	}
 
 	/*-------------- Kingpin support --------------*/
@@ -1381,7 +1500,6 @@ static const char *ProcessEntstring (const char *entString)
 {
 	guard(ProcessEntstring);
 
-	// patch (temporary !!)
 	unsigned plen;
 	char *patch = (char*) GFileSystem->LoadFile (va("%s.add", bspfile.name), &plen);
 	plen++;	// add 1 byte for trailing zero

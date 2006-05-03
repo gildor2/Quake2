@@ -715,6 +715,7 @@ void RenderFrame (refdef_t *fd)
 		if (!(model->flags & CMODEL_SHOW)) continue;
 		// add model via AddEntity()
 		tempEnt.model = model;
+		tempEnt.pos.origin = model->origin;
 		AddEntity (&tempEnt);
 	}
 
@@ -943,9 +944,22 @@ void SetSky (const char *name, float rotate, const CVec3 &axis)
 {
 	shader_t *old = gl_skyShader;
 	// find sky shader
+	shader_t *shader = NULL;
 	TString<64> Name2;
-	Name2.sprintf ("env/%s", name);
-	shader_t *shader = FindShader (Name2, SHADER_SKY);
+
+	if (map_bspfile && map_bspfile->type == map_hl)
+	{
+		Name2.sprintf ("gfx/env/%s", name);
+		shader = FindShader (Name2, SHADER_SKY);
+		if (shader == gl_defaultSkyShader) shader = NULL;	// try "env/" directory
+	}
+
+	if (!shader)
+	{
+		Name2.sprintf ("env/%s", name);
+		shader = FindShader (Name2, SHADER_SKY);
+	}
+
 	if (shader->type != SHADERTYPE_SKY)
 	{
 		appWPrintf ("%s is not a sky shader\n", *Name2);
@@ -955,7 +969,7 @@ void SetSky (const char *name, float rotate, const CVec3 &axis)
 	if (shader != gl_defaultSkyShader)
 	{
 		shader->skyRotate = rotate;
-		shader->skyAxis = axis;
+		shader->skyAxis   = axis;
 	}
 
 	if (shader == old)

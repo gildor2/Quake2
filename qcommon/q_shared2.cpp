@@ -69,7 +69,6 @@ float ClampColor255 (const CVec3 &in, CVec3 &out)
 }
 
 
-#if 1
 float appRsqrt (float number)
 {
 	float x2 = number * 0.5f;
@@ -78,17 +77,6 @@ float appRsqrt (float number)
 //	number = number * (1.5f - (x2 * number * number));	// 2nd iteration, this can be removed
 	return number;
 }
-#else
-// GCC with "-force-mem" optimization will produce incorrect code for previous variant; this is a fix:
-float appRsqrt (float number)
-{
-	float x2 = number * 0.5f;
-	float number2; // intermediate variable
-	uint_cast(number2) = 0x5F3759DF - (uint_cast(number) >> 1);
-	number2 = number2 * (1.5f - (x2 * number2 * number2));
-	return number2;
-}
-#endif
 
 
 //?? rename to EulerToAxis etc
@@ -166,7 +154,7 @@ void Vec2Angles (const CVec3 &vec, CVec3 &angles)
 	angles[ROLL] = 0;
 	if (vec[0] == 0 && vec[1] == 0)
 	{
-		angles[YAW] = 0;
+		angles[YAW]   = 0;
 		angles[PITCH] = (!IsNegative (vec[2])) ? 90 : 270;
 	}
 	else
@@ -181,11 +169,11 @@ void Vec2Angles (const CVec3 &vec, CVec3 &angles)
 			yaw = (!IsNegative (vec[1])) ? 90 : 270;
 
 		float forward = sqrt (vec[0]*vec[0] + vec[1]*vec[1]);
-		float pitch = -atan2 (vec[2], forward) * 180 / M_PI;
+		float pitch   = -atan2 (vec[2], forward) * 180 / M_PI;
 		if (IsNegative (pitch)) pitch += 360;
 
 		angles[PITCH] = pitch;
-		angles[YAW] = yaw;
+		angles[YAW]   = yaw;
 	}
 }
 
@@ -304,7 +292,7 @@ void cross (const CVec3 &v1, const CVec3 &v2, CVec3 &result)
 
 void CBox::Clear ()
 {
-	mins[0] = mins[1] = mins[2] = BIG_NUMBER;
+	mins[0] = mins[1] = mins[2] =  BIG_NUMBER;
 	maxs[0] = maxs[1] = maxs[2] = -BIG_NUMBER;
 }
 
@@ -400,12 +388,9 @@ int CBox::OnPlaneSide (const cplane_t &p) const
 //		break;
 	}
 
-	int sides = 0;
 	dist1 = p.dist - dist1;
 	dist2 = dist2 - p.dist;
-	sides = IsNegative (dist1) + (IsNegative (dist2) << 1);
-
-	return sides;
+	return IsNegative (dist1) + (IsNegative (dist2) << 1);
 }
 
 
@@ -527,20 +512,25 @@ void UnTransformPoint (const CVec3 &origin, const CAxis &axis, const CVec3 &src,
 
 short LittleShort (short l)
 {
-	byte b1 = l & 255;
-	byte b2 = (l>>8) & 255;
-
-	return (b1<<8) + b2;
+	union {
+		short	i;
+		byte	b[2];
+	} d;
+	d.i = l;
+	Exchange (b[0], b[1]);
+	return d.i;
 }
 
 int LittieLong (int l)
 {
-	byte b1 = l & 255;
-	byte b2 = (l>>8) & 255;
-	byte b3 = (l>>16) & 255;
-	byte b4 = (l>>24) & 255;
-
-	return ((int)b1<<24) + ((int)b2<<16) + ((int)b3<<8) + b4;
+	union {
+		int		i;
+		byte	b[4];
+	} d;
+	d.i = l;
+	Exchange (b[0], b[3]);
+	Exchange (b[1], b[2]);
+	return d.i;
 }
 
 float LittleFloat (float f)
@@ -548,20 +538,14 @@ float LittleFloat (float f)
 	union {
 		float	f;
 		byte	b[4];
-	} dat1, dat2;
-
-	dat1.f = f;
-	dat2.b[0] = dat1.b[3];
-	dat2.b[1] = dat1.b[2];
-	dat2.b[2] = dat1.b[1];
-	dat2.b[3] = dat1.b[0];
-	return dat2.f;
+	} d;
+	d.f = f;
+	Exchange (b[0], b[3]);
+	Exchange (b[1], b[2]);
+	return d.f;
 }
 
 #endif
-
-static char com_token[MAX_STRING_CHARS];
-static int	com_lines;
 
 /*
 ============================================================================
@@ -570,6 +554,9 @@ static int	com_lines;
 
 ============================================================================
 */
+
+static char com_token[MAX_STRING_CHARS];
+static int	com_lines;
 
 static const char *SkipWhitespace (const char *data, bool *hasNewLines)
 {

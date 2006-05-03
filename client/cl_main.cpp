@@ -535,23 +535,14 @@ void CL_Disconnect_f ()
 }
 
 
-/*
-=================
-CL_Changing_f
-
-Just sent as a hint to the client that they should
-drop to full console
-=================
-*/
 void CL_Changing_f ()
 {
 	//ZOID
 	//if we are downloading, we don't change!  This so we don't suddenly stop downloading a map
-	if (cls.download)
-		return;
+	if (cls.download) return;
 
 	SCR_BeginLoadingPlaque ();
-	cls.state = ca_connected;	// not active anymore, but not disconnected
+	cls.state = ca_connected;			// not active anymore, but not disconnected
 	appPrintf ("\nChanging map...\n");
 }
 
@@ -561,8 +552,7 @@ void CL_Reconnect_f ()
 {
 	//ZOID
 	//if we are downloading, we don't change!  This so we don't suddenly stop downloading a map
-	if (cls.download)
-		return;
+	if (cls.download) return;
 
 	S_StopAllSounds_f ();
 	if (cls.state == ca_connected)

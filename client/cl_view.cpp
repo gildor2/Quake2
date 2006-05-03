@@ -610,18 +610,20 @@ static void DrawSurfInfo ()
 
 	unsigned cont = r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER;
 	trace_t	trace;
-//extern bool SHOW_TRACE;//!!!!!
-//SHOW_TRACE=true;
+#if TRACE_DEBUG
+	cm_showTrace = true;
+#endif
 //static CBox nullBox = {{-2,-2,-2},{2,2,2}};
 //static CBox nullBox = {{-10,-10,-10},{10,10,10}};
 //static CBox nullBox = {{-20,-20,-20},{20,20,20}};
 	CM_BoxTrace (trace, start, end, nullBox, 0, cont);
-
 	CM_ClipTraceToModels (trace, start, end, nullBox, cont);
-	V_AddLight (trace.endpos, 5, 0.3, 1, 0);	//?? keep or remove? intens > trace bounds!
-//SHOW_TRACE=false;
+#if TRACE_DEBUG
+	cm_showTrace = false;
+#endif
 	if (!(r_surfinfo->integer & 2))
 		CL_EntityTrace (trace, start, end, nullBox, cont);
+	V_AddLight (trace.endpos, 5, 0.3, 0.6, 0.3);	//?? keep or remove? intens > trace bounds!
 
 	if (trace.fraction < 1.0)
 	{

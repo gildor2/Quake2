@@ -117,6 +117,7 @@ static CAllocVertexPool *vecPool;
 // buffer for holding pointers to verts, placed on splitting plane
 static CVec3 **planeVecs;	// [MAX_SIDE_VERTS]
 static int numPlaneVecs;
+static float planeBounds[2];						// min/max distance from plane
 
 // In:	poly, plane
 // Out:	front, back
@@ -146,6 +147,7 @@ static bool SplitPoly (CBrushVert *poly, cplane_t *plane, CBrushVert* &front, CB
 		if (numVerts >= MAX_SIDE_VERTS)
 			Com_DropError ("SplitPoly: MAX_SIDE_VERTS");
 		float d = plane->DistanceTo (*v->v);
+		EXPAND_BOUNDS(d, planeBounds[0], planeBounds[1]);
 		byte s = (d >  EPSILON) ? 0 : (				// front
 				 (d < -EPSILON) ? 1 :				// back
 				 2 );								// both
@@ -325,12 +327,14 @@ CBrush *CBrush::Split (cplane_t *plane)
 	vecPool      = &VertPool;
 	planeVecs    = newPoly;
 	numPlaneVecs = 0;
+	planeBounds[0] =  BIG_NUMBER;
+	planeBounds[1] = -BIG_NUMBER;
 
 #if SPLIT_DEBUG
 	appPrintf (S_GREEN"split by {%g %g %g} %g:\n", VECTOR_ARG(plane->normal), plane->dist);
 #endif
-	CBrushSide *sidesFirst[2], *sidesLast[2];
-	sidesFirst[0] = sidesFirst[1] = sidesLast[0] = sidesLast[1] = NULL;
+	CBrushSide *sidesFirst[3], *sidesLast[3];	// front, back and on-plane sides
+	sidesFirst[0] = sidesFirst[1] = sidesFirst[2] = sidesLast[0] = sidesLast[1] = sidesLast[2] = NULL;
 
 	CBrushSide *next;
 	for (CBrushSide *s = sides; s; s = next)
@@ -341,22 +345,6 @@ CBrush *CBrush::Split (cplane_t *plane)
 		if (numPlaneVecs >= MAX_SIDE_VERTS-2)
 			Com_DropError ("CBrush::Split(): intersection is too complex");
 
-		CBrushVert *front, *back;
-		if (!SplitPoly (s->verts, plane, front, back))
-		{
-//#if SPLIT_DEBUG
-//			if (sidesFirst[0] && sidesFirst[1])
-//				Com_DropError ("CBrush::Split(): non-convex volume detected"); ??
-//#endif
-			//?? add support for brush, touched by plane (but: this is incorrect BSP)
-			vecPool = NULL;
-			return NULL;	// brush is not split: one of its sides touching plane
-		}
-
-		// each splitted brush side will produce 2 verts for new side
-		if (numPlaneVecs & 1)
-			Com_DropError ("CBrush::Split(): odd numPlaneVecs");
-
 #define ADD_TO_BRUSH(b,n)	\
 	{						\
 		if (!sidesFirst[n]) sidesFirst[n] = b;		\
@@ -364,6 +352,17 @@ CBrush *CBrush::Split (cplane_t *plane)
 		sidesLast[n] = b;	\
 		b->next = NULL;		\
 	}
+
+		CBrushVert *front, *back;
+		if (!SplitPoly (s->verts, plane, front, back))
+		{
+			ADD_TO_BRUSH (s,2);			// on-plane side
+			continue;
+		}
+
+		// each splitted brush side will produce 2 verts for new side
+		if (numPlaneVecs & 1)
+			Com_DropError ("CBrush::Split(): odd numPlaneVecs");
 
 		assert(front==s->verts || back==s->verts);
 
@@ -386,6 +385,61 @@ CBrush *CBrush::Split (cplane_t *plane)
 			clone->plane = s->plane;
 			clone->back  = s->back;
 			ADD_TO_BRUSH(clone,1);
+		}
+	}
+
+	// create backbrush
+	CBrush *backBrush = new (CBrush::mem) CBrush;
+#if 0
+	if (sidesFirst[2])
+	{
+		if (sidesFirst[0] && sidesFirst[1])
+			Com_DropError ("CBrush::Split(): non-convex brush detected %g %g", planeBounds[0], planeBounds[1]);
+		if (sidesFirst[0])
+		{
+			// insert s[2] into s[0]
+			sidesLast[2]->next = sidesFirst[0];
+			sidesFirst[0] = sidesFirst[2];
+		}
+		else if (sidesFirst[1])
+		{
+			// insert s[2] into s[1]
+			sidesLast[2]->next = sidesFirst[1];
+			sidesFirst[1] = sidesFirst[2];
+		}
+		else
+			return NULL;		//?? NULL-volume brush
+	}
+#endif
+	if (planeBounds[0] > -EPSILON || planeBounds[1] < EPSILON)
+	{
+		// brush is mostly on a single side
+		// link all sides back
+		CBrushSide *first = sidesFirst[0];
+		CBrushSide *last  = sidesLast[0];
+		if (sidesFirst[1])
+		{
+			if (!first) first = sidesFirst[1];
+			else   last->next = sidesFirst[1];
+			last = sidesLast[1];
+		}
+		if (sidesFirst[2])
+		{
+			if (!first) first = sidesFirst[2];
+			else   last->next = sidesFirst[2];
+			last = sidesLast[2];
+		}
+		if (planeBounds[1] < EPSILON)
+		{
+			backBrush->sides = first;
+			sides = NULL;
+			return backBrush;
+		}
+		else
+		{
+			// here may be brush, which is inside -EPSILON..+EPSILON plane volume
+			sides = first;
+			return backBrush;
 		}
 	}
 
@@ -494,17 +548,10 @@ CBrush *CBrush::Split (cplane_t *plane)
 	}
 
 #undef ADD_TO_BRUSH
-	if (!sidesFirst[0] || !sidesFirst[1])	// bad BSP ?
-		Com_DropError ("CBrush::Split(): plane does not intersects brush volume");
 
 	sides = sidesFirst[0];
-
-	CBrush *backBrush = NULL;
 	if (sidesFirst[1])
-	{
-		backBrush = new (CBrush::mem) CBrush;
 		backBrush->sides = sidesFirst[1];
-	}
 
 #if SPLIT_DEBUG
 	int ns = 0;

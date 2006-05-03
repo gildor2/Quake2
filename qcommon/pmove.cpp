@@ -21,6 +21,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "qcommon.h"
 
 
+//#define PM_DEBUG		1
+
+
+#if PM_DEBUG
+void SV_DrawTextLeft (const char *text, unsigned rgba = RGB(1,1,1));
+#endif
+
+
 //#define OLD_PMOVE	1
 #define	STEPSIZE	18
 
@@ -243,6 +251,10 @@ static bool SlideMove ()
 
 static void StepSlideMove ()
 {
+#if PM_DEBUG
+	SV_DrawTextLeft("slide");
+#endif
+
 	CVec3 start_o = pml.origin;
 	CVec3 start_v = pml.velocity;
 
@@ -272,8 +284,11 @@ static void StepSlideMove ()
 	PM_Trace (trace, start_o, up, pm->bounds);
 	if (trace.allsolid)
 	{
-//		appPrintf("no up\n");//!!
-		return;		// can't step up
+		// can't step up
+#if PM_DEBUG
+		SV_DrawTextLeft ("allsolid: no up",RGB(1,0,0));
+#endif
+		return;
 	}
 
 	// try sliding above
@@ -303,8 +318,10 @@ static void StepSlideMove ()
 
 	if (down_dist > up_dist || trace.plane.normal[2] < MIN_STEP_NORMAL)
 	{
-//		appPrintf("down: d_d=%g u_d=%g n2=%g\n", down_dist, up_dist, trace.plane.normal[2]);//!!
-		pml.origin = down_o;
+#if PM_DEBUG
+		SV_DrawTextLeft (va("down: d_dist=%g u_dist=%g norm[2]=%g\n", down_dist, up_dist, trace.plane.normal[2]));
+#endif
+		pml.origin   = down_o;
 		pml.velocity = down_v;
 		return;
 	}
@@ -333,6 +350,9 @@ static void Friction ()
 	// apply ground friction
 	if ((pm->groundentity && pml.groundsurface && !(pml.groundsurface->flags & SURF_SLICK)) || pml.ladder)
 	{
+#if PM_DEBUG
+		SV_DrawTextLeft ("friction");
+#endif
 		float control = speed < pm_stopspeed ? pm_stopspeed : speed;
 		drop += control * pm_friction * pml.frametime;
 	}
@@ -354,13 +374,7 @@ static void Friction ()
 }
 
 
-/*
-==============
-Accelerate
-
-Handles user intended acceleration
-==============
-*/
+// Handles user intended acceleration
 static void Accelerate (const CVec3 &wishdir, float wishspeed, float accel)
 {
 	float currentspeed = dot (pml.velocity, wishdir);
@@ -493,6 +507,9 @@ static void WaterMove ()
 
 static void AirMove ()
 {
+#if PM_DEBUG
+	SV_DrawTextLeft ("AirMove");
+#endif
 	float fmove = pm->cmd.forwardmove;
 	float smove = pm->cmd.sidemove;
 	if (pml.ladder && fmove < 0 && !(pm->s.pm_flags & PMF_ON_GROUND))
@@ -517,6 +534,9 @@ static void AirMove ()
 
 	if (pml.ladder)
 	{
+#if PM_DEBUG
+		SV_DrawTextLeft ("ladder");
+#endif
 		Accelerate (wishdir, wishspeed, pm_accelerate);
 		if (wishvel[2] == 0)		// stop moving on ladder
 		{
@@ -536,7 +556,11 @@ static void AirMove ()
 		StepSlideMove ();
 	}
 	else if (pm->groundentity)
-	{	// walking on ground
+	{
+#if PM_DEBUG
+		SV_DrawTextLeft ("groundentity");
+#endif
+		// walking on ground
 		pml.velocity[2] = 0; //!!! this is before the accel
 		Accelerate (wishdir, wishspeed, pm_accelerate);
 
@@ -551,6 +575,9 @@ static void AirMove ()
 	}
 	else
 	{
+#if PM_DEBUG
+		SV_DrawTextLeft ("in air");
+#endif
 		// not on ground, so little effect on velocity
 		Accelerate (wishdir, wishspeed, pm_airaccelerate ? pm_airaccelerate : 1);
 		// add gravity
@@ -589,6 +616,9 @@ static void CatagorizePosition ()
 		{
 			pm->groundentity = NULL;
 			pm->s.pm_flags &= ~PMF_ON_GROUND;
+#if PM_DEBUG
+			SV_DrawTextLeft ("!ON_GROUND");
+#endif
 		}
 		else
 		{
@@ -626,6 +656,10 @@ static void CatagorizePosition ()
 		{
 			pm->touchents[pm->numtouch] = trace.ent;
 			pm->numtouch++;
+#if PM_DEBUG
+			SV_DrawTextLeft (va("touched %d ents ($%X): plane: %g %g %g / %g",
+				pm->numtouch, trace.ent, VECTOR_ARG(trace.plane.normal), trace.plane.dist),RGB(1,0,0));
+#endif
 		}
 	}
 
@@ -652,6 +686,9 @@ static void CatagorizePosition ()
 			if (cont & MASK_WATER)
 				pm->waterlevel = 3;
 		}
+#if PM_DEBUG
+		SV_DrawTextLeft (va("waterlevel=%d",pm->waterlevel),RGB(0,0.1,1));
+#endif
 	}
 }
 
@@ -1095,6 +1132,10 @@ void Pmove (pmove_t *pmove)
 {
 	guard(Pmove);
 
+#if PM_DEBUG
+	SV_DrawTextLeft ("******** PMOVE ********", RGB(1,1,0.2));
+#endif
+
 	pm = pmove;
 
 	// clear results
@@ -1123,6 +1164,9 @@ void Pmove (pmove_t *pmove)
 	pml.previous_origin[2] = pm->s.origin[2];
 
 	pml.frametime = pm->cmd.msec * 0.001f;
+#if PM_DEBUG
+	SV_DrawTextLeft (va("org={%g %g %g} vel={%g %g %g}", VECTOR_ARG(pml.origin), VECTOR_ARG(pml.velocity)), RGB(0,1,1));
+#endif
 
 	ClampAngles ();
 
@@ -1207,6 +1251,17 @@ void Pmove (pmove_t *pmove)
 	// set groundentity, watertype, and waterlevel for final spot
 	CatagorizePosition ();
 	SnapPosition ();
+#if PM_DEBUG
+	CVec3 org, vel;
+	for (int i = 0; i < 3; i++)
+	{
+		org[i] = pmove->s.origin[i] / 8.0f;
+		vel[i] = pmove->s.velocity[i] / 8.0f;
+	}
+	SV_DrawTextLeft (va("org={%g %g %g} vel={%g %g %g}", VECTOR_ARG(org), VECTOR_ARG(vel)), RGB(0,1,1));
+	SV_DrawTextLeft (va("type=%d water=%d groundEnt=$%X touch=%d flags=$%X",
+		pmove->s.pm_type, pmove->waterlevel, pmove->groundentity, pmove->numtouch, pmove->s.pm_flags), RGB(0.8,0.8,0));
+#endif
 
 	unguard;
 }

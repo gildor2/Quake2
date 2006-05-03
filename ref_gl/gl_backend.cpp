@@ -339,12 +339,12 @@ static void GenerateColorArray (shaderStage_t *st)
 
 			if (st->alphaGenType == ALPHAGEN_DOT)
 			{
-				min = appRound (st->alphaMin * 255);
+				min   = appRound (st->alphaMin * 255);
 				scale = (st->alphaMax - st->alphaMin) * 255;
 			}
 			else
 			{
-				min = appRound (st->alphaMax * 255);
+				min   = appRound (st->alphaMax * 255);
 				scale = (st->alphaMin - st->alphaMax) * 255;
 			}
 			bufVertex_t *vec = vb->verts;
@@ -965,11 +965,11 @@ static void PreprocessShader (shader_t *sh)
 		// IDENTITY already converted to CONST
 		case ALPHAGEN_ENTITY:
 			st->rgbaConst.c[3] = currentEntity->shaderColor.c[3];
-			st->alphaGenType = ALPHAGEN_CONST;
+			st->alphaGenType   = ALPHAGEN_CONST;
 			break;
 		case ALPHAGEN_ONE_MINUS_ENTITY:
 			st->rgbaConst.c[3] = 255 - currentEntity->shaderColor.c[3];
-			st->alphaGenType = ALPHAGEN_CONST;
+			st->alphaGenType   = ALPHAGEN_CONST;
 			break;
 		case ALPHAGEN_WAVE:
 			{
@@ -983,7 +983,7 @@ static void PreprocessShader (shader_t *sh)
 			break;
 		}
 
-		st->isConstRGBA = (st->rgbGenType == RGBGEN_CONST && st->alphaGenType == ALPHAGEN_CONST);
+		st->isConstRGBA    = (st->rgbGenType == RGBGEN_CONST && st->alphaGenType == ALPHAGEN_CONST);
 		st->isIdentityRGBA = (st->isConstRGBA && st->rgbaConst.rgba == RGBA(1,1,1,1));
 	}
 

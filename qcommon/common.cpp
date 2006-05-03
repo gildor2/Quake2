@@ -532,6 +532,8 @@ extern	int	c_traces, c_pointcontents;
 
 #define SV_PROFILE		1	//?????
 
+bool com_isClient, com_isServer;
+
 void Com_Frame (float msec)
 {
 	unsigned time_before, time_between, time_after;
@@ -594,7 +596,9 @@ void Com_Frame (float msec)
 	}
 
 //if (!Cvar_VariableInt("sv_block"))
+	com_isServer = true;
 	SV_Frame (smsec);
+	com_isServer = false;
 
 	if (!DEDICATED)
 	{
@@ -604,7 +608,9 @@ void Com_Frame (float msec)
 			time_before_ref = 0;			// for detection of frames with renderer frame (may be dropped with cl_maxfps)
 		}
 
+		com_isClient = true;
 		CL_Frame (smsec, msec);
+		com_isClient = false;
 
 		if (com_speeds->integer)
 		{

@@ -1,3 +1,4 @@
+- r_showBrush, r_surfInfo with brush display: brush can be moved (doors etc), but will be displayed in initial place
 - when typing 'bind key var=value', it will be treated as 'bind key var'=value
 - r_showBrush/r_surfInfo=8: often DropError() or not show brush (have error message on screen)
 - "version" cvar: created in common.cpp, but updated when this file or qcommon.h changed only (date is not updated!)

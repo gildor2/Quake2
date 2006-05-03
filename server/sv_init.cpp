@@ -260,7 +260,7 @@ void SV_InitGame ()
 	{
 		// make sure the client is down
 		CL_Drop ();
-		SCR_BeginLoadingPlaque ();
+		SCR_BeginLoadingPlaque (true);
 	}
 
 	SV_InitVars ();		// called for unlocking latched vars
@@ -394,7 +394,7 @@ void SV_Map (bool attractloop, const char *levelstring, bool loadgame)
 			newState = ss_pic;
 	}
 
-	if (!DEDICATED) SCR_BeginLoadingPlaque ();		// for local system
+	if (!DEDICATED) SCR_BeginLoadingPlaque (true);		// for local system
 	SV_BroadcastCommand ("changing\n");
 	if (newState == ss_game)
 	{

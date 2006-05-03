@@ -1,3 +1,10 @@
+- trace: when startsolid, can detect additionally:
+  - startContents (contents of brush, where start point placed)
+  - leaveSurface (surface, which trace crosses when entering non-solid brush) -- may be used for 3rd person inside water - do
+    not leave water volume by viewpoint
+  - leaveFrac, leavePos
+  ? add ability to trace through CONTENTS_SOLID (find enterpoint and leavepoint)
+  - extend CM_CombineTraces() for this
 ? work via proxy server (SOCKS?); check Q3 (was removed SOCKS?)
   - check "FreeCAP" (www.freecap.ru) - open-source prog, which adds SOCKS caps to any app
 ! server: packets are read with unlimited speed, but sent back only sv_fps (10) times per second

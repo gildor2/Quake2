@@ -2,6 +2,8 @@
 #include "../client/client.h"		//!! for editLine[], CompleteCommand() + COutputDeviceCon
 //#include <float.h>					// for _controlfp()
 
+//!! TODO: COutputDeviceWin32: derive from COutputDeviceCon
+
 #include "OutputDeviceMem.h"
 
 bool		ActiveApp, MinimizedApp, FullscreenApp;

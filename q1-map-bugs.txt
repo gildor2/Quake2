@@ -13,9 +13,14 @@ frivdev1_3 - infinite teleport
 gendm2 - movable teleports, cannot enter
 -----------------
 HL:
+bounce - bad "trigger_push" (jumppads)
 undertow - have elevator (CONTENTS_CURRENT) + strange (solid) water
-* ccity2 - too much entities
 ahl_engholm - have wall, which not blocks movement
 ahl_casagrande - have walls, which not blocks movement + tree base
 citywar2 - have no spawn points ?
-snark_pit - ugly collision bugs!
+snark_pit - have few "trigger_push" entities, not working
+ahl_calypso  - PF_setmodel(NULL name)
+ahl_napoli   - "no loop in poly"
+ahl_nocredit - "odd numPlaneVecs"
+doombank, doombank2, rooftops - no spawn point
+actionrail - have "+0~texture" and "+a~texture" -- blinking (should not be?!)

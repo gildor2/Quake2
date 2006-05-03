@@ -108,9 +108,9 @@ static void Shaderlist_f (bool usage, int argc, char **argv)
 			color = "";
 
 		const char *rem = "";
-		if (sh->noDraw) rem = S_YELLOW"   (nodraw)"S_WHITE;
-		if (sh->bad) rem = S_RED"   (errors)"S_WHITE;
-		if (sh->style & SHADER_ABSTRACT) rem = S_YELLOW"   (abstract)"S_WHITE;
+		if (sh->noDraw)						rem = S_YELLOW"   (nodraw)"  S_WHITE;
+		if (sh->bad)						rem = S_RED   "   (errors)"  S_WHITE;
+		if (sh->style & SHADER_ABSTRACT)	rem = S_YELLOW"   (abstract)"S_WHITE;
 		appPrintf ("%-3d %d  %2s %-2d %3s  %-3s %s%s%s\n", i, sh->numStages, lmInfo,
 			sh->sortParam, shTypes[sh->type], boolNames[sh->scripted], color, *sh->Name, rem);
 	}
@@ -611,12 +611,7 @@ shader_t *FindShader (const char *name, unsigned style)
 
 	int lightmapNumber = LIGHTMAP_NONE;
 	if (style & SHADER_LIGHTMAP)
-	{
-		if (gl_config.vertexLight)
-			lightmapNumber = LIGHTMAP_VERTEX;
-		else
-			lightmapNumber = LIGHTMAP_RESERVE;
-	}
+		lightmapNumber = (gl_config.vertexLight) ? LIGHTMAP_VERTEX : LIGHTMAP_RESERVE;
 
 	/*----- find shader using hash table -----*/
 	int hash = ComputeHash (Name2);
@@ -661,7 +656,7 @@ shader_t *FindShader (const char *name, unsigned style)
 		sh.bad            = true;		// stats
 	}
 
-	// non-scripted shaders: putge alpha-channel when not required
+	// non-scripted shaders: purge alpha-channel when not required
 	if (!(style & (SHADER_ALPHA|SHADER_FORCEALPHA|SHADER_TRANS33|SHADER_TRANS66)))
 		sh_imgFlags |= IMAGE_NOALPHA;	//?? add it always, when stage have no alpha-depending blend modes
 	// check SHADER_CLAMP (for scripts, should explicitly use clampMap/animClampMap)
@@ -727,7 +722,7 @@ shader_t *FindShader (const char *name, unsigned style)
 	if (style & SHADER_TRYLIGHTMAP)
 	{
 		lightmapNumber = LIGHTMAP_NONE;
-		stage->rgbGenType = (style & (SHADER_TRANS33|SHADER_TRANS66)) ? RGBGEN_BOOST_VERTEX : RGBGEN_EXACT_VERTEX;
+		stage->rgbGenType = (style & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ENT_ALPHA)) ? RGBGEN_BOOST_VERTEX : RGBGEN_EXACT_VERTEX;
 		sh.lightmapNumber = LIGHTMAP_VERTEX;
 	}
 
@@ -781,7 +776,7 @@ shader_t *FindShader (const char *name, unsigned style)
 	{
 		stage->glState = BLEND(S_ALPHA,M_S_ALPHA)|GLSTATE_ALPHA_GT0;
 				// image has no alpha, but use glColor(x,x,x,<1)
-		stage->alphaGenType = ALPHAGEN_VERTEX;
+		stage->alphaGenType = (style & SHADER_ENT_ALPHA) ? ALPHAGEN_ENTITY : ALPHAGEN_VERTEX;
 	}
 	else if (style & SHADER_ALPHA && img->alphaType)
 	{

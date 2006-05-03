@@ -11,7 +11,6 @@ namespace OpenGLDrv {
 
 
 bspModel_t map;
-static bspfile_t *bspfile;
 
 
 /*-----------------------------------------------------------------------------
@@ -131,16 +130,16 @@ static void LoadSlights (slight_t *data, int count)
 	// copy slights from map
 	for (int i = 0; i < count; i++, data = data->next)
 	{
-		out->origin	= data->origin;
-		out->color	= data->color;
-		out->intens	= data->intens;
-		out->style	= data->style;
-		out->type	= data->type;
-		out->spot	= data->spot != 0;
+		out->origin  = data->origin;
+		out->color   = data->color;
+		out->intens  = data->intens;
+		out->style   = data->style;
+		out->type    = data->type;
+		out->spot    = data->spot != 0;
 		out->spotDir = data->spotDir;
 		out->spotDot = data->spotDot;
-		out->focus	= data->focus;
-		out->fade	= data->fade;
+		out->focus   = data->focus;
+		out->fade    = data->fade;
 
 		SaturateColor3f (out->color);
 
@@ -167,23 +166,23 @@ static void BuildSurfLight (surfacePlanar_t *pl, const color_t *color, float are
 	CVec3	c;
 	c.Set (color->c[0] / 255.0f, color->c[1] / 255.0f, color->c[2] / 255.0f);
 
-	if (bspfile->sunLight && sky)
+	if (map_bspfile->sunLight && sky)
 	{	// have sun -- params may be changed
 		float	m;
 
-		m = max(bspfile->sunSurface[0], bspfile->sunSurface[1]);
-		m = max(m, bspfile->sunSurface[2]);
+		m = max(map_bspfile->sunSurface[0], map_bspfile->sunSurface[1]);
+		m = max(m, map_bspfile->sunSurface[2]);
 		if (m == 0 && !map.haveSunAmbient)
 			return;									// no light from sky surfaces
 
 		if (m > 0 && m <= 1)
-			c = bspfile->sunSurface;				// sun_surface specified a color
+			c = map_bspfile->sunSurface;			// sun_surface specified a color
 		else if (m > 1)
 		{
 			// sun_surface specified an intensity, color -- from surface
-			c[0] *= bspfile->sunSurface[0];
-			c[1] *= bspfile->sunSurface[1];
-			c[2] *= bspfile->sunSurface[2];
+			c[0] *= map_bspfile->sunSurface[0];
+			c[1] *= map_bspfile->sunSurface[1];
+			c[2] *= map_bspfile->sunSurface[2];
 			intens = 1;
 		}
 		else if (m == 0)
@@ -354,10 +353,7 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 		out->size = -1;							// do not delete in FreeModels()
 		modelsArray[modelCount++] = out;
 
-		out->bounds   = data->bounds;
-		out->radius   = data->radius;
-		out->headnode = data->headnode;
-		out->flags    = data->flags;
+		*(static_cast<cmodel_t*>(out)) = *data;
 		// create surface list
 		out->numFaces = data->numfaces;
 		out->faces    = new (map.dataChain) surfaceBase_t* [out->numFaces];
@@ -410,6 +406,7 @@ static bool CanEnvmap (const dFace_t *surf, int headnode, CVec3 **pverts, int nu
 	VectorMA (mid, -2, norm, p2);
 	// perform trace
 	trace_t	trace;
+	//?? can add MASK_WATER to contents, and make Alice-line water with envmap and distorted normal
 	if (!surf->side)
 		CM_BoxTrace (trace, p1, p2, nullBox, headnode, MASK_SOLID);
 	else
@@ -492,7 +489,7 @@ static void CreatePalettedImage (const char *name, dBsp1Miptex_t *tex)
 		unsigned hlPalette[256];
 		// find and load inline texture + load shader again
 		unsigned *palette = NULL;
-		if (bspfile->type == map_q1)
+		if (map_bspfile->type == map_q1)
 			palette = GetQ1Palette ();		//!! else - get palette from texture (after 4 mipmaps) -- RBG->RGBA
 		else
 		{
@@ -607,7 +604,7 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 
 	shader = FindShader (textures, sflags);
 	if (sflags & SHADER_ANIM)
-		SetShaderAnimFreq (shader, 5);		// q1 animation frequency
+		SetShaderAnimFreq (shader, map_bspfile->type == map_q1 ? 5 : 10);	// q1/hl animation frequency
 	return shader;
 }
 
@@ -689,6 +686,13 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 
 		if (owner->flags & CMODEL_ALPHA)
 			sflags |= SHADER_ALPHA;
+		if (owner->color.c[3] != 255)
+			sflags |= SHADER_FORCEALPHA|SHADER_ENT_ALPHA;
+		if (map_bspfile->type == map_hl)
+		{
+			if (!(owner->flags & CMODEL_SCROLL))
+				sflags &= ~SHADER_SCROLL;	// allow for CMODEL_SCROLL only
+		}
 
 #if 0
 		if (Cvar_VariableInt("dlmodels"))	//??
@@ -699,7 +703,7 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 #endif
 
 		// check covered contents and update shader flags
-		if (sflags & (SHADER_TRANS33|SHADER_TRANS66) && !(sflags &
+		if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_FORCEALPHA) && !(sflags &
 			(SHADER_ENVMAP|SHADER_ENVMAP2|SHADER_TURB|SHADER_SCROLL)))	// && gl_autoReflect ??
 		{
 			if (CanEnvmap (surfs, owner->headnode, pverts, numVerts))
@@ -730,7 +734,7 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 			else
 			{
 				needLightmap = true;
-				if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA|SHADER_TURB))
+				if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA|SHADER_TURB|SHADER_ENT_ALPHA))
 				{
 					if (surfs->lightofs > 0)	// when uninitialized by radiocity, will be 0 (not "-1")
 						sflags |= SHADER_TRYLIGHTMAP;
@@ -742,7 +746,7 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 
 		// q1/hl can use lightofs==-1 to indicate dark lightmap
 		bool darkLightmap = false;
-		if ((bspfile->type == map_q1 || bspfile->type == map_hl) &&
+		if ((map_bspfile->type == map_q1 || map_bspfile->type == map_hl) &&
 			(sflags & (SHADER_WALL|SHADER_LIGHTMAP|SHADER_TURB)) == SHADER_WALL &&
 			surfs->lightofs == -1)
 		{
@@ -754,7 +758,7 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 			sflags |= SHADER_LIGHTMAP;
 
 		// create shader for surface
-		shader_t *shader = (bspfile->type == map_q2 || bspfile->type == map_kp)
+		shader_t *shader = (map_bspfile->type == map_q2 || map_bspfile->type == map_kp)
 			? CreateSurfShader2 (sflags, stex, tex)
 			: CreateSurfShader1 (sflags, stex);
 		//?? update sflags from this (created) shader -- it may be scripted (with different flags)
@@ -820,7 +824,7 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 		maxs[0] = maxs[1] = -BIG_NUMBER;
 		s->bounds.Clear ();
 		// Enumerate vertexes
-		for (j = 0; j < numVerts; j++, pedge++, v++)
+		for (j = 0; j < numVerts; j++, v++)
 		{
 			v->xyz = *pverts[j];
 			if (sflags & SHADER_SKY) continue;
@@ -1190,10 +1194,11 @@ static void LoadLeafSurfaces2 (const unsigned short *data, int count)
 }
 
 
-static void LoadBsp2 (const bspfile_t *bsp)
+static void LoadBsp2 ()
 {
 	guard(LoadBsp2);
 
+	bspfile_t *bsp = map_bspfile;
 	// Load planes
 	LoadPlanes (bsp->planes, bsp->numPlanes, sizeof(dPlane_t));
 	// Load surfaces
@@ -1242,7 +1247,7 @@ END_PROFILE
 
 
 /*-----------------------------------------------------------------------------
-	Loading Quake1 BSP file
+	Loading Quake1/Half-Life BSP file
 -----------------------------------------------------------------------------*/
 
 // code is (almost) the same as for LoadLeafsNodes2(), but uses index "1" instead of "2"
@@ -1301,10 +1306,11 @@ static void LoadLeafsNodes1 (const dBsp1Node_t *nodes, int numNodes, const dBsp1
 }
 
 
-static void LoadBsp1 (const bspfile_t *bsp)
+static void LoadBsp1 ()
 {
 	guard(LoadBsp1);
 
+	bspfile_t *bsp = map_bspfile;
 	if (bsp->type == map_q1) map.monoLightmap = true;
 
 	// Load planes
@@ -1350,24 +1356,29 @@ void LoadWorldMap (const char *name)
 
 	STAT(clock(gl_ldStats.bspLoad));
 	// map should be already loaded by client
-	bspfile = LoadBspFile (Name2, true, NULL);
+#if 1
+//	-- use "map_bspfile" instead of LoadBspFile()
+	/*bspfile =*/ LoadBspFile (Name2, true, NULL); //?? require to call LoadBspFile() with clientload==true?
+#else
+	if (!map_bspfile) Com_DropError ("BSP file not loaded!");
+#endif
 
 	// load sun
-	map.sunLight = bspfile->sunLight;
-	if (bspfile->sunColor[0] + bspfile->sunColor[1] + bspfile->sunColor[2])		// sun color was overrided
-		map.sunColor = bspfile->sunColor;
+	map.sunLight = map_bspfile->sunLight;
+	if (map_bspfile->sunColor[0] + map_bspfile->sunColor[1] + map_bspfile->sunColor[2])		// sun color was overrided
+		map.sunColor = map_bspfile->sunColor;
 	NormalizeColor (map.sunColor, map.sunColor);
-	map.sunVec     = bspfile->sunVec;
-	map.sunAmbient = bspfile->sunAmbient;
-	if (bspfile->sunAmbient[0] + bspfile->sunAmbient[1] + bspfile->sunAmbient[2] > 0)
+	map.sunVec     = map_bspfile->sunVec;
+	map.sunAmbient = map_bspfile->sunAmbient;
+	if (map_bspfile->sunAmbient[0] + map_bspfile->sunAmbient[1] + map_bspfile->sunAmbient[2] > 0)
 		map.haveSunAmbient = true;
-	map.ambientLight = bspfile->ambientLight;
+	map.ambientLight = map_bspfile->ambientLight;
 
-	switch (bspfile->type)
+	switch (map_bspfile->type)
 	{
 	case map_q2:
 	case map_kp:
-		LoadBsp2 (bspfile);
+		LoadBsp2 ();
 		// get ambient light from lightmaps (place to all map types ??)
 		if (map.ambientLight[0] + map.ambientLight[1] + map.ambientLight[2] == 0)
 		{
@@ -1379,14 +1390,14 @@ void LoadWorldMap (const char *name)
 		break;
 	case map_q1:
 	case map_hl:
-		LoadBsp1 (bspfile);
+		LoadBsp1 ();
 		//?? ambient light?
 		break;
 	default:
 		Com_DropError ("R_LoadWorldMap: unknown BSP type");
 	}
-	LoadFlares (bspfile->flares, bspfile->numFlares);
-	LoadSlights (bspfile->slights, bspfile->numSlights);
+	LoadFlares (map_bspfile->flares, map_bspfile->numFlares);
+	LoadSlights (map_bspfile->slights, map_bspfile->numSlights);
 	PostLoadLights ();
 	InitLightGrid ();
 	STAT(unclock(gl_ldStats.bspLoad));

@@ -111,8 +111,8 @@ byte* LoadPCX (const char *name, int &width, int &height, byte *&palette)
 struct GCC_PACK tgaHdr_t
 {
 	byte 	id_length, colormap_type, image_type;
-	unsigned short colormap_index, colormap_length;	// unused
-	byte	colormap_size;							// unused
+	unsigned short colormap_index, colormap_length;
+	byte	colormap_size;
 	unsigned short x_origin, y_origin;				// unused
 	unsigned short width, height;
 	byte	pixel_size, attributes;
@@ -132,17 +132,37 @@ byte* LoadTGA (const char *name, int &width, int &height)
 
 	const char *errMsg = NULL;
 
+	// swap header
+	LTL(hdr->width);
+	LTL(hdr->height);
+	LTL(hdr->colormap_index);
+	LTL(hdr->colormap_length);
+
 	width  = LittleShort(hdr->width);
 	height = LittleShort(hdr->height);
 
-	if (hdr->image_type != 2 && hdr->image_type != 10 && hdr->image_type != 3)
-		errMsg = "only type 2 (RGB), 3 (grey) and 10 (RGB RLE) images supported";
-	else if (hdr->colormap_type != 0)
-		errMsg = "colormaps not supported";
-	else if (hdr->pixel_size != 32 && hdr->pixel_size != 24 && !(hdr->image_type == 3 && hdr->pixel_size == 8))
-		errMsg = va("invalid color depth %d for format %d", hdr->pixel_size, hdr->image_type);
+	bool isPaletted = (hdr->image_type == 1 || hdr->image_type == 9);
+	bool isRGB      = (hdr->image_type == 2 || hdr->image_type == 10);
+	bool isBW       = (hdr->image_type == 3 || hdr->image_type == 11);
+	bool isRle      = (hdr->image_type == 9 || hdr->image_type == 10 || hdr->image_type == 11);
+	byte colorBits  = (isPaletted) ? hdr->colormap_size : hdr->pixel_size;
+	byte colorBytes = colorBits >> 3;
+
+	if (!(isPaletted || isRGB || isBW || isRle))
+		errMsg = va("unsupported type %d", hdr->image_type);
+	else if (colorBits != 24 && colorBits != 32)
+		errMsg = va("unsupported color depth %d", colorBits);
+	else if ((isBW || isPaletted) && hdr->pixel_size != 8)
+		errMsg = va("unsupported color depth %d for format %d", hdr->pixel_size, hdr->image_type);
 	else if (width > MAX_IMG_SIZE || height > MAX_IMG_SIZE)
 		errMsg = "image is too large";
+	else if (isPaletted)
+	{
+		if (hdr->colormap_type != 1)
+			errMsg = va("unsupported colormap type %d", hdr->colormap_type);
+		else if (hdr->colormap_index != 0 || hdr->colormap_length != 256)
+			errMsg = "partial colormaps unsupported";
+	}
 
 	if (errMsg)
 	{
@@ -153,11 +173,16 @@ byte* LoadTGA (const char *name, int &width, int &height)
 	int numPixels = width * height;
 
 	byte *src = (byte*)(hdr + 1);
+	src += hdr->id_length;							// skip image comment
+	byte *pal = NULL;
+	if (isPaletted)
+	{
+		pal = src;
+		src += hdr->colormap_length * colorBytes;	// skip palette
+	}
+
 	byte *dst = new byte [numPixels * 4];
 	byte *ret = dst;
-
-	if (hdr->id_length != 0)
-		src += hdr->id_length;		// skip image comment
 
 	int stride;
 	if ((hdr->attributes & TGA_ORIGIN_MASK) == TGA_TOPLEFT)
@@ -178,7 +203,7 @@ byte* LoadTGA (const char *name, int &width, int &height)
 		int		ct;
 
 		if (copy) copy--;
-		if (hdr->image_type == 10 && !copy)
+		if (isRle && !copy)
 		{
 			byte f = *src++;
 			if (f & 0x80)
@@ -193,13 +218,21 @@ byte* LoadTGA (const char *name, int &width, int &height)
 			ct = 1;
 
 		b = *src++;
-		if (hdr->pixel_size > 8)
+		if (isRGB)
 		{
 			g = *src++;
 			r = *src++;
-			if (hdr->pixel_size == 32) a = *src++; else a = 255;
+			if (colorBytes == 4) a = *src++; else a = 255;
 		}
-		else
+		else if (isPaletted)
+		{
+			byte *s = pal + b * colorBytes;
+			b = *s++;
+			g = *s++;
+			r = *s++;
+			if (colorBytes == 4) a = *s++; else a = 255;
+		}
+		else // if (isBW)  (monochrome)
 		{
 			r = g = b;
 			a = 255;
@@ -509,6 +542,17 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 	memset (&header, 0, sizeof(header));
 	header.width      = LittleShort (width);
 	header.height     = LittleShort (height);
+#if 0
+	// write black/white image
+	header.pixel_size = 8;
+	header.image_type = 3;
+	fwrite (&header, 1, sizeof(header), f);
+	for (i = 0; i < width * height; i++, pic += 3)
+	{
+		int c = (pic[0]+pic[1]+pic[2]) / 3;
+		fwrite (&c, 1, 1, f);
+	}
+#else
 	header.pixel_size = 24;
 	if (done)
 	{
@@ -526,6 +570,7 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 		fwrite (&header, 1, sizeof(header), f);
 		fwrite (pic, 1, size * 3, f);
 	}
+#endif
 
 	fclose (f);
 	appFree (packed);

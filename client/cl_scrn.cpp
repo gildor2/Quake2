@@ -314,11 +314,14 @@ void SCR_SetLevelshot (const char *name)
 }
 
 
-void SCR_BeginLoadingPlaque ()
+void SCR_BeginLoadingPlaque (bool server)
 {
 	guard(SCR_BeginLoadingPlaque);
+
+	if (server) cl.configstrings[CS_NAME][0] = 0;	// clear previous message
+
 	S_StopAllSounds_f ();
-	cl.sound_ambient = false;		// don't play ambients
+	cl.sound_ambient = false;						// don't play ambients
 	CDAudio_Stop ();
 	cls.loading = true;
 	cls.disable_servercount = cl.servercount;
@@ -474,10 +477,12 @@ static void DrawGUI (bool allowNotifyArea)
 
 	// draw console
 	if (!(cls.loading && DEVELOPER))
+	{
 		if (conCurrent)
 			Con_DrawConsole (conCurrent);
 		else if (allowNotifyArea && cl_draw2d->integer && (cls.key_dest == key_game || cls.key_dest == key_message))
-				Con_DrawNotify (true);
+			Con_DrawNotify (true);
+	}
 }
 
 

@@ -10,10 +10,8 @@
 #define CMODEL_SHOW			0x004	// will not be sent to game, should draw automatically (func_illusionary in q1/hl)
 #define CMODEL_WALL			0x008	// will not be sent to game, static collision model
 #define CMODEL_NODRAW		0x010	// do not draw model even when have visible surfaces
-#define CMODEL_LADDER		0x020	// func_ladder in hl
-#define CMODEL_WATER		0x040	// func_water with skin==-3
-#define CMODEL_SLIME		0x080	// func_water with skin==-4
-#define CMODEL_LAVA			0x100	// func_water with skin==-5
+#define CMODEL_CONTENTS		0x020	// "cmodel_t.contents" contains real model contents
+#define CMODEL_SCROLL		0x040	// allow SURF_FLOWING on model surfaces (hl)
 
 #define CMODEL_LOCAL		(CMODEL_SHOW|CMODEL_WALL)	// flags of models, not sent to game (processed by engine)
 
@@ -24,6 +22,9 @@ struct cmodel_t
 	int		headnode;
 	int		firstface, numfaces;
 	unsigned flags;					// set of CMODEL_XXX flags
+	unsigned contents;				// contents of all model brushes; used only with CMODEL_CONTENTS
+	color_t	color;					// set by Half-Life entities
+	CVec3	origin;
 };
 
 
@@ -145,7 +146,7 @@ struct bspfile_t
 	int			numAreaportals;
 	dareaportal_t *areaportals;
 
-	int			numTexinfo;
+	int			numTexinfo;				//?? currently used both texinfo1 & texinfo2 arrays (texinfo2 generated from texinfo1 for Q1/HL map)
 	union {
 		dBsp2Texinfo_t *texinfo2;
 		dBsp1Texinfo_t *texinfo1;

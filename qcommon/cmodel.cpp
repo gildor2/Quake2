@@ -30,8 +30,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "qcommon.h"
 
-#include "../client/ref.h"	//!!!!! using RE_DrawTextXxx () for debug <------ REMOVE!
-bool SHOW_TRACE; //!!!! REMOVE
+#if TRACE_DEBUG
+
+#include "../client/ref.h"
+bool cm_showTrace;
+
+#define TRACE(m,c)		if (cm_showTrace) RE_DrawTextLeft(m,c)
+
+#else
+#define TRACE(m,c)
+#endif
 
 #include "cmodel.h"
 #include "MapBrush.h"
@@ -65,6 +73,12 @@ struct carea_t
 	int		floodvalid;
 };
 
+struct surfBounds_t						// used for texture trace in Q1/HL maps
+{
+	float	mins[2];
+	float	maxs[2];
+};
+
 char	map_name[MAX_QPATH];
 static CMemoryChain *dataChain;
 bspfile_t *map_bspfile;
@@ -78,6 +92,7 @@ static cbrushside_t *map_brushSides;
 
 int				numTexinfo;				// global (for precache)
 csurface_t		*map_surfaces;			// global (for precache)
+static surfBounds_t *map_faceBounds;	// [numFaces]; for Q1/HL maps trace
 
 static int		numPlanes;
 static cplane_t	*map_planes;
@@ -107,8 +122,6 @@ static carea_t	*map_areas;
 
 static int		numareaportals;
 static dareaportal_t *map_areaportals;
-
-static int		numclusters;
 
 static csurface_t nullsurface;
 
@@ -458,7 +471,9 @@ static void LoadSurfaces1 (dBsp1Texinfo_t *data, int size)
 {
 	if (size < 1) Com_DropError ("Map with no surfaces");
 
-	//?? hack (convert bsp1 -> bsp2 texinfo) ?
+	//?? hack (?): convert bsp1 -> bsp2 texinfo
+	//?? note: this will be used by renderer too!
+	// note: this will erase texinfo1 field!
 	dBsp1Texinfo_t *in = data;
 	dBsp2Texinfo_t *out;
 	out = map_bspfile->texinfo2 = new (dataChain) dBsp2Texinfo_t [size];
@@ -489,12 +504,57 @@ static void LoadSurfaces1 (dBsp1Texinfo_t *data, int size)
 			flags |= SURF_ALPHA;
 		else if (!strncmp (out->texture, "sky", 3))
 			flags |= SURF_SKY;
+		else if (!strncmp (out->texture, "scroll", 6) && map_bspfile->type == map_hl)
+			flags |= SURF_FLOWING;	// should be disabled for all non-"func_conveyor" models
 		out->flags = flags;
 		out->value = miptex;		// index in textures lump
 		out->nexttexinfo = -1;		// no next texture: animation will be processed later
 	}
 	// load Q2 textures
 	LoadSurfaces2 (map_bspfile->texinfo2, size);
+}
+
+
+static void LoadFaces1 (dFace_t *data, int size)
+{
+	// compute face bounds in face.plane coordinates (2D)
+	// note: same work performed in renderer too
+	surfBounds_t *out;
+	out = map_faceBounds = new (dataChain) surfBounds_t [size];
+	// get map data
+	const dEdge_t *edges = map_bspfile->edges;
+	const CVec3 *verts   = map_bspfile->vertexes;
+	const int *surfedges = map_bspfile->surfedges;
+
+	for (int i = 0; i < size; i++, data++, out++)
+	{
+		// prepare
+		float mins[2], maxs[2];				// surface extents
+		mins[0] = mins[1] =  BIG_NUMBER;
+		maxs[0] = maxs[1] = -BIG_NUMBER;
+		// compute
+		const dBsp2Texinfo_t *stex = map_bspfile->texinfo2 + data->texinfo;
+		const int *pedge = surfedges + data->firstedge;
+		for (int j = 0; j < data->numedges; j++, pedge++)
+		{
+			int idx = *pedge;
+			const CVec3 *v;
+			if (idx > 0)
+				v = verts + (edges+idx)->v[0];
+			else
+				v = verts + (edges-idx)->v[1];
+			float v1 = dot (*v, stex->vecs[0].vec) + stex->vecs[0].offset;
+			float v2 = dot (*v, stex->vecs[1].vec) + stex->vecs[1].offset;
+			// Update bounds
+			EXPAND_BOUNDS(v1, mins[0], maxs[0]);
+			EXPAND_BOUNDS(v2, mins[1], maxs[1]);
+		}
+		// store
+		out->mins[0] = mins[0];
+		out->mins[1] = mins[1];
+		out->maxs[0] = maxs[0];
+		out->maxs[1] = maxs[1];
+	}
 }
 
 
@@ -574,6 +634,9 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 		out->contents       = q1Contents[-in->contents - 1];	// -1 => 0, -2 => 1 ...
 		out->area           = 0;
 		out->numleafbrushes = 0;
+		// texture info (here for trace)
+		out->firstleafface  = in->firstleafface;
+		out->numleaffaces   = in->numleaffaces;
 
 		if (out->contents == CONTENTS_SOLID)
 			out->cluster = -1;
@@ -682,6 +745,7 @@ static CBrush *GetHugeBrush ()
 }
 
 
+//?? profile function parts, optimize
 static void BuildBrushes1 (int numLeafsOrig)
 {
 	guard(BuildBrushes1);
@@ -772,7 +836,7 @@ static void BuildBrushes1 (int numLeafsOrig)
 			if (s->plane->dist != BSIZE)			// ignore largeBounds sides
 			{
 				bs->plane   = (s->back) ? FindBackplane (s->plane) : s->plane;
-				bs->surface = &nullsurface;			//?? texture
+				bs->surface = &nullsurface;			// texture will be found by trace function
 				bs++; brushSideIdx++;				// next brushside
 				dst->numsides++;
 			}
@@ -822,14 +886,8 @@ static void ProcessModels1 ()
 	cmodel_t *m = map_cmodels;
 	for (int i = 0; i < numcmodels; i++, m++)
 	{
-		if (m->flags & CMODEL_LADDER)
-			SetNodeContents (m->headnode, CONTENTS_LADDER|CONTENTS_SOLID);
-		else if (m->flags & CMODEL_WATER)
-			SetNodeContents (m->headnode, CONTENTS_WATER);
-		else if (m->flags & CMODEL_SLIME)
-			SetNodeContents (m->headnode, CONTENTS_SLIME);
-		else if (m->flags & CMODEL_LAVA)
-			SetNodeContents (m->headnode, CONTENTS_LAVA);
+		if (!(m->flags & CMODEL_CONTENTS)) continue;
+		SetNodeContents (m->headnode, m->contents);
 	}
 }
 
@@ -842,6 +900,7 @@ static void LoadQ1Map (bspfile_t *bsp)
 	LoadLeafs1 (bsp->leafs1, bsp->numLeafs);
 	LoadSubmodels (bsp->models, bsp->numModels);
 	BuildBrushes1 (bsp->numLeafs);
+	LoadFaces1 (bsp->faces, bsp->numFaces);
 
 #if MAX_DEBUG
 	if (map_cmodels[0].headnode)
@@ -896,7 +955,6 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 
 	if (!name || !name[0])
 	{
-		numclusters = 0;
 		numAreas    = 0;
 		*checksum   = 0;
 		map_clientLoaded = false;
@@ -906,8 +964,6 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 	bspfile_t *bsp = map_bspfile = LoadBspFile (name, clientload, &last_checksum);
 	dataChain = new CMemoryChain;
 	*checksum = last_checksum;
-
-	numclusters = bsp->numClusters;
 
 	switch (bsp->type)
 	{
@@ -984,7 +1040,8 @@ cmodel_t *CM_InlineModel (int index)
 
 int CM_NumClusters ()
 {
-	return numclusters;
+	if (!map_bspfile) return 0;
+	return map_bspfile->numClusters;
 }
 
 int CM_NumInlineModels ()
@@ -1081,18 +1138,18 @@ static void InitBoxHull ()
 // BSP trees instead of being compared directly.
 int	CM_HeadnodeForBox (const CBox &box)
 {
-	boxPlanes[0].dist = box.maxs[0];
-	boxPlanes[2].dist = box.mins[0];
-	boxPlanes[4].dist = box.maxs[1];
-	boxPlanes[6].dist = box.mins[1];
-	boxPlanes[8].dist = box.maxs[2];
+	boxPlanes[0].dist  = box.maxs[0];
+	boxPlanes[2].dist  = box.mins[0];
+	boxPlanes[4].dist  = box.maxs[1];
+	boxPlanes[6].dist  = box.mins[1];
+	boxPlanes[8].dist  = box.maxs[2];
 	boxPlanes[10].dist = box.mins[2];
 
-	boxPlanes[1].dist = -box.maxs[0];
-	boxPlanes[3].dist = -box.mins[0];
-	boxPlanes[5].dist = -box.maxs[1];
-	boxPlanes[7].dist = -box.mins[1];
-	boxPlanes[9].dist = -box.maxs[2];
+	boxPlanes[1].dist  = -box.maxs[0];
+	boxPlanes[3].dist  = -box.mins[0];
+	boxPlanes[5].dist  = -box.maxs[1];
+	boxPlanes[7].dist  = -box.mins[1];
+	boxPlanes[9].dist  = -box.maxs[2];
 	boxPlanes[11].dist = -box.mins[2];
 
 	return box_headnode;
@@ -1122,9 +1179,8 @@ int CM_PointLeafnum (const CVec3 &p, int num)
 
 int CM_PointContents (const CVec3 &p, int headnode)
 {
-	if (!numNodes) return 0;			// map not loaded
-
 	guard(CM_PointContents);
+	if (!numNodes) return 0;			// map not loaded
 	return map_leafs[CM_PointLeafnum (p, headnode)].contents;
 	unguard;
 }
@@ -1240,22 +1296,29 @@ int CM_BoxLeafnums (const CBox &bounds, int *list, int listsize, int *topnode, i
 -----------------------------------------------------------------------------*/
 
 #define	DIST_EPSILON	(1.0f/32)
+#define MAX_CLIP_FACES	256
+
+//?? when extending trace with SphereTrace: can add special function (TraceDistanceToPlane()), which
+//?? will be called by pointer, and create 3 funcs: for point/box/sphere trace
 
 static struct
 {
 	CVec3	start, end;
-	CBox	bounds;
+	CBox	bounds;			// trace box bounds; symetric, bounds.maxs == bounds half-size
 	CVec3	boundsVecs[8];	// corners of bounds
-	CVec3	extents;
 	trace_t	trace;
 	unsigned contents;
+	unsigned skipContents;
 	bool	isPoint;
+	int		numClipFaces;	// for q1/hl surface trace
 } tr;
 static int traceFrame;		// cannot place into "tr": should increment value between frames ("tr" will be zeroed)
 
+static int clipFaces[MAX_CLIP_FACES]; // tr.numClipFaces
+
 
 // return 'true' when brush clipped trace
-static bool ClipBoxToBrush (const cbrush_t &brush)
+static bool TraceBrush (const cbrush_t &brush)
 {
 	int		i;
 	cbrushside_t *side;
@@ -1272,7 +1335,7 @@ static bool ClipBoxToBrush (const cbrush_t &brush)
 
 	for (i = 0, side = &map_brushSides[brush.firstbrushside]; i < brush.numsides; i++, side++)
 	{
-		float	d1, d2, dist;
+		float d1, d2, dist;
 
 		cplane_t *plane = side->plane;
 
@@ -1281,7 +1344,7 @@ static bool ClipBoxToBrush (const cbrush_t &brush)
 			if (plane->type <= PLANE_Z)
 			{
 				// HERE: plane.normal[i] == 0 || 1 for i==type
-				dist = plane->dist - tr.bounds.mins[plane->type];
+				dist = plane->dist - tr.bounds.mins[plane->type]; //?? == + tr.bounds.maxs[plane->type]
 			}
 			else if (plane->type <= PLANE_MZ)
 			{
@@ -1314,8 +1377,7 @@ static bool ClipBoxToBrush (const cbrush_t &brush)
 			d1 = dot(plane->normal, tr.start) - dist;
 			d2 = dot(plane->normal, tr.end) - dist;
 		}
-if (SHOW_TRACE) RE_DrawTextLeft(va("plane: %g %g %g : %g -- d1=%g d2=%g (%s)",
-VECTOR_ARG(plane->normal),plane->dist, d1, d2, side->surface->fullName),RGB(1,0,0));
+		TRACE(va("plane: %g %g %g : %g -- d1=%g d2=%g (%s)",VECTOR_ARG(plane->normal),plane->dist, d1, d2, side->surface->fullName),RGB(1,0,0));
 		// d1 and d2: 0 -- on plane, <0 -- inside brush plane, >0 -- outside brush plane
 
 		if (d1 > 0 && d2 > 0)
@@ -1324,7 +1386,7 @@ VECTOR_ARG(plane->normal),plane->dist, d1, d2, side->surface->fullName),RGB(1,0,
 			 * 1) d1 > d2    -- enterfrac will be > 1
 			 * 2) d1 < d2    -- leavefrac will be < 0
 			 */
-if (SHOW_TRACE) RE_DrawTextLeft("d1>0 && d2>0",RGB(0,1,0));
+			TRACE("d1>0 && d2>0",RGB(0,1,0));
 			return false;
 		}
 
@@ -1353,24 +1415,24 @@ if (SHOW_TRACE) RE_DrawTextLeft("d1>0 && d2>0",RGB(0,1,0));
 				leavefrac = f;
 		}
 
-if (SHOW_TRACE) RE_DrawTextLeft(va("f=%g => ef=%g : lf=%g",f,enterfrac,leavefrac));
+		TRACE(va("f=%g => ef=%g : lf=%g",f,enterfrac,leavefrac),RGB(1,1,1));
 		if (enterfrac >= leavefrac)
-{
-if (SHOW_TRACE) RE_DrawTextLeft("** END: enterfrac < leavefrac",RGB(0.7,0.6,0.5));
+		{
+			TRACE("** END: enterfrac < leavefrac",RGB(0.7,0.6,0.5));
 			return false;			// intersects (at least) 2 faces outside the brush
-}
+		}
 	}
 
 	if (!startout)
 	{
-if (SHOW_TRACE) RE_DrawTextLeft("** END: startout",RGB(0.7,0.6,0.5));
+		TRACE("** END: startout",RGB(0.7,0.6,0.5));
 		// original point was inside brush
 		tr.trace.startsolid = true;
 		tr.trace.allsolid   = !getout;
 		return true;
 	}
 
-if (SHOW_TRACE) RE_DrawTextLeft(va("** END: ef=%g (>-1 & <%g)",enterfrac,tr.trace.fraction),RGB(0.7,0.6,0.5));
+	TRACE(va("** END: ef=%g (>-1 & <%g)",enterfrac,tr.trace.fraction),RGB(0.7,0.6,0.5));
 	if (enterfrac > -1 && enterfrac < tr.trace.fraction)
 	{
 		if (enterfrac < 0)			// when startsolid && allsolid
@@ -1379,7 +1441,7 @@ if (SHOW_TRACE) RE_DrawTextLeft(va("** END: ef=%g (>-1 & <%g)",enterfrac,tr.trac
 		tr.trace.plane    = *clipplane;
 		tr.trace.surface  = leadside->surface;
 		tr.trace.contents = brush.contents;
-if (SHOW_TRACE) RE_DrawTextLeft(va("* best: plane=%g %g %g / %g", VECTOR_ARG(clipplane->normal),clipplane->dist),RGB(1,0.3,0.3));
+		TRACE(va("* best: plane=%g %g %g / %g", VECTOR_ARG(clipplane->normal),clipplane->dist),RGB(1,0.3,0.3));
 		return true;
 	}
 
@@ -1387,30 +1449,25 @@ if (SHOW_TRACE) RE_DrawTextLeft(va("* best: plane=%g %g %g / %g", VECTOR_ARG(cli
 }
 
 
-bool trace_skipAlpha;		//!! need another way to pass through SURF_ALPHA (callbacks??); used in SV_TraceHook()
-
-static void TraceToLeaf (int leafnum)
+static void TraceLeaf (const dBsp2Leaf_t &leaf)
 {
-	dBsp2Leaf_t *leaf = &map_leafs[leafnum];
-	if (!(leaf->contents & tr.contents))
+	if (!(leaf.contents & tr.contents))
 		return;
 	// trace line against all brushes in the leaf
-	for (int i = 0; i < leaf->numleafbrushes; i++)
+	for (int i = 0; i < leaf.numleafbrushes; i++)
 	{
-		int brushNum = map_leafBrushes[leaf->firstleafbrush + i];
+		int brushNum = map_leafBrushes[leaf.firstleafbrush + i];
 		cbrush_t &b = map_brushes[brushNum];
-if (SHOW_TRACE) RE_DrawTextLeft(va("--- %d cont=%X numSides=%d ---",map_leafBrushes[leaf->firstleafbrush+i], b.contents, b.numsides),RGB(0.3,1,0.3));
+		TRACE(va("--- %d cont=%X numSides=%d ---",map_leafBrushes[leaf.firstleafbrush+i], b.contents, b.numsides),RGB(0.3,1,0.3));
 		if (b.traceFrame == traceFrame)
 			continue;					// already checked this brush in another leaf
 		b.traceFrame = traceFrame;
-		if (!(b.contents & tr.contents))
-			continue;
-		if (trace_skipAlpha && b.contents & CONTENTS_ALPHA)
-			continue;
+		if (!(b.contents & tr.contents)) continue;
+		if (b.contents & tr.skipContents) continue;
 
-		if (ClipBoxToBrush (b))
+		if (TraceBrush (b))
 			tr.trace.brushNum = brushNum;
-		if (!tr.trace.fraction)		// when startsolid && allsolid
+		if (!tr.trace.fraction)			// when startsolid && allsolid
 			return;
 	}
 }
@@ -1427,7 +1484,7 @@ if box inside this brush or intersects its brushsides:
 else trace is unchanged
 ================
 */
-static bool TestBoxInBrush (const cbrush_t &brush)
+static bool TestBrush (const cbrush_t &brush)
 {
 	if (!brush.numsides)
 		return false;
@@ -1442,7 +1499,7 @@ static bool TestBoxInBrush (const cbrush_t &brush)
 
 		float size;
 		if (plane->type <= PLANE_Z)
-			size = - tr.bounds.mins[plane->type];
+			size = - tr.bounds.mins[plane->type];		//?? == tr.bounds.maxs[plane->type]
 		else if (plane->type <= PLANE_MZ)
 			size = tr.bounds.maxs[plane->type-3];
 		else
@@ -1463,7 +1520,7 @@ static bool TestBoxInBrush (const cbrush_t &brush)
 	tr.trace.fraction = 0;
 	tr.trace.contents = brush.contents;
 	tr.trace.plane    = *clipside->plane;
-	tr.trace.surface  = clipside->surface;
+	tr.trace.surface  = clipside->surface;				//?? note: not valid for Q1/HL map
 
 	return true;
 }
@@ -1471,16 +1528,15 @@ static bool TestBoxInBrush (const cbrush_t &brush)
 
 // Call TestBoxInBrush for each leafbrush.
 // When first intersection found (trace.fraction == 0) - return
-static void TestInLeaf (int leafnum)
+static void TestLeaf (const dBsp2Leaf_t &leaf)
 {
-	dBsp2Leaf_t *leaf = &map_leafs[leafnum];
-	if (!(leaf->contents & tr.contents))
+	if (!(leaf.contents & tr.contents))
 		return;
 
 	// trace line against all brushes in the leaf
-	for (int i = 0; i < leaf->numleafbrushes; i++)
+	for (int i = 0; i < leaf.numleafbrushes; i++)
 	{
-		int brushNum = map_leafBrushes[leaf->firstleafbrush + i];
+		int brushNum = map_leafBrushes[leaf.firstleafbrush + i];
 		cbrush_t &b = map_brushes[brushNum];
 		if (b.traceFrame == traceFrame)
 			continue;	// already checked this brush in another leaf
@@ -1488,11 +1544,130 @@ static void TestInLeaf (int leafnum)
 
 		if (!(b.contents & tr.contents))
 			continue;
-		if (TestBoxInBrush (b))
+		if (TestBrush (b))
 		{
 			tr.trace.brushNum = brushNum;
 			return;
 		}
+	}
+}
+
+
+/*-----------------------------------------------------------------------------
+	Searching trace surface for Q1/HL BSP
+-----------------------------------------------------------------------------*/
+
+static void FindSurface1 (const dBsp2Leaf_t &leaf, float p1f, float p2f)
+{
+	const unsigned short *leafFaces = map_bspfile->leaffaces + leaf.firstleafface;
+	TRACE("----------------",RGB(1,1,0));
+	for (int i = 0; i < leaf.numleaffaces; i++, leafFaces++)
+	{
+		int faceNum = *leafFaces;
+		const dFace_t &face = map_bspfile->faces[faceNum];
+		const cplane_t *plane = map_planes + face.planenum;
+
+		float d1, d2, dist;
+		if (!tr.isPoint)
+		{	// general box case
+			if (plane->type <= PLANE_Z)
+			{
+				// HERE: plane.normal[i] == 0 || 1 for i==type
+				dist = plane->dist - tr.bounds.mins[plane->type]; //?? == + tr.bounds.maxs[plane->type]
+			}
+			else if (plane->type <= PLANE_MZ)
+			{
+				// HERE: plane.normal[i] == 0 || -1 for i==type-3
+				dist = plane->dist + tr.bounds.maxs[plane->type-3];
+			}
+			else
+			{
+				dist = plane->dist - dot (plane->normal, tr.boundsVecs[plane->signbits]);
+			}
+		}
+		else
+		{	// special point case
+			dist = plane->dist;
+		}
+
+		// this is a 2 plane->DistanceTo() calls with a common plane->type analysis
+		if (plane->type <= PLANE_Z)
+		{
+			d1 = tr.start[plane->type] - dist;
+			d2 = tr.end[plane->type] - dist;
+		}
+		else if (plane->type <= PLANE_MZ)
+		{
+			d1 = -tr.start[plane->type-3] - dist;
+			d2 = -tr.end[plane->type-3] - dist;
+		}
+		else
+		{
+			d1 = dot(plane->normal, tr.start) - dist;
+			d2 = dot(plane->normal, tr.end) - dist;
+		}
+
+		int s1 = IsNegative (d1);
+		int s2 = IsNegative (d2);
+		if (s1 != face.side) continue;		// 'start' placed on a back side of surface => skip surface
+		if (s1 == s2) continue;				// start/end on the same side of plane
+		if (face.side)
+		{
+			FNegate (d1);
+			FNegate (d2);
+		}
+
+		// crosses face
+		// here: d1 and d2 have different signs, and 'start' placed on the front side of face
+		// and: sign(d1) == 0 (positive); so: d1 always > d2
+		float frac = (d1-DIST_EPSILON) / (d1 - d2);
+		if (frac < p1f || frac > p2f) continue; // crosses plane outside leaf (outside surface)
+
+		// check surface bounds
+		CVec3 mid;
+		Lerp (tr.start, tr.end, frac, mid);
+		dBsp2Texinfo_t *tex = map_bspfile->texinfo2 + face.texinfo;
+		float s = dot (tex->vecs[0].vec, mid) + tex->vecs[0].offset;
+		float t = dot (tex->vecs[1].vec, mid) + tex->vecs[1].offset;
+		const surfBounds_t &bounds = map_faceBounds[faceNum];
+		if (s < bounds.mins[0] || s > bounds.maxs[0]) continue;
+		if (t < bounds.mins[1] || t > bounds.maxs[1]) continue;
+
+		// remember surface
+		// note: there can be any surface from leaf, with any frac: we do not know, which contents
+		// behind the face, so - remember all crossed faces
+		TRACE(va("surf[%d] %g %g %g : %g (%d) \"%s\" <-> %g [%g .. %g]", faceNum, VECTOR_ARG(plane->normal), plane->dist,
+			face.side, tex->texture, frac, p1f, p2f),RGB(0.6,0.2,0.6));
+		if (tr.numClipFaces < ARRAY_COUNT(clipFaces))
+			clipFaces[tr.numClipFaces++] = faceNum;
+		//?? if array is too small, can remove 1st face (make FIFO?) -- if so, can reduce array size
+	}
+}
+
+
+static void SetTraceFace1 ()
+{
+	if (tr.trace.fraction == 1) return;		// no collision
+	if (!tr.numClipFaces) return;			// no faces crossed
+	for (int i = 0; i < tr.numClipFaces; i++)
+	{
+		int faceNum = clipFaces[i];
+		const dFace_t &face = map_bspfile->faces[faceNum];
+		const cplane_t *plane = map_planes + face.planenum;
+		// check face plane
+		if (!face.side)
+		{
+			if (fabs (plane->dist - tr.trace.plane.dist) > DIST_EPSILON) continue;
+			if (dot (plane->normal, tr.trace.plane.normal) < 0.99f) continue;
+		}
+		else
+		{
+			if (fabs (-plane->dist - tr.trace.plane.dist) > DIST_EPSILON) continue;
+			if (dot (plane->normal, tr.trace.plane.normal) > -0.99f) continue;
+		}
+		// surface found
+//		dBsp2Texinfo_t *tex = map_bspfile->texinfo2 + face.texinfo;
+		tr.trace.surface = map_surfaces + face.texinfo;
 	}
 }
 
@@ -1506,15 +1681,22 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &
 	CVec3 p1 = point1;
 	CVec3 p2 = point2;
 
-	if (tr.trace.fraction <= p1f)
-		return;		// already hit something nearer (??)
-
 	while (true)
 	{
+		TRACE(va("trace: n=%d f=%g .. %g (best=%g)",nodeNum,p1f,p2f,tr.trace.fraction),RGB(0,1,0.2));
+		if (tr.trace.fraction <= p1f)
+		{
+			TRACE("too far",RGB(1,1,0));
+			return;		// already hit something nearer; this will break tree walking
+		}
+
 		// if < 0, we are in a leaf node
 		if (nodeNum < 0)
 		{
-			TraceToLeaf (-1-nodeNum);
+			const dBsp2Leaf_t &leaf = map_leafs[-1-nodeNum];
+			if (map_bspfile->type == map_q1 || map_bspfile->type == map_hl)
+				FindSurface1 (leaf, p1f, p2f);
+			TraceLeaf (leaf);
 			return;
 		}
 
@@ -1528,13 +1710,13 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &
 		{
 			t1 = p1[plane.type] - plane.dist;
 			t2 = p2[plane.type] - plane.dist;
-			offset = tr.extents[plane.type];
+			offset = tr.bounds.maxs[plane.type];
 		}
 		else if (plane.type <= PLANE_MZ)
 		{
 			t1 = -p1[plane.type-3] - plane.dist;
 			t2 = -p2[plane.type-3] - plane.dist;
-			offset = tr.extents[plane.type-3];
+			offset = tr.bounds.maxs[plane.type-3];
 		}
 		else
 		{
@@ -1543,9 +1725,9 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &
 			if (tr.isPoint)
 				offset = 0;
 			else
-				offset = fabs (tr.extents[0]*plane.normal[0]) +
-						 fabs (tr.extents[1]*plane.normal[1]) +
-						 fabs (tr.extents[2]*plane.normal[2]);
+				offset = fabs (tr.bounds.maxs[0]*plane.normal[0]) +		// == -dot (plane.normal, tr.boundsVecs[plane.signbits])
+						 fabs (tr.bounds.maxs[1]*plane.normal[1]) +
+						 fabs (tr.bounds.maxs[2]*plane.normal[2]);
 		}
 
 		// see which sides we need to consider
@@ -1602,12 +1784,12 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &
 		float midf;
 		CVec3 mid;
 
-		// move up to the node
+		// visit near-side node (recurse)
 		midf = Lerp (p1f, p2f, frac1);
 		Lerp (p1, p2, frac1, mid);
 		RecursiveHullCheck (node.children[side], p1f, midf, p1, mid);
 
-		// go past the node
+		// visit far-side node (loop)
 		midf = Lerp (p1f, p2f, frac2);
 #if 0
 		Lerp (p1, p2, frac2, mid);
@@ -1635,12 +1817,17 @@ When start==end:
   6) trace.ent & trace.plane are unchanged
 ==================
 */
+
+bool trace_skipAlpha;	//!! hack!
+
 //?? check: can this be faster if trace with sphere
-void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds, int headnode, int brushmask)
+void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds, int headnode, unsigned contents)
 {
 	guard(CM_BoxTrace);
 
-	traceFrame++;	// to avoid testing single brush from different leafs
+	int i;
+
+	traceFrame++;	// to avoid testing the same brush from different leafs
 	c_traces++;		//??
 
 	// fill in a default trace
@@ -1655,33 +1842,42 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CB
 		return;
 	}
 
-	tr.contents = brushmask;
+	tr.contents = contents;
 	tr.start    = start;
 	tr.end      = end;
 	tr.bounds   = bounds;
+	if (trace_skipAlpha) tr.skipContents = CONTENTS_ALPHA;
+	// make trace bounds symmetric
+	for (i = 0; i < 3; i++)
+	{
+		float f = (tr.bounds.mins[i] + tr.bounds.maxs[i]) / 2;	// center of bounds
+		tr.start[i] += f;
+		tr.end[i]   += f;
+		tr.bounds.mins[i] -= f;
+		tr.bounds.maxs[i] -= f;
+	}
 	for (int boundsVec = 0; boundsVec < 8; boundsVec++)
 	{
 		int signbits = boundsVec;
 		for (int j = 0; j < 3; j++, signbits >>= 1)
-			tr.boundsVecs[boundsVec][j] = (signbits & 1) ? bounds.maxs[j] : bounds.mins[j];
+			tr.boundsVecs[boundsVec][j] = (signbits & 1) ? tr.bounds.maxs[j] : tr.bounds.mins[j];
 	}
 
 	// check for "position test" special case
 	if (start[0] == end[0] && start[1] == end[1] && start[2] == end[2])
 	{
 		CBox box;
-		int i;
 		for (i = 0; i < 3; i++)
 		{
-			box.mins[i] = start[i] + tr.bounds.mins[i] - 1;
-			box.maxs[i] = start[i] + tr.bounds.maxs[i] + 1;
+			box.mins[i] = tr.start[i] + tr.bounds.mins[i] - 1;
+			box.maxs[i] = tr.start[i] + tr.bounds.maxs[i] + 1;
 		}
 
 		int leafs[1024];
 		int numLeafs = CM_BoxLeafnums (box, ARRAY_ARG(leafs), NULL, headnode);
 		for (i = 0; i < numLeafs; i++)
 		{
-			TestInLeaf (leafs[i]);
+			TestLeaf (map_leafs[leafs[i]]);
 			if (tr.trace.allsolid)	// always set when 1st intersection by CM_TestBoxInBrush()
 				break;
 		}
@@ -1691,23 +1887,19 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CB
 	}
 
 	// check for "point" special case
-	if (tr.bounds.mins[0] == 0 && tr.bounds.mins[1] == 0 && tr.bounds.mins[2] == 0 &&
-		tr.bounds.maxs[0] == 0 && tr.bounds.maxs[1] == 0 && tr.bounds.maxs[2] == 0)
+	if (tr.bounds.maxs[0] == 0 && tr.bounds.maxs[1] == 0 && tr.bounds.maxs[2] == 0)
 		tr.isPoint = true;
-	else
-	{
-		tr.extents[0] = -tr.bounds.mins[0] > tr.bounds.maxs[0] ? -tr.bounds.mins[0] : tr.bounds.maxs[0];
-		tr.extents[1] = -tr.bounds.mins[1] > tr.bounds.maxs[1] ? -tr.bounds.mins[1] : tr.bounds.maxs[1];
-		tr.extents[2] = -tr.bounds.mins[2] > tr.bounds.maxs[2] ? -tr.bounds.mins[2] : tr.bounds.maxs[2];
-	}
 
 	// general sweeping through world
-	RecursiveHullCheck (headnode, 0, 1, start, end);
+	TRACE(va("*** trace: headnode=%d ***",headnode),RGB(0.8,0.8,1));
+	RecursiveHullCheck (headnode, 0, 1, tr.start, tr.end);
 
 	if (tr.trace.fraction == 1)
 		tr.trace.endpos = end;
 	else
 		Lerp (start, end, tr.trace.fraction, tr.trace.endpos);
+	if (map_bspfile->type == map_q1 || map_bspfile->type == map_hl)
+		SetTraceFace1 ();
 
 	trace = tr.trace;
 	return;
@@ -1717,40 +1909,38 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CB
 
 // Handles offseting and rotation of the end points for moving and rotating entities
 void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds,
-	int headnode, int brushmask, const CVec3 &origin, const CVec3 &angles)
+	int headnode, unsigned contents, const CVec3 &origin, const CVec3 &angles)
 {
 	guard(CM_TransformedBoxTrace);
 
-	bool	rotated;
 	// rotate start and end into the models frame of reference
-	if (headnode != box_headnode && (angles[0] || angles[1] || angles[2]))
-		rotated = true;
-	else
-		rotated = false;
+	bool rotated = (headnode != box_headnode && (angles[0] || angles[1] || angles[2]));
 
-	CVec3	start1, end1;
-	CAxis	axis;
+	CVec3 start1, end1;
+	CAxis axis;
 	if (rotated)
 	{
 		axis.FromAngles (angles);
 		// transform start/end to axis (model coordinate system)
 		TransformPoint (origin, axis, start, start1);
-		TransformPoint (origin, axis, end, end1);
+		TransformPoint (origin, axis, end,   end1);
 	}
 	else
 	{
 		VectorSubtract (start, origin, start1);
-		VectorSubtract (end, origin, end1);
+		VectorSubtract (end,   origin, end1);
 	}
 
 	// sweep the box through the model
-	CM_BoxTrace (trace, start1, end1, bounds, headnode, brushmask);
+	CM_BoxTrace (trace, start1, end1, bounds, headnode, contents);
 
 	// transform normal/endpos back to world coordinate system
-	if (trace.fraction != 1.0f && rotated)
-		axis.UnTransformVector (trace.plane.normal, trace.plane.normal);
 	if (rotated)
+	{
+		if (trace.fraction != 1.0f)
+			axis.UnTransformVector (trace.plane.normal, trace.plane.normal);
 		UnTransformPoint (origin, axis, trace.endpos, trace.endpos);
+	}
 	else
 		trace.endpos.Add (origin);
 
@@ -1760,17 +1950,17 @@ void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &en
 
 //?? use CCoords instead of origin+axis
 void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds,
-	int headnode, int brushmask, const CVec3 &origin, const CAxis &axis)
+	int headnode, unsigned contents, const CVec3 &origin, const CAxis &axis)
 {
 	guard(CM_TransformedBoxTrace2);
 
 	CVec3 start1, end1;
 	// transform start/end to axis (model coordinate system)
 	TransformPoint (origin, axis, start, start1);
-	TransformPoint (origin, axis, end, end1);
+	TransformPoint (origin, axis, end,   end1);
 
 	// sweep the box through the model
-	CM_BoxTrace (trace, start1, end1, bounds, headnode, brushmask);
+	CM_BoxTrace (trace, start1, end1, bounds, headnode, contents);
 
 	// transform normal/endpos to world coordinate system
 	if (trace.fraction != 1.0f)
@@ -1815,7 +2005,7 @@ bool CM_CombineTrace (trace_t &trace1, const trace_t &trace2)
 
 
 // clip trace to all CMODEL_WALL models
-void CM_ClipTraceToModels (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds, int brushmask)
+void CM_ClipTraceToModels (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds, unsigned contents)
 {
 	guard(CM_ClipTraceToModels);
 
@@ -1844,7 +2034,7 @@ void CM_ClipTraceToModels (trace_t &trace, const CVec3 &start, const CVec3 &end,
 
 		// these entities are not roteted and have origin = {0,0,0}
 		trace_t tr;
-		CM_BoxTrace (tr, start, end, bounds, model->headnode, brushmask);
+		CM_BoxTrace (tr, start, end, bounds, model->headnode, contents);
 		CM_CombineTrace (trace, tr);
 		if (trace.allsolid) return;
 	}
@@ -2083,11 +2273,9 @@ const byte *CM_ClusterPVS (int cluster)
 {
 	guard(CM_ClusterPVS);
 
-	static byte	pvsrow[MAX_MAP_LEAFS/8];
 	if (cluster <= -1)
 	{
-		if (pvsrow[0] != 0)
-			memset (pvsrow, 0, (numclusters + 7) >> 3);
+		static byte	pvsrow[MAX_MAP_LEAFS/8];
 		return pvsrow;
 	}
 	if (!map_bspfile->visInfo)
@@ -2240,7 +2428,7 @@ bool CM_HeadnodeVisible (int nodenum, const byte *visbits)
 				nodenum = stack[--sptr];
 				continue;
 			}
-			return true;
+			return true;					// found any visible cluster under headnode
 		}
 
 		cnode_t *node = &map_nodes[nodenum];

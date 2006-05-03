@@ -67,6 +67,7 @@ inline void FAbs (float &a)
 	uint_cast(a) &= 0x7FFFFFFF;
 }
 
+// NOTE: FNegate(0) will produce -0 (0x00000000 -> 0x80000000)
 inline void FNegate (const float &a, float &b)
 {
 	uint_cast(b) = uint_cast_const(a) ^ 0x80000000;
@@ -275,7 +276,7 @@ struct cplane_t		//?? rename
 		else type = PLANE_NON_AXIAL;
 	}
 	// distance is positive, when point placed on a normal-looking side
-	inline float DistanceTo (const CVec3 &vec)
+	inline float DistanceTo (const CVec3 &vec) const
 	{
 		if (type <= PLANE_Z)
 			return vec[type] - dist;
@@ -462,12 +463,39 @@ const char *COM_QuoteString (const char *str, bool alwaysQuote);
 #define LittleShort(n)	((short)n)
 #define LittleLong(n)	((long)n)
 #define LittleFloat(n)	((float)n)
+#define LTL(n)
 
 #else
 
 short	LittleShort (short l);
 int		LittleLong (int l);
 float	LittleFloat (float l);
+
+inline void LTL(short &v)
+{
+	v = LittleShort (v);
+}
+inline void LTL(unsigned short &v)
+{
+	v = LittleShort (v);
+}
+inline void LTL(int &v)
+{
+	v = LittleLong (v);
+}
+inline void LTL(unsigned &v)
+{
+	v = LittleLong (v);
+}
+inline void LTL(float &v)
+{
+	v = LittleFloat (v);
+}
+inline void LTL(CVec3 &v)
+{
+	for (int i = 0; i < 3; i++)
+		v[i] = LittleFloat (v[i]);
+}
 
 #endif
 
