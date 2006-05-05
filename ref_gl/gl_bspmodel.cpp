@@ -123,23 +123,50 @@ static void BuildSurfFlare (surfaceBase_t *surf, const color_t *color, float int
 
 static void LoadSlights (slight_t *data, int count)
 {
-	gl_slight_t *out;
-
-	map.numSlights = count;
-	map.slights = out = new (map.dataChain) gl_slight_t [count];
 	// copy slights from map
 	for (int i = 0; i < count; i++, data = data->next)
 	{
+		// create light
+		CPointLight *out;
+		switch (data->type)
+		{
+		case sl_linear:
+			out = new (map.dataChain) CLightLinear;
+			break;
+		case sl_inverse:
+			out = new (map.dataChain) CLightInv;
+			break;
+		case sl_inverse2:
+			out = new (map.dataChain) CLightInv2;
+			break;
+		case sl_nofade:
+			out = new (map.dataChain) CLightNofade;
+			break;
+		default:
+			Com_DropError ("unknown point sl.type (\"_falloff\") at %g %g %g\n", VECTOR_ARG(data->origin));
+		}
+		// copy data
 		out->origin  = data->origin;
 		out->color   = data->color;
 		out->intens  = data->intens;
 		out->style   = data->style;
-		out->type    = data->type;
 		out->spot    = data->spot != 0;
 		out->spotDir = data->spotDir;
 		out->spotDot = data->spotDot;
 		out->focus   = data->focus;
 		out->fade    = data->fade;
+
+		// insert into list
+		if (out->style == 0)
+		{
+			out->next = map.lights;
+			map.lights = out;
+		}
+		else
+		{
+			out->next = map.flashLights;
+			map.flashLights = out;
+		}
 
 		SaturateColor3f (out->color);
 
@@ -148,15 +175,12 @@ static void LoadSlights (slight_t *data, int count)
 		{
 			static const CBox bounds = {{-0.3, -0.3, -0.3}, {0.3, 0.3, 0.3}};
 			trace_t	tr;
-
 			CM_BoxTrace (tr, out->origin, out->origin, bounds, 0, CONTENTS_SOLID);
 			if (tr.allsolid)
 				VectorMA (out->origin, 0.5f, tr.plane.normal);
 			else
 				break;
 		}
-
-		out++;
 	}
 }
 
@@ -190,10 +214,12 @@ static void BuildSurfLight (surfacePlanar_t *pl, const color_t *color, float are
 	}
 	intens *= NormalizeColor (c, c);
 
-	surfLight_t *sl = new (map.dataChain) surfLight_t;
-	sl->next = map.surfLights;
-	map.surfLights = sl;
-	map.numSurfLights++;
+	// create
+	CSurfLight *sl = new (map.dataChain) CSurfLight;
+	// insert into list
+	sl->next = map.lights;
+	map.lights = sl;
+	// setup
 	sl->color  = c;
 	sl->sky    = sky;
 	sl->intens = intens * area;

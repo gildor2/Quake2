@@ -107,7 +107,7 @@ public:
 	int		*indexes;
 	// Q2/HL dynamic lightmap (NULL for Q3 ??)
 	dynamicLightmap_t *lightmap;
-	surfLight_t *light;
+	CLight	*light;
 	surfDlight_t *dlights;
 	virtual void Tesselate (refEntity_t &ent);
 };
@@ -256,10 +256,8 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 	int		numLightCells;
 	int		gridMins[3], mapGrid[3];	// start/size of world in lightgrid units
 	gl_flare_t *flares;
-	int		numSlights;			//?? rename slight -> plight (or light)
-	gl_slight_t *slights;
-	int		numSurfLights;
-	surfLight_t *surfLights;
+	CLight	*lights;			// static lights
+	CLight	*flashLights;		// lights with dynamic lightstyle; rename !!
 	int		numFlares;
 	// sun
 	float	sunLight;			// intensity; 0 if no sun

@@ -6,6 +6,7 @@
 - 'ahl_streets': lamps have 'halo' with rendermode==5 (additive)
 - 'ccity2': have rotating lamps, which can damage player by their halo + halo have envmaps
 - support for Q3-like spherical sky, use for Q1 maps
+! use LightOrigin for renderer entity (weapon model, multi-part models ...)
 
 ! HL/KP: have maps with "PF_setmodel NULL" error
 - KP: func_explosive on "japan" - windows with explosion (check game code ?)
