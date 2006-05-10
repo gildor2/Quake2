@@ -223,6 +223,23 @@ FUNC(tessSize)
 }
 
 
+FUNC(skyParms)
+{
+	sh.type = SHADERTYPE_SKY;
+	if (argc != 4)
+		ERROR_IN_SHADER("bad skyparms");
+	if (!IS(1, "-"))
+	{
+		if (sh.numStages)
+			ERROR_IN_SHADER("skybox after stages");
+		SetShaderSkyBox (argv[1]);			// NOTE: here is no default skybox dir
+		sh.numStages = 1;
+	}
+	sh.cloudHeight = atof (argv[2]);
+	// argv[3] is innerbox, is is not supported in q3
+}
+
+
 // registration
 
 static CSimpleCommand shaderFuncs[] = {
@@ -235,8 +252,9 @@ static CSimpleCommand shaderFuncs[] = {
 	TBL(deformVertexes),
 	TBL(surfaceparm),
 	TBL(tessSize),
+	//!! skyParms: should set sh.width/sh.height from skybox textures (for seamless sky drawing)
+	TBL(skyParms),
 	TBL_IGNORE(entityMergable)
-	//!! skyParms: should set sh.width/sh.height from map textures (for seamless sky drawing)
 };
 
 
@@ -301,7 +319,7 @@ FUNC(map)
 			sh.height = img->height;
 		}
 	}
-	shaderImages[sh.numStages * MAX_STAGE_TEXTURES] = img;
+	SetShaderImage (img, sh.numStages);
 	s.numAnimTextures = 1;
 }
 
@@ -310,7 +328,7 @@ FUNC(clampMap)
 {
 	image_t *img = ShaderImage (IS(1,"$texture") ? sh.Name : argv[1], IMAGE_CLAMP);
 	if (!img) ERROR_IN_SHADER(va("no texture: %s", argv[1]));
-	shaderImages[sh.numStages * MAX_STAGE_TEXTURES] = img;
+	SetShaderImage (img, sh.numStages);
 	if (!sh.width && !sh.height)
 	{
 		sh.width  = img->width;
@@ -326,7 +344,6 @@ static void DoAnimMap (int argc, char **argv, unsigned imgFlags)
 	st[sh.numStages].animMapFreq = atof (argv[1]);
 	if (argc > MAX_STAGE_TEXTURES + 2) ERROR_IN_SHADER("too much animmap textures");
 
-	int dst = sh.numStages * MAX_STAGE_TEXTURES;
 	for (int i = 2; i < argc; i++)
 	{
 		image_t *img = ShaderImage (argv[i], imgFlags);
@@ -336,7 +353,7 @@ static void DoAnimMap (int argc, char **argv, unsigned imgFlags)
 			sh.width  = img->width;
 			sh.height = img->height;
 		}
-		shaderImages[dst++] = img;
+		SetShaderImage (img, sh.numStages, i-2);
 		st[sh.numStages].numAnimTextures++;
 	}
 }
@@ -435,6 +452,8 @@ FUNC(depthwrite)
 
 FUNC(nodepthtest)
 {
+	//?? this flag should be extended on all shader stages (when multi-pass shaders)?
+	//?? or it should be used per-shader (not per-pass)
 	st[sh.numStages].glState |= GLSTATE_NODEPTHTEST;
 }
 

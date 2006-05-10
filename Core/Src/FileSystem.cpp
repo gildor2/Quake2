@@ -138,7 +138,6 @@ float CFile::ReadFloat ()
 
 void CFile::ReadString (char *buf, int size)
 {
-	buf[size] = 0;
 	char *lim = buf + size - 1;		// do not overwrite last (zero) byte
 	*lim = 0;						// when buffer will be overflowed, string already will be null-terminated
 	char c;

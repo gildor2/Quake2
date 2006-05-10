@@ -66,7 +66,7 @@ static bool InitShaderFromScript (const char *srcName, const char *text = NULL);
 
 static void Shaderlist_f (bool usage, int argc, char **argv)
 {
-	static const char *shTypes[] = {"", "sky", "fog", "por"};
+	static const char *shTypes[] = {"", "sky", "fog", "prt"};
 	static const char *boolNames[] = {" ", "+"};
 
 	if (argc > 2 || usage)
@@ -229,6 +229,12 @@ static tcModParms_t *NewTcModStage (shaderStage_t *stage)
 }
 
 
+inline void SetShaderImage (const image_t *image, int stageIdx, int animIdx = 0)
+{
+	shaderImages[stageIdx * MAX_STAGE_TEXTURES + animIdx] = image;
+}
+
+
 // Insert shader (sh) into shaders array
 static shader_t *CreateShader ()
 {
@@ -300,8 +306,16 @@ static shader_t *FinishShader ()
 		shaderStage_t *s = &st[numStages];
 		if (!s->numAnimTextures) break;
 
-		// set default tcGenType
-		if (!s->tcGenType) s->tcGenType = (s->isLightmap) ? TCGEN_LIGHTMAP : TCGEN_TEXTURE;
+		if (sh.type == SHADERTYPE_SKY)
+		{
+			// force sky to use TCGEN_TEXTURE for clouds and TCGEN_LIGHTMAP for skybox
+			s->tcGenType = (numStages == 0 && sh.useSkyBox) ? TCGEN_LIGHTMAP : TCGEN_TEXTURE;
+		}
+		else
+		{
+			// set default tcGenType
+			if (!s->tcGenType) s->tcGenType = (s->isLightmap) ? TCGEN_LIGHTMAP : TCGEN_TEXTURE;
+		}
 
 		// set default rgbGenType (identity for lightmap stage, because overbright already corrected in texture)
 		if (!s->rgbGenType) s->rgbGenType = (s->isLightmap) ? RGBGEN_IDENTITY : RGBGEN_IDENTITY_LIGHTING;
@@ -567,6 +581,35 @@ void SetShaderAnimFreq (shader_t *shader, int freq)
 }
 
 
+
+static void SetShaderSkyBox (const char *name)
+{
+	sh.useSkyBox = true;
+	st[0].numAnimTextures = 1;				// create 1st stage for skybox
+	st[0].rgbGenType      = RGBGEN_IDENTITY_LIGHTING;
+	SetShaderImage (gl_defaultImage, 0);	// any texture
+
+	for (int i = 0; i < 6; i++)
+	{
+		static const char *suff[6] = {"rt", "lf", "bk", "ft", "up", "dn"};
+
+		image_t *img = FindImage (va("%s%s", name, suff[i]), IMAGE_CLAMP);		// q2/hl skybox
+		if (!img) img = FindImage (va("%s_%s", name, suff[i]), IMAGE_CLAMP);	// q3 skybox
+		if (!img)
+		{
+			sh.bad = true;
+			return;
+		}
+		if (!i)
+		{
+			sh.width  = img->width;
+			sh.height = img->height;
+		}
+		sh.skyBox[i] = img;
+	}
+}
+
+
 static unsigned sh_imgFlags;
 static unsigned fsModifyCount;		// local copy of GFileSystem->modifyCount
 
@@ -663,32 +706,10 @@ shader_t *FindShader (const char *name, unsigned style)
 	if (style & SHADER_CLAMP) sh_imgFlags |= IMAGE_CLAMP;
 
 	/*----- create shader without script -----*/
-	const image_t *img;
-
 	if (style & SHADER_SKY)
 	{
 		sh.type = SHADERTYPE_SKY;
-
-		if (style & SHADER_ABSTRACT)
-			return FinishShader ();
-
-		for (int i = 0; i < 6; i++)
-		{
-			static const char *suff[6] = {"rt", "lf", "bk", "ft", "up", "dn"};
-
-			img = FindImage (va("%s%s", *Name2, suff[i]), IMAGE_CLAMP);
-			if (!img)
-			{
-				sh.bad = true;
-				break;
-			}
-			if (!i)
-			{
-				sh.width  = img->width;
-				sh.height = img->height;
-			}
-			sh.skyBox[i] = img;
-		}
+		SetShaderSkyBox (Name2);
 		if (!sh.bad)							// valid sky
 			return FinishShader ();
 		else
@@ -698,6 +719,7 @@ shader_t *FindShader (const char *name, unsigned style)
 	// regular shader
 	st[0].numAnimTextures = 1;
 
+	const image_t *img;
 	if (style & SHADER_ABSTRACT)
 		img = gl_defaultImage;					// just any image (will be removed later anyway)
 	else
@@ -728,7 +750,7 @@ shader_t *FindShader (const char *name, unsigned style)
 
 	if (lightmapNumber >= 0)
 	{
-		shaderImages[0] = GetLightmapImage (lightmapNumber);
+		SetShaderImage (GetLightmapImage (lightmapNumber), 0);
 		stage->isLightmap   = true;
 		stage->glState      = GLSTATE_DEPTHWRITE;
 		stage->rgbGenType   = RGBGEN_IDENTITY;
@@ -738,7 +760,7 @@ shader_t *FindShader (const char *name, unsigned style)
 		stage->numAnimTextures = 1;
 	}
 
-	shaderImages[stageIdx * MAX_STAGE_TEXTURES] = img;
+	SetShaderImage (img, stageIdx);
 	if (style & SHADER_ANIM)
 	{
 		const char *pname = strchr (name, 0) + 1;
@@ -754,7 +776,7 @@ shader_t *FindShader (const char *name, unsigned style)
 				sh.bad = true;
 				break;
 			}
-			shaderImages[stageIdx * MAX_STAGE_TEXTURES + i] = img;
+			SetShaderImage (img, stageIdx, i);
 			stage->numAnimTextures++;
 		}
 	}
@@ -877,23 +899,23 @@ shader_t *FindShader (const char *name, unsigned style)
 		stage->glState &= ~GLSTATE_DEPTHWRITE;				// depthwrite performed on lightmap stage (only) - for small speedup
 
 	if (style & SHADER_ABSTRACT)
-		st[0].numAnimTextures = 0;			// remove all stages
+		st[0].numAnimTextures = 0;							// remove all stages
 
 	if (style & (SHADER_ENVMAP|SHADER_ENVMAP2))
 	{
-		stage++;	// add next stage
+		stage++;											// add next stage
 		stageIdx++;
 		stage->numAnimTextures = 1;
-		shaderImages[stageIdx * MAX_STAGE_TEXTURES] = style & SHADER_ENVMAP ? gl_reflImage : gl_reflImage2;
-		stage->glState = BLEND(S_ALPHA,1);
-		stage->rgbGenType = RGBGEN_EXACT_VERTEX;
+		SetShaderImage ((style & SHADER_ENVMAP) ? gl_reflImage : gl_reflImage2, stageIdx);
+		stage->glState        = BLEND(S_ALPHA,1);
+		stage->rgbGenType     = RGBGEN_EXACT_VERTEX;
 		// ?? should be VERTEX for non-[vertex-]lightmapped surfs, EXACT_VERTEX for LM
 		//    Why: vertex color computed already lightscaled (for Q2 maps, at least) -- EXACT_VERTEX; when
 		//    using VERTEX in backend, it will be lightscaled again -- darker when overbright>0.
 		//    SHADER_ENVMAP[2] is always for this sort of surfaces ? (always world, Q2 (non-Q3))
-		stage->alphaGenType = ALPHAGEN_CONST;
+		stage->alphaGenType   = ALPHAGEN_CONST;
 		stage->rgbaConst.c[3] = 128;
-		stage->tcGenType = TCGEN_ENVIRONMENT;
+		stage->tcGenType      = TCGEN_ENVIRONMENT;
 	}
 	if (/* style & (SHADER_ENVMAP|SHADER_ENVMAP2) && */ style & (SHADER_TRANS33|SHADER_TRANS66))
 		sh.tessSize = 64;		//!! add cvar to enable/disable this (high-quality alpha (lighting/envmapping))
@@ -1196,8 +1218,6 @@ void ResetShaders ()
 	gl_flareShader = FindShader ("fx/flare", SHADER_WALL);
 	if (gl_flareShader->bad) gl_flareShader = NULL;
 
-	gl_skyShader = gl_defaultSkyShader = FindShader ("*sky", SHADER_SKY|SHADER_ABSTRACT);
-
 	gl_detailShader = FindShader ("*detail", SHADER_ALPHA|SHADER_WALL);
 	if (gl_detailShader)
 	{
@@ -1206,6 +1226,18 @@ void ResetShaders ()
 	}
 
 	gl_concharsShader = FindShader ("pics/conchars", SHADER_ALPHA);
+
+	// sky shader
+	ClearTempShader ();
+	sh.Name               = "*sky";
+	sh.lightmapNumber     = LIGHTMAP_NONE;
+	sh.style              = SHADER_SKY;
+	sh.type               = SHADERTYPE_SKY;
+	sh.useSkyBox          = true;
+	st[0].numAnimTextures = 1;				// create 1st stage for skybox
+	st[0].mapImage[0]     = gl_defaultImage; // any texture
+	st[0].rgbGenType      = RGBGEN_GLOBAL_FOG;
+	gl_skyShader = gl_defaultSkyShader = FinishShader ();
 
 	unguard;
 }

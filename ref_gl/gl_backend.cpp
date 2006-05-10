@@ -22,6 +22,12 @@ namespace OpenGLDrv {
 #endif
 
 
+// forwards
+// debug
+static bool DrawTriangles ();
+static bool DrawNormals ();
+
+
 /*-----------------------------------------------------------------------------
 	Local cvars
 -----------------------------------------------------------------------------*/
@@ -40,13 +46,6 @@ static cvar_t	*gl_spyShader;
 	Data
 -----------------------------------------------------------------------------*/
 
-struct bufTexCoordSrc_t
-{
-	float	tex[2];
-	float	lm[2];
-};
-
-
 static shader_t		*currentShader;
 static refEntity_t	*currentEntity;
 static int			currentDlightMask;
@@ -59,8 +58,8 @@ vertexBuffer_t	*vb;
 int				gl_indexesArray[MAX_INDEXES];
 bufExtra_t		gl_extra[MAX_VERTEXES];
 
-static color_t			srcVertexColor[MAX_VERTEXES];
-static bufTexCoordSrc_t	srcTexCoord[MAX_VERTEXES];
+color_t			srcVertexColor[MAX_VERTEXES];
+bufTexCoordSrc_t srcTexCoord[MAX_VERTEXES];
 
 //!! WARNING: do not rename to numVerts etc -- name used in some surfaceBase_t successors
 int gl_numVerts, gl_numIndexes, gl_numExtra;
@@ -307,7 +306,7 @@ static void GenerateColorArray (shaderStage_t *st)
 	// some alphaGen types processed with rgbGen
 	if (st->rgbGenType == RGBGEN_EXACT_VERTEX && st->alphaGenType == ALPHAGEN_VERTEX)
 		return;
-//	if (st->rgbGenType == RGBGEN_CONST && st->alphaGenType == ALPHAGEN_CONST) -- this situation processed in FlushShader() - no color arrays
+//	if (st->rgbGenType == RGBGEN_CONST && st->alphaGenType == ALPHAGEN_CONST) -- this situation processed in BK_FlushShader() - no color arrays
 //		return;
 
 	/*--------- alphaGen ----------*/
@@ -581,7 +580,6 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *te
 		case TCMOD_TURB:
 			{
 				bufVertex_t *vec;
-
 				f1 = tcmod->wave.freq * vp.time + tcmod->wave.phase;
 				f2 = tcmod->wave.amp;
 				for (k = 0, vec = vb->verts; k < gl_numVerts; k++, dst++, vec++)
@@ -717,6 +715,12 @@ static int			numRenderPasses;
 #		define LOG_PP(x)
 #		define NO_LOG_PP	1
 #	endif
+#endif
+
+#if MAX_DEBUG
+#	define LOG_PP2(x)		LOG_PP(x)
+#else
+#	define LOG_PP2(x)
 #endif
 
 //!! separate copy-stages and combine-with-multitexture to different funcs (make few mtex funcs for different extensions ?)
@@ -936,6 +940,12 @@ static void PreprocessShader (shader_t *sh)
 #undef STEP
 			}
 			break;
+		case RGBGEN_GLOBAL_FOG:
+			st->rgbaConst.c[0] = appFloor (gl_fogColor[0] * gl_config.identityLightValue);
+			st->rgbaConst.c[1] = appFloor (gl_fogColor[1] * gl_config.identityLightValue);
+			st->rgbaConst.c[2] = appFloor (gl_fogColor[2] * gl_config.identityLightValue);
+			st->rgbGenType = RGBGEN_CONST;
+			break;
 		case RGBGEN_DIFFUSE:
 			if (!entityLightingDone)
 			{
@@ -951,7 +961,7 @@ static void PreprocessShader (shader_t *sh)
 						!gl_config.overbright &&		// allows double brightness by itself
 						i == 0)			//?? should analyze blend: can be 'src'=='no blend' or 'src*dst'
 					{
-						st->rgbGenType = RGBGEN_HALF_DIFFUSE;
+						st->rgbGenType   = RGBGEN_HALF_DIFFUSE;
 						st->isDoubleRGBA = true;
 					}
 				}
@@ -1062,7 +1072,7 @@ static void PreprocessShader (shader_t *sh)
 		tmuLeft--;
 		// if at least 2nd TMU, we may need to update some pass fields
 		if (tmuUsed > 1)
-			pass->glState |= st[0].glState & GLSTATE_DEPTHWRITE;	// pass.depthwrite = OR(stages.depthwrite)
+			pass->glState |= st[0].glState & (GLSTATE_DEPTHWRITE|GLSTATE_NODEPTHTEST);	// pass.someFlags = OR(stages.someFlags)
 
 		if (i == numTmpStages - 1) break;	// no next stage to combine
 
@@ -1071,10 +1081,20 @@ static void PreprocessShader (shader_t *sh)
 		 */
 
 		// check for compatibility of current glState with the next glState
-		if (tmuLeft < 1 || passStyle == BLEND_INCOMPATIBLE ||
-			(st[0].glState ^ st[1].glState) & ~(GLSTATE_BLENDMASK|GLSTATE_DEPTHWRITE))
+		if (tmuLeft < 1 ||							// not enough hardware capabilities
+			passStyle == BLEND_INCOMPATIBLE ||
+			(st[0].glState ^ st[1].glState) & ~(GLSTATE_BLENDMASK|GLSTATE_DEPTHWRITE|GLSTATE_NODEPTHTEST))
 		{	// incompatible ... next stage will be 1st in the next rendering pass
 			tmuLeft = 0;
+#if MAX_DEBUG
+			if (passStyle == BLEND_INCOMPATIBLE) {
+				LOG_PP("incompat blend");
+			} else if ((st[0].glState ^ st[1].glState) & ~(GLSTATE_BLENDMASK|GLSTATE_DEPTHWRITE)) {
+				LOG_PP(va("incompat state: %X", (st[0].glState ^ st[1].glState) & ~(GLSTATE_BLENDMASK|GLSTATE_DEPTHWRITE)));
+			} else {
+				LOG_PP("cannot combine");
+			}
+#endif
 			continue;
 		}
 
@@ -1231,7 +1251,7 @@ static void PreprocessShader (shader_t *sh)
 		}
 
 		// not combined - begin new pass
-		LOG_PP("  not combined\n");
+		LOG_PP2("  not combined\n");
 		tmuLeft = 0;
 	}
 	LOG_PP("-----------------\n");
@@ -1239,9 +1259,9 @@ static void PreprocessShader (shader_t *sh)
 #undef LOG_PP
 
 
-static void FlushShader ()
+void BK_FlushShader ()
 {
-	guard(FlushShader);
+	guard(BK_FlushShader);
 
 	if (!gl_numIndexes) return;					// buffer is empty
 	if (!currentShader->numStages) return;		// wrong shader?
@@ -1257,7 +1277,7 @@ static void FlushShader ()
 	glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
 
 	GL_CullFace (currentShader->cullMode);
-	if (currentShader->usePolygonOffset)
+	if (currentShader->usePolygonOffset)			//?? not yet used
 	{
 		glEnable (GL_POLYGON_OFFSET_FILL);
 		//?? use cvars for units/factor
@@ -1273,7 +1293,7 @@ static void FlushShader ()
 	}
 
 	/*---------------- draw stages ----------------*/
-	int		i;
+	int i;
 	renderPass_t *pass;
 	for (i = 0, pass = renderPasses; i < numRenderPasses; i++, pass++)
 	{
@@ -1281,7 +1301,7 @@ static void FlushShader ()
 		GL_Lock ();
 		GL_SetMultitexture (pass->numStages);
 
-		int		j;
+		int j;
 		tempStage_t *st;
 		for (j = 0, st = pass->stages; j < pass->numStages; j++, st++)
 		{
@@ -1310,8 +1330,8 @@ static void FlushShader ()
 		GL_State (pass->glState);
 		GL_Unlock ();
 
-		//!! glFog don't works with multi-pass rendering
-		//!! + don't works, when scr_viewsize!=100
+		//!! glFog does not works with multi-pass rendering
+		//!! + doesn't works, when scr_viewsize!=100
 		if (i == numRenderPasses - 1 && gl_state.haveFullScreen3d && !gl_showFillRate->integer
 			&& currentShader->type == SHADERTYPE_NORMAL && !gl_state.is2dMode)
 			GL_EnableFog (true);	//!!! else GL_DisableFog()!!!
@@ -1365,7 +1385,7 @@ static void SetCurrentShader (shader_t *shader)
 static void ReserveVerts (int verts, int inds)
 {
 	if (gl_numIndexes + inds > MAX_INDEXES || gl_numVerts + verts > MAX_VERTEXES)
-		FlushShader ();
+		BK_FlushShader ();
 
 	if (verts > MAX_VERTEXES)	Com_DropError ("ReserveVerts: %d > MAX_VERTEXES", verts);
 	if (inds > MAX_INDEXES)		Com_DropError ("ReserveVerts: %d > MAX_INDEXES", inds);
@@ -1511,7 +1531,7 @@ void surfaceMd3_t::Tesselate (refEntity_t &ent)
 
 	// it is rather impossible, that single md3 surface will be painted twice for the same
 	// entity, but algorithm below will be simpler, when we ensure filling EMPTY vertex buffer ...
-	FlushShader ();
+	BK_FlushShader ();
 
 	STAT(clock(gl_stats.meshTess));
 
@@ -1708,7 +1728,7 @@ static void DrawBBoxes ()
 }
 
 
-bool DrawTriangles ()
+static bool DrawTriangles ()
 {
 	if (!gl_showTris->integer) return false;
 
@@ -1737,7 +1757,7 @@ bool DrawTriangles ()
 }
 
 
-bool DrawNormals ()
+static bool DrawNormals ()
 {
 	if (!gl_showNormals->integer) return false;
 
@@ -1962,7 +1982,7 @@ void BK_DrawScene ()
 
 	LOG_STRING (va("******** R_DrawScene: (%d, %d) - (%d, %d) ********\n", vp.x, vp.y, vp.x+vp.w, vp.y+vp.h));
 
-	if (gl_numVerts) FlushShader ();
+	if (gl_numVerts) BK_FlushShader ();
 	GL_Set3DMode (&vp);
 
 	// sort surfaces
@@ -1980,7 +2000,9 @@ void BK_DrawScene ()
 
 	if (!(vp.flags & RDF_NOWORLDMODEL))
 	{
-		//?? setup currentEntity, currentShader before sky drawing
+		// setup currentEntity, currentShader before sky drawing
+		currentShader = gl_skyShader;
+		currentEntity = &gl_entities[ENTITYNUM_WORLD];
 		DrawSky ();
 	}
 
@@ -2015,7 +2037,7 @@ void BK_DrawScene ()
 		if (shNum != currentShaderNum || entNum != currentEntityNum || currentDlightMask != dlightMask)
 		{
 			// flush data for the previous shader
-			FlushShader ();
+			BK_FlushShader ();
 
 			// change shader
 			shader_t *shader = GetShaderByNum (shNum);
@@ -2057,7 +2079,7 @@ void BK_DrawScene ()
 	}
 
 	/*--------- finilize/debug -----------*/
-	FlushShader ();
+	BK_FlushShader ();
 	vp.time = worldTime;				// restore time
 
 	GL_DepthRange (DEPTH_NORMAL);
@@ -2089,7 +2111,7 @@ void BK_DrawPic (shader_t *shader, int x, int y, int w, int h, float s1, float t
 
 	if (currentShader != shader)
 	{
-		FlushShader ();
+		BK_FlushShader ();
 		SetCurrentShader (shader);
 	}
 
@@ -2168,7 +2190,7 @@ void BK_DrawText (const char *text, int len, int x, int y, int w, int h, unsigne
 
 	if (currentShader != gl_concharsShader)
 	{
-		FlushShader ();
+		BK_FlushShader ();
 		SetCurrentShader (gl_concharsShader);
 	}
 
@@ -2250,7 +2272,7 @@ void BK_EndFrame ()
 {
 	if (!renderingEnabled) return;
 
-	FlushShader ();
+	BK_FlushShader ();
 	if (screenshotName)
 		PerformScreenshot ();
 	ShowImages ();				// debug

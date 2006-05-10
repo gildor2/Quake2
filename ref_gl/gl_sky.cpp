@@ -233,10 +233,10 @@ void AddSkySurface (surfacePlanar_t *pl, byte flag)
 		skySideVisible[side] |= flag;
 		// get cell's "x" and "w"
 		int x = appFloor ((skyMins[0][side] + 1) * SKY_TESS_SIZE);	// left
-		int w = appCeil ((skyMaxs[0][side] + 1) * SKY_TESS_SIZE);	// right
+		int w = appCeil  ((skyMaxs[0][side] + 1) * SKY_TESS_SIZE);	// right
 		// get cell's "y" and "h"
 		int y = appFloor ((skyMins[1][side] + 1) * SKY_TESS_SIZE);	// bottom (or top ?)
-		int h = appCeil ((skyMaxs[1][side] + 1) * SKY_TESS_SIZE);	// top (or bottom)
+		int h = appCeil  ((skyMaxs[1][side] + 1) * SKY_TESS_SIZE);	// top (or bottom)
 #if 1
 		x = bound(x, 0, SKY_CELLS);		// avoid precision errors: when we can get floor((mins==-1 + 1)*SIZE) -> -1 (should be 0)
 		w = bound(w, 0, SKY_CELLS);
@@ -271,7 +271,7 @@ void AddSkySurface (surfacePlanar_t *pl, byte flag)
 static float skyDist;
 
 // In: s, t in range [-1..1]; out: tex = {s,t}, vec
-static int AddSkyVec (float s, float t, int axis, bufVertex_t *&vec, bufTexCoord_t *&tex)
+static int AddSkyVec (float s, float t, int axis, bufVertex_t *&vec, bufTexCoordSrc_t *&tex)
 {
 	static const int stToVec[6][3] = {	// 1 = s, 2 = t, 3 = zFar
 		{ 3,-1, 2},
@@ -288,25 +288,48 @@ static int AddSkyVec (float s, float t, int axis, bufVertex_t *&vec, bufTexCoord
 	for (int i = 0; i < 3; i++)
 	{
 		int tmp = stToVec[axis][i];
-		vec->xyz[i] = tmp < 0 ? -b[-tmp - 1] : b[tmp - 1];
+		vec->xyz[i] = (tmp < 0) ? -b[-tmp - 1] : b[tmp - 1];
 	}
-	vec++;
 
-	float fix = 1.0f - 1.0f / gl_skyShader->width;	// fix sky side seams
+	// texcoords for skybox
+	float fix = 1.0f - 1.0f / gl_skyShader->width;	// fix skybox side seams
 	s = (s * fix + 1) / 2;							// [-1,1] -> [0,1]
 	s = bound(s, 0, 1);
 	t = (1 - t * fix) / 2;							// [-1,1] -> [1,0]
 	t = bound(t, 0, 1);
+	tex->lm[0] = s;
+	tex->lm[1] = t;
+	// texcoords for clouds
+	//!!!!! change, cache
+	//????? should cache vec, tex->lm[] and tex->tex[]
+	CVec3 v;
+	v = vec->xyz;
+	float x = v[0];
+	float y = v[1];
+	float z = v[2];
+	float r = 4096 + gl_skyShader->cloudHeight;		// 4096 - came from q3
+	float h = gl_skyShader->cloudHeight;
+//!!	h = Cvar_VariableValue("height");//!!!!
+	if (h < 20) h = 20;
+	float r1 = r-h;
+	// find intersection of sky sphere with generated vector
+	float f = z*z*r1*r1 + (x*x+y*y+z*z)*(2*h*r-h*h);
+	v.Scale ((-z * r1 + SQRTFAST(f)) / (x*x + y*y + z*z));
+	// offset sphere to get polar coordinates
+	v[2] += r1;
+	// get polar coordinates
+	v.NormalizeFast ();
+	tex->tex[0] = ACOS_FUNC (v[0]);
+	tex->tex[1] = ACOS_FUNC (v[1]);
 
-	tex->tex[0] = s;
-	tex->tex[1] = t;
+	vec++;
 	tex++;
 
 	return gl_numVerts++;
 }
 
 
-static void TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex)
+static void TesselateSkySide (int side, bufVertex_t *vec, bufTexCoordSrc_t *tex)
 {
 #if 0
 	DrawTextLeft(va("side %d:", side));
@@ -372,8 +395,11 @@ static void TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex)
 #define SKY_FRUST_DIST	10				// 1 is not enough - bad FP precision
 //#define VISUALIZE_SKY_FRUSTUM		1	// NOTE: SKY_FRUST_DIST should be at least gl_znear->value to make rect visible
 
+// NOTE: currentShader is set to gl_skyShader before calling this function
 void DrawSky ()
 {
+	guard(DrawSky);
+
 	LOG_STRING ("***** DrawSky() *****\n");
 	if (gl_state.useFastSky) return;
 
@@ -396,78 +422,43 @@ void DrawSky ()
 	// rasterize frustum
 	surfacePlanar_t pl;
 	pl.numVerts = 4;
-	pl.verts = fv;
+	pl.verts    = fv;
 	AddSkySurface (&pl, SKY_FRUSTUM);
 
 	if (!SkyVisible ()) return;				// all sky surfaces are outside frustum
 
 	// draw sky
+	shader_t *shader = gl_skyShader;
+	shaderStage_t *stage = shader->stages[0];
+	assert(gl_skyShader->numStages && stage);
+
 	GL_DepthRange (gl_showSky->integer ? DEPTH_NEAR : DEPTH_FAR);
 	GL_EnableFog (false);
-
-	glDisableClientState (GL_COLOR_ARRAY);
-	if (gl_skyShader != gl_defaultSkyShader)
-		glColor3f (gl_config.identityLightValue_f,
-				   gl_config.identityLightValue_f,
-				   gl_config.identityLightValue_f); // avoid overbright
-	else
-//		glColor3f (0, 0, 0);			// bad sky -- make it black (almost as gl_fastSky)
-		glColor3fv (gl_fogColor);
+	// if we will add "NODEPTHTEST" if gl_showSky mode -- DEPTHWITE will no effect
+	stage->glState = (gl_showSky->integer) ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST;
 
 	glPushMatrix ();
-	// if we will add "NODEPTHTEST" if gl_showSky mode -- DEPTHWITE will no effect
-	GL_State (gl_showSky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
-	GL_SetMultitexture (1);
 	// modify modelview matrix
 	glTranslatef (VECTOR_ARG(vp.view.origin));
-	if (gl_skyShader->skyRotate)
-		glRotatef (vp.time * gl_skyShader->skyRotate, VECTOR_ARG(gl_skyShader->skyAxis));
+	if (shader->skyRotate)
+		glRotatef (vp.time * shader->skyRotate, VECTOR_ARG(shader->skyAxis));
 
-	GL_TexEnv (TEXENV_MODULATE);
-	glTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord[0]);
-	glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
-
-	skyDist = vp.zFar / 3;				// any non-zero value not works on TNT2 (but works with GeForce2)
+	skyDist = vp.zFar / 3;					// any non-zero value not works on TNT2 (but works with GeForce2)
 
 	for (int side = 0; side < 6; side++)
 	{
-		TesselateSkySide (side, vb->verts, vb->texCoord[0]);
-		if (!gl_numIndexes) continue;	// no surfaces on this side
-
-		//?? should call FlushShader() instead of MOST of this code to allow scripted skies
-		//?? if so, should call SetCurrentShader(gl_skyShader)
-		//?? ... and can remove DrawTriangles() from publics
+		TesselateSkySide (side, vb->verts, srcTexCoord);
+		if (!gl_numIndexes) continue;		// no surfaces on this side
 		// if gl_skyShader == gl_defaultSkyShader, then skyBox[] will be NULL (disabled texturing)
-		GL_Bind (/* ??gl_skyShader != gl_defaultSkyShader ? */ gl_skyShader->skyBox[side] /*: ?? NULL*/);
-		glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
-
-		//?? some debug stuff from FlushShader()
-#if !NO_DEBUG
-		if (DrawTriangles ())
-		{
-			// need to perform some state restoration (do it with another way ??)
-			GL_State (gl_showSky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
-			if (gl_skyShader != gl_defaultSkyShader)
-				glColor3f (gl_config.identityLightValue_f,
-						   gl_config.identityLightValue_f,
-						   gl_config.identityLightValue_f); // avoid overbright
-			else
-//				glColor3f (0, 0, 0);
-				glColor3fv (gl_fogColor);
-			GL_SetMultitexture (1);
-		}
-#endif // NO_DEBUG
-		STAT(gl_stats.tris   += gl_numIndexes /* * numTmpStages*/ / 3);
-		STAT(gl_stats.trisMT += gl_numIndexes /* * numRenderPasses*/ / 3);
-		//?? end of FlushShader()
+		if (shader->useSkyBox)
+			stage->mapImage[0] = shader->skyBox[side];
+		BK_FlushShader ();
 	}
 	glPopMatrix ();
 
-	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
-
 #if VISUALIZE_SKY_FRUSTUM
 	glPushMatrix ();
-	glLoadMatrixf (&vp.modelMatrix[0][0]);		// world matrix
+	glLoadMatrixf (&vp.modelMatrix[0][0]);	// world matrix
 	GL_SetMultitexture (0);
 	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
 	GL_DepthRange (DEPTH_NEAR);
@@ -484,6 +475,8 @@ void DrawSky ()
 #endif
 
 	GL_DepthRange (DEPTH_NORMAL);
+
+	unguard;
 }
 
 

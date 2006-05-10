@@ -19,6 +19,13 @@ struct bufVertex_t
 };
 
 
+struct bufTexCoordSrc_t
+{
+	float	tex[2];
+	float	lm[2];
+};
+
+
 struct bufTexCoord_t
 {
 	float	tex[2];
@@ -53,6 +60,9 @@ extern int gl_numVerts, gl_numIndexes, gl_numExtra;
 extern int			gl_indexesArray[MAX_INDEXES];
 extern bufExtra_t	gl_extra[MAX_VERTEXES];
 
+extern color_t		srcVertexColor[MAX_VERTEXES];
+extern bufTexCoordSrc_t srcTexCoord[MAX_VERTEXES];
+
 
 #define MAX_SCENE_SURFACES	(64*1024)
 
@@ -70,11 +80,7 @@ void BK_DrawPic (shader_t *shader, int x, int y, int w, int h,
 				 unsigned color = RGB(1,1,1), byte flipMode = 0);
 void BK_DrawText (const char *text, int len, int x, int y, int w, int h, unsigned color);
 void BK_DrawScene ();
-
-
-// debug
-bool DrawTriangles ();
-bool DrawNormals ();
+void BK_FlushShader ();
 
 
 /*----------- Surface info bits (for scene sorting) ------------*/

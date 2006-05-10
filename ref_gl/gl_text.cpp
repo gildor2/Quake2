@@ -28,9 +28,9 @@ void DrawChar (int x, int y, int c, int color)
 	Static (change name?) text output
 -----------------------------------------------------------------------------*/
 
-#define TOP_TEXT_POS 64
-#define CHARSIZE_X 6
-#define CHARSIZE_Y 8
+#define TOP_TEXT_POS	64
+#define CHARSIZE_X		6
+#define CHARSIZE_Y		8
 
 
 struct CRText : public CTextRec
@@ -117,7 +117,7 @@ void DrawTextPos (int x, int y, const char *text, unsigned rgba)
 
 void DrawTextLeft (const char *text, unsigned rgba)
 {
-	int		w, h;
+	int w, h;
 	if (nextLeft_y >= vid_height) return;	// out of screen
 	GetTextExtents (text, w, h);
 	DrawTextPos (0, nextLeft_y, text, rgba);
@@ -127,7 +127,7 @@ void DrawTextLeft (const char *text, unsigned rgba)
 
 void DrawTextRight (const char *text, unsigned rgba)
 {
-	int		w, h;
+	int w, h;
 	if (nextRight_y >= vid_height) return;	// out of screen
 	GetTextExtents (text, w, h);
 	DrawTextPos (vid_width - w, nextRight_y, text, rgba);
@@ -137,8 +137,7 @@ void DrawTextRight (const char *text, unsigned rgba)
 
 void DrawText3D (const CVec3 &pos, const char *text, unsigned rgba)
 {
-	int		coords[2];
-
+	int coords[2];
 	if (!ProjectToScreen (pos, coords)) return;
 	DrawTextPos (coords[0], coords[1], text, rgba);
 }

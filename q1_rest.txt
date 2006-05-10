@@ -1,11 +1,15 @@
-! store bestFace to tr, put in tr.trace in TraceBrush() (check for same plane !)
 !! 'wads': get from ents, remove from ents, copy to bspfile_t as 'char wads[]'; use in LoadBsp1() with map_hl:
   register wad format, mount wads, load map, unmount wads, unregister format (may be, register globally ?)
-!! load HL texture: check 'textures/{wad_name}/{tex_name}' -- iterate {wad_name} until found
+  - load HL texture: check 'textures/{wad_name}/{tex_name}' -- iterate {wad_name} until found
 !! FIX brush creation, do not DropError() from MapBrush.cpp module
 - 'ahl_streets': lamps have 'halo' with rendermode==5 (additive)
-- 'ccity2': have rotating lamps, which can damage player by their halo + halo have envmaps
-- support for Q3-like spherical sky, use for Q1 maps
+- 'ccity2'
+  - have rotating lamps with rendermode=5 (additive)
+  - have sliding doors with glasses -- uses trigger_multiple for synch ?
+- "q1dm2" - have func_door "*2" - should be linked with "*1" (now: unlinked, opened with player touch)
+  -- should copy "target" field from linked entity
+  + change default speed/wait (other fields too?)
+  - should supoprt linked doors in server
 ! use LightOrigin for renderer entity (weapon model, multi-part models ...)
 
 ! HL/KP: have maps with "PF_setmodel NULL" error

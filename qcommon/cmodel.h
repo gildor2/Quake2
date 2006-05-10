@@ -158,8 +158,6 @@ struct bspfile_t
 
 	int			numFlares;
 	lightFlare_t *flares;
-
-	int			numSlights;
 	slight_t	*slights;
 
 	// static effects

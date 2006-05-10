@@ -282,6 +282,22 @@ static void LoadQ1Submodels (bspfile_t *f, dBsp1Model_t *data)
 	}
 }
 
+
+static void BoostLights ()
+{
+	//???? REMOVE
+	if (bspfile.type != map_q1) return;		// do this for Q1 maps only
+	slight_t *light;
+	float maxIntens = 0;
+	for (light = bspfile.slights; light; light = light->next)
+	{
+		if (light->type != sl_linear) return;
+		if (light->intens > maxIntens) maxIntens = light->intens;
+	}
+	Com_DPrintf ("Max light intensity: %g\n", maxIntens);
+}
+
+
 static void DecompressVis (byte *dst, void *vis, int pos, int rowSize)
 {
 	if (pos == -1)
@@ -501,6 +517,8 @@ void LoadQ1BspFile ()
 	bspfile.entStrSize = strlen (bspfile.entStr);
 #endif
 
+	BoostLights ();
+
 #undef C
 	unguard;
 }
@@ -561,7 +579,9 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 }
 
 
-/*--------------------------------------------------------------------*/
+/*-----------------------------------------------------------------------------
+	Entity parer/converter
+-----------------------------------------------------------------------------*/
 
 #define MAX_ENT_FIELDS	32
 #define MAX_TARGETS		256
@@ -749,7 +769,7 @@ static const CVec3& FindEntityTarget (const char *name)
 }
 
 #if ENT_STATS
-static char entClassNames[64][128];
+static char entClassNames[128][64];
 static int  entClassCounts[128];
 static int  entClassModelCounts[128];
 int numEntClassNames;
@@ -815,11 +835,11 @@ static bool ProcessEntity ()
 	{
 		int i;
 		for (i = 0; i < numEntClassNames; i++)
-			if (!stricmp (entClassNames[i], classname)) break;
+			if (!strcmp (entClassNames[i], classname)) break;
 		if (i >= numEntClassNames)
 		{
 			// not appeared before
-			if (numEntClassNames >= ARRAY_COUNT(entClassCounts))
+			if (numEntClassNames >= ARRAY_COUNT(entClassCounts)-1)
 			{
 				i = 0;
 				strcpy (entClassNames[0], "<< OVERFLOW >>");
@@ -919,7 +939,6 @@ static bool ProcessEntity ()
 		slight_t *slight = new (bspfile.extraChain) slight_t;
 		slight->next = bspfile.slights;
 		bspfile.slights = slight;
-		bspfile.numSlights++;
 
 		slight->style  = style;
 		slight->origin = origin;
@@ -943,18 +962,29 @@ static bool ProcessEntity ()
 			// ArghRad: "_falloff": 0 - linear (default), 1 - 1/dist. 2 - 1/(dist*dist)
 			if (f = FindField ("_falloff"))
 				slight->type = (slightType_t)atoi (f->value);
-			// TyrLite: "delay": 0 - linear, 1 - 1/dist, 2 - 1/(dist*dist), 3 - no fade
-			else if (f = FindField ("delay"))
+			if (f = FindField ("_wait,_fade,wait"))		// ArghRad + TyrLite
+				slight->fade = atof (f->value);
+			if (!slight->fade) slight->fade = 1;		// default value + disallow "fade==0"
+			if (bspfile.type == map_q1)
 			{
-				slight->type = (slightType_t)atoi (f->value);
+				// IKLite: "angle" field can change attenuation
+				if (!FindField ("target") &&			// not spotlight
+					(f = FindField ("angle")))
+				{
+					static const slightType_t types[] = {sl_linear, sl_inverse2, sl_nofade, sl_inverse};
+					int n = atoi (f->value);
+					if (n >= 0 && n <= 3)				// if outside range - possibly, not attenuation field ...
+						slight->type = types[n];
+				}
+				// TyrLite: "delay": 0 - linear, 1 - 1/dist, 2 - 1/(dist*dist), 3 - no fade
+				if (f = FindField ("delay"))
+					slight->type = (slightType_t)atoi (f->value);
+				// adjust intensity for inverse lights (take from TyrLite source)
 				if (slight->type == sl_inverse)
 					slight->intens *= 128;
 				else if (slight->type == sl_inverse2)
 					slight->intens *= 16384;
 			}
-			if (f = FindField ("_wait,_fade,wait"))		// ArghRad + TyrLite
-				slight->fade = atof (f->value);
-			if (!slight->fade) slight->fade = 1;		// default value + disallow "fade==0"
 		}
 		else
 		{
@@ -988,7 +1018,6 @@ static bool ProcessEntity ()
 				bspfile.sunVec = slight->spotDir;
 				// remove from list
 				bspfile.slights = slight->next;
-				bspfile.numSlights--;
 //appPrintf(S_RED"sun: %g %g %g (dst: %g %g %g, org: %g %g %g)\n",VECTOR_ARG(bspfile.sunVec),VECTOR_ARG(dst),VECTOR_ARG(slight->spotDir));
 			}
 		}
@@ -1016,9 +1045,9 @@ static bool ProcessEntity ()
 			else if (f = FindField ("angle"))
 			{
 				float angle = atof (f->value);
-				if (angle == -1)
+				if (angle == -1)		// ANGLE_UP
 					slight->spotDir.Set (0, 0, 1);
-				else if (angle == -2)
+				else if (angle == -2)	// ANGLE_DOWN
 					slight->spotDir.Set (0, 0, -1);
 				else
 				{
@@ -1037,6 +1066,16 @@ static bool ProcessEntity ()
 				cone = atof (f->value);
 			else
 				cone = 10;		// default
+
+			// Q1 bsp uses "angle" field for cone; default = 20
+			if (bspfile.type == map_q1)
+			{
+				cone = 0;
+				if (f = FindField ("angle"))
+					cone = atof (f->value) / 2;
+				if (!cone) cone = 20;
+			}
+
 			slight->spotDot = cos(cone * M_PI / 180.0f);
 			if (f = FindField ("_focus"))
 				slight->focus = atof (f->value);
@@ -1086,10 +1125,14 @@ static bool ProcessEntity ()
 
 	if (!strcmp (classname, "worldspawn"))
 	{
+		// sky
 		if (bspfile.type == map_kp && !FindField ("sky"))
 			AddField ("sky", "sr");		// set default Kingpin sky
+		if (bspfile.type == map_q1)
+			AddField ("sky", "q1sky");	// do not allow q2 game to set default sky
 		if (bspfile.type == map_hl && (f = FindField ("skyname")))
 			strcpy (f->name, "sky");
+		// kp fog
 		if (f = FindField ("fogval"))
 		{
 			GetVector (f->value, bspfile.fogColor);
@@ -1103,6 +1146,7 @@ static bool ProcessEntity ()
 		}
 //		if (f = FindField ("_ambient,light,_minlight")) -- it seems, this is not always true ... detect ambient by outselves (in renderer)
 //			GetVector (f->value, bspfile.ambientLight);
+		// sun
 		if (f = FindField ("_sun*"))
 		{
 			// have ArghRad sun
@@ -1378,6 +1422,17 @@ static bool ProcessEntity ()
 				//?? flag: SURF_FLOWING for this entity
 				return false;								// do not send to game
 			}
+			else if (!strcmp (classname, "func_rotating"))
+			{
+				if (spawnflags & 64)						// non-solid
+				{
+					model->flags |= CMODEL_CONTENTS;
+					model->contents = CONTENTS_MIST;
+				}
+				// spawnflags & 32 -> pain
+				spawnflags &= ~(64|128);					// no in HL
+				appSprintf (ARRAY_ARG(spawnflagsField->value), "%d", spawnflags);
+			}
 			else if (!strcmp (classname, "trigger_push"))
 			{
 //				if (!FindField ("angle") && !FindField ("angles"))
@@ -1450,13 +1505,13 @@ static bool ProcessEntity ()
 
 		/*----- check entities with KP RF2_SURF_ALPHA flags ------*/
 		int chk = 0;
-		if (!stricmp (classname, "func_wall"))	//?? case insensitive ?? (check game source, KP game source ...)
+		if (!strcmp (classname, "func_wall"))
 			chk = 32;
-		else if (!stricmp (classname, "func_door"))
+		else if (!strcmp (classname, "func_door"))
 			chk = 128;
-		else if (!stricmp (classname, "func_door_rotating"))
+		else if (!strcmp (classname, "func_door_rotating"))
 			chk = 4;
-		else if (!stricmp (classname, "func_explosive") || !stricmp (classname, "func_train") || !stricmp (classname, "func_train_rotating"))
+		else if (!strcmp (classname, "func_explosive") || !strcmp (classname, "func_train") || !strcmp (classname, "func_train_rotating"))
 			chk = 8;
 
 		if ((chk & spawnflags) && model)
@@ -1464,10 +1519,7 @@ static bool ProcessEntity ()
 
 		// convert func_lift to func_train
 		if (!strcmp (classname, "func_lift"))
-		{
-			f = FindField ("classname");
-			strcpy (f->value, "func_train");
-		}
+			strcpy (classNameField->value, "func_train");
 	}
 
 	/*---------------------------------------------*/

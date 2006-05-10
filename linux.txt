@@ -6,19 +6,19 @@ PROBLEMS/BUGS (LINUX/CYGWIN):
 
 GCC 4.0+ BUGS:
 ~~~~~~~~~~~~~
-  - (4.1:exists) when creating mapfile, names not demangled
-    * demangling was moved from "ld" to "syminfo/make"
-  - (4.1:exists) visibility: `#pragma GCC visibility' not affects builtin functions, so - conflicts ... (displays warnings about
-    trying to hide built-in visible function `operator new')
-    - should use "-fvisibility..." cmdline instead of "#pragma GCC visibility ..."; make auto-detect of gcc4 from makefile:
-      GCC_VER = $(shell echo __GNUC__ | gcc -E -xc - | tail -n 1)
-      # also: __GCC_MINOR__
-      ifeq ($(GCC_VER),4) / ifneq () ... (no -gt/-lt etc -- should use $(shell if [...] ...;))
-  - (4.1:exists) inlining: not inlined most of functions (can check with `-Winlines') - compiler says 'max-inline-insns-single reached',
-    which, by info page, should be inline-limit/2 (by default, inline-limit=600 -- by info page)
-    * may be fixed by inserting `--finline-limit=600', which is default (by documentation) value (should be automatic!)
-    NOTE: inlining required for `operator new' and similar functions to take advantage of `mem_dump' console functions --
-      * fixed using FORCEINLINE; other inline functions not inlined anyway (-Winline)!
+- (4.1:exists) when creating mapfile, names not demangled
+  * demangling was moved from "ld" to "syminfo/make"
+- (4.1:exists) visibility: `#pragma GCC visibility' not affects builtin functions, so - conflicts ... (displays warnings about
+  trying to hide built-in visible function `operator new')
+  - should use "-fvisibility..." cmdline instead of "#pragma GCC visibility ..."; make auto-detect of gcc4 from makefile:
+    GCC_VER = $(shell echo __GNUC__ | gcc -E -xc - | tail -n 1)
+    # also: __GCC_MINOR__
+    ifeq ($(GCC_VER),4) / ifneq () ... (no -gt/-lt etc -- should use $(shell if [...] ...;))
+- (4.1:exists) inlining: not inlined most of functions (can check with `-Winlines') - compiler says 'max-inline-insns-single reached',
+  which, by info page, should be inline-limit/2 (by default, inline-limit=600 -- by info page)
+  * may be fixed by inserting `--finline-limit=600', which is default (by documentation) value (should be automatic!)
+  NOTE: inlining required for `operator new' and similar functions to take advantage of `mem_dump' console functions --
+    * fixed using FORCEINLINE; other inline functions not inlined anyway (-Winline)!
 
 ------- REQUIREMENTS --------
 min GCC version: 3.4.0

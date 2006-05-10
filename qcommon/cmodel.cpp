@@ -488,6 +488,8 @@ static void LoadSurfaces1 (dBsp1Texinfo_t *data, int size)
 		{
 			dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)map_bspfile->miptex1 + offset );
 			appStrncpyz (out->texture, tex->name, sizeof(out->texture));
+			// texture with data, but without name:
+			if (!tex->name[0]) appSprintf (ARRAY_ARG(out->texture), "unnamed#%d", miptex);
 		}
 		else
 		{

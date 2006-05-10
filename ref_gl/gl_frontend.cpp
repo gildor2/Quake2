@@ -1487,9 +1487,16 @@ static node_t *WalkBspTree ()
 			}
 		}
 
-		if (node->numLeafFaces)		// Q1/HL maps may have leafs without visible faces (mostly, leaf #0)
+		// HERE: node is leaf
+		// NOTE: leaf may be without faces, but we can insert into this leaf some model, which
+		//  should be painted in BSP order; so - we should add leaf to draw order in any case
+		// Following condition is for Q1/HL bsp only: these maps have common leaf with
+		// CONTENTS_SOLID (leaf #0) - it have no surfaces, but we should draw non-surface leafs ...
+		// What we can do:
+		// a) split all leafs #0 -> new leafs (as cmodel.cpp do)
+		// b) remove links leaf #0 from BSP (require tree modification)
+		if (node->frame != drawFrame)
 		{
-			// node is leaf
 			if (!firstLeaf)
 				firstLeaf = node;
 			else
@@ -1512,10 +1519,10 @@ static node_t *WalkBspTree ()
 				{
 					surf = *psurf;
 					if (surf->dlightFrame == drawFrame)
-						surf->dlightMask |= dlightMask;
+						surf->dlightMask  |= dlightMask;
 					else
 					{
-						surf->dlightMask = dlightMask;
+						surf->dlightMask  = dlightMask;
 						surf->dlightFrame = drawFrame;
 					}
 				}

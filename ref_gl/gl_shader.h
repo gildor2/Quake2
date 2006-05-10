@@ -19,7 +19,7 @@ namespace OpenGLDrv {
  *	- DECAL, BANNER, UNDERWATER - ??
  *	- SPRITE (ADDITIVE) - no depthwrite, draw it last (flares only?); default for scripts with "blend"+!"sort"+!"depthwrite"
  */
-typedef enum
+enum sortParam_t
 {
 	SORT_BAD,
 	SORT_PORTAL,		// surface, which will be replaced with other scene
@@ -32,28 +32,28 @@ typedef enum
 	SORT_UNDERWATER,	// ?
 	SORT_SPRITE			// (ADDITIVE ?) have blending, but no depthWrite
 	//?? Q3 have: banner=6, underwater=8,additive=10,nearest=16
-} sortParam_t;
+};
 
-typedef enum
+enum waveFunc_t
 {
 	FUNC_SIN,
 	FUNC_SQUARE,
 	FUNC_TRIANGLE,
 	FUNC_SAWTOOTH,
 	FUNC_NOISE
-} waveFunc_t;
+};
 
 // Function = (func[type](time*freq) + phase) * amp + base
-typedef struct
+struct waveParams_t
 {
 	waveFunc_t type;
 	float	freq;
 	float	phase;
 	float	amp;
 	float	base;
-} waveParams_t;
+};
 
-typedef enum
+enum tcGenType_t
 {
 	TCGEN_NONE,
 	TCGEN_TEXTURE,
@@ -64,9 +64,9 @@ typedef enum
 	TCGEN_LIGHTMAP1, TCGEN_LIGHTMAP2, TCGEN_LIGHTMAP3, TCGEN_LIGHTMAP4,	// for fast lightstyles
 	TCGEN_DLIGHT0,				// 32 values, index is for surfDlights[], not for portal.dlights[]
 	TCGEN_FOG = TCGEN_DLIGHT0 + MAX_DLIGHTS		//?? used for fog image (unimplemented)
-} tcGenType_t;
+};
 
-typedef enum
+enum tcModType_t
 {
 	TCMOD_TRANSFORM,			// uses transform matrix (2 x 2) + (2 x 1)
 	TCMOD_TURB,					// wave(sin), but without base (or: base is vertex coords)
@@ -77,9 +77,9 @@ typedef enum
 	TCMOD_SCALE,				// coord[i] *= scales[i]
 	TCMOD_STRETCH,				// coord[i] = (coord[i]-0.5) * wave + 0.5  (wave stretch, center-relative)
 	TCMOD_ROTATE				// rotate around center with "rotateSpeed" degree per second
-} tcModType_t;
+};
 
-typedef enum
+enum rgbGenType_t
 {
 	RGBGEN_NONE,
 	RGBGEN_IDENTITY_LIGHTING,	// => const r=g=b=identityLight
@@ -94,10 +94,11 @@ typedef enum
 	RGBGEN_WAVE,
 	RGBGEN_DIFFUSE,				// internally replaced with HALF_DIFFUSE when color*tex*2 available
 	RGBGEN_HALF_DIFFUSE,		// more color range (available double brightness)
+	RGBGEN_GLOBAL_FOG,			// color taken from gl_fogColor[]
 	RGBGEN_FOG					//??
-} rgbGenType_t;
+};
 
-typedef enum
+enum alphaGenType_t
 {
 	ALPHAGEN_IDENTITY,			// => alphaGen const 1
 	ALPHAGEN_CONST,
@@ -110,9 +111,9 @@ typedef enum
 	ALPHAGEN_LIGHTING_SPECULAR,
 	ALPHAGEN_WAVE,
 	ALPHAGEN_PORTAL,
-} alphaGenType_t;
+};
 
-typedef enum
+enum deformType_t
 {
 	DEFORM_WAVE,
 	DEFORM_NORMAL,
@@ -121,7 +122,7 @@ typedef enum
 //	DEFORM_PROJECTIONSHADOW,
 	DEFORM_AUTOSPRITE,
 	DEFORM_AUTOSPRITE2
-} deformType_t;
+};
 
 
 /*-----------------------------------------------------------------------------
@@ -264,9 +265,11 @@ public:
 		// sky params SHADERTYPE_SKY)
 		struct {
 			//?? these sky params are only 1 at a time - may be, make as global variables?
+			bool	useSkyBox;	// when true, draw skybox using skyBox[] textures, 1st stage is reserved for this
 			const image_t *skyBox[6];
 			float	skyRotate;
 			CVec3	skyAxis;
+			float	cloudHeight;
 		};
 		// portal params (SHADERTYPE_PORTAL)
 /*		struct {

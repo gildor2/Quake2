@@ -30,7 +30,7 @@
 * 11) entityMergable              -- ignored (have internal mechanist for efficient sprite combining)
   12) fogParms ( <r> <g> <b> ) <dist_to_opaque>
   13) portal		          -- set SORT_PORTAL
-  14) skyparms <farbox|-> <cloud height> <nearbox|->
+* 14) skyparms <farbox|-> <cloud height> <nearbox|->
   15) light		          -- ignore
 * 16) cull
      - node, twosided, disable

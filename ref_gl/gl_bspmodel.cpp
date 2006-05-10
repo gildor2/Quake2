@@ -121,10 +121,10 @@ static void BuildSurfFlare (surfaceBase_t *surf, const color_t *color, float int
 }
 
 
-static void LoadSlights (slight_t *data, int count)
+static void LoadSlights (slight_t *data)
 {
 	// copy slights from map
-	for (int i = 0; i < count; i++, data = data->next)
+	for ( ; data; data = data->next)
 	{
 		// create light
 		CPointLight *out;
@@ -1236,13 +1236,9 @@ START_PROFILE(GenerateLightmaps2)
 	GenerateLightmaps2 (bsp->lighting, bsp->lightDataSize);
 END_PROFILE
 	// Load bsp (leafs and nodes)
-START_PROFILE(LoadLeafsNodes2)
 	LoadLeafsNodes2 (bsp->nodes2, bsp->numNodes, bsp->leafs2, bsp->numLeafs);
-END_PROFILE
 	LoadVisinfo (bsp);
-START_PROFILE(LoadInlineModels2)
 	LoadInlineModels2 (bsp->models, bsp->numModels);
-END_PROFILE
 
 	switch (bsp->fogMode)
 	{
@@ -1332,6 +1328,45 @@ static void LoadLeafsNodes1 (const dBsp1Node_t *nodes, int numNodes, const dBsp1
 }
 
 
+static void LoadSky1 ()
+{
+	if (map_bspfile->type != map_q1) return;
+
+	// find sky texinfo
+	int miptex = -1;
+	for (int i = 0; i < map_bspfile->miptex1->nummiptex; i++)
+		if (!(strncmp ((char*)map_bspfile->miptex1 + map_bspfile->miptex1->dataofs[i], "sky", 3)))
+		{
+			// found
+			miptex = i;
+			break;
+		}
+	if (miptex < 0) return;							// sky was not found
+
+	// create 2 sky textures
+	dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)map_bspfile->miptex1 + map_bspfile->miptex1->dataofs[miptex] );
+	if (tex->width != 256 || tex->height != 128)
+	{
+		Com_DPrintf ("sky texture \"%s\" have wring sizes (%d x %d)\n", tex->name, tex->width, tex->height);
+		return;
+	}
+
+	for (int idx = 0; idx < 2; idx++)
+	{
+		static const char *names[] = {"mask", "back"};
+		byte *data = (byte*)(tex+1) + idx * 128;
+		byte buf[128*128];
+		for (int y = 0; y < 128; y++)
+		{
+			// NOTE: q1 uses color index #0 in mask texture as completely transparent
+			memcpy (buf + y*128, data, 128);
+			data += 256;
+		}
+		CreateImage8 (va("env/q1sky_%s", names[idx]), buf, 128, 128, IMAGE_WORLD, GetQ1Palette ());
+	}
+}
+
+
 static void LoadBsp1 ()
 {
 	guard(LoadBsp1);
@@ -1350,13 +1385,10 @@ START_PROFILE(GenerateLightmaps2)
 	GenerateLightmaps2 (bsp->lighting, bsp->lightDataSize);
 END_PROFILE
 	// Load bsp (leafs and nodes)
-START_PROFILE(LoadLeafsNodes1)
 	LoadLeafsNodes1 (bsp->nodes1, bsp->numNodes, bsp->leafs1, bsp->numLeafs);
-END_PROFILE
 	LoadVisinfo (bsp);
-START_PROFILE(LoadInlineModels2)
 	LoadInlineModels2 (bsp->models, bsp->numModels);
-END_PROFILE
+	LoadSky1 ();
 
 	unguard;
 }
@@ -1423,7 +1455,7 @@ void LoadWorldMap (const char *name)
 		Com_DropError ("R_LoadWorldMap: unknown BSP type");
 	}
 	LoadFlares (map_bspfile->flares, map_bspfile->numFlares);
-	LoadSlights (map_bspfile->slights, map_bspfile->numSlights);
+	LoadSlights (map_bspfile->slights);
 	PostLoadLights ();
 	InitLightGrid ();
 	STAT(unclock(gl_ldStats.bspLoad));
