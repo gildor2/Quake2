@@ -193,7 +193,7 @@ void SV_LinkEdict (edict_t *ent)
 	int		i, j, k;
 
 	//!! HOOK - move outside ?
-	if (map_bspfile->type == map_q1)
+	if (bspfile.type == map_q1 || bspfile.type == map_hl)
 	{
 		if (ent->s.modelindex >= 0 && ent->s.modelindex < MAX_MODELS)
 		{

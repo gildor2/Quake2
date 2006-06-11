@@ -12,8 +12,8 @@ Comments:
   All-IP mask is "*.*.*.*" or "0-255.0-255.0-255.0-255"
 
 
-Contains third-party libraries:
-===============================
+Using third-party libraries:
+============================
 - JPEGlib
   Copyright (C) 1991-1998, Thomas G. Lane.
   http://www.ijg.org

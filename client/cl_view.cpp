@@ -715,7 +715,7 @@ static void DrawFpsInfo ()
 
 	int64 time = appCycles64 ();
 
-	double timeDelta = appDeltaCyclesToMsecf (time - lastFrameTime);
+	double timeDelta = appCyclesToMsecf (time - lastFrameTime);
 	if (cls.key_dest != key_game || (timeDelta > 2000))
 	{	// reinitialize counters
 		startSecTime = lastFrameTime = time;
@@ -761,7 +761,7 @@ static void DrawFpsInfo ()
 	lastFrameTime = time;
 
 	// update avg stats
-	timeDelta = appDeltaCyclesToMsecf (time - startSecTime);
+	timeDelta = appCyclesToMsecf (time - startSecTime);
 	frames++;
 	if (timeDelta >= 500)			// update 2 times per second
 	{

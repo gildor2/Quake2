@@ -420,13 +420,8 @@ static void DrawStatusBar (const char *string)
 {
 	if (string)
 	{
-		int l = appCStrlen (string);
-		int maxrow = VID_HEIGHT / CHAR_HEIGHT;
-		int maxcol = VID_WIDTH / CHAR_WIDTH;
-		int col = maxcol / 2 - l / 2;
-
 		RE_Fill8 (0, VID_HEIGHT - CHAR_HEIGHT, VID_WIDTH, CHAR_HEIGHT, 4);
-		DrawString (col * CHAR_WIDTH, VID_HEIGHT - CHAR_WIDTH, string);
+		DrawString ((VID_WIDTH - appCStrlen (string) * CHAR_WIDTH) / 2, VID_HEIGHT - CHAR_WIDTH, string);
 	}
 //	else
 //		RE_Fill8 (0, VID_HEIGHT-8, VID_WIDTH, 8, 0);

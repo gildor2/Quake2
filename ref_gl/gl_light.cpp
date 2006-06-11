@@ -7,7 +7,7 @@
 
 namespace OpenGLDrv {
 
-//?? TODO: sun light, ambient -> separate CLight instances ?
+//?? TODO (TRY): sun ambient -> separate CLight instance ?
 
 /* NOTES:
  *  - we have used lightstyle 0 for sun, ambient and surface light
@@ -264,7 +264,7 @@ void CLightInv2::Init ()
 {
 	CPointLight::Init ();
 	//!! wanna check this on a real map
-	if (map_bspfile->type == map_q2 || map_bspfile->type == map_kp)
+	if (bspfile.type == map_q2 || bspfile.type == map_kp)
 		DebugPrintf ("%s: inv2 slight at %g %g %g\n", *map.Name, VECTOR_ARG(origin));
 	float f = SQRTFAST(intens * INV_SCALE / MIN_POINT_LIGHT);
 	maxDist2 = f * f;
@@ -388,28 +388,16 @@ void CSurfLight::Add (const CVec3 &org, const CAxis &axis) const
 	// determine nearest point on light surface rect
 	float x = dot (org, pl->axis[0]);
 	float y = dot (org, pl->axis[1]);
-	bool slope = false;
 	float dx = 0, dy = 0;
 	if (x < pl->mins2[0])
-	{
-		slope = true;
 		dx = x - pl->mins2[0];
-	}
 	else if (x > pl->maxs2[0])
-	{
-		slope = true;
 		dx = x - pl->maxs2[0];
-	}
 	if (y < pl->mins2[1])
-	{
-		slope = true;
 		dy = y - pl->mins2[1];
-	}
 	else if (y > pl->maxs2[1])
-	{
-		slope = true;
 		dy = y - pl->maxs2[1];
-	}
+	bool slope = (dx != 0) || (dy != 0);
 
 	float dist, realIntens;
 	if (slope)
@@ -454,13 +442,13 @@ void CSurfLight::Add (const CVec3 &org, const CAxis &axis) const
 		if (CM_BrushTrace (dst, org, br, 1)) return;			// not clipped -- try other brushes too
 	}
 
-	if (ambient)				// current surface gives sun ambient
+	if (ambient)				// current surface produces sun ambient
 	{
 		float scale = vp.lightStyles[0].value * SUN_AMBIENT_SCALE / 128.0f;
 		CVec3 c;
-		c[0] = map.sunColor[0] * map.sunAmbient[0] * scale;
-		c[1] = map.sunColor[1] * map.sunAmbient[1] * scale;
-		c[2] = map.sunColor[2] * map.sunAmbient[2] * scale;
+		c[0] = map.sunAvgColor[0] * map.sunAmbient[0] * scale;
+		c[1] = map.sunAvgColor[1] * map.sunAmbient[1] * scale;
+		c[2] = map.sunAvgColor[2] * map.sunAmbient[2] * scale;
 		for (int i = 0; i < 6; i++)
 			entityColorAxis[i].Add (c);
 		needSunAmbient = false;
@@ -472,6 +460,44 @@ void CSurfLight::Add (const CVec3 &org, const CAxis &axis) const
 	if (gl_lightLines->value && realIntens > gl_lightLines->value)
 		LightLine (axis, dst, org, color, realIntens);
 #endif
+}
+
+
+/*-----------------------------------------------------------------------------
+	Sun light
+-----------------------------------------------------------------------------*/
+
+void CSunLight::Init ()
+{
+	// light cluster
+	if ((origin[0] || origin[1] || origin[2]) && bspfile.sunCount != 1)
+		cluster = PointInLeaf (origin)->cluster;
+	else
+		cluster = -1;						// do not use vis
+	// color
+	if (color[0] + color[1] + color[2] == 0)
+		color = map.sunSurfColor;			// default color
+	NormalizeColor (color, color);
+	map.sunAvgColor.Add (color);
+//	appWPrintf ("sun: color={%g %g %g} intens=%g dir={%g %g %g} org={%g %g %g} clust=%d\n", VECTOR_ARG(color), intens, VECTOR_ARG(dir), VECTOR_ARG(origin), cluster);
+}
+
+
+void CSunLight::Add (const CVec3 &org, const CAxis &axis) const
+{
+	CVec3 dst;
+	VectorMA (org, -32768, dir, dst);
+	trace_t	tr;
+	CM_BoxTrace (tr, org, dst, nullBox, 0, CONTENTS_SOLID);
+	if (tr.surface->flags & SURF_SKY && !tr.startsolid)		// can be "startsolid" even if "row"!=NULL
+	{
+		float realIntens = intens * SUN_SCALE * vp.lightStyles[0].value / 128.0f;	// sun light have style=0
+		AddLight (axis, dir, realIntens, color);
+#if LIGHT_DEBUG
+		if (gl_lightLines->value)
+			LightLine (axis, tr.endpos, org, color, realIntens);
+#endif
+	}
 }
 
 
@@ -545,24 +571,7 @@ static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 		return false;		// point is outside the world
 	}
 
-	/*------------------ directed sunlight ------------------*/
-
-	if (map.sunLight)
-	{
-		CVec3 dst;
-		VectorMA (*origin, -32768, map.sunVec, dst);
-		trace_t	tr;
-		CM_BoxTrace (tr, *origin, dst, nullBox, 0, CONTENTS_SOLID);
-		if (tr.surface->flags & SURF_SKY && !tr.startsolid)		// can be "startsolid" even if "row"!=NULL
-		{
-			float intens = map.sunLight * SUN_SCALE * vp.lightStyles[0].value / 128.0f;	// sun light have style=0
-			AddLight (*axis, map.sunVec, intens, map.sunColor);
-#if LIGHT_DEBUG
-			if (gl_lightLines->value)
-				LightLine (*axis, tr.endpos, *origin, map.sunColor, intens);
-#endif
-		}
-	}
+	needSunAmbient = map.haveSunAmbient;
 
 	// add static lights
 	AddLightsChain (map.lights, *origin, *axis, row);
@@ -957,6 +966,8 @@ void PostLoadLights ()
 	for (light = map.flashLights; light; light = light->next)
 		light->Init ();
 	GetSurfLightCluster ();
+	if (bspfile.sunCount)
+		map.sunAvgColor.Scale (1.0f / bspfile.sunCount);
 }
 
 

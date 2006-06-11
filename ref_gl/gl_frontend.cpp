@@ -226,7 +226,7 @@ static int PointCull (const CVec3 &point, int frustumMask)
 }
 
 
-#define NUM_TEST_BRUSHES	2 // 32
+#define NUM_TEST_BRUSHES	2
 
 static bool BoxOccluded (const refEntity_t *e, const CVec3 &size2)
 {
@@ -235,6 +235,15 @@ static bool BoxOccluded (const refEntity_t *e, const CVec3 &size2)
 	int		n, brushes[NUM_TEST_BRUSHES];
 
 	STAT(clock(gl_stats.occlTest));
+
+	// check: when one of entity bbox dimensions comparable with a distance to object,
+	// we should not perform occlusion test (otherwise, we can get clipped BoxRect, which
+	// will be rotated around entity center, and non-clipped part of rect will be inside
+	// world object, and entity will be mistakenly occluded)
+	float dist = e->dist2 / 2;
+	if (e->size2[0] > dist || e->size2[1] > dist || e->size2[2] > dist) return false;
+
+	// project box to plane
 	if (!GetBoxRect (e, size2, mins2, maxs2))
 	{
 notOccluded:	// we use "goto" for unclock() + return false ...
@@ -246,8 +255,8 @@ notOccluded:	// we use "goto" for unclock() + return false ...
 	VectorMA (e->center, mins2[0], vp.view.axis[1], left);
 	VectorMA (left, mins2[1], vp.view.axis[2], v);
 #if 0
-	static cvar_t *test;
-	if (!test) test=Cvar_Get("test","32");
+	static cvar_t *test=NULL;
+	EXEC_ONCE(test = Cvar_Get ("test","32"));
 	n = CM_BrushTrace (vp.view.origin, v, brushes, test->integer);
 #else
 	n = CM_BrushTrace (vp.view.origin, v, brushes, NUM_TEST_BRUSHES);
@@ -389,7 +398,7 @@ static void ClipTraceToEntities (trace_t &tr, const CVec3 &start, const CVec3 &e
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr.fraction)
 		{
-			trace.ent = (struct edict_s *)e;
+			trace.ent = (edict_s *)e;
 		 	if (tr.startsolid)
 			{
 				tr = trace;
@@ -1578,6 +1587,11 @@ static void DrawEntities (int firstEntity, int numEntities)
 			continue;
 		}
 
+		// calc model distance
+		CVec3 delta;
+		VectorSubtract (e->center, vp.view.origin, delta);
+		float dist2 = e->dist2 = dot (delta, vp.view.axis[0]);	// get Z-coordinate
+
 		// occlusion culling
 		if (e->model && gl_oCull->integer && !(e->flags & RF_DEPTHHACK) &&
 			(e->model->type == MODEL_INLINE || e->model->type == MODEL_MD3))
@@ -1596,10 +1610,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 			e->model->DrawLabel (e);
 
 		e->visible = true;
-		// calc model distance
-		CVec3 delta;
-		VectorSubtract (e->center, vp.view.origin, delta);
-		float dist2 = e->dist2 = dot (delta, vp.view.axis[0]);	// get Z-coordinate
+
 		// add entity to leaf's entity list
 		if (leaf->drawEntity)
 		{

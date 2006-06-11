@@ -22,7 +22,8 @@ bounce - bad "trigger_push" (jumppads)
 undertow - have elevator (CONTENTS_CURRENT) + strange (solid) water
 ahl_engholm - have wall, which not blocks movement
 ahl_casagrande - have walls, which not blocks movement + tree base
-citywar2 - have no spawn points ?
+citywar2 - have no spawn points ? ("info_player_start" absent, but "info_player_deathmatch"
+  present -- works with deathmatch=1 only)
 snark_pit - have few "trigger_push" entities, not working
 ahl_calypso  - PF_setmodel(NULL name)
 ahl_napoli   - "no loop in poly"

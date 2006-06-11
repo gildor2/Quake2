@@ -1,24 +1,16 @@
-!! 'wads': get from ents, remove from ents, copy to bspfile_t as 'char wads[]'; use in LoadBsp1() with map_hl:
-  register wad format, mount wads, load map, unmount wads, unregister format (may be, register globally ?)
-  - load HL texture: check 'textures/{wad_name}/{tex_name}' -- iterate {wad_name} until found
+? wads: register wad format, mount wads, load map, unmount wads, unregister format (may be, register globally ?)
 !! FIX brush creation, do not DropError() from MapBrush.cpp module
 - 'ahl_streets': lamps have 'halo' with rendermode==5 (additive)
 - 'ccity2'
   - have rotating lamps with rendermode=5 (additive)
   - have sliding doors with glasses -- uses trigger_multiple for synch ?
-- "q1dm2" - have func_door "*2" - should be linked with "*1" (now: unlinked, opened with player touch)
-  -- should copy "target" field from linked entity
-  + change default speed/wait (other fields too?)
-  - should supoprt linked doors in server
 ! use LightOrigin for renderer entity (weapon model, multi-part models ...)
+! HL: map "bxnwo1" using "+atexture" on windows ("alternative animation") -- currently, incorrectly used in engine!
+  (entity can be switched on and off, with a different animations; not used on static objects?)
 
 ! HL/KP: have maps with "PF_setmodel NULL" error
-- KP: func_explosive on "japan" - windows with explosion (check game code ?)
 - inline bool CBrush::IsEmpty(); use in cmodel.cpp, no errors in MapBrush.cpp
-
-- func_illusionary: can have "skin" field -- used as contents (default == -1 == Q1_CONTENTS_EMPTY); may be used to
-  create water etc (work PointContents() only ? SOLID_NOT is set by game (q1/hl) for func_illusionary)
-- HL func_breakable: replace with func_explosive; may require additional target_speaker with explosion sound
+- hl: aaatrigger -- invisible texture ? (check: may be, have in wads?)
 
 - Q1 sky (not HL!): should occlude other map surfaces (check: map "a2", "kasteel")
 ! find all CS_NAME usage, check 7th bit for each char, replace with color
@@ -26,9 +18,12 @@
 
 - try to find linked doors for Q1 (their bbox+origin touch one another; check 'ground3' for example of opening 2 linked doors,
   when no way to open one door without another)
+  - "q1dm2" - have func_door "*2" - should be linked with "*1" (now: unlinked, opened with player touch)
+    -- should copy "target" field from linked entity
+    + change default speed/wait (other fields too?)
+    - should supoprt linked doors in server
 
 - texture loading:
-  - from wad (hl)
   - should delete all textures (map textures) on next map loading, because:
     - q1: embedded textures: should delete all on map change (different maps -- may be different textures
       with the same name)
@@ -37,12 +32,6 @@
     ! should delete textures and shaders!
     ! should check: main engine can use shaders by 'handle' (pointer) -- this will require to not delete these shaders, or
       refresh pointers after map restart/change; may be, use 'smart pointers' with garbage collection
-
-- surface sounds (hl) -- requires surface info in Trace()
-
-- ambient sounds (see dBsp1Leaf_t)
-
-- .mdl models for Q1 (torch etc)
 
 - check player trace bounds + viewheight for q1/hl (q1: looks like same as q2; hl -- needs scaling?!)
 - q1/hl: check lightstyle strings
@@ -53,7 +42,26 @@
 	LIGHT_STYLE(12, "mmnnmmnnnmmnn");
 ? FORCE ext protocol for clients, when playing q1/hl map (not required: original q2 will fail to load these maps anyway)
 
-?! ents: convert q1 NPC to q2 NPC
-- check HL animMap.freq (HL viewer: 10 Hz; Q1 - 5 Hz; Q2 - 2 Hz)
-- hl: light_environment; + check "lights.rad" file (SURF_LIGHT analog)
-- hl: water waves
+- check HL animMap.freq (HL viewer: 10 Hz; Q1 - 5 Hz; Q2 - 2 Hz) -- disassemble ...
+
+------------ hl entities ---------------
+- func_button: incorrect movement angle, speed (?)
+- func_breakable: replace with func_explosive; may require additional target_speaker with explosion sound
+  - KP: func_explosive on "japan" - windows with explosion (check game code ?)
+- lifts does not works! ("ccity2", "bxht")
+- sounds does not works
+- door sounds (create linked trigger with sound? -- check entity count overflow!)
+
+--------------- later ------------------
+- hl: "lights.rad" file (SURF_LIGHT analog)
+? hl: water waves
+? ents: convert q1 NPC to q2 NPC
+- surface sounds (hl) -- requires surface info in Trace()
+- ambient sounds (see dBsp1Leaf_t)
+- .mdl models for Q1 (torch etc)
+- func_illusionary: can have "skin" field -- used as contents (default == -1 == Q1_CONTENTS_EMPTY); may be used to
+  create water etc (work PointContents() only ? SOLID_NOT is set by game (q1/hl) for func_illusionary)
+- HL: "infodecal" entities (and check AHL map "bxht")
+- HL: "-0texture" - randomly tiled (using all available "-1texture" etc)
+- "lights.rad": currently, color is ignored!
+

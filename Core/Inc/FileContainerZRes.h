@@ -88,7 +88,7 @@ protected:
 		return "zres";
 	}
 	// function for file opening
-	CFile *OpenLocalFile (const CArcFile &Info)
+	CFile *OpenLocalFile (const FFileInfo &Info)
 	{
 		return new CFileRes (static_cast<const CFileInfo&>(Info), pData, dataSize);
 	}
@@ -125,7 +125,7 @@ public:
 			// cut filename -> Path + Name
 			char *name = Filename.rchr ('/');
 			// find/create directory
-			CArcDir *Dir;
+			FDirInfo *Dir;
 			if (name)
 			{
 				*name++ = 0;

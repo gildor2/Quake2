@@ -988,9 +988,7 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 				return original;			// not bullet effect
 
 			// find splash origin in static map splashes to avoid bullethit sounds for waterfalls etc.
-			int		i;
-			splash_t *spl;
-			for (i = 0, spl = map_bspfile->splashes; i < map_bspfile->numSplashes; i++, spl = spl->next)
+			for (const splash_t *spl = bspfile.splashes; spl; spl = spl->next)
 			{
 				if (fabs (spl->origin[0] - v1[0]) < 1 &&
 					fabs (spl->origin[1] - v1[1]) < 1 &&

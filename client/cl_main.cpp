@@ -142,7 +142,7 @@ void CL_WriteDemoMessage ()
 	int len = net_message.cursize-8;
 	int swlen = LittleLong(len);
 	fwrite (&swlen, 4, 1, cls.demofile);
-	fwrite (net_message.data+8,	len, 1, cls.demofile);
+	fwrite (net_message.data+8, len, 1, cls.demofile);
 }
 
 

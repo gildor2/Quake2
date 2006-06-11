@@ -156,7 +156,7 @@ static trace0_t* CL_PMTrace (trace0_t &trace, const CVec3 &start, const CVec3 &m
 	CM_BoxTrace (trace1, start, end, bounds, 0, MASK_PLAYERSOLID);
 	CM_ClipTraceToModels (trace1, start, end, bounds, MASK_PLAYERSOLID);
 	if (trace1.fraction < 1.0)
-		trace1.ent = (struct edict_s *)1;	//??
+		trace1.ent = (edict_s *)1;	//??
 
 	// check all other solid models
 	CL_EntityTrace (trace1, start, end, bounds, MASK_PLAYERSOLID);

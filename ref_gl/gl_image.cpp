@@ -170,7 +170,6 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 
 	unsigned fracstep = (inwidth << 16) / outwidth;
 	unsigned frac = fracstep >> 2;
-
 	for (i = 0; i < outwidth; i++)
 	{
 		p1[i] = 4 * (frac >> 16);
@@ -202,27 +201,19 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 		n++;	\
 		r += *pix++; g += *pix++; b += *pix++; a += *pix;	\
 	}
-			PROCESS_PIXEL(inrow, p1);
-			PROCESS_PIXEL(inrow, p2);
+			PROCESS_PIXEL(inrow,  p1);
+			PROCESS_PIXEL(inrow,  p2);
 			PROCESS_PIXEL(inrow2, p1);
 			PROCESS_PIXEL(inrow2, p2);
 #undef PROCESS_PIXEL
 
-			switch (n)		// if use generic version, with "x /= n", will be 50% slower ...
+			switch (n)		// NOTE: generic version ("x /= n") is 50% slower
 			{
 			// case 1 - divide by 1 - do nothing
-			case 2:
-				r >>= 1; g >>= 1; b >>= 1; a >>= 1;
-				break;
-			case 3:
-				r /= 3; g /= 3; b /= 3; a /= 3;
-				break;
-			case 4:
-				r >>= 2; g >>= 2; b >>= 2; a >>= 2;
-				break;
-			case 0:
-				r = g = b = 0;
-				break;
+			case 2: r >>= 1; g >>= 1; b >>= 1; a >>= 1; break;
+			case 3: r /= 3;  g /= 3;  b /= 3;  a /= 3;  break;
+			case 4: r >>= 2; g >>= 2; b >>= 2; a >>= 2; break;
+			case 0: r = g = b = 0; break;
 			}
 
 			((byte *)(out+j))[0] = r;
@@ -259,7 +250,7 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 		*/
 		lastSat = r_saturation->value;
 		Com_DPrintf ("rebuilding saturation table for %g\n", lastSat);
-		float tmp = (1.0f - lastSat) * 2 / 3;				// modulated by 2
+		float tmp = (1.0f - lastSat) * 2 / 3;		// modulated by 2
 		for (i = 0; i < ARRAY_COUNT(sat1); i++)
 			sat1[i] = appRound (i * tmp);
 		for (i = 0; i < ARRAY_COUNT(sat2); i++)
@@ -328,13 +319,16 @@ static void LightScaleLightmap (unsigned *pic, int width, int height)
 	for (int i = 0; i < c; i++, p += 4)
 	{
 		int sh = shift + (signed char)p[3];		// usa alpha as additional shift info
-		if (sh > 0)
+		p[3] = 255;								// alpha
+		if (!sh) continue;						// processing not required
+
+		if (sh > 0)								// reduce light
 		{
 			p[0] >>= sh;
 			p[1] >>= sh;
 			p[2] >>= sh;
 		}
-		else
+		else									// grow light: needs color clamping
 		{
 			sh = -sh;
 
@@ -346,7 +340,6 @@ static void LightScaleLightmap (unsigned *pic, int width, int height)
 			p[1] = g;
 			p[2] = b;
 		}
-		p[3] = 255;		// alpha
 	}
 
 	STAT(unclock(gl_ldStats.imgLightscale));
@@ -368,7 +361,7 @@ static void MipMap (byte *in, int width, int height)
 
 			r = g = b = a = am = n = 0;
 //!! should perform removing of alpha-channel when IMAGE_NOALPHA specified
-//!! should perform removing (making black) color channel when alpha==0 NOT ALWAYS
+//!! should perform removing (making black) color channel when alpha==0 (NOT ALWAYS?)
 //!!  - should analyze shader, and it will not use blending with alpha (or no blending at all)
 //!!    then remove alpha channel (require to process shader's *map commands after all other commands, this
 //!!    can be done with delaying [map|animmap|clampmap|animclampmap] lines and executing after all)
@@ -393,6 +386,7 @@ static void MipMap (byte *in, int width, int height)
 			PROCESS_PIXEL(width);
 			PROCESS_PIXEL(width+4);
 #undef PROCESS_PIXEL
+			//!! NOTE: currently, always n==4 here
 			switch (n)
 			{
 			// case 1 - divide by 1 - do nothing
@@ -428,13 +422,13 @@ static void MipMap (byte *in, int width, int height)
 static void GetImageDimensions (int width, int height, int *scaledWidth, int *scaledHeight, bool picmip)
 {
 	int sw, sh;
-	for (sw = 1; sw < width; sw <<= 1) ;
+	for (sw = 1; sw < width;  sw <<= 1) ;
 	for (sh = 1; sh < height; sh <<= 1) ;
 
 	if (gl_roundImagesDown->integer)
 	{	// scale down only when new image dimension is larger than 64 and
 		// larger than 4/3 of original image dimension
-		if (sw > 64 && sw > (width * 4 / 3)) sw >>= 1;
+		if (sw > 64 && sw > (width * 4 / 3))  sw >>= 1;
 		if (sh > 64 && sh > (height * 4 / 3)) sh >>= 1;
 	}
 	if (picmip)
@@ -450,7 +444,7 @@ static void GetImageDimensions (int width, int height, int *scaledWidth, int *sc
 	if (sw < 1) sw = 1;
 	if (sh < 1) sh = 1;
 
-	*scaledWidth = sw;
+	*scaledWidth  = sw;
 	*scaledHeight = sh;
 }
 
@@ -462,6 +456,7 @@ static void ComputeImageColor (void *pic, int width, int height, color_t *color)
 
 	int count = width * height;
 	c[0] = c[1] = c[2] = c[3] = 0;
+	if (!count) return;				// just in case
 	for (i = 0, p = (byte*)pic; i < count; i++, p += 4)
 	{
 		c[0] += p[0];
@@ -479,25 +474,23 @@ static void ComputeImageColor (void *pic, int width, int height, color_t *color)
 // We need to pass "flags" because image->flags is masked with IMAGE_FLAGMASK
 static void Upload (void *pic, unsigned flags, image_t *image)
 {
-	int		scaledWidth, scaledHeight;
-	int		format, size;
-
 	LOG_STRING(va("// Upload(%s)\n", *image->Name));
 
 	/*----- Calculate internal dimensions of the new texture --------*/
+	int scaledWidth, scaledHeight;
 	if (image->target != GL_TEXTURE_RECTANGLE_NV)
 		GetImageDimensions (image->width, image->height, &scaledWidth, &scaledHeight, (image->flags & IMAGE_PICMIP) != 0);
 	else
 	{
-		scaledWidth = image->width;
+		scaledWidth  = image->width;
 		scaledHeight = image->height;
 	}
 
-	image->internalWidth = scaledWidth;
+	image->internalWidth  = scaledWidth;
 	image->internalHeight = scaledHeight;
 
 	/*---------------- Resample/lightscale texture ------------------*/
-	size = scaledWidth * scaledHeight * 4;
+	int size = scaledWidth * scaledHeight * 4;
 	unsigned *scaledPic = (unsigned*)appMalloc (size);
 	if (image->width != scaledWidth || image->height != scaledHeight)
 		ResampleTexture ((unsigned*)pic, image->width, image->height, scaledPic, scaledWidth, scaledHeight);
@@ -514,6 +507,7 @@ static void Upload (void *pic, unsigned flags, image_t *image)
 	//?? LUMINAMCE = (L,L,L,1); INTENSITY = (I,I,I,I); ALPHA = (0,0,0,A); RGB = (R,G,B,1); RGBA = (R,G,B,A)
 	//?? see OpenGL spec: "Rasterization/Texturing/Texture Environments ..."
 
+	GLenum format;
 	if (flags & IMAGE_LIGHTMAP)
 		format = 3;
 	else if (flags & IMAGE_TRUECOLOR)
@@ -555,7 +549,6 @@ static void Upload (void *pic, unsigned flags, image_t *image)
 			}
 		}
 	}
-
 	image->internalFormat = format;
 
 	/*------------------ Upload the image ---------------------------*/
@@ -575,9 +568,9 @@ static void Upload (void *pic, unsigned flags, image_t *image)
 		{
 			MipMap ((byte *) scaledPic, scaledWidth, scaledHeight);
 			miplevel++;
-			scaledWidth >>= 1;
+			scaledWidth  >>= 1;
 			scaledHeight >>= 1;
-			if (scaledWidth < 1) scaledWidth = 1;
+			if (scaledWidth < 1)  scaledWidth  = 1;
 			if (scaledHeight < 1) scaledHeight = 1;
 
 			// show mipmap levels as colors
@@ -785,7 +778,7 @@ void LoadDelayedImages ()
 
 		num++;
 	}
-	Com_DPrintf ("%d images uploaded in %g sec\n", num, appDeltaCyclesToMsecf(appCycles() - time) / 1000.0f);
+	Com_DPrintf ("%d images uploaded in %g sec\n", num, appCyclesToMsecf(appCycles() - time) / 1000.0f);
 }
 
 
@@ -793,16 +786,14 @@ void LoadDelayedImages ()
 	Video playback support
 -----------------------------------------------------------------------------*/
 
-
 void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette)
 {
-	image_t	*image;
 	byte	*pic32;
 
 	guard(DrawStretchRaw8);
 
 	// prepare video image
-	image = gl_videoImage;		//?? to allow multiple videos in a screen, should use gl_videoImage[some_number]
+	image_t *image = gl_videoImage;		//?? to allow multiple videos in a screen, should use gl_videoImage[some_number]
 	GL_SetMultitexture (1);
 	GL_BindForce (image);
 	image->internalFormat = 3;
@@ -822,10 +813,9 @@ void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *p
 	}
 	else
 	{
-		int		scaledWidth, scaledHeight;
-
 		// we can perform uploading pic without scaling using TexSubImage onto a large texture and using
 		// (0..width/large_width) - (0..height/large_height) coords when drawing ?? (but needs palette conversion anyway)
+		int scaledWidth, scaledHeight;
 		GetImageDimensions (width, height, &scaledWidth, &scaledHeight, false);
 		pic32 = new byte [scaledWidth * scaledHeight * 4];
 
@@ -970,13 +960,7 @@ void SetupGamma ()
 
 	for (int i = 0; i < 256; i++)
 	{
-		int		v;
-
-		if (invGamma == 1)
-			v = i;
-		else
-			v = appRound (pow (i / 255.0f, invGamma) * 255.0f);
-
+		int v = (invGamma == 1) ? i : appRound (pow (i / 255.0f, invGamma) * 255.0f);
 		v <<= overbright;
 		gammaTable[i] = bound(v, 0, 255);
 	}
@@ -1049,7 +1033,7 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 #undef _STR
 	};
 	static const char alphaTypes[3] = {' ', '1', '8'};
-	static const char boolTypes[2] = {' ', '+'};
+	static const char boolTypes[2]  = {' ', '+'};
 
 	if (argc > 2 || usage)
 	{
@@ -1152,7 +1136,7 @@ static void ImageReload_f (bool usage, int argc, char **argv)
 	{
 		DumpLoadStats ();
 		unclock(time);
-		appPrintf ("%d images reloaded in %g sec\n", num, appDeltaCyclesToMsecf(time) / 1000.0f);
+		appPrintf ("%d images reloaded in %g sec\n", num, appCyclesToMsecf(time) / 1000.0f);
 	}
 #endif
 }
@@ -1521,7 +1505,7 @@ void ShowImages ()
 	float dx = vid_width / nx;
 	float dy = vid_height / ny;
 	int num = numImg;
-	img = &imagesArray[0];
+	img = imagesArray;
 	for (int y = 0; y < ny && num; y++)
 	{
 		float	y0, x0, s, t;
@@ -1531,6 +1515,7 @@ void ShowImages ()
 		{
 			if (!num) break;
 
+			// find image to display
 			while (true)
 			{
 				if (img->Name[0] && appMatchWildcard (img->Name, mask, true)) break;
@@ -1645,7 +1630,7 @@ image_t *FindImage (const char *name, unsigned flags)
 		prefFmt = IMAGE_TGA;
 	else if (!strcmp (s, ".jpg"))
 		prefFmt = IMAGE_JPG;
-//	else if (!strcmp (s, ".pcx"))	//-- commented - never prefer 8-bit textures
+//	else if (!strcmp (s, ".pcx"))	//-- disabled: never prefer 8-bit textures
 //		prefFmt = IMAGE_PCX;
 //	else if (!strcmp (s, ".wal"))
 //		prefFmt = IMAGE_WAL;
@@ -1675,7 +1660,7 @@ image_t *FindImage (const char *name, unsigned flags)
 		byte *pic8 = LoadPCX (Name2, width, height, palette);
 		if (pic8)
 		{
-			//?? should use palette; sometimes should use 0xFF as color (not transparency)
+			//?? should use "palette"; sometimes should use 0xFF as color (not transparency)
 #if 0
 			unsigned pal[256];
 

@@ -285,6 +285,69 @@ public:
 
 
 /*-----------------------------------------------------------------------------
+	String splitter
+-----------------------------------------------------------------------------*/
+
+template<int BufSize, char delim> class TStringSplitter
+{
+private:
+	char	buf[BufSize];
+	char	*curr;
+	const char *next;
+public:
+	// initialization
+	TStringSplitter ()
+	:	curr (NULL)
+	,	next (NULL)
+	{
+		buf[0] = 0;
+	}
+	TStringSplitter (const char *string)
+	:	next (string)
+	{
+		++(*this);
+	}
+	TStringSplitter& operator= (const char *string)
+	{
+		next = string;
+		++(*this);
+		return *this;
+	}
+	// enumerator
+	// note: only this function uses BufSize const
+	void operator++ ()			// prefix form
+	{
+		if (!next)
+		{
+			curr = NULL;
+			return;				// whole string iterated
+		}
+		const char *prev = next;
+		while (next[0] && next[0] != delim) next++;
+		// now: "next" points to delimiter or to end of string (null char)
+		int len = next - prev;
+		if (len >= BufSize) len = BufSize - 1;
+		memcpy (buf, prev, len);
+		buf[len] = 0;
+		// advance "next"
+		curr = buf;
+		if (next[0]) next++;
+		else		 next = NULL;
+	}
+	operator bool ()
+	{
+		return (curr != NULL);
+	}
+	// implicit use as "const char*"
+	operator const char* () const			{ return buf; }
+	operator char* ()						{ return buf; }
+	// use "*Str" when used in printf()-like functions (no type conversion by default ...)
+	const char* operator* () const			{ return buf; }
+	char* operator* ()						{ return buf; }
+};
+
+
+/*-----------------------------------------------------------------------------
 	TString template - template for static strings (use instead of "char str[N]")
 -----------------------------------------------------------------------------*/
 

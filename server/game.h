@@ -20,13 +20,13 @@ typedef unsigned			qboolean;
 
 // edict->solid values
 
-typedef enum
+enum solid_t
 {
 	SOLID_NOT,							// no interaction with other objects
 	SOLID_TRIGGER,						// only touch when inside, after moving
 	SOLID_BBOX,							// touch on edge
 	SOLID_BSP							// bsp clip, touch on edge
-} solid_t;
+};
 
 
 // link_t is only used for entity area links

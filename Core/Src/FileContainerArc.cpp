@@ -11,27 +11,21 @@
 //	- separators are '/'
 //	- lowercase names
 //	- not finished with '/'
-CFileContainerArc::CArcDir *CFileContainerArc::FindDir (const char *path, bool create)
+CFileContainerArc::FDirInfo *CFileContainerArc::FindDir (const char *path, bool create)
 {
 	if (!path || !path[0]) return &Root;
 
-	TString<256> Copy; Copy = path;
-	CArcDir *Dir = &Root;
-
-	char *rest;
-	for (const char *dirName = Copy; dirName; dirName = rest)
+	FDirInfo *Dir = &Root;
+	for (TStringSplitter<256, '/'> split = path; split; ++split)
 	{
-		rest = strchr (dirName, '/');
-		if (rest)
-			*rest++ = 0;					// cut 1 directory layer
-		CArcDir *ins;
-		CArcDir *SubDir = Dir->Dirs.Find (dirName, &ins);
+		FDirInfo *ins;
+		FDirInfo *SubDir = Dir->Dirs.Find (split, &ins);
 		if (!SubDir)
 		{
 			// directory does not exists
 			if (!create) return NULL;		// creation is not desired
 			// create subdirectory
-			SubDir = new (dirName, mem) CArcDir;
+			SubDir = new (split, mem) FDirInfo;
 			Dir->Dirs.InsertAfter (SubDir, ins);
 		}
 		Dir = SubDir;
@@ -41,11 +35,11 @@ CFileContainerArc::CArcDir *CFileContainerArc::FindDir (const char *path, bool c
 }
 
 
-CFileContainerArc::CArcFile *CFileContainerArc::FindFile (const char *filename)
+CFileContainerArc::FFileInfo *CFileContainerArc::FindFile (const char *filename)
 {
 	TString<256> Path; Path = filename;
 	char *name = Path.rchr ('/');
-	CArcDir *Dir;
+	FDirInfo *Dir;
 	if (name)
 	{
 		*name++ = 0;				// cut filename from path
@@ -74,7 +68,7 @@ bool CFileContainerArc::FileExists (const char *filename)
 
 CFile *CFileContainerArc::OpenFile (const char *filename)
 {
-	const CArcFile *FileInfo = FindFile (filename);
+	const FFileInfo *FileInfo = FindFile (filename);
 	if (!FileInfo) return NULL;
 	return OpenLocalFile (*FileInfo);
 }
@@ -84,7 +78,7 @@ void CFileContainerArc::List (CFileList &list, const char *mask, unsigned flags)
 {
 	TString<256> Path; Path = mask;
 	char *name = Path.rchr ('/');
-	CArcDir *Dir;
+	FDirInfo *Dir;
 	if (name)
 	{
 		*name++ = 0;

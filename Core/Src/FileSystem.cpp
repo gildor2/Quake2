@@ -305,7 +305,7 @@ void CFileSystem::Mount (const char *mask, const char *point)
 
 	// show stats
 	unclock(time);
-	appPrintf ("Mounted %d containers (%d archived files) in %.4f sec\n", numMounts, numFiles, appDeltaCyclesToMsecf (time) / 1000);
+	appPrintf ("Mounted %d containers (%d archived files) in %.4f sec\n", numMounts, numFiles, appCyclesToMsecf (time) / 1000);
 }
 
 void CFileSystem::Umount (const char *mask)

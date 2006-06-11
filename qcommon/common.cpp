@@ -619,11 +619,11 @@ void Com_Frame (float msec)
 
 			time_after = appCycles ();
 
-			float rf  = (time_before_ref) ? appDeltaCyclesToMsecf (time_after_ref - time_before_ref) : 0;
-			float gm  = (time_before_game) ? appDeltaCyclesToMsecf (time_after_game - time_before_game) : 0;
-			float sv  = appDeltaCyclesToMsecf (time_between - time_before) - gm;
-			float cl  = appDeltaCyclesToMsecf (time_after - time_between) - rf;
-			float all = appDeltaCyclesToMsecf (time_after - time_before);
+			float rf  = (time_before_ref) ? appCyclesToMsecf (time_after_ref - time_before_ref) : 0;
+			float gm  = (time_before_game) ? appCyclesToMsecf (time_after_game - time_before_game) : 0;
+			float sv  = appCyclesToMsecf (time_between - time_before) - gm;
+			float cl  = appCyclesToMsecf (time_after - time_between) - rf;
+			float all = appCyclesToMsecf (time_after - time_before);
 			if (time_before_game)			// have a valid game frame
 			{
 				old_gm = gm;
@@ -650,7 +650,7 @@ void Com_Frame (float msec)
 				for (int i = 0; i < ARRAY_COUNT(names); i++)
 				{
 					if (time_before_ref)
-						RE_DrawTextLeft (va("%11s: %3d %.3f", names[i], counts[i], appDeltaCyclesToMsecf (times[i])), RGB(1, 0.8, 0.3));
+						RE_DrawTextLeft (va("%11s: %3d %.3f", names[i], counts[i], appCyclesToMsecf (times[i])), RGB(1, 0.8, 0.3));
 					if (time_before_game)
 					{
 						counts[i] = prof_counts[i];

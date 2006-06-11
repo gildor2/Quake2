@@ -17,7 +17,7 @@
 		int64 _delta = appCycles64() - _time; \
 		if (Cvar_VariableInt("r_profile")) \
 			appPrintf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %.2f ms\n", _name, _arg,\
-			appDeltaCyclesToMsecf(_delta)); \
+			appCyclesToMsecf(_delta)); \
 	}
 #else
 #define START_PROFILE(name)
@@ -260,9 +260,8 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 	CLight	*flashLights;		// lights with dynamic lightstyle; rename !!
 	int		numFlares;
 	// sun
-	float	sunLight;			// intensity; 0 if no sun
-	CVec3	sunColor;
-	CVec3	sunVec;
+	CVec3	sunSurfColor;		// color of sun surface (default sun color)
+	CVec3	sunAvgColor;		// for sun ambient
 	bool	haveSunAmbient;
 	CVec3	sunAmbient;
 	CVec3	ambientLight;
@@ -276,12 +275,13 @@ extern bspModel_t	map;
 	Models
 -----------------------------------------------------------------------------*/
 
-typedef enum {	//?? eliminate
+enum modelType_t	//?? eliminate
+{
 	MODEL_UNKNOWN,
 	MODEL_INLINE,
 	MODEL_SPR,
 	MODEL_MD3
-} modelType_t;
+};
 
 
 // Common struct for all model types

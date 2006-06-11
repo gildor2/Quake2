@@ -29,6 +29,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include "qcommon.h"
+#include "cmodel.h"
+#include "MapBrush.h"
+
 
 #if TRACE_DEBUG
 
@@ -40,9 +43,6 @@ bool cm_showTrace;
 #else
 #define TRACE(m,c)
 #endif
-
-#include "cmodel.h"
-#include "MapBrush.h"
 
 
 struct cnode_t
@@ -57,6 +57,11 @@ struct cbrushside_t
 	csurface_t *surface;
 };
 
+//?? we can use CBrush instead of cbrush_t:
+//?? 1. on q1/hl maps: we should build them anyway
+//?? 2. on q2 maps: there is not too much space required for brush allocation (brush number is not too large)
+//?? 3. on q3 maps: should load brushes
+//?? 4. we cannot use dBsp2Brush_t instead of cbrush_t: needed "traceFrame" field
 struct cbrush_t
 {
 	unsigned contents;
@@ -81,7 +86,7 @@ struct surfBounds_t						// used for texture trace in Q1/HL maps
 
 char	map_name[MAX_QPATH];
 static CMemoryChain *dataChain;
-bspfile_t *map_bspfile;
+static bool map_loaded;					//?? used in CM_NumClusters() only
 bool	map_clientLoaded;
 
 int		c_traces, c_pointcontents;		// stats
@@ -90,8 +95,6 @@ int		c_traces, c_pointcontents;		// stats
 static int		numBrushSides;
 static cbrushside_t *map_brushSides;
 
-int				numTexinfo;				// global (for precache)
-csurface_t		*map_surfaces;			// global (for precache)
 static surfBounds_t *map_faceBounds;	// [numFaces]; for Q1/HL maps trace
 
 static int		numPlanes;
@@ -102,8 +105,6 @@ static cnode_t	*map_nodes;
 
 static int		numLeafs;
 static dBsp2Leaf_t *map_leafs;
-
-static int		emptyLeaf;				//?? used for BoxHull
 
 static int		numLeafBrushes;
 static unsigned short *map_leafBrushes;
@@ -269,9 +270,8 @@ static void LoadSurfaces2 (dBsp2Texinfo_t *data, int size)
 	ReadSurfMaterials ("sound/materials.lst");
 
 	dBsp2Texinfo_t *in = data;
-	numTexinfo = size;
 	csurface_t	*out;
-	out = map_surfaces = new (dataChain) csurface_t [size];
+	out = bspfile.surfaces = new (dataChain) csurface_t [size];
 
 	for (int i = 0; i < size; i++, in++, out++)
 	{
@@ -347,25 +347,11 @@ static void LoadLeafs2 (dBsp2Leaf_t *data, int size)
 
 	if (map_leafs[0].contents != CONTENTS_SOLID)
 		Com_DropError ("map leaf 0 is not CONTENTS_SOLID");
-	// find any empty leaf
-	emptyLeaf = -1;
-	for (int i = 1; i < numLeafs; i++)
-	{
-		if (!map_leafs[i].contents)
-		{
-			emptyLeaf = i;
-			break;
-		}
-	}
-	if (emptyLeaf == -1)
-		Com_DropError ("map does not have an empty leaf");
 }
 
 
 static void LoadPlanes (dPlane_t *data, int size)
 {
-	dPlane_t *in = data;
-
 	if (size < 1) Com_DropError ("Map with no planes");
 
 	cplane_t *out;
@@ -408,9 +394,9 @@ static void LoadBrushSides2 (dBsp2Brushside_t *data, int size)
 	{
 		out->plane = &map_planes[in->planenum];
 		int j = in->texinfo;
-		if (j >= numTexinfo)
+		if (j >= bspfile.numTexinfo)
 			Com_DropError ("Bad brushside texinfo");
-		out->surface = &map_surfaces[j];
+		out->surface = &bspfile.surfaces[j];
 	}
 }
 
@@ -476,20 +462,73 @@ static void LoadSurfaces1 (dBsp1Texinfo_t *data, int size)
 	// note: this will erase texinfo1 field!
 	dBsp1Texinfo_t *in = data;
 	dBsp2Texinfo_t *out;
-	out = map_bspfile->texinfo2 = new (dataChain) dBsp2Texinfo_t [size];
+	out = bspfile.texinfo2 = new (dataChain) dBsp2Texinfo_t [size];
+
+	const char *texNames[4096];
+	memset (texNames, 0, sizeof(texNames));
 
 	for (int i = 0; i < size; i++, in++, out++)
 	{
+		out->value = 0;
 		unsigned flags = 0;
 		// find miptex
 		int miptex = in->miptex;
-		int offset = map_bspfile->miptex1->dataofs[miptex];
+		int offset = bspfile.miptex1->dataofs[miptex];
 		if (offset != -1)
 		{
-			dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)map_bspfile->miptex1 + offset );
-			appStrncpyz (out->texture, tex->name, sizeof(out->texture));
+			dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)bspfile.miptex1 + offset );
 			// texture with data, but without name:
-			if (!tex->name[0]) appSprintf (ARRAY_ARG(out->texture), "unnamed#%d", miptex);
+			if (!tex->name[0])
+				appSprintf (ARRAY_ARG(out->texture), "unnamed#%d", miptex);
+			else if (texNames[miptex])
+				strcpy (out->texture, texNames[miptex]);	// texture already checked
+			else
+			{
+				appStrncpyz (out->texture, tex->name, sizeof(out->texture));
+				// check wads
+				for (TStringSplitter<64, ';'> Wad = *bspfile.Wads; Wad; ++Wad)
+				{
+					if (!Wad[0]) continue;
+					if (ImageExists (va("textures/wads/%s/%s", *Wad, tex->name)))
+					{
+						appSprintf (ARRAY_ARG(out->texture), "wads/%s/%s", *Wad, tex->name);
+						break;
+					}
+				}
+				texNames[miptex] = out->texture;
+			}
+			// compute surface flags
+			if ((tex->name[0] == '*' && bspfile.type == map_q1) ||
+				(tex->name[0] == '!' && bspfile.type == map_hl))
+				flags |= SURF_WARP;
+			else if (tex->name[0] == '{' && bspfile.type == map_hl)
+				flags |= SURF_ALPHA;
+			else if (!strncmp (tex->name, "sky", 3))
+				flags |= SURF_SKY;
+			else if (!strncmp (tex->name, "scroll", 6) && bspfile.type == map_hl)
+				flags |= SURF_FLOWING;	// should be disabled for all non-"func_conveyor" models
+			if (bspfile.type == map_hl)
+			{
+				// check lights.rad file
+				static const char *lightsRad = NULL;
+				EXEC_ONCE(
+					lightsRad = (char*) GFileSystem->LoadFile ("gfx/lights.rad");
+				);
+				CSimpleParser text;
+				text.InitFromBuf (lightsRad);
+				while (const char *line = text.GetLine ())
+				{
+					char field1[128];
+					int r, g, b, intens;
+					if (sscanf (line, "%s %d %d %d %d", &field1, &r, &g, &b, &intens) != 5) continue;
+					if (!stricmp (field1, tex->name))
+					{
+						flags |= SURF_LIGHT;
+						out->value = intens;
+						break;
+					}
+				}
+			}
 		}
 		else
 		{
@@ -497,23 +536,18 @@ static void LoadSurfaces1 (dBsp1Texinfo_t *data, int size)
 			out->texture[0] = 0;	// null name
 			flags |= SURF_NODRAW;	// not used, but ...
 		}
-		memcpy (out->vecs, in->vecs, sizeof(out->vecs));
-		// compute surface flags
-		if ((out->texture[0] == '*' && map_bspfile->type == map_q1) ||
-			(out->texture[0] == '!' && map_bspfile->type == map_hl))
-			flags |= SURF_WARP;
-		else if (out->texture[0] == '{' && map_bspfile->type == map_hl)
-			flags |= SURF_ALPHA;
-		else if (!strncmp (out->texture, "sky", 3))
-			flags |= SURF_SKY;
-		else if (!strncmp (out->texture, "scroll", 6) && map_bspfile->type == map_hl)
-			flags |= SURF_FLOWING;	// should be disabled for all non-"func_conveyor" models
 		out->flags = flags;
-		out->value = miptex;		// index in textures lump
+		memcpy (out->vecs, in->vecs, sizeof(out->vecs));
 		out->nexttexinfo = -1;		// no next texture: animation will be processed later
+		// HL indirect sun light
+		if (bspfile.type == map_hl && (flags & SURF_SKY))
+		{
+			out->value = 1000;
+			out->flags |= SURF_LIGHT;
+		}
 	}
 	// load Q2 textures
-	LoadSurfaces2 (map_bspfile->texinfo2, size);
+	LoadSurfaces2 (bspfile.texinfo2, size);
 }
 
 
@@ -524,9 +558,9 @@ static void LoadFaces1 (dFace_t *data, int size)
 	surfBounds_t *out;
 	out = map_faceBounds = new (dataChain) surfBounds_t [size];
 	// get map data
-	const dEdge_t *edges = map_bspfile->edges;
-	const CVec3 *verts   = map_bspfile->vertexes;
-	const int *surfedges = map_bspfile->surfedges;
+	const dEdge_t *edges = bspfile.edges;
+	const CVec3 *verts   = bspfile.vertexes;
+	const int *surfedges = bspfile.surfedges;
 
 	for (int i = 0; i < size; i++, data++, out++)
 	{
@@ -535,7 +569,7 @@ static void LoadFaces1 (dFace_t *data, int size)
 		mins[0] = mins[1] =  BIG_NUMBER;
 		maxs[0] = maxs[1] = -BIG_NUMBER;
 		// compute
-		const dBsp2Texinfo_t *stex = map_bspfile->texinfo2 + data->texinfo;
+		const dBsp2Texinfo_t *stex = bspfile.texinfo2 + data->texinfo;
 		const int *pedge = surfedges + data->firstedge;
 		for (int j = 0; j < data->numedges; j++, pedge++)
 		{
@@ -606,7 +640,6 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 	numLeafs = size + numSolidLeafs;
 
 	dBsp1Leaf_t *in;
-	emptyLeaf = -1;
 	int numClipLeafs = 0;
 	for (i = 0, in = data; i < size; i++, in++, out++)
 	{
@@ -642,13 +675,10 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 
 		if (out->contents == CONTENTS_SOLID)
 			out->cluster = -1;
-		else if (map_bspfile->visInfo)
+		else if (bspfile.visInfo)
 			out->cluster = i-1;			// == leaf number -1 (no visinfo for leaf[0]==SOLID); visinfo generated in models.cpp
 		// else - cluster = 0
 		//?? use in->ambient_level[]
-		// find empty leaf
-		if (!out->contents && emptyLeaf < 0)
-			emptyLeaf = i;
 		// count other non-empty leafs
 		if (out->contents && out->contents != CONTENTS_SOLID)
 			numClipLeafs++;
@@ -693,9 +723,6 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 
 	if (map_leafs[0].contents != CONTENTS_SOLID)
 		Com_DropError ("map leaf 0 is not CONTENTS_SOLID");
-
-	if (emptyLeaf == -1)
-		Com_DropError ("map does not have an empty leaf");
 }
 
 
@@ -758,7 +785,6 @@ static void BuildBrushes1 (int numLeafsOrig)
 
 	map_brushes = new (dataChain) cbrush_t [numBrushes+1];	// extra for box hull
 
-	int numBuiltBrushes = 0;
 	numBrushSides = 0;
 	CBrush *leafBrushes[MAX_MAP_LEAFS];
 	memset (leafBrushes, 0, sizeof(leafBrushes));
@@ -848,7 +874,7 @@ static void BuildBrushes1 (int numLeafsOrig)
 	// finish
 	time = appCycles64 () - time;
 	Com_DPrintf ("Built %d brushes in %g msec, used temporary memory %dKb\n",
-		numBrushes, appDeltaCyclesToMsecf (time), CBrush::mem->GetSize() >> 10);
+		numBrushes, appCyclesToMsecf (time), CBrush::mem->GetSize() >> 10);
 	delete CBrush::mem;
 
 	unguard;
@@ -951,7 +977,7 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 	numPlanes = numNodes = numLeafs = numcmodels = numentitychars = 0;
 	map_entitystring = "";
 	map_name[0] = 0;
-	map_bspfile = NULL;
+	map_loaded  = false;
 	if (dataChain) delete dataChain;
 	dataChain = NULL;
 
@@ -963,7 +989,8 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 		return &map_cmodels[0];			// cinematic servers won't have anything at all
 	}
 
-	bspfile_t *bsp = map_bspfile = LoadBspFile (name, clientload, &last_checksum);
+	//?? use "bspfile" var (but should call LoadBspFile() anyway)
+	bspfile_t *bsp = LoadBspFile (name, clientload, &last_checksum);
 	dataChain = new CMemoryChain;
 	*checksum = last_checksum;
 
@@ -980,6 +1007,7 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 	default:
 		Com_DropError ("unknown bsp->type for %s", name);
 	}
+	map_loaded = true;
 
 	memset (portalopen, 0, sizeof(portalopen));
 	FloodAreaConnections ();
@@ -1042,8 +1070,8 @@ cmodel_t *CM_InlineModel (int index)
 
 int CM_NumClusters ()
 {
-	if (!map_bspfile) return 0;
-	return map_bspfile->numClusters;
+	if (!map_loaded) return 0;
+	return bspfile.numClusters;
 }
 
 int CM_NumInlineModels ()
@@ -1089,6 +1117,8 @@ static int		box_headnode;
 // can just be stored out and get a proper clipping hull structure.
 static void InitBoxHull ()
 {
+	int i;
+
 	box_headnode = numNodes;
 
 	cbrush_t &boxBrush = map_brushes[numBrushes];
@@ -1103,7 +1133,18 @@ static void InitBoxHull ()
 
 	map_leafBrushes[numLeafBrushes] = numBrushes;		// -> boxBrush
 
-	for (int i = 0; i < 6; i++)
+	// find any leaf with contents == 0
+	int emptyLeaf = 0;
+	for (i = 1; i < numLeafs; i++)						// leaf #0 is always CONTENTS_SOLID
+	{
+		if (map_leafs[i].contents) continue;			// not empty
+		emptyLeaf = i;
+		break;
+	}
+	if (emptyLeaf == 0)
+		Com_DropError ("map does not have an empty leaf");
+
+	for (i = 0; i < 6; i++)
 	{
 		int side = i & 1;
 
@@ -1561,12 +1602,12 @@ static void TestLeaf (const dBsp2Leaf_t &leaf)
 
 static void FindSurface1 (const dBsp2Leaf_t &leaf, float p1f, float p2f)
 {
-	const unsigned short *leafFaces = map_bspfile->leaffaces + leaf.firstleafface;
+	const unsigned short *leafFaces = bspfile.leaffaces + leaf.firstleafface;
 	TRACE("----------------",RGB(1,1,0));
 	for (int i = 0; i < leaf.numleaffaces; i++, leafFaces++)
 	{
 		int faceNum = *leafFaces;
-		const dFace_t &face = map_bspfile->faces[faceNum];
+		const dFace_t &face = bspfile.faces[faceNum];
 		const cplane_t *plane = map_planes + face.planenum;
 
 		float d1, d2, dist;
@@ -1628,7 +1669,7 @@ static void FindSurface1 (const dBsp2Leaf_t &leaf, float p1f, float p2f)
 		// check surface bounds
 		CVec3 mid;
 		Lerp (tr.start, tr.end, frac, mid);
-		dBsp2Texinfo_t *tex = map_bspfile->texinfo2 + face.texinfo;
+		dBsp2Texinfo_t *tex = bspfile.texinfo2 + face.texinfo;
 		float s = dot (tex->vecs[0].vec, mid) + tex->vecs[0].offset;
 		float t = dot (tex->vecs[1].vec, mid) + tex->vecs[1].offset;
 		const surfBounds_t &bounds = map_faceBounds[faceNum];
@@ -1654,7 +1695,7 @@ static void SetTraceFace1 ()
 	for (int i = 0; i < tr.numClipFaces; i++)
 	{
 		int faceNum = clipFaces[i];
-		const dFace_t &face = map_bspfile->faces[faceNum];
+		const dFace_t &face = bspfile.faces[faceNum];
 		const cplane_t *plane = map_planes + face.planenum;
 		// check face plane
 		if (!face.side)
@@ -1668,8 +1709,8 @@ static void SetTraceFace1 ()
 			if (dot (plane->normal, tr.trace.plane.normal) > -0.99f) continue;
 		}
 		// surface found
-//		dBsp2Texinfo_t *tex = map_bspfile->texinfo2 + face.texinfo;
-		tr.trace.surface = map_surfaces + face.texinfo;
+//		dBsp2Texinfo_t *tex = bspfile.texinfo2 + face.texinfo;
+		tr.trace.surface = bspfile.surfaces + face.texinfo;
 	}
 }
 
@@ -1696,7 +1737,7 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &
 		if (nodeNum < 0)
 		{
 			const dBsp2Leaf_t &leaf = map_leafs[-1-nodeNum];
-			if (map_bspfile->type == map_q1 || map_bspfile->type == map_hl)
+			if (bspfile.type == map_q1 || bspfile.type == map_hl)
 				FindSurface1 (leaf, p1f, p2f);
 			TraceLeaf (leaf);
 			return;
@@ -1900,7 +1941,7 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CB
 		tr.trace.endpos = end;
 	else
 		Lerp (start, end, tr.trace.fraction, tr.trace.endpos);
-	if (map_bspfile->type == map_q1 || map_bspfile->type == map_hl)
+	if (bspfile.type == map_q1 || bspfile.type == map_hl)
 		SetTraceFace1 ();
 
 	trace = tr.trace;
@@ -2280,14 +2321,14 @@ const byte *CM_ClusterPVS (int cluster)
 		static byte	pvsrow[MAX_MAP_LEAFS/8];
 		return pvsrow;
 	}
-	if (!map_bspfile->visInfo)
+	if (!bspfile.visInfo)
 	{
 		// only 1 cluster per whole map
 		static const byte noVisPVS[] = { 255, 255, 255, 255 };	// one byte enough ...
 		return noVisPVS;
 	}
 
-	return map_bspfile->visInfo + cluster * map_bspfile->visRowSize;
+	return bspfile.visInfo + cluster * bspfile.visRowSize;
 	unguard;
 }
 

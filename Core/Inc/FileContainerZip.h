@@ -201,7 +201,7 @@ protected:
 		return "zip";
 	}
 	// function for file opening
-	CFile *OpenLocalFile (const CArcFile &Info)
+	CFile *OpenLocalFile (const FFileInfo &Info)
 	{
 		const CFileInfo &info = static_cast<const CFileInfo&>(Info);
 		FILE *f = fopen (name, "rb");
@@ -317,7 +317,7 @@ public:
 
 			char *name = strrchr (buf, '/');
 			// find/create directory
-			CArcDir *Dir;
+			FDirInfo *Dir;
 			if (name)
 			{
 				*name++ = 0;

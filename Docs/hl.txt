@@ -1,11 +1,11 @@
 Textures:
 
 +[0-9,A-Z]name - animated
--[0-9,A-Z]name - animated
+-[0-9,A-Z]name - randomly tiled ?
 
-~ - corona?
+~ - SURF_LIGHT
 ! - warp
-{ - transparent
+{ - transparent (SURF_ALPHA)
 
 !lava*  - CONTENTS_LAVA
 !slime* - CONTENTS_SLIME
@@ -16,8 +16,6 @@ sky, clip, origin, aaatrigger - TEX_SPECIAL
 ---------------------------
 
 ?? mix: "+0~light3a1"
-
-sky name: "cl_skyname"
 
 ---------------------------
 

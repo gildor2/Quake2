@@ -608,7 +608,7 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 		RE_RenderFrame (&cl.refdef);
 		RE_EndFrame ();
 		int64 timeDelta = appCycles64 () - start;
-		time = appDeltaCyclesToMsecf (timeDelta) / 1000;
+		time = appCyclesToMsecf (timeDelta) / 1000;
 		// prevent too long measuring
 		Sys_ProcessMessages ();			// poll keyboard
 		if (cls.key_dest != keyDest)	// console or menu was activated or deactivated

@@ -1,4 +1,6 @@
 #/usr/bin/perl
+# Build archive from set of files (from directory)
+# reader for this archive format is Core/Src/FileContainerZRes.h
 
 $srcpath  = "res";
 

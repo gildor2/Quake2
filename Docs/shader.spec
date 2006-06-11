@@ -30,7 +30,7 @@
 * 11) entityMergable              -- ignored (have internal mechanist for efficient sprite combining)
   12) fogParms ( <r> <g> <b> ) <dist_to_opaque>
   13) portal		          -- set SORT_PORTAL
-* 14) skyparms <farbox|-> <cloud height> <nearbox|->
+* 14) skyparms <farbox|-> <cloud height> <nearbox|->  -- nearbox unsupported (not supported in q3 too)
   15) light		          -- ignore
 * 16) cull
      - node, twosided, disable
@@ -140,7 +140,7 @@
        def: min = 0; max = 1
        expression: dst_alpha = dot(NormalVec(vieworg-vec), normal) * (max-min) + min  (if dot() < 0 dot = 0)
      * oneMinusDot
-     - lightingSpecular <x y z>   ??? with specified light position
+     - lightingSpecular <x y z>   ??? with specified light position (easy to implement!!)
      - skyAlpha
      - oneMinusSkyAlpha
 ? 12) tcMod

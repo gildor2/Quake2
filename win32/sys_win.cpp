@@ -331,7 +331,7 @@ int main (int argc, const char **argv) // force to link as console application
 			{
 				//?? should process maxfps here (Sleep() required amount of time); problem: ensure server framerate!
 				newtime = appCycles64 ();
-				timeDelta = appDeltaCyclesToMsecf (newtime - oldtime);
+				timeDelta = appCyclesToMsecf (newtime - oldtime);
 				if (timeDelta < 0)
 				{
 					// may be, resumed from sleep mode - fix delta

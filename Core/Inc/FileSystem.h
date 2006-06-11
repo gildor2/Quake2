@@ -120,27 +120,27 @@ class CORE_API CFileContainerArc : public CFileContainer
 {
 protected:
 	// file entry
-	// CArcFile will be defined in derived classes of CFileContainerArc
+	// FFileInfo will be defined in derived classes of CFileContainerArc
 	// and it should be derived from CStringItem
-	typedef CStringItem CArcFile;
+	typedef CStringItem FFileInfo;
 	// directory entry
-	class CArcDir : public CStringItem
+	class FDirInfo : public CStringItem
 	{
 	public:
-		TList<CArcDir>	Dirs;
-		TList<CArcFile>	Files;
+		TList<FDirInfo>	 Dirs;
+		TList<FFileInfo> Files;
 	};
 
 	CMemoryChain *mem;				// will hold whole directory data
-	CArcDir		Root;				// root archive directory
+	FDirInfo Root;					// root archive directory
 	// directory manipulations
-	CArcDir *FindDir (const char *path, bool create = false);
-	CArcFile *FindFile (const char *filename);
+	FDirInfo  *FindDir (const char *path, bool create = false);
+	FFileInfo *FindFile (const char *filename);
 	// Opening file by info from internal directory structure.
-	virtual CFile *OpenLocalFile (const CArcFile &Info) = 0;
+	virtual CFile *OpenLocalFile (const FFileInfo &Info) = 0;
 	// Derived classes should:
 	//	1. define own CFile
-	//	2. define own CArcFile
+	//	2. define own FFileInfo
 	//	3. overload OpenLocalFile()
 	//	4. declare "static Create(const char *filename, FILE *f)" function
 public:

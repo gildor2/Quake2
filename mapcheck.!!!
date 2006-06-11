@@ -10,7 +10,7 @@ GRAPHICS
 - "snakesmap": have "_sun_ambient"
 * "pc": have "_ambient", "_sun_light"==1
 - "tokyo": have many sun shadows; hane "_sun_ambient"
-- "dock": have 2 suns (and, seems, sun1 is specified with bad angles) -- VERY BUGGY MAP
+- "dock": have 2 suns
 - "paradise": 2 suns
 - "citygate2": light from sky, but sky texture is absent
 - "market": have sun ambient + should not cast light from sky surface
@@ -38,6 +38,7 @@ GRAPHICS
 * Q1: bcdm1  - map without visinfo
 * Q1: hookse - have animated textures, started from frame != 0 (shader "+1name" instead of "+0name")
 * Q1: efdm8  - have surface with miptex offset == -1 (surface not painted at all)
+* AHL: bxht - lots of "infodecal" and "env_glow" entities
 
 MISC
 ~~~~

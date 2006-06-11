@@ -355,7 +355,7 @@ struct dBsp2Texinfo_t
 		float	offset;
 	} vecs[2];
 	unsigned flags;					// miptex flags + overrides
-	int		value;					// light emission, etc
+	int		value;					// light emission
 	char	texture[32];			// texture name (textures/*.wal)
 	int		nexttexinfo;			// for animations, -1 = end of chain
 };
@@ -365,7 +365,7 @@ struct dBsp2Texinfo_t
 // counterclockwise use of the edge in a face
 struct dEdge_t
 {
-	unsigned short	v[2];			// vertex numbers
+	unsigned short v[2];			// vertex numbers
 };
 
 #define	MAXLIGHTMAPS	4
@@ -452,28 +452,23 @@ struct darea_t
 #define BSP1_VERSION		29
 #define BSPHL_VERSION		30
 
-/* Marks:
- * "*" - same as Quake2
- * "?" - almost as in Quake2 (check if bugs)
- * "!" - different
- */
 enum
 {
-	Q1LUMP_ENTITIES,		//* char[]
-	Q1LUMP_PLANES,			//* dPlane_t[]
+	Q1LUMP_ENTITIES,		// char[]
+	Q1LUMP_PLANES,			// dPlane_t[]
 	Q1LUMP_TEXTURES,
-	Q1LUMP_VERTEXES,		//* CVec3[]
-	Q1LUMP_VISIBILITY,		//??
-	Q1LUMP_NODES,			//?  dBsp2Node_t / hl_dnode_t (int/short children[2])
+	Q1LUMP_VERTEXES,		// CVec3[]
+	Q1LUMP_VISIBILITY,
+	Q1LUMP_NODES,			// dBsp1Node_t (q2->q1: int->short children[2])
 	Q1LUMP_TEXINFO,			// dBsp1Texinfo_t[]
-	Q1LUMP_FACES,			//?  dFace_t
-	Q1LUMP_LIGHTING,		//* byte[] (q1: monochrome, hl: rgb)
+	Q1LUMP_FACES,			// dFace_t
+	Q1LUMP_LIGHTING,		// byte[] (q1: monochrome, hl: rgb == q2)
 	Q1LUMP_CLIPNODES,
-	Q1LUMP_LEAFS,			//!!  dBsp2Leaf_t / hl_dleaf_t
-	Q1LUMP_MARKSURFACES,	//* short[] == Q2LUMP_LEAFFACES
-	Q1LUMP_EDGES,			//* dEdge_t[]
-	Q1LUMP_SURFEDGES,		//* int[]
-	Q1LUMP_MODELS,			//?  dBsp2Model_t / hl_dmodel_t (HL has unused "visleafs" and headnode[1..3])
+	Q1LUMP_LEAFS,			// dBsp1Leaf_t[]
+	Q1LUMP_MARKSURFACES,	// short[] (== Q2LUMP_LEAFFACES)
+	Q1LUMP_EDGES,			// dEdge_t[]
+	Q1LUMP_SURFEDGES,		// int[]
+	Q1LUMP_MODELS,			// dBsp1Model_t[] (almost as in q2)
 
 	Q1LUMP_COUNT			// should be last
 };
@@ -508,7 +503,7 @@ struct dBsp1Model_t
 #define	Q1_CONTENTS_SKY				-6
 // added in Half-Life
 #define	Q1_CONTENTS_ORIGIN			-7	// removed at csg time
-#define	Q1_CONTENTS_CLIP			-8	// changed to contents_solid
+#define	Q1_CONTENTS_CLIP			-8	// changed to CONTENTS_SOLID at csg time; presents in hull[idx>=1] only (absent in hull[0])
 #define	Q1_CONTENTS_CURRENT_0		-9
 #define	Q1_CONTENTS_CURRENT_90		-10
 #define	Q1_CONTENTS_CURRENT_180		-11
@@ -543,7 +538,7 @@ struct dBsp1Texinfo_t
 		float	offset;
 	} vecs[2];
 	int		miptex;
-	unsigned flags;					// 0 or TEX_SPECIAL==1 only (no significant meaning)
+	unsigned flags;					// 0 or TEX_SPECIAL==1 only (no significant meaning); unused
 };
 
 
@@ -566,8 +561,8 @@ struct dBsp1Leaf_t
 
 	short	mins[3], maxs[3];		// for frustum culling
 
-	unsigned short firstleafface;	// old name: "firstmarksurface"
-	unsigned short numleaffaces;	// old name: "nummarksurfaces"
+	unsigned short firstleafface;	// original name: "firstmarksurface"
+	unsigned short numleaffaces;	// original name: "nummarksurfaces"
 
 	byte	ambient_level[Q1_NUM_AMBIENTS];
 };

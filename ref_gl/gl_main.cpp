@@ -705,18 +705,21 @@ void RenderFrame (refdef_t *fd)
 	entity_t *ent;
 	for (i = 0, ent = fd->entities; i < fd->num_entities; i++, ent++)
 		AddEntity (ent);
-	// add all CMODEL_SHOW inline models
-	inlineModel_t *model = map.models;
-	entity_t tempEnt;
-	memset (&tempEnt, 0, sizeof(tempEnt));
-	tempEnt.pos.axis.FromAngles (tempEnt.angles);
-	for (i = 0; i < map.numModels; i++, model++)
+	if (!(fd->rdflags & RDF_NOWORLDMODEL))
 	{
-		if (!(model->flags & CMODEL_SHOW)) continue;
-		// add model via AddEntity()
-		tempEnt.model = model;
-		tempEnt.pos.origin = model->origin;
-		AddEntity (&tempEnt);
+		// add all CMODEL_SHOW inline models
+		inlineModel_t *model = map.models;
+		entity_t tempEnt;
+		memset (&tempEnt, 0, sizeof(tempEnt));
+		tempEnt.pos.axis.FromAngles (tempEnt.angles);
+		for (i = 0; i < map.numModels; i++, model++)
+		{
+			if (!(model->flags & CMODEL_SHOW)) continue;
+			// add model via AddEntity()
+			tempEnt.model = model;
+			tempEnt.pos.origin = model->origin;
+			AddEntity (&tempEnt);
+		}
 	}
 
 	// add dlights
@@ -752,7 +755,7 @@ void RenderFrame (refdef_t *fd)
 	{
 		//?? implement as loop, with table {OFS2FIELD(), name}
 #define S gl_stats
-#define T(name)		appDeltaCyclesToMsecf (gl_stats.name)
+#define T(name)		appCyclesToMsecf (gl_stats.name)
 		DrawTextRight (va(
 						"--- frontend %5.2f ---\n"
 						" dlight surf   %.3f\n"
@@ -911,7 +914,7 @@ void DumpLoadStats ()
 	for (i = 0; i < ARRAY_COUNT(info); i++)
 	{
 		if (!*info[i].data) continue;	// skip this line
-		appPrintf (Fmt, info[i].name, appDeltaCyclesToMsecf (*info[i].data));
+		appPrintf (Fmt, info[i].name, appCyclesToMsecf (*info[i].data));
 	}
 }
 #endif
@@ -947,7 +950,7 @@ void SetSky (const char *name, float rotate, const CVec3 &axis)
 	shader_t *shader = NULL;
 	TString<64> Name2;
 
-	if (map_bspfile && map_bspfile->type == map_hl)
+	if (bspfile.type == map_hl)
 	{
 		Name2.sprintf ("gfx/env/%s", name);
 		shader = FindShader (Name2, SHADER_SKY);

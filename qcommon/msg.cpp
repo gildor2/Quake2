@@ -48,20 +48,19 @@ void MSG_WriteByte (sizebuf_t *sb, int c)
 
 void MSG_WriteShort (sizebuf_t *sb, int c)
 {
-//	c = LittleShort (c);
-	c = LittleLong (c);		// HERE: faster than LittleShort()
+	LTL(c);
 	sb->Write (&c, 2);
 }
 
 void MSG_WriteLong (sizebuf_t *sb, int c)
 {
-	c = LittleLong (c);
+	LTL(c);
 	sb->Write (&c, 4);
 }
 
 void MSG_WriteFloat (sizebuf_t *sb, float f)
 {
-	f = LittleFloat (f);
+	LTL(f);
 	sb->Write (&f, 4);
 }
 
@@ -227,53 +226,65 @@ int MSG_ReadChar (sizebuf_t *msg_read)
 
 int MSG_ReadByte (sizebuf_t *msg_read)
 {
-	int	c;
-
 	if (msg_read->readcount+1 > msg_read->cursize)
-		c = -1;
+	{
+		msg_read->readcount++;
+		return -1;
+	}
 	else
-		c = (unsigned char)msg_read->data[msg_read->readcount];
-
-	msg_read->readcount++;
-	return c;
+	{
+		byte c = (byte)msg_read->data[msg_read->readcount];
+		msg_read->readcount++;
+		return c;
+	}
 }
 
 int MSG_ReadShort (sizebuf_t *msg_read)
 {
-	int	c;
-
 	if (msg_read->readcount+2 > msg_read->cursize)
-		c = -1;
+	{
+		msg_read->readcount += 2;
+		return -1;
+	}
 	else
-		c = LittleShort (*((short*)&msg_read->data[msg_read->readcount]));
-
-	msg_read->readcount += 2;
-	return c;
+	{
+		short c = *((short*)&msg_read->data[msg_read->readcount]);
+		msg_read->readcount += 2;
+		LTL(c);
+		return c;
+	}
 }
 
 int MSG_ReadLong (sizebuf_t *msg_read)
 {
-	int	c;
-
 	if (msg_read->readcount+4 > msg_read->cursize)
-		c = -1;
+	{
+		msg_read->readcount += 4;
+		return -1;
+	}
 	else
-		c = LittleLong (*((int*)&msg_read->data[msg_read->readcount]));
-
-	msg_read->readcount += 4;
-	return c;
+	{
+		int	c = *((int*)&msg_read->data[msg_read->readcount]);
+		msg_read->readcount += 4;
+		LTL(c);
+		return c;
+	}
 }
 
 float MSG_ReadFloat (sizebuf_t *msg_read)
 {
-	float	f;
-
 	if (msg_read->readcount+4 > msg_read->cursize)
-		f = -1;
+	{
+		msg_read->readcount += 4;
+		return -1;
+	}
 	else
-		f = LittleFloat (*(float*)&msg_read->data[msg_read->readcount]);
-	msg_read->readcount += 4;
-	return f;
+	{
+		float f = *(float*)&msg_read->data[msg_read->readcount];
+		msg_read->readcount += 4;
+		LTL(f);
+		return f;
+	}
 }
 
 char *MSG_ReadString (sizebuf_t *msg_read)

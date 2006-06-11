@@ -88,9 +88,7 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 	for (i = 0; i < 3; i++)
 		org[i] = cl_ent->client->ps.pmove.origin[i]*0.125f + cl_ent->client->ps.viewoffset[i];
 
-	int leafnum       = CM_PointLeafnum (org);
-	int clientarea    = CM_LeafArea (leafnum);
-	int clientcluster = CM_LeafCluster (leafnum);
+	int clientarea = CM_LeafArea (CM_PointLeafnum (org));
 
 	// calculate the visible areas
 	frame->areabytes = CM_WriteAreaBits (frame->areabits, clientarea);

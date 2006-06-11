@@ -3,13 +3,20 @@
 
 //?? split to q_shared2.cpp, Core/{Math1D, Math3D, MathColor}.cpp
 //?? color: (CColor3f : CVec3), (CColor4f : CColor3f + float alpha)
+//?? text parser -> qcommon.cpp (even function name starts with "COM" - COM_Parse); q_shared2.cpp -- eliminate at all!
 
+/*-----------------------------------------------------------------------------
+	Constant geometry objects
+-----------------------------------------------------------------------------*/
 
 const CVec3 nullVec3  = {0,0,0};
 const CBox	nullBox   = {{0,0,0}, {0,0,0}};
 const CAxis identAxis = {1,0,0,  0,1,0,  0,0,1};
 
-//============================================================================
+
+/*-----------------------------------------------------------------------------
+	Color functions
+-----------------------------------------------------------------------------*/
 
 float NormalizeColor (const CVec3 &in, CVec3 &out)
 {
@@ -68,6 +75,10 @@ float ClampColor255 (const CVec3 &in, CVec3 &out)
 	return m;
 }
 
+
+/*-----------------------------------------------------------------------------
+	Math ... organize ??
+-----------------------------------------------------------------------------*/
 
 float appRsqrt (float number)
 {
@@ -500,13 +511,9 @@ void UnTransformPoint (const CVec3 &origin, const CAxis &axis, const CVec3 &src,
 }
 
 
-/*
-============================================================================
-
-					BYTE ORDER FUNCTIONS
-
-============================================================================
-*/
+/*-----------------------------------------------------------------------------
+	Little-endian support for big-endian platforms
+-----------------------------------------------------------------------------*/
 
 #if !LITTLE_ENDIAN
 
@@ -546,6 +553,7 @@ float LittleFloat (float f)
 }
 
 #endif
+
 
 /*
 ============================================================================
@@ -676,6 +684,7 @@ char *COM_Parse (const char *&data_p, bool allowLineBreaks)
 	return com_token;
 }
 
+//?? its my own function - move, rename ...
 const char *COM_QuoteString (const char *str, bool alwaysQuote)
 {
 	char	*dst, c;

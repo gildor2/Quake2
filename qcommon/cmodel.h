@@ -5,13 +5,13 @@
 
 
 // cmodel_t.flags
-#define CMODEL_ALPHA		0x001	// all model surfaces will have SURF_ALPHA flag (kingpin)
-#define CMODEL_MOVABLE		0x002	// non-static inline model
-#define CMODEL_SHOW			0x004	// will not be sent to game, should draw automatically (func_illusionary in q1/hl)
-#define CMODEL_WALL			0x008	// will not be sent to game, static collision model
-#define CMODEL_NODRAW		0x010	// do not draw model even when have visible surfaces
-#define CMODEL_CONTENTS		0x020	// "cmodel_t.contents" contains real model contents
-#define CMODEL_SCROLL		0x040	// allow SURF_FLOWING on model surfaces (hl)
+#define CMODEL_ALPHA		0x0001		// all model surfaces will have SURF_ALPHA flag (kingpin)
+#define CMODEL_MOVABLE		0x0002		// non-static inline model
+#define CMODEL_SHOW			0x0004		// will not be sent to game, should draw automatically (func_illusionary in q1/hl)
+#define CMODEL_WALL			0x0008		// will not be sent to game, static collision model
+#define CMODEL_NODRAW		0x0010		// do not draw model even when have visible surfaces
+#define CMODEL_CONTENTS		0x0020		// "cmodel_t.contents" contains real model contents
+#define CMODEL_SCROLL		0x0040		// allow SURF_FLOWING on model surfaces (hl)
 
 #define CMODEL_LOCAL		(CMODEL_SHOW|CMODEL_WALL)	// flags of models, not sent to game (processed by engine)
 
@@ -21,9 +21,9 @@ struct cmodel_t
 	float	radius;
 	int		headnode;
 	int		firstface, numfaces;
-	unsigned flags;					// set of CMODEL_XXX flags
-	unsigned contents;				// contents of all model brushes; used only with CMODEL_CONTENTS
-	color_t	color;					// set by Half-Life entities
+	unsigned flags;						// set of CMODEL_XXX flags
+	unsigned contents;					// contents of all model brushes; used only with CMODEL_CONTENTS
+	color_t	color;						// set by Half-Life entities
 	CVec3	origin;
 };
 
@@ -36,7 +36,7 @@ struct lightFlare_t
 {
 	CVec3	origin;
 	float	size;
-	float	radius;					// -1 for sunflare
+	float	radius;						// -1 for sunflare
 	color_t	color;
 	byte	style;
 	int		model;
@@ -46,23 +46,28 @@ struct lightFlare_t
 
 // static map light
 
-typedef enum {sl_linear, sl_inverse, sl_inverse2, sl_nofade} slightType_t;
+enum slightType_t
+{
+	// corresponds to "falloff" of arghrad
+	sl_linear, sl_inverse, sl_inverse2, sl_nofade
+};
 
 struct slight_t
 {
 	slightType_t type;
-	bool	spot;					// bool
+	slight_t *next;
+	bool	spot;
+	bool	sun;
 	byte	style;
 	CVec3	origin;
 	CVec3	color;
 	float	intens;
 	// arghrad fields
 	float	focus;
-	float	fade;					// for linear lights only: scale the distance
+	float	fade;						// for linear lights only: scale the distance
 	// for spotlights
 	float	spotDot;
-	CVec3	spotDir;
-	slight_t *next;
+	CVec3	spotDir;					// used for sunlight too
 };
 
 // static map effects
@@ -151,8 +156,10 @@ struct bspfile_t
 		dBsp2Texinfo_t *texinfo2;
 		dBsp1Texinfo_t *texinfo1;
 	};
+	csurface_t	*surfaces;				// generated
 
 	dBsp1MiptexLump_t *miptex1;
+	TString<128> Wads;
 
 	//--------- extended data -----------------------------
 
@@ -161,8 +168,7 @@ struct bspfile_t
 	slight_t	*slights;
 
 	// static effects
-	int			numSplashes;			// target_splash entities
-	splash_t	*splashes;
+	splash_t	*splashes;				// target_splash entities
 
 	// fog
 	//?? remove
@@ -178,15 +184,14 @@ struct bspfile_t
 		};
 	};
 
-	float		sunLight;				// 0 if no sun
-	CVec3		sunColor;
-	CVec3		sunVec;
+	int			sunCount;				// 0 -- no sun
 	CVec3		sunAmbient;				// ambient light from sky surfaces
 	CVec3		sunSurface;
 	CVec3		ambientLight;			// global ambient light
 };
 
-extern bspfile_t *map_bspfile;
+
+extern bspfile_t bspfile;
 
 
 //--bspfile_t *LoadBspFile (char *filename, bool clientload, unsigned *checksum);
@@ -194,6 +199,8 @@ extern bspfile_t *map_bspfile;
 #if !NO_DEBUG
 CBrush *CM_BuildBrush (int brushNum, CMemoryChain *mem);
 #endif
+
+const char *ProcessEntstring (const char *entString);
 
 
 #endif // CMODEL_H

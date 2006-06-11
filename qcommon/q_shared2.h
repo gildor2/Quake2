@@ -10,7 +10,8 @@
 
 
 // game print flags; for svc_print command; client system uses PRINT_CHAT only; server - PRINT_HIGH
-enum {
+enum
+{
 	PRINT_LOW,						// pickup messages
 	PRINT_MEDIUM,					// death messages
 	PRINT_HIGH,						// critical messages
@@ -430,17 +431,17 @@ union color_t
 float NormalizeColor (const CVec3 &in, CVec3 &out);
 float NormalizeColor255 (const CVec3 &in, CVec3 &out);
 
-// rename to CLAMP_COLOR255 ??
+//?? NOTE: small values will not be normalized (so - rename to CLAMP_COLOR() ?)
 #define NORMALIZE_COLOR255(r,g,b) \
 	if ((r|g|b) > 255)		\
 	{						\
 		int		m;			\
 		m = max(r,g);		\
 		m = max(m,b);		\
-		m = 255 * 256 / m;	\
-		r = r * m >> 8;		\
-		g = g * m >> 8;		\
-		b = b * m >> 8;		\
+		m = (255 << 16) / m;\
+		r = r * m >> 16;	\
+		g = g * m >> 16;	\
+		b = b * m >> 16;	\
 	}
 
 float ClampColor255 (const CVec3 &in, CVec3 &out);
@@ -450,9 +451,9 @@ float ClampColor255 (const CVec3 &in, CVec3 &out);
 	Text parser
 -----------------------------------------------------------------------------*/
 
+// data is an in/out parm, returns a parsed out token
 char *COM_Parse (const char * &data_p, bool allowLineBreaks = true);
 const char *COM_QuoteString (const char *str, bool alwaysQuote);
-// data is an in/out parm, returns a parsed out token
 
 /*-----------------------------------------------------------------------------
 	Byte-order functions
@@ -513,9 +514,10 @@ struct csurface_t
 	int		value;
 	// field from mapsurface_t (so, csurface_t now contains old
 	//  csurface_t and mapsurface_t)
-	char	fullName[32];	// shortName[] is too short ...
+	char	fullName[32];			// shortName[] is too short ...
 	// fields added since 4.00
 	int		material;
+	color_t	color;					// color of texture (HL lighting surface, SURF_LIGHT)
 };
 
 // a trace is returned when a box is swept through the world
@@ -669,7 +671,7 @@ enum {
 };
 
 
-typedef enum
+enum material_t
 {
 	MATERIAL_SILENT,		// no footstep sounds (and no bullethit sounds)
 	MATERIAL_CONCRETE,		// standard sounds
@@ -691,7 +693,7 @@ typedef enum
 	MATERIAL_R3,
 
 	MATERIAL_COUNT			// must be last
-} material_t;
+};
 
 
 /*

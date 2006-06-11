@@ -468,15 +468,11 @@ static void RequestNextDownload ()
 	// confirm existance of textures, download any that don't exist
 	if (precache_check == DCS_TEXTURE + 1)
 	{
-		// from qcommon/cmodel.cpp
-		extern int			numTexinfo;
-		extern csurface_t	*map_surfaces;
-
-		if (map_bspfile->type != map_q1 && map_bspfile->type != map_hl)	// no downloading HL (wad file) no Q1 (embedded) textures
+		if (bspfile.type != map_q1 && bspfile.type != map_hl)	// no downloading HL (wad file) no Q1 (embedded) textures
 		{
 			if (allow_download->integer && allow_download_maps->integer)
-				while (precache_tex < numTexinfo)
-					if (!CheckOrDownloadFile("textures/%s.wal", map_surfaces[precache_tex++].fullName))	//??? WAL -- more complex, may be shader ...
+				while (precache_tex < bspfile.numTexinfo)
+					if (!CheckOrDownloadFile("textures/%s.wal", bspfile.surfaces[precache_tex++].fullName))	//??? WAL -- more complex, may be shader ...
 						return; // started a download
 		}
 		precache_check = DCS_SKIP_ALL;

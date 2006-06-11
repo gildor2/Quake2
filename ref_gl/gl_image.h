@@ -31,7 +31,7 @@ public:
 	byte	alphaType;					// 0 - none, 1 - 1-bit alpha, 2 - 8-bit alpha
 	GLenum	target;						// GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE_NV
 	int		internalWidth, internalHeight;	// statistics
-	int		internalFormat;				// statistics (for imagelist)
+	GLenum	internalFormat;				// statistics (for imagelist)
 	unsigned texnum;					// gl texture binding
 	unsigned flags;
 	byte	*pic;						// when non NULL, image was not uploaded

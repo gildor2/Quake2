@@ -335,6 +335,7 @@ bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 		MaskCopy = mask;
 	int namelen = strlen (name);
 
+	// can use TStringSplitter here
 	char *next;
 	for (mask = MaskCopy; mask; mask = next)
 	{

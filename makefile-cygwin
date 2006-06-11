@@ -77,7 +77,9 @@ STATIC = \
 	Release/obj-cygwin/q2stat/crc.o \
 	Release/obj-cygwin/q2stat/cvar.o \
 	Release/obj-cygwin/q2stat/entdelta.o \
+	Release/obj-cygwin/q2stat/EntityParser.o \
 	Release/obj-cygwin/q2stat/images.o \
+	Release/obj-cygwin/q2stat/MapBrush.o \
 	Release/obj-cygwin/q2stat/md4.o \
 	Release/obj-cygwin/q2stat/model.o \
 	Release/obj-cygwin/q2stat/msg.o \
@@ -85,7 +87,6 @@ STATIC = \
 	Release/obj-cygwin/q2stat/pmove.o \
 	Release/obj-cygwin/q2stat/q_shared2.o \
 	Release/obj-cygwin/q2stat/QuakeFileSystem.o \
-	Release/obj-cygwin/q2stat/MapBrush.o \
 	Release/obj-cygwin/q2stat/cd_win.o \
 	Release/obj-cygwin/q2stat/in_win.o \
 	Release/obj-cygwin/q2stat/net_wins.o \
@@ -160,7 +161,9 @@ DEDICATED = \
 	Release/obj-cygwin/dedstat/crc.o \
 	Release/obj-cygwin/dedstat/cvar.o \
 	Release/obj-cygwin/dedstat/entdelta.o \
+	Release/obj-cygwin/dedstat/EntityParser.o \
 	Release/obj-cygwin/dedstat/images.o \
+	Release/obj-cygwin/dedstat/MapBrush.o \
 	Release/obj-cygwin/dedstat/md4.o \
 	Release/obj-cygwin/dedstat/model.o \
 	Release/obj-cygwin/dedstat/msg.o \
@@ -168,7 +171,6 @@ DEDICATED = \
 	Release/obj-cygwin/dedstat/pmove.o \
 	Release/obj-cygwin/dedstat/q_shared2.o \
 	Release/obj-cygwin/dedstat/QuakeFileSystem.o \
-	Release/obj-cygwin/dedstat/MapBrush.o \
 	Release/obj-cygwin/dedstat/net_wins.o \
 	Release/obj-cygwin/dedstat/sys_win.o
 
@@ -1822,6 +1824,12 @@ DEPENDS_43 = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
+
+Release/obj-cygwin/q2stat/EntityParser.o : qcommon/EntityParser.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/EntityParser.o qcommon/EntityParser.cpp
+
+Release/obj-cygwin/dedstat/EntityParser.o : qcommon/EntityParser.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/EntityParser.o qcommon/EntityParser.cpp
 
 Release/obj-cygwin/q2stat/model.o : qcommon/model.cpp $(DEPENDS_43)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/model.o qcommon/model.cpp

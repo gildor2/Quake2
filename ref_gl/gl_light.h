@@ -34,10 +34,10 @@ public:
 	// fields for culling
 	int		cluster;
 	float	maxDist2;
-	virtual void Init () = NULL;
-	virtual void Add (const CVec3 &org, const CAxis &axis) const = NULL;
+	virtual void Init () = 0;
+	virtual void Add (const CVec3 &org, const CAxis &axis) const = 0;
 #if LIGHT_DEBUG
-	virtual void Show () const = NULL;
+	virtual void Show () const = 0;
 #endif
 };
 
@@ -129,16 +129,31 @@ public:
 };
 
 
+// sun light
+class CSunLight : public CLight
+{
+public:
+	CVec3	origin;				// for HL sunlights
+	CVec3	dir;
+	virtual void Init ();
+	virtual void Add (const CVec3 &org, const CAxis &axis) const;
+#if LIGHT_DEBUG
+	virtual void Show () const
+	{}
+#endif
+};
+
+
 /*-----------------------------------------------------------------------------
 	World lighting info cache (lightgrid)
 -----------------------------------------------------------------------------*/
 
 #define LIGHTGRID_STEP	32
 
-typedef struct
+struct lightCell_t
 {
 	byte	c[6][3];
-} lightCell_t;
+};
 
 
 /*-----------------------------------------------------------------------------

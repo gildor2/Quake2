@@ -1,5 +1,11 @@
 #include "qcommon.h"
 
+//?? extend ImageExists() to check *.qs files too?
+//?? may be, manage shader scripts (texts) outside the renderer, and add support
+//?? for *.shader and map inline shaders too?
+//?? (can add this to current cpp file, this will require rename to something other than
+//?? images.cpp)
+
 // allow jpeglib to work from C++ source (no "#ifdef __cplusplus ..." in jpeglib.h)
 extern "C" {
 #include "../lib/jpeglib/jpeglib.h"
@@ -141,16 +147,16 @@ byte* LoadTGA (const char *name, int &width, int &height)
 	width  = LittleShort(hdr->width);
 	height = LittleShort(hdr->height);
 
-	bool isPaletted = (hdr->image_type == 1 || hdr->image_type == 9);
-	bool isRGB      = (hdr->image_type == 2 || hdr->image_type == 10);
-	bool isBW       = (hdr->image_type == 3 || hdr->image_type == 11);
-	bool isRle      = (hdr->image_type == 9 || hdr->image_type == 10 || hdr->image_type == 11);
+	bool isRle      = (hdr->image_type & 8) != 0;
+	bool isPaletted = (hdr->image_type & ~8) == 1;
+	bool isRGB      = (hdr->image_type & ~8) == 2;
+	bool isBW       = (hdr->image_type & ~8) == 3;
 	byte colorBits  = (isPaletted) ? hdr->colormap_size : hdr->pixel_size;
 	byte colorBytes = colorBits >> 3;
 
-	if (!(isPaletted || isRGB || isBW || isRle))
+	if (!(isPaletted || isRGB || isBW))
 		errMsg = va("unsupported type %d", hdr->image_type);
-	else if (colorBits != 24 && colorBits != 32)
+	else if (colorBits != 24 && colorBits != 32 && !isBW)
 		errMsg = va("unsupported color depth %d", colorBits);
 	else if ((isBW || isPaletted) && hdr->pixel_size != 8)
 		errMsg = va("unsupported color depth %d for format %d", hdr->pixel_size, hdr->image_type);
@@ -160,8 +166,8 @@ byte* LoadTGA (const char *name, int &width, int &height)
 	{
 		if (hdr->colormap_type != 1)
 			errMsg = va("unsupported colormap type %d", hdr->colormap_type);
-		else if (hdr->colormap_index != 0 || hdr->colormap_length != 256)
-			errMsg = "partial colormaps unsupported";
+		else if (hdr->colormap_index != 0)
+			errMsg = "colormap_index != 0";
 	}
 
 	if (errMsg)
@@ -227,10 +233,10 @@ byte* LoadTGA (const char *name, int &width, int &height)
 		else if (isPaletted)
 		{
 			byte *s = pal + b * colorBytes;
-			b = *s++;
-			g = *s++;
-			r = *s++;
-			if (colorBytes == 4) a = *s++; else a = 255;
+			b = s[0];
+			g = s[1];
+			r = s[2];
+			if (colorBytes == 4) a = s[3]; else a = 255;
 		}
 		else // if (isBW)  (monochrome)
 		{
@@ -483,12 +489,12 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 	byte *flag = NULL;
 	bool rle = false;
 
-	bool done = true;
+	bool useCompression = true;
 	for (i = 0; i < size; i++)
 	{
 		if (dst >= threshold)								// when compressed is too large, same uncompressed
 		{
-			done = false;
+			useCompression = false;
 			break;
 		}
 
@@ -543,7 +549,7 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 	header.width      = LittleShort (width);
 	header.height     = LittleShort (height);
 #if 0
-	// write black/white image
+	// debug: write black/white image
 	header.pixel_size = 8;
 	header.image_type = 3;
 	fwrite (&header, 1, sizeof(header), f);
@@ -554,7 +560,7 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 	}
 #else
 	header.pixel_size = 24;
-	if (done)
+	if (useCompression)
 	{
 		Com_DPrintf ("WriteTGA: packed %d -> %d\n", size * 3, dst - packed);
 		header.image_type = 10;		// RLE

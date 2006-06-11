@@ -145,7 +145,9 @@ COMMON = {
 	$D/crc.cpp
 	$D/cvar.cpp
 	$D/entdelta.cpp
+	$D/EntityParser.cpp
 	$D/images.cpp
+	$D/MapBrush.cpp
 	$D/md4.cpp
 	$D/model.cpp
 	$D/msg.cpp
@@ -153,7 +155,6 @@ COMMON = {
 	$D/pmove.cpp
 	$D/q_shared2.cpp
 	$D/QuakeFileSystem.cpp
-	$D/MapBrush.cpp
 }
 
 D = ref_gl

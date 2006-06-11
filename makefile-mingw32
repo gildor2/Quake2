@@ -77,7 +77,9 @@ STATIC = \
 	Release/obj-win32/q2stat/crc.o \
 	Release/obj-win32/q2stat/cvar.o \
 	Release/obj-win32/q2stat/entdelta.o \
+	Release/obj-win32/q2stat/EntityParser.o \
 	Release/obj-win32/q2stat/images.o \
+	Release/obj-win32/q2stat/MapBrush.o \
 	Release/obj-win32/q2stat/md4.o \
 	Release/obj-win32/q2stat/model.o \
 	Release/obj-win32/q2stat/msg.o \
@@ -85,7 +87,6 @@ STATIC = \
 	Release/obj-win32/q2stat/pmove.o \
 	Release/obj-win32/q2stat/q_shared2.o \
 	Release/obj-win32/q2stat/QuakeFileSystem.o \
-	Release/obj-win32/q2stat/MapBrush.o \
 	Release/obj-win32/q2stat/cd_win.o \
 	Release/obj-win32/q2stat/in_win.o \
 	Release/obj-win32/q2stat/net_wins.o \
@@ -161,7 +162,9 @@ DEDICATED = \
 	Release/obj-win32/dedstat/crc.o \
 	Release/obj-win32/dedstat/cvar.o \
 	Release/obj-win32/dedstat/entdelta.o \
+	Release/obj-win32/dedstat/EntityParser.o \
 	Release/obj-win32/dedstat/images.o \
+	Release/obj-win32/dedstat/MapBrush.o \
 	Release/obj-win32/dedstat/md4.o \
 	Release/obj-win32/dedstat/model.o \
 	Release/obj-win32/dedstat/msg.o \
@@ -169,7 +172,6 @@ DEDICATED = \
 	Release/obj-win32/dedstat/pmove.o \
 	Release/obj-win32/dedstat/q_shared2.o \
 	Release/obj-win32/dedstat/QuakeFileSystem.o \
-	Release/obj-win32/dedstat/MapBrush.o \
 	Release/obj-win32/dedstat/net_wins.o \
 	Release/obj-win32/dedstat/sys_win.o
 
@@ -1874,6 +1876,12 @@ DEPENDS_45 = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
+
+Release/obj-win32/q2stat/EntityParser.o : qcommon/EntityParser.cpp $(DEPENDS_45)
+	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/EntityParser.o qcommon/EntityParser.cpp
+
+Release/obj-win32/dedstat/EntityParser.o : qcommon/EntityParser.cpp $(DEPENDS_45)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/EntityParser.o qcommon/EntityParser.cpp
 
 Release/obj-win32/q2stat/model.o : qcommon/model.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/model.o qcommon/model.cpp

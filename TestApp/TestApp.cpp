@@ -208,7 +208,7 @@ void cSleep (bool usage, int argc, char **argv)
 		int64 t1 = appCycles64 ();
 		appSleep (time);
 		int64 t2 = appCycles64 ();
-		float t3 = appDeltaCyclesToMsecf (t2 - t1);
+		float t3 = appCyclesToMsecf (t2 - t1);
 		appPrintf ("%d: %.3f (%+.3f)\n", i, t3, t3 - time);
 	}
 }

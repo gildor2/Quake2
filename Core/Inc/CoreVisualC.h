@@ -145,13 +145,13 @@ inline int64 appCycles64 ()
 
 extern CORE_API double GMSecondsPerCycle;
 
-inline float appDeltaCyclesToMsecf (unsigned timeDelta)
+inline float appCyclesToMsecf (unsigned timeDelta)
 {
 	double v = timeDelta;
 	return v * GMSecondsPerCycle;
 }
 
-inline float appDeltaCyclesToMsecf (int64 &timeDelta)
+inline float appCyclesToMsecf (int64 &timeDelta)
 {
 	double v = timeDelta;
 	return v * GMSecondsPerCycle;
