@@ -39,6 +39,8 @@ STATIC = \
 	Release/obj-win32/CoreStatic/FileSystem.obj \
 	Release/obj-win32/CoreStatic/FileSystemWin32.obj \
 	Release/obj-win32/CoreStatic/FileContainerArc.obj \
+	Release/obj-win32/CoreStatic/Math3D.obj \
+	Release/obj-win32/CoreStatic/MathMisc.obj \
 	Release/obj-win32/q2stat/cl_cin.obj \
 	Release/obj-win32/q2stat/cl_download.obj \
 	Release/obj-win32/q2stat/cl_ents.obj \
@@ -85,7 +87,6 @@ STATIC = \
 	Release/obj-win32/q2stat/msg.obj \
 	Release/obj-win32/q2stat/net_chan.obj \
 	Release/obj-win32/q2stat/pmove.obj \
-	Release/obj-win32/q2stat/q_shared2.obj \
 	Release/obj-win32/q2stat/QuakeFileSystem.obj \
 	Release/obj-win32/q2stat/cd_win.obj \
 	Release/obj-win32/q2stat/in_win.obj \
@@ -120,7 +121,7 @@ STATIC_DIRS = \
 
 Release/Quake2.exe : $(STATIC_DIRS) $(STATIC)
 	echo Creating executable "Release/Quake2.exe" ...
-	$(LINK) -out:"Release/Quake2.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs.lib -map:"Release/Quake2.map" $(STATIC) -subsystem:windows
+	$(LINK) -out:"Release/Quake2.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"Release/Quake2.map" $(STATIC) -subsystem:windows
 
 #------------------------------------------------------------------------------
 #	"Release/q2ded.exe" target
@@ -143,6 +144,8 @@ DEDICATED = \
 	Release/obj-win32/CoreStatic/FileSystem.obj \
 	Release/obj-win32/CoreStatic/FileSystemWin32.obj \
 	Release/obj-win32/CoreStatic/FileContainerArc.obj \
+	Release/obj-win32/CoreStatic/Math3D.obj \
+	Release/obj-win32/CoreStatic/MathMisc.obj \
 	Release/obj-win32/dedstat/sv_dedicated.obj \
 	Release/obj-win32/dedstat/sv_anim.obj \
 	Release/obj-win32/dedstat/sv_ccmds.obj \
@@ -170,7 +173,6 @@ DEDICATED = \
 	Release/obj-win32/dedstat/msg.obj \
 	Release/obj-win32/dedstat/net_chan.obj \
 	Release/obj-win32/dedstat/pmove.obj \
-	Release/obj-win32/dedstat/q_shared2.obj \
 	Release/obj-win32/dedstat/QuakeFileSystem.obj \
 	Release/obj-win32/dedstat/net_wins.obj \
 	Release/obj-win32/dedstat/sys_win.obj
@@ -181,7 +183,7 @@ DEDICATED_DIRS = \
 
 Release/q2ded.exe : $(DEDICATED_DIRS) $(DEDICATED)
 	echo Creating executable "Release/q2ded.exe" ...
-	$(LINK) -out:"Release/q2ded.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs.lib -map:"Release/q2ded.map" $(DEDICATED) -subsystem:console
+	$(LINK) -out:"Release/q2ded.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"Release/q2ded.map" $(DEDICATED) -subsystem:console
 
 #------------------------------------------------------------------------------
 #	"TestApp/TestApp.exe" target
@@ -204,6 +206,8 @@ TEST = \
 	Release/obj-win32/CoreStatic/FileSystem.obj \
 	Release/obj-win32/CoreStatic/FileSystemWin32.obj \
 	Release/obj-win32/CoreStatic/FileContainerArc.obj \
+	Release/obj-win32/CoreStatic/Math3D.obj \
+	Release/obj-win32/CoreStatic/MathMisc.obj \
 	Release/obj-win32/TestApp/TestApp.obj \
 	Release/obj-win32/TestApp/Commands.obj
 
@@ -213,7 +217,7 @@ TEST_DIRS = \
 
 TestApp/TestApp.exe : $(TEST_DIRS) $(TEST)
 	echo Creating executable "TestApp/TestApp.exe" ...
-	$(LINK) -out:"TestApp/TestApp.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs.lib -map:"TestApp/TestApp.map" $(TEST) -subsystem:console
+	$(LINK) -out:"TestApp/TestApp.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"TestApp/TestApp.map" $(TEST) -subsystem:console
 
 #------------------------------------------------------------------------------
 #	compiling source files
@@ -248,6 +252,8 @@ DEPENDS = \
 	Core/Inc/FileContainerZip.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/ScriptParser.h \
@@ -256,7 +262,6 @@ DEPENDS = \
 	client/engine.h \
 	client/engine_intf.h \
 	lib/zlib/zconf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
@@ -282,6 +287,8 @@ DEPENDS = \
 	Core/Inc/FileContainerZip.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputConsole.h \
 	Core/Inc/OutputDeviceFile.h \
@@ -305,6 +312,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/OutputDeviceMemTail.h \
@@ -328,6 +337,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/ScriptParser.h \
@@ -350,6 +361,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/ScriptParser.h \
@@ -361,7 +374,6 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	ref_gl/GLBind.h \
 	ref_gl/GLBindImpl.h \
@@ -384,6 +396,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/ScriptParser.h \
@@ -405,7 +419,6 @@ DEPENDS = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/cl_main.obj : client/cl_main.cpp $(DEPENDS)
@@ -426,6 +439,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/ScriptParser.h \
@@ -436,7 +451,6 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/common.obj : qcommon/common.cpp $(DEPENDS)
@@ -457,6 +471,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceMem.h \
 	Core/Inc/ScriptParser.h \
@@ -478,7 +494,6 @@ DEPENDS = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	win32/WinPrivate.h
 
@@ -500,6 +515,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceMem.h \
 	Core/Inc/ScriptParser.h \
@@ -509,7 +526,6 @@ DEPENDS = \
 	client/engine_intf.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	server/game.h \
@@ -533,6 +549,33 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h
+
+Release/obj-win32/q2stat/crc.obj : qcommon/crc.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/crc.obj" qcommon/crc.cpp
+
+Release/obj-win32/dedstat/crc.obj : qcommon/crc.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/crc.obj" qcommon/crc.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -559,6 +602,12 @@ Release/obj-win32/CoreStatic/FileContainerArc.obj : Core/Src/FileContainerArc.cp
 
 Release/obj-win32/CoreStatic/FileSystemWin32.obj : Core/Src/FileSystemWin32.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/FileSystemWin32.obj" Core/Src/FileSystemWin32.cpp
+
+Release/obj-win32/CoreStatic/Math3D.obj : Core/Src/Math3D.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/Math3D.obj" Core/Src/Math3D.cpp
+
+Release/obj-win32/CoreStatic/MathMisc.obj : Core/Src/MathMisc.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/MathMisc.obj" Core/Src/MathMisc.cpp
 
 Release/obj-win32/CoreStatic/Memory.obj : Core/Src/Memory.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/Memory.obj" Core/Src/Memory.cpp
@@ -587,6 +636,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -609,6 +660,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -632,6 +685,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -654,6 +709,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -675,7 +732,6 @@ DEPENDS = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	win32/WinPrivate.h
 
@@ -694,6 +750,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -706,7 +764,6 @@ DEPENDS = \
 	client/rexp_exp.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -736,6 +793,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -749,7 +808,6 @@ DEPENDS = \
 	qcommon/MapBrush.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -781,6 +839,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -793,7 +853,6 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -824,6 +883,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -836,7 +897,6 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -865,6 +925,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -876,7 +938,6 @@ DEPENDS = \
 	client/renderer.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -905,6 +966,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -916,7 +979,6 @@ DEPENDS = \
 	client/renderer.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -946,6 +1008,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -957,7 +1021,6 @@ DEPENDS = \
 	client/renderer.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -988,6 +1051,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -999,7 +1064,6 @@ DEPENDS = \
 	client/renderer.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -1029,6 +1093,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1040,7 +1106,6 @@ DEPENDS = \
 	client/renderer.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -1069,6 +1134,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1080,7 +1147,6 @@ DEPENDS = \
 	client/renderer.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -1108,6 +1174,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1119,7 +1187,6 @@ DEPENDS = \
 	client/renderer.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -1146,6 +1213,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1156,7 +1225,6 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
@@ -1182,6 +1250,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1192,7 +1262,6 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
@@ -1217,6 +1286,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1227,7 +1298,6 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
@@ -1251,6 +1321,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1261,7 +1333,6 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
@@ -1283,6 +1354,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1293,7 +1366,6 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
@@ -1315,6 +1387,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1336,7 +1410,6 @@ DEPENDS = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	win32/WinPrivate.h \
 	win32/resource.h
@@ -1356,6 +1429,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1377,7 +1452,6 @@ DEPENDS = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/cl_fx.obj : client/cl_fx.cpp $(DEPENDS)
@@ -1395,6 +1469,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1416,7 +1492,6 @@ DEPENDS = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/keys.obj : client/keys.cpp $(DEPENDS)
@@ -1440,6 +1515,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1461,7 +1538,6 @@ DEPENDS = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/cl_tent.obj : client/cl_tent.cpp $(DEPENDS)
@@ -1488,6 +1564,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1509,7 +1587,6 @@ DEPENDS = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	win32/WinPrivate.h
 
@@ -1528,6 +1605,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1549,7 +1628,6 @@ DEPENDS = \
 	client/vid.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
 
@@ -1577,6 +1655,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1597,7 +1677,6 @@ DEPENDS = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/cl_cin.obj : client/cl_cin.cpp $(DEPENDS)
@@ -1627,6 +1706,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1647,7 +1728,6 @@ DEPENDS = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	win32/WinPrivate.h
 
@@ -1666,6 +1746,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1677,7 +1759,7 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/MapBrush.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
+	qcommon/protocol.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
 
@@ -1699,6 +1781,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1709,7 +1793,6 @@ DEPENDS = \
 	client/renderer.h \
 	client/rexp_intf.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	server/game.h \
 	server/server.h
@@ -1732,6 +1815,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1741,7 +1826,6 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/sv_text.obj : server/sv_text.cpp $(DEPENDS)
@@ -1762,6 +1846,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1773,7 +1859,6 @@ DEPENDS = \
 	lib/jpeglib/jmorecfg.h \
 	lib/jpeglib/jpegint.h \
 	lib/jpeglib/jpeglib.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/images.obj : qcommon/images.cpp $(DEPENDS)
@@ -1794,6 +1879,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1801,7 +1888,6 @@ DEPENDS = \
 	client/engine.h \
 	client/engine_intf.h \
 	qcommon/MapBrush.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/MapBrush.obj : qcommon/MapBrush.cpp $(DEPENDS)
@@ -1822,6 +1908,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1830,7 +1918,6 @@ DEPENDS = \
 	client/engine_intf.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	server/game.h \
@@ -1866,6 +1953,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1873,7 +1962,6 @@ DEPENDS = \
 	client/engine.h \
 	client/engine_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h
 
@@ -1901,6 +1989,8 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1908,7 +1998,41 @@ DEPENDS = \
 	client/engine.h \
 	client/engine_intf.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/entdelta.obj : qcommon/entdelta.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/entdelta.obj" qcommon/entdelta.cpp
+
+Release/obj-win32/dedstat/entdelta.obj : qcommon/entdelta.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/entdelta.obj" qcommon/entdelta.cpp
+
+Release/obj-win32/q2stat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/pmove.obj" qcommon/pmove.cpp
+
+Release/obj-win32/dedstat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/pmove.obj" qcommon/pmove.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
+	qcommon/protocol.h \
 	qcommon/qcommon.h \
 	server/game.h \
 	server/server.h
@@ -1949,13 +2073,14 @@ DEPENDS = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/ref_vars.obj : client/ref_vars.cpp $(DEPENDS)
@@ -1973,23 +2098,11 @@ Release/obj-win32/q2stat/cmd.obj : qcommon/cmd.cpp $(DEPENDS)
 Release/obj-win32/dedstat/cmd.obj : qcommon/cmd.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/cmd.obj" qcommon/cmd.cpp
 
-Release/obj-win32/q2stat/crc.obj : qcommon/crc.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/crc.obj" qcommon/crc.cpp
-
-Release/obj-win32/dedstat/crc.obj : qcommon/crc.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/crc.obj" qcommon/crc.cpp
-
 Release/obj-win32/q2stat/cvar.obj : qcommon/cvar.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cvar.obj" qcommon/cvar.cpp
 
 Release/obj-win32/dedstat/cvar.obj : qcommon/cvar.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/cvar.obj" qcommon/cvar.cpp
-
-Release/obj-win32/q2stat/entdelta.obj : qcommon/entdelta.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/entdelta.obj" qcommon/entdelta.cpp
-
-Release/obj-win32/dedstat/entdelta.obj : qcommon/entdelta.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/entdelta.obj" qcommon/entdelta.cpp
 
 Release/obj-win32/q2stat/msg.obj : qcommon/msg.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/msg.obj" qcommon/msg.cpp
@@ -2002,12 +2115,6 @@ Release/obj-win32/q2stat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
 
 Release/obj-win32/dedstat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/net_chan.obj" qcommon/net_chan.cpp
-
-Release/obj-win32/q2stat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/pmove.obj" qcommon/pmove.cpp
-
-Release/obj-win32/dedstat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/pmove.obj" qcommon/pmove.cpp
 
 Release/obj-win32/dedstat/sv_dedicated.obj : server/sv_dedicated.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_dedicated.obj" server/sv_dedicated.cpp
@@ -2023,30 +2130,6 @@ Release/obj-win32/q2stat/net_wins.obj : win32/net_wins.cpp $(DEPENDS)
 
 Release/obj-win32/dedstat/net_wins.obj : win32/net_wins.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/net_wins.obj" win32/net_wins.cpp
-
-DEPENDS = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/CoreGnuC.h \
-	Core/Inc/CoreUnix.h \
-	Core/Inc/CoreVisualC.h \
-	Core/Inc/CoreWin32.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/ErrorMgr.h \
-	Core/Inc/FileSystem.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	qcommon/q_shared2.h
-
-Release/obj-win32/q2stat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/q_shared2.obj" qcommon/q_shared2.cpp
-
-Release/obj-win32/dedstat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/q_shared2.obj" qcommon/q_shared2.cpp
 
 DEPENDS = \
 	resource/archive.res

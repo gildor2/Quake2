@@ -198,9 +198,9 @@ static sfx_t *S_FindName (const char *name, bool create)
 	int		i;
 	sfx_t	*sfx;
 
-	if (!name)		Com_FatalError ("NULL name\n");
-	if (!name[0])	Com_FatalError ("empty name\n");
-	if (strlen (name) >= MAX_QPATH) Com_FatalError ("Sound name too long: %s", name);
+	if (!name)		appError ("NULL name\n");
+	if (!name[0])	appError ("empty name\n");
+	if (strlen (name) >= MAX_QPATH) appError ("Sound name too long: %s", name);
 
 	TString<MAX_QPATH> Filename;
 	Filename.filename (name);
@@ -224,7 +224,7 @@ static sfx_t *S_FindName (const char *name, bool create)
 		if (num_sfx == MAX_SFX)
 		{
 #if 0
-			Com_FatalError ("too much sfx records");
+			appError ("too much sfx records");
 #else
 			Com_DPrintf ("too much sfx records\n");
 			return NULL;
@@ -259,7 +259,7 @@ static sfx_t *S_AliasName (const char *aliasname, const char *truename)
 		if (num_sfx == MAX_SFX)
 		{
 #if 0
-			Com_FatalError ("too much sfx records");
+			appError ("too much sfx records");
 #else
 			Com_DPrintf ("too much sfx records\n");
 			return NULL;

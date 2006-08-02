@@ -439,7 +439,7 @@ void QGL_SwapBuffers ()
 	else
 	{
 		if (++error > 3 && ActiveApp)	// make fatal error only when 4 errors one by one
-			Com_FatalError ("wglSwapBuffers() failed");
+			appError ("wglSwapBuffers() failed");
 		else
 			appWPrintf ("wglSwapBuffers() failed\n");
 	}

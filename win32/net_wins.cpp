@@ -409,7 +409,7 @@ void NET_Init ()
 	//?? may be, non-fatal error; when try to NET_Config(true) -> DropError("no network")
 	WSADATA data;
 	if (int err = WSAStartup (MAKEWORD(1,1), &data))
-		Com_FatalError ("WSAStartup failed: %s", GetErrorString (err));
+		appError ("WSAStartup failed: %s", GetErrorString (err));
 
 	appPrintf ("WinSock: version %d.%d (%d.%d)\n",
 		data.wVersion >> 8, data.wVersion & 255,

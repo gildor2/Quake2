@@ -5,3 +5,5 @@
 - "exit" command (break makefile creation; no needs to generate error - already have "error" cmd)
   ? exit should simply return EOF for source file ("!exit" ??)
   * this will allow creation of makefiles with "install" target only
+- target(type,filename,list1+list2+list3...,MakeName)
+  (allow combining few lists)

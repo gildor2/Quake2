@@ -19,6 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "qcommon.h"
+#include "protocol.h"
 
 
 //#define PM_DEBUG		1
@@ -46,13 +47,13 @@ struct pml_t
 
 
 	csurface_t	*groundsurface;
-	cplane_t	groundplane;
+	CPlane		groundplane;
 	int			groundcontents;
 
 	short		previous_origin[3];
 
 	bool		ladder;
-	cplane_t	ladderPlane;
+	CPlane		ladderPlane;
 };
 static pml_t	pml;
 static pmove_t	*pm;
@@ -799,7 +800,7 @@ static void FlyMove (bool doclip)
 	pm->viewheight = 22;
 
 	// friction
-	float speed = VectorLength (pml.velocity);
+	float speed = pml.velocity.GetLength ();
 	if (speed < 1)
 		pml.velocity.Zero();
 	else
@@ -939,7 +940,7 @@ static void DeadMove ()
 {
 	if (!pm->groundentity) return;
 
-	float forward = VectorLength (pml.velocity);
+	float forward = pml.velocity.GetLength ();
 	// extra friction
 	if (forward <= 20)
 		pml.velocity.Zero();
@@ -1123,7 +1124,7 @@ static void ClampAngles ()
 		else if (pm->viewangles[PITCH] < 271 && pm->viewangles[PITCH] >= 180)
 			pm->viewangles[PITCH] = 271;
 	}
-	AngleVectors (pm->viewangles, &pml.forward, &pml.right, &pml.up);
+	Euler2Vecs (pm->viewangles, &pml.forward, &pml.right, &pml.up);
 }
 
 
@@ -1242,7 +1243,7 @@ void Pmove (pmove_t *pmove)
 			if (angles[PITCH] > 180)
 				angles[PITCH] -= 360;
 			angles[PITCH] /= 3;
-			AngleVectors (angles, &pml.forward, &pml.right, &pml.up);
+			Euler2Vecs (angles, &pml.forward, &pml.right, &pml.up);
 
 			AirMove ();
 		}

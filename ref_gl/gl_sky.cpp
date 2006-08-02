@@ -245,7 +245,7 @@ void AddSkySurface (surfacePlanar_t *pl, byte flag)
 #else
 		if (x < 0 || w < 0 || y < 0 || h < 0 ||
 			x > SKY_CELLS || y > SKY_CELLS || w > SKY_CELLS || h > SKY_CELLS)
-			Com_FatalError ("x/y/w/h: %d %d %d %d\n"
+			appError ("x/y/w/h: %d %d %d %d\n"
 			"mins[%g %g] maxs[%g %g]", x, y, w, h,
 			skyMins[0][side], skyMins[1][side], skyMaxs[0][side], skyMaxs[1][side]);
 #endif

@@ -899,7 +899,7 @@ static bool attach (const entity_t &e1, entity_t &e2, const char *tag, const CVe
 	if (angles)
 	{
 		CAxis rotate;
-		rotate.FromAngles (*angles);
+		rotate.FromEuler (*angles);
 		lerped.axis.UnTransformAxis (rotate, lerped.axis);
 	}
 	if (drawScale != 1.0f)
@@ -945,9 +945,9 @@ static void SwingAngle (float dst, float tolerance, float clamp, float speed, fl
 	}
 
 	if (!IsNegative (swing))
-		angle = AngleMod (angle + move);
+		angle = ReduceAngle (angle + move);
 	else
-		angle = AngleMod (angle - move);
+		angle = ReduceAngle (angle - move);
 }
 
 
@@ -960,9 +960,9 @@ static bool ClampAngle (float dst, float clamp, float &angle)
 
 	float move = absSwing - clamp;
 	if (!IsNegative (swing))
-		angle = AngleMod (angle + move);
+		angle = ReduceAngle (angle + move);
 	else
-		angle = AngleMod (angle - move);
+		angle = ReduceAngle (angle - move);
 	return true;
 }
 
@@ -1000,7 +1000,7 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, c
 		buf[0]       = ent;
 		buf[0].skin  = &ci.md2skin;
 		buf[0].model = ci.md2model;
-		buf[0].pos.axis.FromAngles (ent.angles);
+		buf[0].pos.axis.FromEuler (ent.angles);
 		if (maxEnts < 2 || weaponIndex < 0) return 1;	// no linked weapon
 		// here: assume, that weapon[0] exists
 		buf[1]       = buf[0];
@@ -1138,7 +1138,7 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, c
 		if (posDelta[0] || posDelta[1] || posDelta[2])
 		{
 			CAxis axis;
-			axis.FromAngles (ent.angles);
+			axis.FromEuler (ent.angles);
 //			RE_DrawTextLeft(va("[0]=%g\n[1]=%g\n[2]=%g", dot(posDelta,axis[0]), dot(posDelta,axis[1]), dot(posDelta,axis[2])));
 			legsAngles[PITCH] += dot(posDelta, axis[0]) / 3;
 			legsAngles[ROLL]  -= dot(posDelta, axis[1]) / 3;
@@ -1169,7 +1169,7 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, c
 	// head frame is always 0
 	buf[2].frame = buf[2].oldframe = 0;
 
-	buf[0].pos.axis.FromAngles (ent.angles);
+	buf[0].pos.axis.FromEuler (ent.angles);
 	buf[0].model = ci.legsModel;
 	buf[1].model = ci.torsoModel;
 	buf[2].model = ci.headModel;
@@ -1187,7 +1187,7 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, c
 	AnglesSubtract (headAngles, torsoAngles, headAngles);
 	AnglesSubtract (torsoAngles, legsAngles, torsoAngles);
 
-	buf[0].pos.axis.FromAngles (legsAngles);
+	buf[0].pos.axis.FromEuler (legsAngles);
 	attach (buf[0], buf[1], "tag_torso", &torsoAngles);
 	attach (buf[1], buf[2], "tag_head", &headAngles);
 

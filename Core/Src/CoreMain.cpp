@@ -33,6 +33,50 @@ static void Cmd_Quit ()
 }
 
 
+/*-----------------------------------------------------------------------------
+	Little-endian support for big-endian platforms
+-----------------------------------------------------------------------------*/
+
+#if !LITTLE_ENDIAN
+
+short LittleShort (short l)
+{
+	union {
+		short	i;
+		byte	b[2];
+	} d;
+	d.i = l;
+	Exchange (b[0], b[1]);
+	return d.i;
+}
+
+int LittieLong (int l)
+{
+	union {
+		int		i;
+		byte	b[4];
+	} d;
+	d.i = l;
+	Exchange (b[0], b[3]);
+	Exchange (b[1], b[2]);
+	return d.i;
+}
+
+float LittleFloat (float f)
+{
+	union {
+		float	f;
+		byte	b[4];
+	} d;
+	d.f = f;
+	Exchange (b[0], b[3]);
+	Exchange (b[1], b[2]);
+	return d.f;
+}
+
+#endif
+
+
 void appInit (/*?? const char *_cmdLine */)
 {
 	guard(appInit);

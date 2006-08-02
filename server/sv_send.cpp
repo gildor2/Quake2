@@ -220,16 +220,16 @@ void SV_StartSound (const CVec3 *origin, edict_t *entity, int channel,
 	guard(SV_StartSound);
 
 	if (volume < 0 || volume > 1.0)
-		Com_FatalError ("SV_StartSound: volume = %f", volume);
+		appError ("SV_StartSound: volume = %f", volume);
 
 	if (attenuation < 0 || attenuation > 4)
-		Com_FatalError ("SV_StartSound: attenuation = %f", attenuation);
+		appError ("SV_StartSound: attenuation = %f", attenuation);
 
 //	if (channel < 0 || channel > 15)
-//		Com_FatalError ("SV_StartSound: channel = %i", channel);
+//		appError ("SV_StartSound: channel = %i", channel);
 
 	if (timeofs < 0 || timeofs > 0.255)
-		Com_FatalError ("SV_StartSound: timeofs = %f", timeofs);
+		appError ("SV_StartSound: timeofs = %f", timeofs);
 
 	channel &= ~CHAN_NO_PHS_ADD;		// simply clear this flag (no PHS anymore)
 

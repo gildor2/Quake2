@@ -219,7 +219,7 @@ void SV_LinkEdict (edict_t *ent)
 
 	entityHull_t &ex = ents[NUM_FOR_EDICT(ent)];
 	ex.owner = ent;
-	ex.axis.FromAngles (ent->s.angles);
+	ex.axis.FromEuler (ent->s.angles);
 
 	// set the size
 	VectorSubtract (ent->bounds.maxs, ent->bounds.mins, ent->size);

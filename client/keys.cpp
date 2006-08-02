@@ -780,7 +780,7 @@ void Key_Event (int key, bool down)
 			SCR_ShowConsole (false, false);
 			break;
 		default:
-			Com_FatalError ("Bad cls.key_dest %d", cls.key_dest);
+			appError ("Bad cls.key_dest %d", cls.key_dest);
 		}
 		return;
 	}
@@ -898,7 +898,7 @@ void Key_Event (int key, bool down)
 		Key_Console (key, modKey);
 		break;
 	default:
-		Com_FatalError ("Bad cls.key_dest %d", cls.key_dest);
+		appError ("Bad cls.key_dest %d", cls.key_dest);
 	}
 }
 

@@ -39,6 +39,8 @@ STATIC = \
 	Release/obj-cygwin/CoreStatic/FileSystem.o \
 	Release/obj-cygwin/CoreStatic/FileSystemUnix.o \
 	Release/obj-cygwin/CoreStatic/FileContainerArc.o \
+	Release/obj-cygwin/CoreStatic/Math3D.o \
+	Release/obj-cygwin/CoreStatic/MathMisc.o \
 	Release/obj-cygwin/q2stat/cl_cin.o \
 	Release/obj-cygwin/q2stat/cl_download.o \
 	Release/obj-cygwin/q2stat/cl_ents.o \
@@ -85,7 +87,6 @@ STATIC = \
 	Release/obj-cygwin/q2stat/msg.o \
 	Release/obj-cygwin/q2stat/net_chan.o \
 	Release/obj-cygwin/q2stat/pmove.o \
-	Release/obj-cygwin/q2stat/q_shared2.o \
 	Release/obj-cygwin/q2stat/QuakeFileSystem.o \
 	Release/obj-cygwin/q2stat/cd_win.o \
 	Release/obj-cygwin/q2stat/in_win.o \
@@ -119,7 +120,7 @@ STATIC_DIRS = \
 
 Release/Quake2.exe : $(STATIC_DIRS) $(STATIC)
 	@echo Creating executable "Release/Quake2.exe" ...
-	$(LINK) -o Release/Quake2.exe $(STATIC) -shared-libgcc -LSDK/lib -lstdc++ lib/libs.a -Wl,-Map,Release/Quake2.map
+	$(LINK) -o Release/Quake2.exe $(STATIC) -shared-libgcc -LSDK/lib -lstdc++ lib/libs-cygwin.a -Wl,-Map,Release/Quake2.map
 
 #------------------------------------------------------------------------------
 #	"Release/q2ded.exe" target
@@ -142,6 +143,8 @@ DEDICATED = \
 	Release/obj-cygwin/CoreStatic/FileSystem.o \
 	Release/obj-cygwin/CoreStatic/FileSystemUnix.o \
 	Release/obj-cygwin/CoreStatic/FileContainerArc.o \
+	Release/obj-cygwin/CoreStatic/Math3D.o \
+	Release/obj-cygwin/CoreStatic/MathMisc.o \
 	Release/obj-cygwin/dedstat/sv_dedicated.o \
 	Release/obj-cygwin/dedstat/sv_anim.o \
 	Release/obj-cygwin/dedstat/sv_ccmds.o \
@@ -169,7 +172,6 @@ DEDICATED = \
 	Release/obj-cygwin/dedstat/msg.o \
 	Release/obj-cygwin/dedstat/net_chan.o \
 	Release/obj-cygwin/dedstat/pmove.o \
-	Release/obj-cygwin/dedstat/q_shared2.o \
 	Release/obj-cygwin/dedstat/QuakeFileSystem.o \
 	Release/obj-cygwin/dedstat/net_wins.o \
 	Release/obj-cygwin/dedstat/sys_win.o
@@ -180,7 +182,7 @@ DEDICATED_DIRS = \
 
 Release/q2ded.exe : $(DEDICATED_DIRS) $(DEDICATED)
 	@echo Creating executable "Release/q2ded.exe" ...
-	$(LINK) -o Release/q2ded.exe $(DEDICATED) -shared-libgcc -LSDK/lib -lstdc++ lib/libs.a -Wl,-Map,Release/q2ded.map
+	$(LINK) -o Release/q2ded.exe $(DEDICATED) -shared-libgcc -LSDK/lib -lstdc++ lib/libs-cygwin.a -Wl,-Map,Release/q2ded.map
 
 #------------------------------------------------------------------------------
 #	"TestApp/TestApp.exe" target
@@ -203,6 +205,8 @@ TEST = \
 	Release/obj-cygwin/CoreStatic/FileSystem.o \
 	Release/obj-cygwin/CoreStatic/FileSystemUnix.o \
 	Release/obj-cygwin/CoreStatic/FileContainerArc.o \
+	Release/obj-cygwin/CoreStatic/Math3D.o \
+	Release/obj-cygwin/CoreStatic/MathMisc.o \
 	Release/obj-cygwin/TestApp/TestApp.o \
 	Release/obj-cygwin/TestApp/Commands.o
 
@@ -212,7 +216,7 @@ TEST_DIRS = \
 
 TestApp/TestApp.exe : $(TEST_DIRS) $(TEST)
 	@echo Creating executable "TestApp/TestApp.exe" ...
-	$(LINK) -o TestApp/TestApp.exe $(TEST) -shared-libgcc -LSDK/lib -lstdc++ lib/libs.a -Wl,-Map,TestApp/TestApp.map
+	$(LINK) -o TestApp/TestApp.exe $(TEST) -shared-libgcc -LSDK/lib -lstdc++ lib/libs-cygwin.a -Wl,-Map,TestApp/TestApp.map
 
 #------------------------------------------------------------------------------
 #	compiling source files
@@ -247,6 +251,8 @@ DEPENDS_1 = \
 	Core/Inc/FileContainerZip.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/ScriptParser.h \
@@ -255,7 +261,6 @@ DEPENDS_1 = \
 	client/engine.h \
 	client/engine_intf.h \
 	lib/zlib/zconf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-cygwin/q2stat/QuakeFileSystem.o : qcommon/QuakeFileSystem.cpp $(DEPENDS_1)
@@ -281,6 +286,8 @@ DEPENDS_2 = \
 	Core/Inc/FileContainerZip.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputConsole.h \
 	Core/Inc/OutputDeviceFile.h \
@@ -304,6 +311,8 @@ DEPENDS_3 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/OutputDeviceMemTail.h \
@@ -327,6 +336,8 @@ DEPENDS_4 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/ScriptParser.h \
@@ -349,6 +360,8 @@ DEPENDS_5 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/ScriptParser.h \
@@ -360,7 +373,6 @@ DEPENDS_5 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	ref_gl/GLBind.h \
 	ref_gl/GLBindImpl.h \
@@ -383,6 +395,8 @@ DEPENDS_6 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/ScriptParser.h \
@@ -404,7 +418,6 @@ DEPENDS_6 = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-cygwin/q2stat/cl_main.o : client/cl_main.cpp $(DEPENDS_6)
@@ -425,6 +438,8 @@ DEPENDS_7 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
 	Core/Inc/ScriptParser.h \
@@ -435,7 +450,6 @@ DEPENDS_7 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
 Release/obj-cygwin/q2stat/common.o : qcommon/common.cpp $(DEPENDS_7)
@@ -456,6 +470,8 @@ DEPENDS_8 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceMem.h \
 	Core/Inc/ScriptParser.h \
@@ -477,7 +493,6 @@ DEPENDS_8 = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	win32/WinPrivate.h
 
@@ -499,6 +514,8 @@ DEPENDS_9 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceMem.h \
 	Core/Inc/ScriptParser.h \
@@ -508,7 +525,6 @@ DEPENDS_9 = \
 	client/engine_intf.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	server/game.h \
@@ -532,47 +548,18 @@ DEPENDS_10 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	Core/Src/CorePrivate.h
+	Core/Inc/TextContainer.h
 
-Release/obj-cygwin/TestApp/Commands.o : Core/Src/Commands.cpp $(DEPENDS_10)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/TestApp/Commands.o Core/Src/Commands.cpp
+Release/obj-cygwin/q2stat/crc.o : qcommon/crc.cpp $(DEPENDS_10)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/crc.o qcommon/crc.cpp
 
-Release/obj-cygwin/CoreStatic/CoreCpuid.o : Core/Src/CoreCpuid.cpp $(DEPENDS_10)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/CoreCpuid.o Core/Src/CoreCpuid.cpp
-
-Release/obj-cygwin/CoreStatic/CoreMain.o : Core/Src/CoreMain.cpp $(DEPENDS_10)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/CoreMain.o Core/Src/CoreMain.cpp
-
-Release/obj-cygwin/CoreStatic/CoreUnix.o : Core/Src/CoreUnix.cpp $(DEPENDS_10)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/CoreUnix.o Core/Src/CoreUnix.cpp
-
-Release/obj-cygwin/CoreStatic/DbgSymbolsUnix.o : Core/Src/DbgSymbolsUnix.cpp $(DEPENDS_10)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/DbgSymbolsUnix.o Core/Src/DbgSymbolsUnix.cpp
-
-Release/obj-cygwin/CoreStatic/FileContainerArc.o : Core/Src/FileContainerArc.cpp $(DEPENDS_10)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/FileContainerArc.o Core/Src/FileContainerArc.cpp
-
-Release/obj-cygwin/CoreStatic/FileSystemUnix.o : Core/Src/FileSystemUnix.cpp $(DEPENDS_10)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/FileSystemUnix.o Core/Src/FileSystemUnix.cpp
-
-Release/obj-cygwin/CoreStatic/Memory.o : Core/Src/Memory.cpp $(DEPENDS_10)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/Memory.o Core/Src/Memory.cpp
-
-Release/obj-cygwin/CoreStatic/OutputDevice.o : Core/Src/OutputDevice.cpp $(DEPENDS_10)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/OutputDevice.o Core/Src/OutputDevice.cpp
-
-Release/obj-cygwin/CoreStatic/ScriptParser.o : Core/Src/ScriptParser.cpp $(DEPENDS_10)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/ScriptParser.o Core/Src/ScriptParser.cpp
-
-Release/obj-cygwin/CoreStatic/Strings.o : Core/Src/Strings.cpp $(DEPENDS_10)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/Strings.o Core/Src/Strings.cpp
-
-Release/obj-cygwin/CoreStatic/TextContainer.o : Core/Src/TextContainer.cpp $(DEPENDS_10)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/TextContainer.o Core/Src/TextContainer.cpp
+Release/obj-cygwin/dedstat/crc.o : qcommon/crc.cpp $(DEPENDS_10)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/crc.o qcommon/crc.cpp
 
 DEPENDS_11 = \
 	Core/Inc/Build.h \
@@ -586,19 +573,55 @@ DEPENDS_11 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
-	Core/Src/CorePrivate.h \
-	Core/Src/ExceptDumpers.h \
-	Core/Src/ExceptInfoLinux.h
+	Core/Src/CorePrivate.h
 
-Release/obj-cygwin/CoreStatic/ExceptDumpers.o : Core/Src/ExceptDumpers.cpp $(DEPENDS_11)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/ExceptDumpers.o Core/Src/ExceptDumpers.cpp
+Release/obj-cygwin/TestApp/Commands.o : Core/Src/Commands.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/TestApp/Commands.o Core/Src/Commands.cpp
 
-Release/obj-cygwin/CoreStatic/ExceptHandlerUnix.o : Core/Src/ExceptHandlerUnix.cpp $(DEPENDS_11)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/ExceptHandlerUnix.o Core/Src/ExceptHandlerUnix.cpp
+Release/obj-cygwin/CoreStatic/CoreCpuid.o : Core/Src/CoreCpuid.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/CoreCpuid.o Core/Src/CoreCpuid.cpp
+
+Release/obj-cygwin/CoreStatic/CoreMain.o : Core/Src/CoreMain.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/CoreMain.o Core/Src/CoreMain.cpp
+
+Release/obj-cygwin/CoreStatic/CoreUnix.o : Core/Src/CoreUnix.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/CoreUnix.o Core/Src/CoreUnix.cpp
+
+Release/obj-cygwin/CoreStatic/DbgSymbolsUnix.o : Core/Src/DbgSymbolsUnix.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/DbgSymbolsUnix.o Core/Src/DbgSymbolsUnix.cpp
+
+Release/obj-cygwin/CoreStatic/FileContainerArc.o : Core/Src/FileContainerArc.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/FileContainerArc.o Core/Src/FileContainerArc.cpp
+
+Release/obj-cygwin/CoreStatic/FileSystemUnix.o : Core/Src/FileSystemUnix.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/FileSystemUnix.o Core/Src/FileSystemUnix.cpp
+
+Release/obj-cygwin/CoreStatic/Math3D.o : Core/Src/Math3D.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/Math3D.o Core/Src/Math3D.cpp
+
+Release/obj-cygwin/CoreStatic/MathMisc.o : Core/Src/MathMisc.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/MathMisc.o Core/Src/MathMisc.cpp
+
+Release/obj-cygwin/CoreStatic/Memory.o : Core/Src/Memory.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/Memory.o Core/Src/Memory.cpp
+
+Release/obj-cygwin/CoreStatic/OutputDevice.o : Core/Src/OutputDevice.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/OutputDevice.o Core/Src/OutputDevice.cpp
+
+Release/obj-cygwin/CoreStatic/ScriptParser.o : Core/Src/ScriptParser.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/ScriptParser.o Core/Src/ScriptParser.cpp
+
+Release/obj-cygwin/CoreStatic/Strings.o : Core/Src/Strings.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/Strings.o Core/Src/Strings.cpp
+
+Release/obj-cygwin/CoreStatic/TextContainer.o : Core/Src/TextContainer.cpp $(DEPENDS_11)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/TextContainer.o Core/Src/TextContainer.cpp
 
 DEPENDS_12 = \
 	Core/Inc/Build.h \
@@ -612,15 +635,21 @@ DEPENDS_12 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
 	Core/Src/CorePrivate.h \
-	Core/Src/FileContainerOS.h
+	Core/Src/ExceptDumpers.h \
+	Core/Src/ExceptInfoLinux.h
 
-Release/obj-cygwin/CoreStatic/FileSystem.o : Core/Src/FileSystem.cpp $(DEPENDS_12)
-	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/FileSystem.o Core/Src/FileSystem.cpp
+Release/obj-cygwin/CoreStatic/ExceptDumpers.o : Core/Src/ExceptDumpers.cpp $(DEPENDS_12)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/ExceptDumpers.o Core/Src/ExceptDumpers.cpp
+
+Release/obj-cygwin/CoreStatic/ExceptHandlerUnix.o : Core/Src/ExceptHandlerUnix.cpp $(DEPENDS_12)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/ExceptHandlerUnix.o Core/Src/ExceptHandlerUnix.cpp
 
 DEPENDS_13 = \
 	Core/Inc/Build.h \
@@ -634,6 +663,32 @@ DEPENDS_13 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Src/CorePrivate.h \
+	Core/Src/FileContainerOS.h
+
+Release/obj-cygwin/CoreStatic/FileSystem.o : Core/Src/FileSystem.cpp $(DEPENDS_13)
+	$(CPP) $(OPT_TEST) -o Release/obj-cygwin/CoreStatic/FileSystem.o Core/Src/FileSystem.cpp
+
+DEPENDS_14 = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -655,14 +710,13 @@ DEPENDS_13 = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	win32/WinPrivate.h
 
-Release/obj-cygwin/q2stat/in_win.o : win32/in_win.cpp $(DEPENDS_13)
+Release/obj-cygwin/q2stat/in_win.o : win32/in_win.cpp $(DEPENDS_14)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/in_win.o win32/in_win.cpp
 
-DEPENDS_14 = \
+DEPENDS_15 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -674,6 +728,8 @@ DEPENDS_14 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -686,7 +742,6 @@ DEPENDS_14 = \
 	client/rexp_exp.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -701,10 +756,10 @@ DEPENDS_14 = \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h
 
-Release/obj-cygwin/q2stat/gl_main.o : ref_gl/gl_main.cpp $(DEPENDS_14)
+Release/obj-cygwin/q2stat/gl_main.o : ref_gl/gl_main.cpp $(DEPENDS_15)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_main.o ref_gl/gl_main.cpp
 
-DEPENDS_15 = \
+DEPENDS_16 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -716,6 +771,8 @@ DEPENDS_15 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -729,7 +786,6 @@ DEPENDS_15 = \
 	qcommon/MapBrush.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -746,10 +802,10 @@ DEPENDS_15 = \
 	ref_gl/gl_shader.h \
 	ref_gl/gl_sky.h
 
-Release/obj-cygwin/q2stat/gl_backend.o : ref_gl/gl_backend.cpp $(DEPENDS_15)
+Release/obj-cygwin/q2stat/gl_backend.o : ref_gl/gl_backend.cpp $(DEPENDS_16)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_backend.o ref_gl/gl_backend.cpp
 
-DEPENDS_16 = \
+DEPENDS_17 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -761,6 +817,8 @@ DEPENDS_16 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -773,7 +831,6 @@ DEPENDS_16 = \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -789,49 +846,8 @@ DEPENDS_16 = \
 	ref_gl/gl_shader.h \
 	ref_gl/gl_sky.h
 
-Release/obj-cygwin/q2stat/gl_frontend.o : ref_gl/gl_frontend.cpp $(DEPENDS_16)
+Release/obj-cygwin/q2stat/gl_frontend.o : ref_gl/gl_frontend.cpp $(DEPENDS_17)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_frontend.o ref_gl/gl_frontend.cpp
-
-DEPENDS_17 = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/CoreGnuC.h \
-	Core/Inc/CoreUnix.h \
-	Core/Inc/CoreVisualC.h \
-	Core/Inc/CoreWin32.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/ErrorMgr.h \
-	Core/Inc/FileSystem.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	SDK/include/glext.h \
-	client/engine.h \
-	client/engine_intf.h \
-	client/ref.h \
-	client/renderer.h \
-	client/rexp_intf.h \
-	qcommon/cmodel.h \
-	qcommon/protocol.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h \
-	ref_gl/GLBind.h \
-	ref_gl/OpenGLDrv.h \
-	ref_gl/gl_backend.h \
-	ref_gl/gl_frontend.h \
-	ref_gl/gl_image.h \
-	ref_gl/gl_interface.h \
-	ref_gl/gl_light.h \
-	ref_gl/gl_math.h \
-	ref_gl/gl_model.h \
-	ref_gl/gl_shader.h
-
-Release/obj-cygwin/q2stat/gl_light.o : ref_gl/gl_light.cpp $(DEPENDS_17)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_light.o ref_gl/gl_light.cpp
 
 DEPENDS_18 = \
 	Core/Inc/Build.h \
@@ -845,6 +861,8 @@ DEPENDS_18 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -856,7 +874,7 @@ DEPENDS_18 = \
 	client/renderer.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
+	qcommon/protocol.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -870,8 +888,8 @@ DEPENDS_18 = \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h
 
-Release/obj-cygwin/q2stat/gl_text.o : ref_gl/gl_text.cpp $(DEPENDS_18)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_text.o ref_gl/gl_text.cpp
+Release/obj-cygwin/q2stat/gl_light.o : ref_gl/gl_light.cpp $(DEPENDS_18)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_light.o ref_gl/gl_light.cpp
 
 DEPENDS_19 = \
 	Core/Inc/Build.h \
@@ -885,6 +903,8 @@ DEPENDS_19 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -896,7 +916,47 @@ DEPENDS_19 = \
 	client/renderer.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_backend.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_math.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h
+
+Release/obj-cygwin/q2stat/gl_text.o : ref_gl/gl_text.cpp $(DEPENDS_19)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_text.o ref_gl/gl_text.cpp
+
+DEPENDS_20 = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -911,50 +971,8 @@ DEPENDS_19 = \
 	ref_gl/gl_shader.h \
 	ref_gl/gl_sky.h
 
-Release/obj-cygwin/q2stat/gl_sky.o : ref_gl/gl_sky.cpp $(DEPENDS_19)
+Release/obj-cygwin/q2stat/gl_sky.o : ref_gl/gl_sky.cpp $(DEPENDS_20)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_sky.o ref_gl/gl_sky.cpp
-
-DEPENDS_20 = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/CoreGnuC.h \
-	Core/Inc/CoreUnix.h \
-	Core/Inc/CoreVisualC.h \
-	Core/Inc/CoreWin32.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/ErrorMgr.h \
-	Core/Inc/FileSystem.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	SDK/include/glext.h \
-	client/engine.h \
-	client/engine_intf.h \
-	client/ref.h \
-	client/renderer.h \
-	client/rexp_intf.h \
-	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h \
-	ref_gl/GLBind.h \
-	ref_gl/OpenGLDrv.h \
-	ref_gl/gl_backend.h \
-	ref_gl/gl_frontend.h \
-	ref_gl/gl_image.h \
-	ref_gl/gl_interface.h \
-	ref_gl/gl_light.h \
-	ref_gl/gl_model.h \
-	ref_gl/gl_shader.h
-
-Release/obj-cygwin/q2stat/gl_buffers.o : ref_gl/gl_buffers.cpp $(DEPENDS_20)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_buffers.o ref_gl/gl_buffers.cpp
-
-Release/obj-cygwin/q2stat/gl_image.o : ref_gl/gl_image.cpp $(DEPENDS_20)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_image.o ref_gl/gl_image.cpp
 
 DEPENDS_21 = \
 	Core/Inc/Build.h \
@@ -968,6 +986,8 @@ DEPENDS_21 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -979,7 +999,49 @@ DEPENDS_21 = \
 	client/renderer.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_backend.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h
+
+Release/obj-cygwin/q2stat/gl_buffers.o : ref_gl/gl_buffers.cpp $(DEPENDS_21)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_buffers.o ref_gl/gl_buffers.cpp
+
+Release/obj-cygwin/q2stat/gl_image.o : ref_gl/gl_image.cpp $(DEPENDS_21)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_image.o ref_gl/gl_image.cpp
+
+DEPENDS_22 = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/cmodel.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -994,48 +1056,8 @@ DEPENDS_21 = \
 	ref_gl/gl_poly.h \
 	ref_gl/gl_shader.h
 
-Release/obj-cygwin/q2stat/gl_bspmodel.o : ref_gl/gl_bspmodel.cpp $(DEPENDS_21)
+Release/obj-cygwin/q2stat/gl_bspmodel.o : ref_gl/gl_bspmodel.cpp $(DEPENDS_22)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_bspmodel.o ref_gl/gl_bspmodel.cpp
-
-DEPENDS_22 = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/CoreGnuC.h \
-	Core/Inc/CoreUnix.h \
-	Core/Inc/CoreVisualC.h \
-	Core/Inc/CoreWin32.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/ErrorMgr.h \
-	Core/Inc/FileSystem.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	SDK/include/glext.h \
-	client/engine.h \
-	client/engine_intf.h \
-	client/ref.h \
-	client/renderer.h \
-	client/rexp_intf.h \
-	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h \
-	ref_gl/GLBind.h \
-	ref_gl/OpenGLDrv.h \
-	ref_gl/gl_frontend.h \
-	ref_gl/gl_image.h \
-	ref_gl/gl_interface.h \
-	ref_gl/gl_light.h \
-	ref_gl/gl_lightmap.h \
-	ref_gl/gl_math.h \
-	ref_gl/gl_model.h \
-	ref_gl/gl_shader.h
-
-Release/obj-cygwin/q2stat/gl_lightmap.o : ref_gl/gl_lightmap.cpp $(DEPENDS_22)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_lightmap.o ref_gl/gl_lightmap.cpp
 
 DEPENDS_23 = \
 	Core/Inc/Build.h \
@@ -1049,6 +1071,8 @@ DEPENDS_23 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1060,7 +1084,6 @@ DEPENDS_23 = \
 	client/renderer.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -1069,12 +1092,13 @@ DEPENDS_23 = \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_light.h \
+	ref_gl/gl_lightmap.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h
 
-Release/obj-cygwin/q2stat/gl_trimodel.o : ref_gl/gl_trimodel.cpp $(DEPENDS_23)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_trimodel.o ref_gl/gl_trimodel.cpp
+Release/obj-cygwin/q2stat/gl_lightmap.o : ref_gl/gl_lightmap.cpp $(DEPENDS_23)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_lightmap.o ref_gl/gl_lightmap.cpp
 
 DEPENDS_24 = \
 	Core/Inc/Build.h \
@@ -1088,6 +1112,8 @@ DEPENDS_24 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1099,7 +1125,6 @@ DEPENDS_24 = \
 	client/renderer.h \
 	client/rexp_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
@@ -1108,11 +1133,12 @@ DEPENDS_24 = \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_light.h \
+	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h
 
-Release/obj-cygwin/q2stat/gl_model.o : ref_gl/gl_model.cpp $(DEPENDS_24)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_model.o ref_gl/gl_model.cpp
+Release/obj-cygwin/q2stat/gl_trimodel.o : ref_gl/gl_trimodel.cpp $(DEPENDS_24)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_trimodel.o ref_gl/gl_trimodel.cpp
 
 DEPENDS_25 = \
 	Core/Inc/Build.h \
@@ -1126,6 +1152,8 @@ DEPENDS_25 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1136,19 +1164,20 @@ DEPENDS_25 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
+	qcommon/cmodel.h \
 	qcommon/qcommon.h \
+	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
-	ref_gl/gl_buffers.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
-	ref_gl/gl_shader.h \
-	ref_gl/gl_shadersyntax.h
+	ref_gl/gl_light.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h
 
-Release/obj-cygwin/q2stat/gl_shader.o : ref_gl/gl_shader.cpp $(DEPENDS_25)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_shader.o ref_gl/gl_shader.cpp
+Release/obj-cygwin/q2stat/gl_model.o : ref_gl/gl_model.cpp $(DEPENDS_25)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_model.o ref_gl/gl_model.cpp
 
 DEPENDS_26 = \
 	Core/Inc/Build.h \
@@ -1162,6 +1191,8 @@ DEPENDS_26 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1172,18 +1203,18 @@ DEPENDS_26 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_buffers.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
-	ref_gl/gl_math.h \
-	ref_gl/gl_shader.h
+	ref_gl/gl_shader.h \
+	ref_gl/gl_shadersyntax.h
 
-Release/obj-cygwin/q2stat/gl_math.o : ref_gl/gl_math.cpp $(DEPENDS_26)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_math.o ref_gl/gl_math.cpp
+Release/obj-cygwin/q2stat/gl_shader.o : ref_gl/gl_shader.cpp $(DEPENDS_26)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_shader.o ref_gl/gl_shader.cpp
 
 DEPENDS_27 = \
 	Core/Inc/Build.h \
@@ -1197,6 +1228,8 @@ DEPENDS_27 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1207,17 +1240,17 @@ DEPENDS_27 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
+	ref_gl/gl_math.h \
 	ref_gl/gl_shader.h
 
-Release/obj-cygwin/q2stat/gl_interface.o : ref_gl/gl_interface.cpp $(DEPENDS_27)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_interface.o ref_gl/gl_interface.cpp
+Release/obj-cygwin/q2stat/gl_math.o : ref_gl/gl_math.cpp $(DEPENDS_27)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_math.o ref_gl/gl_math.cpp
 
 DEPENDS_28 = \
 	Core/Inc/Build.h \
@@ -1231,6 +1264,8 @@ DEPENDS_28 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1241,15 +1276,16 @@ DEPENDS_28 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
-	ref_gl/gl_poly.h
+	ref_gl/gl_shader.h
 
-Release/obj-cygwin/q2stat/gl_poly.o : ref_gl/gl_poly.cpp $(DEPENDS_28)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_poly.o ref_gl/gl_poly.cpp
+Release/obj-cygwin/q2stat/gl_interface.o : ref_gl/gl_interface.cpp $(DEPENDS_28)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_interface.o ref_gl/gl_interface.cpp
 
 DEPENDS_29 = \
 	Core/Inc/Build.h \
@@ -1263,6 +1299,41 @@ DEPENDS_29 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_poly.h
+
+Release/obj-cygwin/q2stat/gl_poly.o : ref_gl/gl_poly.cpp $(DEPENDS_29)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/gl_poly.o ref_gl/gl_poly.cpp
+
+DEPENDS_30 = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1284,15 +1355,14 @@ DEPENDS_29 = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	win32/WinPrivate.h \
 	win32/resource.h
 
-Release/obj-cygwin/q2stat/vid_dll.o : win32/vid_dll.cpp $(DEPENDS_29)
+Release/obj-cygwin/q2stat/vid_dll.o : win32/vid_dll.cpp $(DEPENDS_30)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/vid_dll.o win32/vid_dll.cpp
 
-DEPENDS_30 = \
+DEPENDS_31 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1304,6 +1374,8 @@ DEPENDS_30 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1325,13 +1397,12 @@ DEPENDS_30 = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-cygwin/q2stat/cl_fx.o : client/cl_fx.cpp $(DEPENDS_30)
+Release/obj-cygwin/q2stat/cl_fx.o : client/cl_fx.cpp $(DEPENDS_31)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_fx.o client/cl_fx.cpp
 
-DEPENDS_31 = \
+DEPENDS_32 = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -1343,6 +1414,8 @@ DEPENDS_31 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1364,65 +1437,16 @@ DEPENDS_31 = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h
 
-Release/obj-cygwin/q2stat/keys.o : client/keys.cpp $(DEPENDS_31)
+Release/obj-cygwin/q2stat/keys.o : client/keys.cpp $(DEPENDS_32)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/keys.o client/keys.cpp
 
-Release/obj-cygwin/q2stat/menu.o : client/menu.cpp $(DEPENDS_31)
+Release/obj-cygwin/q2stat/menu.o : client/menu.cpp $(DEPENDS_32)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/menu.o client/menu.cpp
 
-Release/obj-cygwin/q2stat/qmenu.o : client/qmenu.cpp $(DEPENDS_31)
+Release/obj-cygwin/q2stat/qmenu.o : client/qmenu.cpp $(DEPENDS_32)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/qmenu.o client/qmenu.cpp
-
-DEPENDS_32 = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/CoreGnuC.h \
-	Core/Inc/CoreUnix.h \
-	Core/Inc/CoreVisualC.h \
-	Core/Inc/CoreWin32.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/ErrorMgr.h \
-	Core/Inc/FileSystem.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	client/cdaudio.h \
-	client/cl_fx.h \
-	client/cl_input.h \
-	client/cl_playermodel.h \
-	client/cl_scrn.h \
-	client/client.h \
-	client/console.h \
-	client/engine.h \
-	client/engine_intf.h \
-	client/keys.h \
-	client/ref.h \
-	client/renderer.h \
-	client/rexp_intf.h \
-	client/snd_loc.h \
-	client/sound.h \
-	client/vid.h \
-	qcommon/protocol.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h
-
-Release/obj-cygwin/q2stat/cl_tent.o : client/cl_tent.cpp $(DEPENDS_32)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_tent.o client/cl_tent.cpp
-
-Release/obj-cygwin/q2stat/snd_dma.o : client/snd_dma.cpp $(DEPENDS_32)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/snd_dma.o client/snd_dma.cpp
-
-Release/obj-cygwin/q2stat/snd_mem.o : client/snd_mem.cpp $(DEPENDS_32)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/snd_mem.o client/snd_mem.cpp
-
-Release/obj-cygwin/q2stat/snd_mix.o : client/snd_mix.cpp $(DEPENDS_32)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/snd_mix.o client/snd_mix.cpp
 
 DEPENDS_33 = \
 	Core/Inc/Build.h \
@@ -1436,6 +1460,8 @@ DEPENDS_33 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1457,12 +1483,19 @@ DEPENDS_33 = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h \
-	win32/WinPrivate.h
+	qcommon/qcommon.h
 
-Release/obj-cygwin/q2stat/snd_win.o : win32/snd_win.cpp $(DEPENDS_33)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/snd_win.o win32/snd_win.cpp
+Release/obj-cygwin/q2stat/cl_tent.o : client/cl_tent.cpp $(DEPENDS_33)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_tent.o client/cl_tent.cpp
+
+Release/obj-cygwin/q2stat/snd_dma.o : client/snd_dma.cpp $(DEPENDS_33)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/snd_dma.o client/snd_dma.cpp
+
+Release/obj-cygwin/q2stat/snd_mem.o : client/snd_mem.cpp $(DEPENDS_33)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/snd_mem.o client/snd_mem.cpp
+
+Release/obj-cygwin/q2stat/snd_mix.o : client/snd_mix.cpp $(DEPENDS_33)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/snd_mix.o client/snd_mix.cpp
 
 DEPENDS_34 = \
 	Core/Inc/Build.h \
@@ -1476,6 +1509,8 @@ DEPENDS_34 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1493,25 +1528,15 @@ DEPENDS_34 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	client/snd_loc.h \
 	client/sound.h \
 	client/vid.h \
-	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h
+	win32/WinPrivate.h
 
-Release/obj-cygwin/q2stat/cl_download.o : client/cl_download.cpp $(DEPENDS_34)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_download.o client/cl_download.cpp
-
-Release/obj-cygwin/q2stat/cl_ents.o : client/cl_ents.cpp $(DEPENDS_34)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_ents.o client/cl_ents.cpp
-
-Release/obj-cygwin/q2stat/cl_pred.o : client/cl_pred.cpp $(DEPENDS_34)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_pred.o client/cl_pred.cpp
-
-Release/obj-cygwin/q2stat/cl_view.o : client/cl_view.cpp $(DEPENDS_34)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_view.o client/cl_view.cpp
+Release/obj-cygwin/q2stat/snd_win.o : win32/snd_win.cpp $(DEPENDS_34)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/snd_win.o win32/snd_win.cpp
 
 DEPENDS_35 = \
 	Core/Inc/Build.h \
@@ -1525,6 +1550,8 @@ DEPENDS_35 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1544,24 +1571,22 @@ DEPENDS_35 = \
 	client/rexp_intf.h \
 	client/sound.h \
 	client/vid.h \
+	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h
+	qcommon/qcommon.h \
+	qcommon/qfiles.h
 
-Release/obj-cygwin/q2stat/cl_cin.o : client/cl_cin.cpp $(DEPENDS_35)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_cin.o client/cl_cin.cpp
+Release/obj-cygwin/q2stat/cl_download.o : client/cl_download.cpp $(DEPENDS_35)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_download.o client/cl_download.cpp
 
-Release/obj-cygwin/q2stat/cl_input.o : client/cl_input.cpp $(DEPENDS_35)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_input.o client/cl_input.cpp
+Release/obj-cygwin/q2stat/cl_ents.o : client/cl_ents.cpp $(DEPENDS_35)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_ents.o client/cl_ents.cpp
 
-Release/obj-cygwin/q2stat/cl_parse.o : client/cl_parse.cpp $(DEPENDS_35)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_parse.o client/cl_parse.cpp
+Release/obj-cygwin/q2stat/cl_pred.o : client/cl_pred.cpp $(DEPENDS_35)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_pred.o client/cl_pred.cpp
 
-Release/obj-cygwin/q2stat/cl_playermodel.o : client/cl_playermodel.cpp $(DEPENDS_35)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_playermodel.o client/cl_playermodel.cpp
-
-Release/obj-cygwin/q2stat/cl_scrn.o : client/cl_scrn.cpp $(DEPENDS_35)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_scrn.o client/cl_scrn.cpp
+Release/obj-cygwin/q2stat/cl_view.o : client/cl_view.cpp $(DEPENDS_35)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_view.o client/cl_view.cpp
 
 DEPENDS_36 = \
 	Core/Inc/Build.h \
@@ -1575,6 +1600,8 @@ DEPENDS_36 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1595,12 +1622,22 @@ DEPENDS_36 = \
 	client/sound.h \
 	client/vid.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h \
-	win32/WinPrivate.h
+	qcommon/qcommon.h
 
-Release/obj-cygwin/q2stat/cd_win.o : win32/cd_win.cpp $(DEPENDS_36)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cd_win.o win32/cd_win.cpp
+Release/obj-cygwin/q2stat/cl_cin.o : client/cl_cin.cpp $(DEPENDS_36)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_cin.o client/cl_cin.cpp
+
+Release/obj-cygwin/q2stat/cl_input.o : client/cl_input.cpp $(DEPENDS_36)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_input.o client/cl_input.cpp
+
+Release/obj-cygwin/q2stat/cl_parse.o : client/cl_parse.cpp $(DEPENDS_36)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_parse.o client/cl_parse.cpp
+
+Release/obj-cygwin/q2stat/cl_playermodel.o : client/cl_playermodel.cpp $(DEPENDS_36)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_playermodel.o client/cl_playermodel.cpp
+
+Release/obj-cygwin/q2stat/cl_scrn.o : client/cl_scrn.cpp $(DEPENDS_36)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_scrn.o client/cl_scrn.cpp
 
 DEPENDS_37 = \
 	Core/Inc/Build.h \
@@ -1614,26 +1651,33 @@ DEPENDS_37 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/cl_scrn.h \
+	client/client.h \
+	client/console.h \
 	client/engine.h \
 	client/engine_intf.h \
+	client/keys.h \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/MapBrush.h \
-	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h
+	win32/WinPrivate.h
 
-Release/obj-cygwin/q2stat/cmodel.o : qcommon/cmodel.cpp $(DEPENDS_37)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cmodel.o qcommon/cmodel.cpp
-
-Release/obj-cygwin/dedstat/cmodel.o : qcommon/cmodel.cpp $(DEPENDS_37)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/cmodel.o qcommon/cmodel.cpp
+Release/obj-cygwin/q2stat/cd_win.o : win32/cd_win.cpp $(DEPENDS_37)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cd_win.o win32/cd_win.cpp
 
 DEPENDS_38 = \
 	Core/Inc/Build.h \
@@ -1647,6 +1691,8 @@ DEPENDS_38 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1656,17 +1702,17 @@ DEPENDS_38 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/MapBrush.h \
+	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
-	server/game.h \
-	server/server.h
+	qcommon/qfiles.h
 
-Release/obj-cygwin/q2stat/sv_ccmds.o : server/sv_ccmds.cpp $(DEPENDS_38)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_ccmds.o server/sv_ccmds.cpp
+Release/obj-cygwin/q2stat/cmodel.o : qcommon/cmodel.cpp $(DEPENDS_38)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cmodel.o qcommon/cmodel.cpp
 
-Release/obj-cygwin/dedstat/sv_ccmds.o : server/sv_ccmds.cpp $(DEPENDS_38)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_ccmds.o server/sv_ccmds.cpp
+Release/obj-cygwin/dedstat/cmodel.o : qcommon/cmodel.cpp $(DEPENDS_38)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/cmodel.o qcommon/cmodel.cpp
 
 DEPENDS_39 = \
 	Core/Inc/Build.h \
@@ -1680,6 +1726,8 @@ DEPENDS_39 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1689,14 +1737,16 @@ DEPENDS_39 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h
+	qcommon/protocol.h \
+	qcommon/qcommon.h \
+	server/game.h \
+	server/server.h
 
-Release/obj-cygwin/q2stat/sv_text.o : server/sv_text.cpp $(DEPENDS_39)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_text.o server/sv_text.cpp
+Release/obj-cygwin/q2stat/sv_ccmds.o : server/sv_ccmds.cpp $(DEPENDS_39)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_ccmds.o server/sv_ccmds.cpp
 
-Release/obj-cygwin/dedstat/sv_text.o : server/sv_text.cpp $(DEPENDS_39)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_text.o server/sv_text.cpp
+Release/obj-cygwin/dedstat/sv_ccmds.o : server/sv_ccmds.cpp $(DEPENDS_39)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_ccmds.o server/sv_ccmds.cpp
 
 DEPENDS_40 = \
 	Core/Inc/Build.h \
@@ -1710,25 +1760,24 @@ DEPENDS_40 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
-	lib/jpeglib/jconfig.h \
-	lib/jpeglib/jerror.h \
-	lib/jpeglib/jmorecfg.h \
-	lib/jpeglib/jpegint.h \
-	lib/jpeglib/jpeglib.h \
-	qcommon/q_shared2.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
 	qcommon/qcommon.h
 
-Release/obj-cygwin/q2stat/images.o : qcommon/images.cpp $(DEPENDS_40)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/images.o qcommon/images.cpp
+Release/obj-cygwin/q2stat/sv_text.o : server/sv_text.cpp $(DEPENDS_40)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_text.o server/sv_text.cpp
 
-Release/obj-cygwin/dedstat/images.o : qcommon/images.cpp $(DEPENDS_40)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/images.o qcommon/images.cpp
+Release/obj-cygwin/dedstat/sv_text.o : server/sv_text.cpp $(DEPENDS_40)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_text.o server/sv_text.cpp
 
 DEPENDS_41 = \
 	Core/Inc/Build.h \
@@ -1742,21 +1791,26 @@ DEPENDS_41 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
-	qcommon/MapBrush.h \
-	qcommon/q_shared2.h \
+	lib/jpeglib/jconfig.h \
+	lib/jpeglib/jerror.h \
+	lib/jpeglib/jmorecfg.h \
+	lib/jpeglib/jpegint.h \
+	lib/jpeglib/jpeglib.h \
 	qcommon/qcommon.h
 
-Release/obj-cygwin/q2stat/MapBrush.o : qcommon/MapBrush.cpp $(DEPENDS_41)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/MapBrush.o qcommon/MapBrush.cpp
+Release/obj-cygwin/q2stat/images.o : qcommon/images.cpp $(DEPENDS_41)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/images.o qcommon/images.cpp
 
-Release/obj-cygwin/dedstat/MapBrush.o : qcommon/MapBrush.cpp $(DEPENDS_41)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/MapBrush.o qcommon/MapBrush.cpp
+Release/obj-cygwin/dedstat/images.o : qcommon/images.cpp $(DEPENDS_41)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/images.o qcommon/images.cpp
 
 DEPENDS_42 = \
 	Core/Inc/Build.h \
@@ -1770,37 +1824,22 @@ DEPENDS_42 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
-	qcommon/cmodel.h \
-	qcommon/protocol.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h \
-	server/game.h \
-	server/server.h
+	qcommon/MapBrush.h \
+	qcommon/qcommon.h
 
-Release/obj-cygwin/q2stat/sv_game.o : server/sv_game.cpp $(DEPENDS_42)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_game.o server/sv_game.cpp
+Release/obj-cygwin/q2stat/MapBrush.o : qcommon/MapBrush.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/MapBrush.o qcommon/MapBrush.cpp
 
-Release/obj-cygwin/dedstat/sv_game.o : server/sv_game.cpp $(DEPENDS_42)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_game.o server/sv_game.cpp
-
-Release/obj-cygwin/q2stat/sv_init.o : server/sv_init.cpp $(DEPENDS_42)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_init.o server/sv_init.cpp
-
-Release/obj-cygwin/dedstat/sv_init.o : server/sv_init.cpp $(DEPENDS_42)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_init.o server/sv_init.cpp
-
-Release/obj-cygwin/q2stat/sv_world.o : server/sv_world.cpp $(DEPENDS_42)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_world.o server/sv_world.cpp
-
-Release/obj-cygwin/dedstat/sv_world.o : server/sv_world.cpp $(DEPENDS_42)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_world.o server/sv_world.cpp
+Release/obj-cygwin/dedstat/MapBrush.o : qcommon/MapBrush.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/MapBrush.o qcommon/MapBrush.cpp
 
 DEPENDS_43 = \
 	Core/Inc/Build.h \
@@ -1814,6 +1853,8 @@ DEPENDS_43 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
@@ -1821,21 +1862,29 @@ DEPENDS_43 = \
 	client/engine.h \
 	client/engine_intf.h \
 	qcommon/cmodel.h \
-	qcommon/q_shared2.h \
+	qcommon/protocol.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h
+	qcommon/qfiles.h \
+	server/game.h \
+	server/server.h
 
-Release/obj-cygwin/q2stat/EntityParser.o : qcommon/EntityParser.cpp $(DEPENDS_43)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/EntityParser.o qcommon/EntityParser.cpp
+Release/obj-cygwin/q2stat/sv_game.o : server/sv_game.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_game.o server/sv_game.cpp
 
-Release/obj-cygwin/dedstat/EntityParser.o : qcommon/EntityParser.cpp $(DEPENDS_43)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/EntityParser.o qcommon/EntityParser.cpp
+Release/obj-cygwin/dedstat/sv_game.o : server/sv_game.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_game.o server/sv_game.cpp
 
-Release/obj-cygwin/q2stat/model.o : qcommon/model.cpp $(DEPENDS_43)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/model.o qcommon/model.cpp
+Release/obj-cygwin/q2stat/sv_init.o : server/sv_init.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_init.o server/sv_init.cpp
 
-Release/obj-cygwin/dedstat/model.o : qcommon/model.cpp $(DEPENDS_43)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/model.o qcommon/model.cpp
+Release/obj-cygwin/dedstat/sv_init.o : server/sv_init.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_init.o server/sv_init.cpp
+
+Release/obj-cygwin/q2stat/sv_world.o : server/sv_world.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_world.o server/sv_world.cpp
+
+Release/obj-cygwin/dedstat/sv_world.o : server/sv_world.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_world.o server/sv_world.cpp
 
 DEPENDS_44 = \
 	Core/Inc/Build.h \
@@ -1849,41 +1898,29 @@ DEPENDS_44 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
-	qcommon/protocol.h \
-	qcommon/q_shared2.h \
+	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	server/game.h \
-	server/server.h
+	qcommon/qfiles.h
 
-Release/obj-cygwin/q2stat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_44)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_anim.o server/sv_anim.cpp
+Release/obj-cygwin/q2stat/EntityParser.o : qcommon/EntityParser.cpp $(DEPENDS_44)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/EntityParser.o qcommon/EntityParser.cpp
 
-Release/obj-cygwin/dedstat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_44)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_anim.o server/sv_anim.cpp
+Release/obj-cygwin/dedstat/EntityParser.o : qcommon/EntityParser.cpp $(DEPENDS_44)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/EntityParser.o qcommon/EntityParser.cpp
 
-Release/obj-cygwin/q2stat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_44)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_ents.o server/sv_ents.cpp
+Release/obj-cygwin/q2stat/model.o : qcommon/model.cpp $(DEPENDS_44)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/model.o qcommon/model.cpp
 
-Release/obj-cygwin/dedstat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_44)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_ents.o server/sv_ents.cpp
-
-Release/obj-cygwin/q2stat/sv_send.o : server/sv_send.cpp $(DEPENDS_44)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_send.o server/sv_send.cpp
-
-Release/obj-cygwin/dedstat/sv_send.o : server/sv_send.cpp $(DEPENDS_44)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_send.o server/sv_send.cpp
-
-Release/obj-cygwin/q2stat/sv_user.o : server/sv_user.cpp $(DEPENDS_44)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_user.o server/sv_user.cpp
-
-Release/obj-cygwin/dedstat/sv_user.o : server/sv_user.cpp $(DEPENDS_44)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_user.o server/sv_user.cpp
+Release/obj-cygwin/dedstat/model.o : qcommon/model.cpp $(DEPENDS_44)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/model.o qcommon/model.cpp
 
 DEPENDS_45 = \
 	Core/Inc/Build.h \
@@ -1897,41 +1934,16 @@ DEPENDS_45 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
-	qcommon/q_shared2.h \
+	qcommon/protocol.h \
 	qcommon/qcommon.h
-
-Release/obj-cygwin/q2stat/ref_vars.o : client/ref_vars.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/ref_vars.o client/ref_vars.cpp
-
-Release/obj-cygwin/q2stat/anorms.o : qcommon/anorms.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/anorms.o qcommon/anorms.cpp
-
-Release/obj-cygwin/dedstat/anorms.o : qcommon/anorms.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/anorms.o qcommon/anorms.cpp
-
-Release/obj-cygwin/q2stat/cmd.o : qcommon/cmd.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cmd.o qcommon/cmd.cpp
-
-Release/obj-cygwin/dedstat/cmd.o : qcommon/cmd.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/cmd.o qcommon/cmd.cpp
-
-Release/obj-cygwin/q2stat/crc.o : qcommon/crc.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/crc.o qcommon/crc.cpp
-
-Release/obj-cygwin/dedstat/crc.o : qcommon/crc.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/crc.o qcommon/crc.cpp
-
-Release/obj-cygwin/q2stat/cvar.o : qcommon/cvar.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cvar.o qcommon/cvar.cpp
-
-Release/obj-cygwin/dedstat/cvar.o : qcommon/cvar.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/cvar.o qcommon/cvar.cpp
 
 Release/obj-cygwin/q2stat/entdelta.o : qcommon/entdelta.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/entdelta.o qcommon/entdelta.cpp
@@ -1939,38 +1951,11 @@ Release/obj-cygwin/q2stat/entdelta.o : qcommon/entdelta.cpp $(DEPENDS_45)
 Release/obj-cygwin/dedstat/entdelta.o : qcommon/entdelta.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/entdelta.o qcommon/entdelta.cpp
 
-Release/obj-cygwin/q2stat/msg.o : qcommon/msg.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/msg.o qcommon/msg.cpp
-
-Release/obj-cygwin/dedstat/msg.o : qcommon/msg.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/msg.o qcommon/msg.cpp
-
-Release/obj-cygwin/q2stat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/net_chan.o qcommon/net_chan.cpp
-
-Release/obj-cygwin/dedstat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/net_chan.o qcommon/net_chan.cpp
-
 Release/obj-cygwin/q2stat/pmove.o : qcommon/pmove.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/pmove.o qcommon/pmove.cpp
 
 Release/obj-cygwin/dedstat/pmove.o : qcommon/pmove.cpp $(DEPENDS_45)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/pmove.o qcommon/pmove.cpp
-
-Release/obj-cygwin/dedstat/sv_dedicated.o : server/sv_dedicated.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_dedicated.o server/sv_dedicated.cpp
-
-Release/obj-cygwin/q2stat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_tokenize.o server/sv_tokenize.cpp
-
-Release/obj-cygwin/dedstat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_tokenize.o server/sv_tokenize.cpp
-
-Release/obj-cygwin/q2stat/net_wins.o : win32/net_wins.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/net_wins.o win32/net_wins.cpp
-
-Release/obj-cygwin/dedstat/net_wins.o : win32/net_wins.cpp $(DEPENDS_45)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/net_wins.o win32/net_wins.cpp
 
 DEPENDS_46 = \
 	Core/Inc/Build.h \
@@ -1984,22 +1969,117 @@ DEPENDS_46 = \
 	Core/Inc/ErrorMgr.h \
 	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
-	qcommon/q_shared2.h
+	client/engine.h \
+	client/engine_intf.h \
+	qcommon/protocol.h \
+	qcommon/qcommon.h \
+	server/game.h \
+	server/server.h
 
-Release/obj-cygwin/q2stat/q_shared2.o : qcommon/q_shared2.cpp $(DEPENDS_46)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/q_shared2.o qcommon/q_shared2.cpp
+Release/obj-cygwin/q2stat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_46)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_anim.o server/sv_anim.cpp
 
-Release/obj-cygwin/dedstat/q_shared2.o : qcommon/q_shared2.cpp $(DEPENDS_46)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/q_shared2.o qcommon/q_shared2.cpp
+Release/obj-cygwin/dedstat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_46)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_anim.o server/sv_anim.cpp
+
+Release/obj-cygwin/q2stat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_46)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_ents.o server/sv_ents.cpp
+
+Release/obj-cygwin/dedstat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_46)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_ents.o server/sv_ents.cpp
+
+Release/obj-cygwin/q2stat/sv_send.o : server/sv_send.cpp $(DEPENDS_46)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_send.o server/sv_send.cpp
+
+Release/obj-cygwin/dedstat/sv_send.o : server/sv_send.cpp $(DEPENDS_46)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_send.o server/sv_send.cpp
+
+Release/obj-cygwin/q2stat/sv_user.o : server/sv_user.cpp $(DEPENDS_46)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_user.o server/sv_user.cpp
+
+Release/obj-cygwin/dedstat/sv_user.o : server/sv_user.cpp $(DEPENDS_46)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_user.o server/sv_user.cpp
 
 DEPENDS_47 = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
+	qcommon/qcommon.h
+
+Release/obj-cygwin/q2stat/ref_vars.o : client/ref_vars.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/ref_vars.o client/ref_vars.cpp
+
+Release/obj-cygwin/q2stat/anorms.o : qcommon/anorms.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/anorms.o qcommon/anorms.cpp
+
+Release/obj-cygwin/dedstat/anorms.o : qcommon/anorms.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/anorms.o qcommon/anorms.cpp
+
+Release/obj-cygwin/q2stat/cmd.o : qcommon/cmd.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cmd.o qcommon/cmd.cpp
+
+Release/obj-cygwin/dedstat/cmd.o : qcommon/cmd.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/cmd.o qcommon/cmd.cpp
+
+Release/obj-cygwin/q2stat/cvar.o : qcommon/cvar.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cvar.o qcommon/cvar.cpp
+
+Release/obj-cygwin/dedstat/cvar.o : qcommon/cvar.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/cvar.o qcommon/cvar.cpp
+
+Release/obj-cygwin/q2stat/msg.o : qcommon/msg.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/msg.o qcommon/msg.cpp
+
+Release/obj-cygwin/dedstat/msg.o : qcommon/msg.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/msg.o qcommon/msg.cpp
+
+Release/obj-cygwin/q2stat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/net_chan.o qcommon/net_chan.cpp
+
+Release/obj-cygwin/dedstat/net_chan.o : qcommon/net_chan.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/net_chan.o qcommon/net_chan.cpp
+
+Release/obj-cygwin/dedstat/sv_dedicated.o : server/sv_dedicated.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_dedicated.o server/sv_dedicated.cpp
+
+Release/obj-cygwin/q2stat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_tokenize.o server/sv_tokenize.cpp
+
+Release/obj-cygwin/dedstat/sv_tokenize.o : server/sv_tokenize.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_tokenize.o server/sv_tokenize.cpp
+
+Release/obj-cygwin/q2stat/net_wins.o : win32/net_wins.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/net_wins.o win32/net_wins.cpp
+
+Release/obj-cygwin/dedstat/net_wins.o : win32/net_wins.cpp $(DEPENDS_47)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/net_wins.o win32/net_wins.cpp
+
+DEPENDS_48 = \
 	resource/archive.res
 
-Release/obj-cygwin/q2stat/makeres.o : resource/makeres.asm $(DEPENDS_47)
+Release/obj-cygwin/q2stat/makeres.o : resource/makeres.asm $(DEPENDS_48)
 	nasm -f elf -i resource/ -o "Release/obj-cygwin/q2stat/makeres.o" resource/makeres.asm
 
 #------------------------------------------------------------------------------

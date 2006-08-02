@@ -1537,7 +1537,7 @@ void CL_BfgParticles (const CVec3 &origin)
 		CVec3 angles;
 		VectorScale (avelocities[i], cl.ftime, angles);
 		CVec3 forward;
-		AngleVectors (angles, &forward, NULL, NULL);
+		Euler2Vecs (angles, &forward, NULL, NULL);
 
 		float dist = sin(cl.ftime + i)*64;
 		p->org[0] = origin[0] + bytedirs[i][0]*dist + forward[0]*BEAMLENGTH;
@@ -1588,7 +1588,7 @@ void CL_FlyEffect (centity_t &ent)
 		CVec3 angles;
 		VectorScale (avelocities[i], cl.ftime, angles);
 		CVec3 forward;
-		AngleVectors (angles, &forward, NULL, NULL);
+		Euler2Vecs (angles, &forward, NULL, NULL);
 
 		float dist = sin(cl.ftime + i) * 64;
 		p->org[0] = origin[0] + bytedirs[i][0]*dist + forward[0]*BEAMLENGTH;

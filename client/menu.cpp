@@ -1088,9 +1088,7 @@ struct joinserverMenu_t : menuFramework_t
 
 	static void JoinServerFunc (void *self)
 	{
-		int		index;
-
-		index = (menuAction_t *) self - server_actions;
+		int index = (menuAction_t *) self - server_actions;
 
 		if (!stricmp (local_server_names[index], NO_SERVER_STRING))
 			return;
@@ -1102,8 +1100,7 @@ struct joinserverMenu_t : menuFramework_t
 	}
 
 	static void NullCursorDraw (void *self)
-	{
-	}
+	{}
 
 	static void SearchLocalGames (void)
 	{
@@ -1251,24 +1248,19 @@ struct startserverMenu_t : menuFramework_t
 		}
 	}
 
-	static void StartServerFunc (char *map)
+	static void StartServerFunc (const char *map)
 	{
 		int		v;
-		char	startmap[1024];
-		strcpy (startmap, map);
 
 		//?? low limit is 0, upper limit - unlimited ?
 		v = atoi (maxclients_field.buffer);
-		if (v < 0) v = 0;
-		Cvar_SetInteger ("maxclients", v);
+		Cvar_SetInteger ("maxclients", max(v, 0));
 
 		v = atoi (timelimit_field.buffer);
-		if (v < 0) v = 0;
-		Cvar_SetInteger ("timelimit", v);
+		Cvar_SetInteger ("timelimit", max(v, 0));
 
 		v = atoi (fraglimit_field.buffer);
-		if (v < 0) v = 0;
-		Cvar_SetInteger ("fraglimit", v);
+		Cvar_SetInteger ("fraglimit", max(v, 0));
 
 //		Cvar_SetValue ("deathmatch", !rules_box.curvalue);
 //		Cvar_SetValue ("coop", rules_box.curvalue);
@@ -1289,27 +1281,27 @@ struct startserverMenu_t : menuFramework_t
 		const char *spot = NULL;
 		if (rules_box.curvalue == 1)		// ROGUE
 		{
-			if (!stricmp (startmap, "bunk1")  ||
-				!stricmp (startmap, "mintro") ||
-				!stricmp (startmap, "fact1"))
+			if (!stricmp (map, "bunk1")  ||
+				!stricmp (map, "mintro") ||
+				!stricmp (map, "fact1"))
 				spot = "start";
-			else if (!stricmp (startmap, "power1"))
+			else if (!stricmp (map, "power1"))
 				spot = "pstart";
-			else if (!stricmp (startmap, "biggun"))
+			else if (!stricmp (map, "biggun"))
 				spot = "bstart";
-			else if (!stricmp (startmap, "hangar1") || !stricmp (startmap, "city1"))
+			else if (!stricmp (map, "hangar1") || !stricmp (map, "city1"))
 				spot = "unitstart";
-			else if (!stricmp (startmap, "boss1"))
+			else if (!stricmp (map, "boss1"))
 				spot = "bosstart";
 		}
 
 		if (spot)
 		{
 			if (Com_ServerState()) Cbuf_AddText ("disconnect\n");
-			Cbuf_AddText (va("gamemap \"*%s$%s\"\n", startmap, spot));
+			Cbuf_AddText (va("gamemap \"*%s$%s\"\n", map, spot));
 		}
 		else
-			Cbuf_AddText (va("map %s\n", startmap));
+			Cbuf_AddText (va("map %s\n", map));
 
 		if (mapNamesChain)
 		{
@@ -1854,8 +1846,8 @@ struct addressBookMenu_t : menuFramework_t
 			addressbook_fields[i].x	= 0;
 			addressbook_fields[i].y	= i * 18 + 0;
 			addressbook_fields[i].localData = i;
-			addressbook_fields[i].cursor		= 0;
-			addressbook_fields[i].length		= 60;
+			addressbook_fields[i].cursor = 0;
+			addressbook_fields[i].length = 60;
 			addressbook_fields[i].visible_length = 30;
 
 			strcpy (addressbook_fields[i].buffer, Cvar_VariableString (va("adr%d", i)));
@@ -2135,7 +2127,7 @@ struct playerConfigMenu_t : menuFramework_t
 	}
 
 // stand: 0-39; run: 40-45
-#define FIRST_FRAME	0			//!! replace with animation_type (to work correctly with ANY model type)
+#define FIRST_FRAME	0
 #define LAST_FRAME	39
 
 #define MODEL_DELAY	300
@@ -2180,6 +2172,7 @@ struct playerConfigMenu_t : menuFramework_t
 			cent.prev = st;
 			cent.current = st;
 			// setup base entity
+			// note: we will setup both frame numbers (for q2 models) and animation type (for q3 models)
 			entity_t base;
 			memset (&base, 0, sizeof(base));
 			base.pos.origin[0] = 90;
@@ -2192,7 +2185,7 @@ struct playerConfigMenu_t : menuFramework_t
 			if (base.backlerp == 1.0f)
 				base.backlerp = 0.0;
 			base.angles[1] = cls.realtime / 20 % 360;
-			base.pos.axis.FromAngles (base.angles);
+			base.pos.axis.FromEuler (base.angles);
 			// create entities
 			entity_t e[16];
 			memset (&e, 0, sizeof(e));
@@ -2843,6 +2836,7 @@ static void Menu_Quit_f (void)
 
 
 #if 0
+-- currently broken (changed model skin system)
 /*
 =======================================================================
 
@@ -2899,7 +2893,7 @@ struct testMenu_t : menuFramework_t
 		// add legs model
 		e[0].angles[1] = cls.realtime / 20 % 360;	// rotate
 		e[0].pos.origin[0] = 130;
-		e[0].pos.axis.FromAngles (e[0].angles);		// compute legs axis
+		e[0].pos.axis.FromEuler (e[0].angles);		// compute legs axis
 		e[0].model = RE_RegisterModel (va("models/players/%s/lower.md3", model_name));
 		e[0].skin = RE_RegisterSkin (va("models/players/%s/blue", model_name));
 		e[0].frame = e[0].oldframe = 220-63;	// legs frame

@@ -12,7 +12,7 @@ CPP_EXCEPT = 0
 	# nothing ...
 !endif
 
-OBJDIR = obj
+OBJDIR = obj/$PLATFORM
 
 #------------------------------------------------------------------------------
 #	JPEG lib
@@ -113,5 +113,5 @@ sources(LIBFILES) = \
 
 target( \
 	static, \	# static library
-	libs, \		# filename
+	libs-$TARGET, \	# filename
 	LIBFILES)	# name of the list of object files

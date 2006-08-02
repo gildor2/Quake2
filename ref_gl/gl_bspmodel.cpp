@@ -21,17 +21,16 @@ bspModel_t map;
 // Both this structures has same fields, except Q3 lost "type"
 static void LoadPlanes (const dPlane_t *data, int count, int stride)
 {
-	cplane_t *out;
+	CPlane *out;
 
 	map.numPlanes = count;
-	map.planes = out = new (map.dataChain) cplane_t [count];
+	map.planes = out = new (map.dataChain) CPlane [count];
 
 	for (int i = 0; i < count; i++, data = OffsetPointer(data, stride), out++)
 	{
 		out->normal = data->normal;
 		out->dist   = data->dist;
-		out->SetType ();
-		out->SetSignbits ();
+		out->Setup ();
 	}
 }
 
@@ -854,8 +853,7 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 			// backface (needed for backface culling)
 			s->plane.normal.Negate ();
 			s->plane.dist = -s->plane.dist;
-			//?? s->plane.SetSignbits ();
-			s->plane.SetType ();
+			s->plane.Setup ();
 		}
 		s->numVerts   = numVerts;
 		s->verts      = (vertex_t *) (s+1);	//!!! allocate verts separately (for fast draw - in AGP memory)

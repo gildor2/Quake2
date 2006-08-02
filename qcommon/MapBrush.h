@@ -1,3 +1,19 @@
+
+//#define BRUSH_PROFILE		1
+
+#if MAX_DEBUG
+#undef BRUSH_PROFILE
+#define BRUSH_PROFILE		1
+#endif
+
+
+#if BRUSH_PROFILE
+#define BRUSH_STAT(x)		x
+#else
+#define BRUSH_STAT(x)
+#endif
+
+
 struct CBrushVert
 {
 	CVec3	*v;
@@ -9,7 +25,7 @@ struct CBrushSide
 {
 	CBrushSide *next;		// inside brush
 	// plane normal looks outside the brush volume
-	cplane_t *plane;
+	CPlane *plane;
 	CBrushVert *verts;		// all verts should belongs to `plane'
 	bool	back;			// when "true", uses inverted `plane'
 };
@@ -22,9 +38,9 @@ struct CBrush
 	CBrush ()
 	{}
 	CBrush (const CBox &Bounds);
-	CBrush *Split (cplane_t *plane);
+	CBrush *Split (CPlane *plane);
 	void GetBounds (CBox &bounds);
-	void AddBevels (cplane_t* (*GetPlane)(const CVec3&, float));
+	void AddBevels (CPlane* (*GetPlane)(const CVec3&, float));
 	// memory pool for all split operations
 	static CMemoryChain *mem;
 #if 1

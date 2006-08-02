@@ -38,11 +38,11 @@ CPP_EXCEPT = 0
 !endif
 
 !if "$PLATFORM" eq "win32"
+	SUFF      = Win32
 	STDLIBS   = kernel32 user32 gdi32
 	!if $COMPILER eq "GnuC"	# i.e. mingw32
 		STDLIBS += winmm wsock32 dinput stdc++
 	!endif
-	SUFF      = Win32
 !else
 	# linux/cygwin + GCC
 	SUFF      = Unix
@@ -70,6 +70,7 @@ COM_DEFINES = MAX_DEBUG=$MAX_DEBUG
 
 
 #------------------------------------------------------------------------------
+# source files
 
 D = Core/Src
 CORE = {
@@ -89,6 +90,8 @@ CORE = {
 	$D/FileSystem.cpp
 	$D/FileSystem$SUFF.cpp
 	$D/FileContainerArc.cpp
+	$D/Math3D.cpp
+	$D/MathMisc.cpp
 	# unfinished code:
 #	$D/CommandCompletion.cpp
 #	$D/Commands.cpp
@@ -153,7 +156,6 @@ COMMON = {
 	$D/msg.cpp
 	$D/net_chan.cpp
 	$D/pmove.cpp
-	$D/q_shared2.cpp
 	$D/QuakeFileSystem.cpp
 }
 
@@ -222,7 +224,7 @@ DEFINES = $COM_DEFINES STATIC_BUILD SINGLE_RENDERER	#?? SINGLE_RENDERER: check w
 OBJDIR  = $OBJ/q2stat
 sources(STATIC) = $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES $GL_RENDERER
 
-LIBS = lib/libs
+LIBS = lib/libs-$TARGET
 target(executable, $OUT/Quake2, STATIC, STATIC)
 
 #------------------------------------------------------------------------------
@@ -230,7 +232,7 @@ target(executable, $OUT/Quake2, STATIC, STATIC)
 
 !ifndef  NOSHARED		#!!!! shared
 
-# !! not works now !!
+# !! does not works now !!
 DEFINES = $COM_DEFINES
 OBJDIR  = $OBJ/CoreShared
 sources(CORE) = $CORE
@@ -240,7 +242,7 @@ target(shared, $OUT/Core, CORE, DYNAMIC)
 
 #----------------------------
 
-LIBS = lib/libs $OUT/Core
+LIBS = lib/libs-$TARGET $OUT/Core
 
 DEFINES = $COM_DEFINES
 OBJDIR  = $OBJ/q2dyn
@@ -254,7 +256,7 @@ LIBS = $OUT/Core
 
 DEFINES = $COM_DEFINES
 OBJDIR  = $OBJ/gldyn
-sources(DYN_GL) = $GL_RENDERER qcommon/q_shared2.cpp client/ref_vars.cpp
+sources(DYN_GL) = $GL_RENDERER client/ref_vars.cpp
 
 target(shared, $OUT/ref_gl, DYN_GL, DYNAMIC)
 
@@ -273,7 +275,7 @@ DEFINES = $COM_DEFINES STATIC_BUILD DEDICATED_ONLY
 OBJDIR  = $OBJ/dedstat
 sources(DEDICATED) = $DED_CLIENT $SERVER $COMMON $DED_WIN32 #?? $RES_FILES
 
-LIBS    = lib/libs
+LIBS    = lib/libs-$TARGET
 CONSOLE = 1
 target(executable, $OUT/q2ded, DEDICATED, DEDICATED)
 
@@ -281,7 +283,7 @@ target(executable, $OUT/q2ded, DEDICATED, DEDICATED)
 # test application
 
 DEFINES = $COM_DEFINES STATIC_BUILD
-LIBS    = lib/libs		# for zlib
+LIBS    = lib/libs-$TARGET	# for zlib
 
 #-- Core files
 OBJDIR  = $OBJ/CoreStatic

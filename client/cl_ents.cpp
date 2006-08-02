@@ -36,7 +36,7 @@ void CL_ParseDelta (clEntityState_t *from, clEntityState_t *to, int number, unsi
 
 	//!! if remove line "if (bits & (...) || baseline) ...", can remove "baseline" arg and "ent->valid" field
 //	if (bits & (U_ANGLE_N|U_MODEL_N) || baseline)
-		to->axis.FromAngles (to->angles);
+		to->axis.FromEuler (to->angles);
 
 //	if (bits & (U_SOLID|U_ANGLE_N|U_ORIGIN_N|U_MODEL_N) || baseline || !to->valid)
 	{
@@ -507,7 +507,7 @@ static void CL_AddDebugLines ()
 static void CL_AddPacketEntities ()
 {
 	// bonus items rotate at a fixed rate
-	float autorotate = AngleMod(cl.ftime * 100);
+	float autorotate = ReduceAngle (cl.ftime * 100);
 	// brush models can auto animate their frames
 	int autoanim = 2 * cl.time / 1000;
 
@@ -590,10 +590,10 @@ static void CL_AddPacketEntities ()
 		else if (effects & EF_SPINNINGLIGHTS)
 		{
 			ent.angles[0] = 0;
-			ent.angles[1] = AngleMod(cl.time/2) + st->angles[1];
+			ent.angles[1] = ReduceAngle (cl.time/2) + st->angles[1];
 			ent.angles[2] = 180;
 			CVec3 forward, start;
-			AngleVectors (ent.angles, &forward, NULL, NULL);
+			Euler2Vecs (ent.angles, &forward, NULL, NULL);
 			VectorMA (ent.pos.origin, 64, forward, start);
 			V_AddLight (start, 100, 1, 0, 0);
 		}
@@ -818,7 +818,7 @@ void CL_OffsetThirdPersonView ()
 #endif
 	CVec3 angles = cl.refdef.viewangles;
 	angles[YAW] += cl_cameraAngle->value;
-	AngleVectors (angles, &forward, NULL, NULL);
+	Euler2Vecs (angles, &forward, NULL, NULL);
 	VectorMA (cl.refdef.vieworg, -camDist, forward, pos);
 	pos[2] += cl_cameraHeight->value;
 	cl.refdef.viewangles[YAW] += cl_cameraAngle->value;
@@ -836,7 +836,7 @@ void CL_OffsetThirdPersonView ()
 		while (angles[PITCH] < 90)
 		{
 			angles[PITCH] += 2;
-			AngleVectors (angles, &forward, NULL, NULL);
+			Euler2Vecs (angles, &forward, NULL, NULL);
 			VectorMA (cl.refdef.vieworg, -camDist, forward, pos);
 			pos[2] += cl_cameraHeight->value;
 
@@ -932,7 +932,7 @@ static void CL_CalcViewValues ()
 		Lerp (ent->prev.origin, ent->current.origin, cl.lerpfrac, cl.modelorg);
 	}
 
-	AngleVectors (cl.refdef.viewangles, &cl.v_forward, &cl.v_right, &cl.v_up);
+	Euler2Vecs (cl.refdef.viewangles, &cl.v_forward, &cl.v_right, &cl.v_up);
 }
 
 

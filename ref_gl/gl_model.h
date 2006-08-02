@@ -99,7 +99,7 @@ class surfacePlanar_t : public surfaceBase_t
 public:
 	inline surfacePlanar_t () { type = SURFACE_PLANAR; };
 	CBox	bounds;
-	cplane_t plane;
+	CPlane	plane;
 	CVec3	axis[2];			// 2 orthogonal identity vectors from surface
 	float	mins2[2], maxs2[2];	// 2D-bounds (in "axis" coordinate system)
 	int		numVerts, numIndexes;
@@ -189,7 +189,7 @@ struct node_t
 	int		visFrame, frame;	// PVS-cull frame, frustum-cull frame
 	// leaf geometry
 	CBox	bounds;
-	cplane_t *plane;
+	CPlane	*plane;
 	// tree structure
 	node_t	*parent, *children[2];
 	// BSP draw sequence (dynamic)
@@ -230,7 +230,7 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 	CMemoryChain *dataChain;
 	//?? shaders, fog, lightGrid (Q3)
 	// planes
-	cplane_t *planes;
+	CPlane	*planes;
 	int		numPlanes;
 	// bsp
 	node_t	*nodes;				// nodes[numNodes], leafs[numLeafsNodes-numNodes]

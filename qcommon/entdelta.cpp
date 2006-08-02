@@ -1,4 +1,5 @@
 #include "qcommon.h"
+#include "protocol.h"
 
 
 #define NET_POS_SCALER	8	// float pos * SCALER -> int pos
@@ -316,9 +317,9 @@ void MSG_WriteDeltaEntity (sizebuf_t *msg, const entityStateEx_t *from, entitySt
 	guard(MSG_WriteDeltaEntity);
 
 	if (!to->number)
-		Com_FatalError ("Unset entity number");
+		appError ("Unset entity number");
 	if (to->number >= MAX_EDICTS)
-		Com_FatalError ("Entity number >= MAX_EDICTS");
+		appError ("Entity number >= MAX_EDICTS");
 
 	LOG("write delta entity\n");
 

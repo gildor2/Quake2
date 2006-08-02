@@ -574,9 +574,8 @@ static void SetFrustum ()
 	// complete planes
 	for (i = 0; i < NUM_FRUSTUM_PLANES; i++)
 	{
-		vp.frustum[i].type = PLANE_NON_AXIAL;
 		vp.frustum[i].dist = dot (vp.view.origin, vp.frustum[i].normal);
-		vp.frustum[i].SetSignbits ();
+		vp.frustum[i].Setup ();
 	}
 	vp.frustum[0].dist += gl_znear->value;
 }
@@ -693,7 +692,7 @@ void RenderFrame (refdef_t *fd)
 
 	// set vp.view before all to allow 3D text output
 	vp.view.origin  = fd->vieworg;
-	vp.view.axis.FromAngles (fd->viewangles);
+	vp.view.axis.FromEuler (fd->viewangles);
 
 	vp.lightStyles  = fd->lightstyles;
 
@@ -711,7 +710,7 @@ void RenderFrame (refdef_t *fd)
 		inlineModel_t *model = map.models;
 		entity_t tempEnt;
 		memset (&tempEnt, 0, sizeof(tempEnt));
-		tempEnt.pos.axis.FromAngles (tempEnt.angles);
+		tempEnt.pos.axis.FromEuler (tempEnt.angles);
 		for (i = 0; i < map.numModels; i++, model++)
 		{
 			if (!(model->flags & CMODEL_SHOW)) continue;

@@ -71,7 +71,22 @@ void appListDirectory (const char *mask, CFileList &List, unsigned flags)
 
 void appMakeDirectory (const char *dirname)
 {
-	mkdir (dirname, S_IRWXU);
+	if (!dirname[0]) return;
+	// mkdir() does not support "a/b/c" creation,
+	// so - we will create "a", then "a/b", then "a/b/c"
+	TString<256> Name; Name.filename (dirname);
+	for (char *s = *Name; /* empty */ ; s++)
+	{
+		char c = *s;
+		if (c != '/' && c != 0)
+			continue;
+		*s = 0;						// temporarily cut rest of path
+		// here: path delimiter or end of string
+		if (Name[0] != '.' || Name[1] != 0)		// do not create "."
+			mkdir (Name, S_IRWXU);
+		if (!c) break;				// end of string
+		*s = '/';					// restore string (c == '/')
+	}
 }
 
 

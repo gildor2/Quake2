@@ -1,4 +1,4 @@
-#include "qcommon.h"
+#include "Core.h"
 
 // this is a 16 bit, non-reflected CRC using the polynomial 0x1021
 // and the initial and final xor values shown below...  in other words, the
@@ -128,7 +128,7 @@ byte Com_BlockSequenceCRCByte (byte *base, int length, int sequence)
 	byte buffer[60 + 4];
 
 	if (sequence < 0)
-		Com_FatalError ("BlockCRC: sequence < 0");
+		appError ("BlockCRC: sequence < 0");
 
 	// copy up to 60 bytes to buffer
 	if (length > 60) length = 60;

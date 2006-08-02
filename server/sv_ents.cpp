@@ -46,7 +46,7 @@ static void SV_FatPVS (const CVec3 &org)
 	int leafs[64];
 	int count = CM_BoxLeafnums (bounds, ARRAY_ARG(leafs));
 	if (count < 1)
-		Com_FatalError ("SV_FatPVS: count < 1");
+		appError ("SV_FatPVS: count < 1");
 	int numDwords = (CM_NumClusters()+31) / 32;
 
 	// convert leafs to clusters

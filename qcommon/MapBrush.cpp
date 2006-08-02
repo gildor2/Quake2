@@ -1,4 +1,4 @@
-#include "qcommon.h"
+#include "qcommon.h"		// for CONTENTS_SOLID ...
 #include "MapBrush.h"
 
 //!! BUG: map 'ground3', r_showBrush=1585 -> SplitPoly(): numOnPlane==3
@@ -13,7 +13,7 @@ CMemoryChain *CBrush::mem;
 // Create brush from bounds
 CBrush::CBrush (const CBox &Bounds)
 {
-	cplane_t *p   = new (mem) cplane_t[6];
+	CPlane *p     = new (mem) CPlane[6];
 	CVec3 *vec    = new (mem) CVec3[8];
 	CBrushSide *s = new (mem) CBrushSide[6];
 	CBrushVert *v = new (mem) CBrushVert[6*4];
@@ -34,7 +34,7 @@ CBrush::CBrush (const CBox &Bounds)
 	     |   .          |   /
 	     |  .           |  /
 	     | .            | /           0-8 - vecs (CVec3)
-	    0|.            1|/            A-F - sides (cplane_t, CBrushSide)
+	    0|.            1|/            A-F - sides (CPlane, CBrushSide)
 	     +--------------+
 
 	     /      V
@@ -46,8 +46,7 @@ CBrush::CBrush (const CBox &Bounds)
 	{
 		p[i].normal[i>>1] = (i & 1) ? 1 : -1;
 		p[i].dist = (i & 1) ? Bounds.maxs[i>>1] : -Bounds.mins[i>>1];	// note: +maxs[] and -mins[] (because normal[]==-1)
-		p[i].SetType ();
-		p[i].SetSignbits ();		// unused, but ...
+		p[i].Setup ();
 	}
 	// init vecs
 	for (i = 0; i < 8; i++)
@@ -124,7 +123,7 @@ static float planeBounds[2];						// min/max distance from plane
 //		returns 'false' when poly placed on plane (cannot divide)
 // `poly' will be damaged (altered)
 // When poly on a single side of plane, it will not be modified (but returned as 'front' or 'back')
-static bool SplitPoly (CBrushVert *poly, cplane_t *plane, CBrushVert* &front, CBrushVert* &back)
+static bool SplitPoly (CBrushVert *poly, CPlane *plane, CBrushVert* &front, CBrushVert* &back)
 {
 	guardSlow(SplitPoly);
 
@@ -317,7 +316,7 @@ assert(0);
 // should remember on-plane verts from SplitPoly() (new verts+old on-plane verts), analyze them and
 // combine in CBrush::Split() into new side
 
-CBrush *CBrush::Split (cplane_t *plane)
+CBrush *CBrush::Split (CPlane *plane)
 {
 	guard(CBrush::Split);
 
@@ -584,7 +583,7 @@ void CBrush::GetBounds (CBox &bounds)
 }
 
 
-void CBrush::AddBevels (cplane_t* (*GetPlane)(const CVec3&, float))
+void CBrush::AddBevels (CPlane* (*GetPlane)(const CVec3&, float))
 {
 	guard(CBrush::AddBevels);
 
@@ -653,7 +652,7 @@ void CBrush::AddBevels (cplane_t* (*GetPlane)(const CVec3&, float))
 		CBrushSide *s;
 		for (s = sides; s; s = s->next)
 		{
-			cplane_t *p = s->plane;
+			CPlane *p = s->plane;
 			if (!s->back)
 			{
 				if (fabs (p->dist - dist) > EPSILON) continue;

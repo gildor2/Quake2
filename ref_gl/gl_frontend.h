@@ -50,7 +50,7 @@ struct viewPortal_t
 	// projection params
 	int		x, y, w, h;			// viewport
 	float	fov_x, fov_y, t_fov_x, t_fov_y, fov_scale;
-	cplane_t frustum[NUM_FRUSTUM_PLANES];	// used for frustum culling
+	CPlane	frustum[NUM_FRUSTUM_PLANES];	// used for frustum culling
 	float	projectionMatrix[4][4];
 	CBox	bounds;				// bounding box of all visible leafs
 	float	zFar;				// maximim distance (Z-coordinate) from view.origin to mins/maxs vertexes

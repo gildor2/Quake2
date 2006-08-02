@@ -68,7 +68,7 @@ static int Cull (CBox &b, int frustumMask)
 
 	int res = FRUSTUM_INSIDE;
 	int	i;
-	cplane_t *pl;
+	CPlane *pl;
 	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 		if (frustumMask & (1 << i))
 		{
@@ -93,7 +93,7 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 #if 1	// this version FASTER
 	int res = 0;
 	int	i, mask;
-	cplane_t *fr;
+	CPlane *fr;
 	for (i = 0, mask = 1, fr = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, mask<<=1, fr++)
 	{
 		if (!(mask & frustumMask))
@@ -103,7 +103,7 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 		}
 
 		// transform frustum plane to entity coordinate system
-		cplane_t pl;
+		CPlane pl;
 		e->coord.TransformPlane (*fr, pl);
 
 		switch (b.OnPlaneSide (pl))	// do not use BOX_ON_PLANE_SIDE -- useless (non-axial planes)
@@ -135,7 +135,7 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 	// perform frustum culling
 	int res = 0;
 	int mask;
-	cplane_t *fr;
+	CPlane *fr;
 	for (i = 0, mask = 1, fr = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, mask<<=1, fr++)
 	{	// loop by frustum planes
 		int		j;
@@ -183,7 +183,7 @@ static int SphereCull (const CVec3 &origin, float radius, byte *frustumMask)
 	int ret = 0;
 	int mask = frustumMask ? *frustumMask : MAX_FRUSTUM_MASK;
 	int	i, m;
-	const cplane_t *pl;
+	const CPlane *pl;
 	for (i = 0, pl = vp.frustum, m = 1; i < NUM_FRUSTUM_PLANES; i++, pl++, m <<= 1)
 	{	// loop by frustum planes
 		if (!(m & mask)) continue;
@@ -215,7 +215,7 @@ static int PointCull (const CVec3 &point, int frustumMask)
 		return FRUSTUM_INSIDE;
 
 	int	i;
-	const cplane_t *pl;
+	const CPlane *pl;
 	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 		if (frustumMask & (1 << i))
 		{
@@ -418,7 +418,7 @@ static void ClipTraceToEntities (trace_t &tr, const CVec3 &start, const CVec3 &e
 static bool CutCylinder (CVec3 &v1, CVec3 &v2, float radius)
 {
 	int		i;
-	cplane_t *pl;
+	CPlane *pl;
 	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 	{	// loop by frustum planes
 		float	frac;

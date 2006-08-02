@@ -204,7 +204,7 @@ static bool ReadNextFrame (byte *buffer)
 		Com_DropError ("bad compressed frame size: %d\n", size);
 	// read and verify check decompressed frame size
 	if (cin.file->ReadInt() != cin.frameSize)
-		Com_FatalError ("bad cinematic frame size");
+		appError ("bad cinematic frame size");
 
 	cin.file->Read (compressed, size);
 

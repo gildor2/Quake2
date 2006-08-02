@@ -65,13 +65,6 @@ typedef unsigned int		address_t;
 
 #define	GET_RETADDR(firstarg)	((address_t)__builtin_return_address(0))
 
-// link-time static assertion (linker will exit with error "undefined reference to 'assert_[name]'"
-#define staticAssert(expr,name)			\
-	{									\
-		extern int *assert_##name;		\
-		if (!(expr)) assert_##name = 0;	\
-	}
-
 
 /*-----------------------------------------------------------------------------
 	Some math functions

@@ -1,4 +1,261 @@
+/*=============================================================================
+	Game interface strucs/consts
+=============================================================================*/
 
+// game print flags; for svc_print command; client system uses PRINT_CHAT only; server - PRINT_HIGH
+enum
+{
+	PRINT_LOW,						// pickup messages
+	PRINT_MEDIUM,					// death messages
+	PRINT_HIGH,						// critical messages
+	PRINT_CHAT						// chat messages
+};
+
+
+// destination class for gi.multicast()
+enum multicast_t
+{
+	MULTICAST_ALL,
+	MULTICAST_PHS,					// PHS support removed: == MULTICAST_ALL
+	MULTICAST_PVS,
+	MULTICAST_ALL_R,
+	MULTICAST_PHS_R,				// .. == MULTICAST_ALL_R
+	MULTICAST_PVS_R
+};
+
+#define	MAX_EDICTS			1024	// must change protocol to increase more
+
+
+/*-----------------------------------------------------------------------------
+	Player movement code
+-----------------------------------------------------------------------------*/
+
+// pmove_state_t is the information necessary for client side movement prediction
+enum pmtype_t
+{
+	// can accelerate and turn
+	PM_NORMAL,
+	PM_SPECTATOR,
+	// no acceleration or turning
+	PM_DEAD,
+	PM_GIB,		// different bounding box
+	PM_FREEZE
+};
+
+// pmove->pm_flags
+#define	PMF_DUCKED			1
+#define	PMF_JUMP_HELD		2
+#define	PMF_ON_GROUND		4
+#define	PMF_TIME_WATERJUMP	8		// pm_time is waterjump
+#define	PMF_TIME_LAND		16		// pm_time is time before rejump
+#define	PMF_TIME_TELEPORT	32		// pm_time is non-moving time
+#define PMF_NO_PREDICTION	64		// temporarily disables prediction (used for grappling hook)
+
+// This structure needs to be communicated bit-accurate from the server to the client to
+// guarantee that prediction stays in sync, so no floats are used. If any part of the game
+// code modifies this struct, it will result in a prediction error of some degree.
+struct pmove_state_t
+{
+	pmtype_t	pm_type;
+
+	short		origin[3];			// fixed 12.3
+	short		velocity[3];		// fixed 12.3; unit/sec
+	byte		pm_flags;			// ducked, jump_held, etc
+	byte		pm_time;			// each unit = 8 ms
+	short		gravity;
+	short		delta_angles[3];	// add to command angles to get view direction; modified by game code only
+};
+
+
+// button bits
+#define	BUTTON_ATTACK		1
+#define	BUTTON_USE			2
+#define	BUTTON_ANY			128		// any key whatsoever
+
+
+// usercmd_t is sent to the server each client frame
+struct usercmd_t
+{
+	byte	msec;
+	byte	buttons;
+	short	angles[3];
+	short	forwardmove, sidemove, upmove;
+	byte	impulse;				// remove? (unused !!)
+	byte	lightlevel;				// light level the player is standing on
+};
+
+
+#define	MAXTOUCH	32
+struct pmove_t
+{
+	// state (in / out)
+	pmove_state_t s;
+
+	// command (in)
+	usercmd_t	cmd;
+	bool		snapinitial;		// if s has been changed outside pmove
+	byte		pad[3];				// qboolean pad
+
+	// results (out)
+	int			numtouch;
+	struct edict_s	*touchents[MAXTOUCH];
+
+	CVec3		viewangles;			// clamped
+	float		viewheight;
+
+	CBox		bounds;				// bounding box
+
+	struct edict_s	*groundentity;
+	int			watertype;
+	int			waterlevel;
+
+	// callbacks to test the world
+	trace0_t*	(*trace) (trace0_t &trace, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end);
+	int			(*pointcontents) (const CVec3 &point);
+};
+
+
+//=============================================================================
+
+// sound channels
+// channel 0 never willingly overrides
+// other channels (1-7) allways override a playing sound on that channel
+enum
+{
+	CHAN_AUTO,
+	CHAN_WEAPON,
+	CHAN_VOICE,
+	CHAN_ITEM,
+	CHAN_BODY,
+	// modifier flags
+	CHAN_NO_PHS_ADD = 8,	// send to all clients, not just ones in PHS (ATTN_NONE will also do this);
+							// since PHS support removed, this flag is ignored
+	CHAN_RELIABLE   = 16	// send by reliable message, not datagram
+};
+
+
+// sound attenuation values
+enum
+{
+	ATTN_NONE,				// full volume the entire level
+	ATTN_NORM,
+	ATTN_IDLE,
+	ATTN_STATIC				// diminish very rapidly with distance
+};
+
+
+enum
+{
+	MATERIAL_SILENT,		// no footstep sounds (and no bullethit sounds)
+	MATERIAL_CONCRETE,		// standard sounds
+	MATERIAL_FABRIC,		// rug
+	MATERIAL_GRAVEL,		// gravel
+	MATERIAL_METAL,			// metalh
+	MATERIAL_METAL_L,		// metall
+	MATERIAL_SNOW,			// tin (replace with pure snow from AHL??)
+	MATERIAL_TIN,
+	MATERIAL_TILE,			// marble (similar to concrete, but slightly muffled sound)
+	MATERIAL_WOOD,			// wood
+	MATERIAL_WATER,
+	MATERIAL_GLASS,
+	MATERIAL_DIRT,
+	//!! reserved for constant MATERIAL_COUNT, but not implemented now:
+	MATERIAL_R0,
+	MATERIAL_R1,
+	MATERIAL_R2,
+	MATERIAL_R3,
+
+	MATERIAL_COUNT			// must be last
+};
+
+
+/*
+==========================================================
+
+  ELEMENTS COMMUNICATED ACROSS THE NET
+
+==========================================================
+*/
+
+// entity_state_t is the information conveyed from the server in an update message
+// about entities that the client will need to render in some way
+// this is a basic structure, supported by game library
+struct entity_state_t
+{
+	int		number;			// edict index; real size is "short"
+
+	CVec3	origin;
+	CVec3	angles;
+	CVec3	old_origin;		// for lerping
+	int		modelindex;
+	int		modelindex2, modelindex3, modelindex4;	// weapons, CTF flags, etc; real size is "byte"
+							// modelindex2 used for weapon, 3 - for CTF flags, 4 - unused
+	int		frame;			// real size is "short"
+	int		skinnum;
+	unsigned effects;
+	unsigned renderfx;
+	int		solid;			// 16-bit int; for client side prediction, 8*bits[0-4] is x/y radius; 8*bits[5-9] is z
+							// down distance, 8*bits[10-15] is z up; gi.linkentity() sets this; real size is "short"
+	int		sound;			// for looping sounds, to guarantee shutoff; real size is "byte"
+	int		event;			// impulse events -- muzzle flashes, footsteps, etc; events only go out for a single frame,
+							// they are automatically cleared each frame; real size is "byte"
+};
+
+// entityStateEx_t is extended entity_state_t structure
+struct entityStateEx_t : entity_state_t
+{
+	// added since extended protocol v1
+	unsigned anim;			// legs, torso animation + some features
+	// functions to support additional fields
+	inline void SetAnim (int legs, int torso, int moveDir = 0, float pitch = 0)
+	{
+		anim = legs | (torso << 6) | (moveDir << 12) | ((appRound (pitch) + 90) << 15);
+	}
+	inline void GetAnim (int &legs, int &torso, int &moveDir, float &pitch) const
+	{
+		legs    =   anim        & 0x3F;
+		torso   =  (anim >> 6)  & 0x3F;
+		moveDir =  (anim >> 12) & 7;
+		pitch   = ((anim >> 15) & 0xFF) - 90.0f;
+	}
+};
+
+//==============================================
+
+#define	MAX_STATS	32		// max STAT_XXX value; limited by protocol: 1 bit of int32 for each stats
+
+
+// player_state_t is the information needed in addition to pmove_state_t
+// to rendered a view.  There will only be 10 (sv_fps) player_state_t sent
+// each second, but the number of pmove_state_t changes will be relative to
+// client frame rates
+struct player_state_t
+{
+	pmove_state_t	pmove;	// for prediction
+
+	// these fields do not need to be communicated bit-precise
+
+	CVec3		viewangles;	// for fixed views
+	CVec3		viewoffset;	// add to pmovestate->origin
+	CVec3		kick_angles;// add to view direction to get render angles
+							// set by weapon kicks, pain effects, etc
+
+	CVec3		gunangles;
+	CVec3		gunoffset;
+	int			gunindex;
+	int			gunframe;
+
+	float		blend[4];	// rgba full screen effect
+	float		fov;		// horizontal field of view
+	int			rdflags;	// refdef flags
+
+	short		stats[MAX_STATS]; // fast status bar updates
+};
+
+
+/*=============================================================================
+	Network communication
+=============================================================================*/
 
 // entity_state_t->effects
 // Effects are things handled on the client side (lights, particles, frame animations)

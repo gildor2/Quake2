@@ -318,6 +318,202 @@ void Info_Print (const char *s)
 
 
 /*-----------------------------------------------------------------------------
+	Angle functions (taken from Quake3)
+-----------------------------------------------------------------------------*/
+
+//!! incorrect in most cases (should be slerp); used by cl_ents.cpp only
+float LerpAngle (float a1, float a2, float frac)
+{
+	if (a2 - a1 > 180)
+		a2 -= 360;
+	if (a2 - a1 < -180)
+		a2 += 360;
+	return Lerp (a1, a2, frac);
+}
+
+float ReduceAngle (float a)
+{
+	a = (360.0f/65536) * (appRound (a*(65536.0f/360)) & 65535);
+	return a;
+}
+
+float AngleSubtract (float a1, float a2)
+{
+	float a = a1 - a2;
+	while (a > 180)
+		a -= 360;
+	while (a < -180)
+		a += 360;
+	return a;
+}
+
+void AnglesSubtract (const CVec3 &v1, const CVec3 &v2, CVec3 &v3)
+{
+	v3[0] = AngleSubtract (v1[0], v2[0]);
+	v3[1] = AngleSubtract (v1[1], v2[1]);
+	v3[2] = AngleSubtract (v1[2], v2[2]);
+}
+
+
+/*
+============================================================================
+
+					TEXT PARSER
+
+============================================================================
+*/
+
+static char com_token[MAX_STRING_CHARS];
+static int	com_lines;
+
+static const char *SkipWhitespace (const char *data, bool *hasNewLines)
+{
+	char	c;
+	while ((c = *data) <= ' ')
+	{
+		if (!c) return NULL;
+		if (c == '\n')
+		{
+			com_lines++;
+			*hasNewLines = true;
+		}
+		data++;
+	}
+
+	return data;
+}
+
+char *COM_Parse (const char *&data_p, bool allowLineBreaks)
+{
+	const char *data = data_p;
+	com_token[0] = 0;
+
+	if (!data)					// all data is out
+		return com_token;		// ""
+
+	int len = 0;
+	char c = 0;
+	bool hasNewLines = false;
+
+	while (true)
+	{
+		// skip whitespace
+		data = SkipWhitespace (data, &hasNewLines);
+		if (!data)
+		{
+			data_p = NULL;
+			return com_token;
+		}
+		if (hasNewLines && !allowLineBreaks)
+		{
+			data_p = data;
+			return com_token;
+		}
+
+		c = *data;
+
+		// skip double slash comments
+		if (c == '/' && data[1] == '/')
+		{
+			data += 2;
+			while (*data && *data != '\n') data++;
+		}
+		// skip /* */ comments
+		else if (c=='/' && data[1] == '*')
+		{
+			data += 2;
+			while (*data && (*data != '*' || data[1] != '/'))
+				data++;
+			if (*data)
+				data += 2;
+		}
+		else
+			break;
+	}
+
+	// handle quoted strings
+	if (c == '\"')
+	{
+		data++;
+		while (true)
+		{
+			c = *data++;
+			if (c == '\"' && *data == '\"')
+			{
+				// doubled quotes
+				data++;				// skip both quotes
+				if (len < sizeof(com_token))
+					com_token[len++] = c;
+				continue;
+			}
+
+			if (c=='\"' || !c)
+			{
+				com_token[len] = 0;
+				data_p = (char *) data;
+				return com_token;
+			}
+
+			if (len < sizeof(com_token))
+				com_token[len++] = c;
+		}
+	}
+
+	// parse a regular word
+	do
+	{
+		if (len < sizeof(com_token))
+		{
+			com_token[len] = c;
+			len++;
+		}
+		data++;
+		c = *data;
+		if (c == '\n')
+			com_lines++;
+	} while (c > 32);
+
+	if (len == sizeof(com_token))
+	{
+//		appWPrintf ("Token exceeded %d chars, discarded.\n", sizeof(com_token));
+		len = 0;
+	}
+	com_token[len] = 0;
+
+	data_p = data;
+	return com_token;
+}
+
+//?? its my own function - move, rename ...
+const char *COM_QuoteString (const char *str, bool alwaysQuote)
+{
+	char	*dst, c;
+
+	if (!alwaysQuote)
+	{
+		const char *s;
+
+		s = str;
+		while (c = *s++)
+			if (c == ' ' || c == '\"' || c == ';') break;
+		if (!c) return str;				// line have no chars, which requires quoting
+	}
+
+	dst = com_token;
+	*dst++ = '\"';
+	while (c = *str++)
+	{
+		*dst++ = c;
+		if (c == '\"') *dst++ = c;
+	}
+	*dst++ = '\"';
+	*dst = 0;
+
+	return com_token;
+}
+
+
+/*-----------------------------------------------------------------------------
 	Commandline parsing
 -----------------------------------------------------------------------------*/
 

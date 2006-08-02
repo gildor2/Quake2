@@ -1,3 +1,14 @@
+- dedicated server: when launched few dedicated servers on the same machine, only one will use standard server port, all other
+  will use 1st available port -- this will not allow to find other servers from network (check this!); to fix this:
+  - create shared memory region (or special file?) and store process info (win32: window handle (or pid?), unix: pid)
+  - when one of servers uses standard port, and it will receive "info" request from network, it should send signals to other
+    local servers with info about requesting machine (which will get reply), and these servers should send the same reply,
+    as "primary" server
+  - when "primary" server exit, it should send signal to other processes, and one of them should take standard server port
+    (and became new "primary" server) -- this standard port should take only "info" requests?)
+  * required new Core features:
+    - shared memory (named?)
+    - signals between processes
 - trace: when startsolid, can detect additionally:
   - startContents (contents of brush, where start point placed)
   - leaveSurface (surface, which trace crosses when entering non-solid brush) -- may be used for 3rd person inside water - do
@@ -8,6 +19,7 @@
 - work via proxy server (SOCKS)
   ? check Q3 (initializes SOCKS, but not used its socket?!)
   - check "FreeCAP" (www.freecap.ru) - open-source prog, which adds SOCKS caps to any app
+  - http://antinat.sourceforge.net/ - SOCKS server and client libs
   * doc: misc/net/rfc1928.txt
 ! server: packets are read with unlimited speed, but sent back only sv_fps (10) times per second
   ? may be, split server->client data into 2 lists: game flow (10 times per second) and secondary flow (connection info,

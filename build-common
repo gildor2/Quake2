@@ -1,0 +1,70 @@
+#!/bin/bash
+
+
+TIMEFORMAT="Build time: %1R sec"
+
+#?? TODO:
+#?? - add function "build" with args (one of them - work dir)
+#?? - check ".project is newer than makefile" here (or in makefile?)
+
+thisfile=$BASH_SOURCE		#!! check!
+
+# get $rootdir var
+dir="${thisfile%/*}"
+if [ $dir == $thisfile ]; then
+	dir="."
+fi
+pushd $dir >/dev/null
+rootdir=$PWD
+popd >/dev/null
+
+tools=$rootdir/Tools
+
+# default output directory
+[ "$OUT" ]      || OUT="Release"
+
+#----------------------------------------------------------
+#	set default platform
+#----------------------------------------------------------
+
+[ "$PLATFORM" ] || PLATFORM="vc-win32"
+# force PLATFORM=linux under Linux OS
+[ "$OSTYPE" == "linux-gnu" ] && PLATFORM="linux"
+
+#----------------------------------------------------------
+#	configure build tools
+#----------------------------------------------------------
+
+[ "$PLATFORM" == "mingw32" ] || [ "$PLATFORM" == "cygwin" ] &&
+	export PATH=/bin:/usr/bin:$PATH
+
+case "$PLATFORM" in
+	"vc-win32")
+		build="vc32tools --make"
+		maptype="vc"
+		libext="lib"
+		;;
+	"linux"|"mingw32"|"cygwin")
+		build="$tools/gccfilt make -f"		# logging + colorizing
+		maptype="gcc"
+		libext="a"
+		;;
+	"")
+		echo "PLATFORM is not specified"
+		exit 1
+		;;
+	*)
+		echo "Unknown PLATFORM=\"$PLATFORM\""
+		exit 1
+esac
+
+
+#----------------------------------------------------------
+#	make libs
+#----------------------------------------------------------
+
+if ! [ -f "$rootdir/lib/libs-$PLATFORM.$libext" ]; then
+	pushd $rootdir/lib >/dev/null
+	$build libs-$PLATFORM
+	popd >/dev/null
+fi

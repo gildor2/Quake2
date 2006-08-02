@@ -71,11 +71,10 @@ void appListDirectory (const char *mask, CFileList &List, unsigned flags)
 
 void appMakeDirectory (const char *dirname)
 {
-	// msvcrt mkdir() and win32 CreateDirectory() does not support "a/b/c" creation,
+	if (!dirname[0]) return;
+	// mkdir() and win32 CreateDirectory() does not support "a/b/c" creation,
 	// so - we will create "a", then "a/b", then "a/b/c"
 	TString<256> Name; Name.filename (dirname);
-	if (Name[0] == 0)				// empty directory name ...
-		return;
 	for (char *s = *Name; /* empty */ ; s++)
 	{
 		char c = *s;

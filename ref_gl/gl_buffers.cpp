@@ -43,10 +43,10 @@ void *AllocDynamicMemory (int size)
 void ResizeDynamicMemory (void *ptr, int newSize)
 {
 	if (!ptr || ptr != lastDynamicPtr)
-		Com_FatalError ("R_ResizeDynamicMemory: bad pointer");
+		appError ("R_ResizeDynamicMemory: bad pointer");
 	int n = lastDynamicSize + newSize;
 	if (n > MAX_DYNAMIC_BUFFER)
-		Com_FatalError ("R_ResizeDynamicMemory: out of memory in %d bytes", n - MAX_DYNAMIC_BUFFER);
+		appError ("R_ResizeDynamicMemory: out of memory in %d bytes", n - MAX_DYNAMIC_BUFFER);
 	dynamicBufferSize = n;
 }
 

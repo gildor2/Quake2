@@ -175,7 +175,7 @@ void AddMsgHook (MSGHOOK_FUNC func)
 		if (hooks[i] == func) return;	// already hooked
 		if (!hooks[i] && idx < 0) idx = i;
 	}
-	if (idx < 0) Com_FatalError ("max msg hooks");
+	if (idx < 0) appError ("max msg hooks");
 	hooks[idx] = func;
 }
 
@@ -392,10 +392,10 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 		wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
 //		wc.hbrBackground = (HBRUSH) COLOR_GRAYTEXT;
 		wc.lpszClassName = app;
-		if (!RegisterClass (&wc)) Com_FatalError ("Cannot register window class");
+		if (!RegisterClass (&wc)) appError ("Cannot register window class");
 
 		cl_hwnd = CreateWindowEx (exstyle, app, app, stylebits, x, y, w, h, NULL, NULL, hInstance, NULL);
-		if (!cl_hwnd) Com_FatalError ("Cannot create window");
+		if (!cl_hwnd) appError ("Cannot create window");
 
 		if (width || height) ShowWindow (cl_hwnd, SW_SHOW);
 		// let the sound and input subsystems know about the new window
@@ -621,10 +621,10 @@ void Vid_Tick ()
 				loaded = true;
 			}
 		}
-		if (!loaded) Com_FatalError ("Cannot load renderer");
+		if (!loaded) appError ("Cannot load renderer");
 		strcpy (lastRenderer, vid_ref->string);
 #else
-		if (!LoadRenderer ()) Com_FatalError ("Cannot load renderer");
+		if (!LoadRenderer ()) appError ("Cannot load renderer");
 #endif
 		needRestart = false;
 	}

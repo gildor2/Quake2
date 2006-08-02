@@ -46,11 +46,11 @@ static void SV_New_f (int argc, char **argv)
 	// demo servers just dump the file message
 	if (sv.state == ss_demo)
 	{
-		char name[MAX_OSPATH];
-		appSprintf (ARRAY_ARG(name), "demos/%s", sv.name);
-		sv.rdemofile = GFileSystem->OpenFile (name);
+		TString<MAX_OSPATH> Name;
+		Name.sprintf ("demos/%s", sv.name);
+		sv.rdemofile = GFileSystem->OpenFile (Name);
 		if (!sv.rdemofile)
-			Com_DropError ("Couldn't open %s\n", name);
+			Com_DropError ("Couldn't open %s\n", *Name);
 		return;
 	}
 

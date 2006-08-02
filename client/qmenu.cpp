@@ -25,7 +25,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static void	 Action_Draw (menuAction_t *a);
 static void	 Action_DoEnter (menuAction_t *a);
-static void  DrawStatusBar (const char *string);
 static void	 MenuList_Draw (menuList_t *l);
 static void	 Separator_Draw (menuSeparator_t *s);
 static void	 Slider_Draw (menuSlider_t *s);
@@ -51,7 +50,7 @@ static menuCommon_t *GetItem (menuFramework_t *menu, int index)
 	for (i = 0, item = menu->itemList; i < index && item; i++, item = item->next) ;
 
 	if (!item)
-		Com_FatalError ("GetMenuItem: item index %d is out of bounds %d\n", index, menu->nitems);
+		appError ("GetMenuItem: item index %d is out of bounds %d\n", index, menu->nitems);
 
 	return item;
 }
@@ -202,11 +201,11 @@ void menuFramework_t::AddItem (menuCommon_t *item)
 	for (i = 0, p = itemList; i < nitems; i++, p = p->next)
 	{
 		if (p == item)				// item already present in list -- fatal (circular linked list)
-			Com_FatalError ("double item \"%s\" in menu, index=%d, count=%d", item->name, i, nitems);
+			appError ("double item \"%s\" in menu, index=%d, count=%d", item->name, i, nitems);
 		last = p;
 	}
 	if (last && last->next)			// last item (with index == menu->nitem) have next != NULL
-		Com_FatalError ("invalid item list");
+		appError ("invalid item list");
 	// add to list
 	if (i > 0)	last->next = item;	// append to list tail
 	else		itemList = item;	// first in list
@@ -410,22 +409,15 @@ void menuFramework_t::Draw ()
 				y + item->y, 12 + ((cls.realtime >> 8) & 1));
 	}
 
-	if (item && item->statusbar)
-		DrawStatusBar (item->statusbar);
-	else
-		DrawStatusBar (statusbar);
-}
-
-static void DrawStatusBar (const char *string)
-{
+	// draw statusbar
+	const char *string = (item && item->statusbar) ? item->statusbar : statusbar;
 	if (string)
 	{
 		RE_Fill8 (0, VID_HEIGHT - CHAR_HEIGHT, VID_WIDTH, CHAR_HEIGHT, 4);
 		DrawString ((VID_WIDTH - appCStrlen (string) * CHAR_WIDTH) / 2, VID_HEIGHT - CHAR_WIDTH, string);
 	}
-//	else
-//		RE_Fill8 (0, VID_HEIGHT-8, VID_WIDTH, 8, 0);
 }
+
 
 bool menuFramework_t::SelectItem ()
 {
@@ -647,7 +639,7 @@ void menuFramework_t::Push ()
 	if (i == m_menudepth)
 	{	// menu was not pushed
 		if (m_menudepth >= MAX_MENU_DEPTH)
-			Com_FatalError ("M_PushMenu: MAX_MENU_DEPTH");
+			appError ("M_PushMenu: MAX_MENU_DEPTH");
 		if (!Init ()) return;
 		m_layers[m_menudepth++] = this;
 	}
@@ -675,7 +667,7 @@ void menuFramework_t::Pop ()
 {
 	S_StartLocalSound (menu_out_sound);
 	if (m_menudepth < 1)
-		Com_FatalError ("M_PopMenu: depth < 1");
+		appError ("M_PopMenu: depth < 1");
 
 	m_menudepth--;
 	if (m_menudepth)

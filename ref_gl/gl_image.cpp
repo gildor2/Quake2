@@ -76,7 +76,7 @@ static void GetPalette ()
 	// get the palette
 	byte *pic = LoadPCX ("pics/colormap.pcx", width, height, pal);
 	if (!pal)
-		Com_FatalError ("Can not load pics/colormap.pcx");
+		appError ("Can not load pics/colormap.pcx");
 
 	const byte *p = pal;
 	for (int i = 0; i < 256; i++, p += 3)
@@ -610,7 +610,7 @@ static void Upload (void *pic, unsigned flags, image_t *image)
 image_t *CreateImage (const char *name, void *pic, int width, int height, unsigned flags)
 {
 	guard(CreateImage);
-	if (!name[0]) Com_FatalError ("R_CreateImage: NULL name");
+	if (!name[0]) appError ("R_CreateImage: NULL name");
 
 //	appPrintf ("CreateImage(%s)\n", name);//!!!!
 

@@ -1,0 +1,459 @@
+# Makefile for GnuC/cygwin target
+# This file was automatically generated from "libs.project": do not edit
+
+#------------------------------------------------------------------------------
+#	Compiler definitions
+#------------------------------------------------------------------------------
+
+CPP  = gcc -pipe -c
+LINK = gcc -pipe -s
+AR   = ar -rcs
+
+#------------------------------------------------------------------------------
+#	symbolic targets
+#------------------------------------------------------------------------------
+
+ALL : libs-cygwin.a
+
+#------------------------------------------------------------------------------
+#	"libs-cygwin.a" target
+#------------------------------------------------------------------------------
+
+LIBFILES = \
+	obj/cygwin/jcapimin.o \
+	obj/cygwin/jcapistd.o \
+	obj/cygwin/jccoefct.o \
+	obj/cygwin/jccolor.o \
+	obj/cygwin/jcdctmgr.o \
+	obj/cygwin/jcdiffct.o \
+	obj/cygwin/jchuff.o \
+	obj/cygwin/jcinit.o \
+	obj/cygwin/jclhuff.o \
+	obj/cygwin/jclossls.o \
+	obj/cygwin/jclossy.o \
+	obj/cygwin/jcmainct.o \
+	obj/cygwin/jcmarker.o \
+	obj/cygwin/jcmaster.o \
+	obj/cygwin/jcodec.o \
+	obj/cygwin/jcomapi.o \
+	obj/cygwin/jcparam.o \
+	obj/cygwin/jcphuff.o \
+	obj/cygwin/jcpred.o \
+	obj/cygwin/jcprepct.o \
+	obj/cygwin/jcsample.o \
+	obj/cygwin/jcscale.o \
+	obj/cygwin/jcshuff.o \
+	obj/cygwin/jdapimin.o \
+	obj/cygwin/jdapistd.o \
+	obj/cygwin/jdatadst.o \
+	obj/cygwin/jdcoefct.o \
+	obj/cygwin/jdcolor.o \
+	obj/cygwin/jddctmgr.o \
+	obj/cygwin/jddiffct.o \
+	obj/cygwin/jdhuff.o \
+	obj/cygwin/jdinput.o \
+	obj/cygwin/jdlhuff.o \
+	obj/cygwin/jdlossls.o \
+	obj/cygwin/jdlossy.o \
+	obj/cygwin/jdmainct.o \
+	obj/cygwin/jdmarker.o \
+	obj/cygwin/jdmaster.o \
+	obj/cygwin/jdmerge.o \
+	obj/cygwin/jdphuff.o \
+	obj/cygwin/jdpostct.o \
+	obj/cygwin/jdpred.o \
+	obj/cygwin/jdsample.o \
+	obj/cygwin/jdscale.o \
+	obj/cygwin/jdshuff.o \
+	obj/cygwin/jfdctflt.o \
+	obj/cygwin/jidctflt.o \
+	obj/cygwin/jidctred.o \
+	obj/cygwin/jmemmgr.o \
+	obj/cygwin/jmemnobs.o \
+	obj/cygwin/jquant1.o \
+	obj/cygwin/jquant2.o \
+	obj/cygwin/jutils.o \
+	obj/cygwin/adler32.o \
+	obj/cygwin/crc32.o \
+	obj/cygwin/inffast.o \
+	obj/cygwin/inflate.o \
+	obj/cygwin/inftrees.o \
+	obj/cygwin/zlib.o
+
+LIBFILES_DIRS = \
+	obj/cygwin
+
+libs-cygwin.a : $(LIBFILES_DIRS) $(LIBFILES)
+	@echo Creating static "libs-cygwin.a" ...
+	$(AR) libs-cygwin.a $(LIBFILES)
+
+#------------------------------------------------------------------------------
+#	compiling source files
+#------------------------------------------------------------------------------
+
+OPT_LIBFILES = -Os -fno-rtti -fno-exceptions
+
+DEPENDS_1 = \
+	../Core/Inc/Build.h \
+	../Core/Inc/Commands.h \
+	../Core/Inc/Core.h \
+	../Core/Inc/CoreGnuC.h \
+	../Core/Inc/CoreUnix.h \
+	../Core/Inc/CoreVisualC.h \
+	../Core/Inc/CoreWin32.h \
+	../Core/Inc/DbgSymbols.h \
+	../Core/Inc/ErrorMgr.h \
+	../Core/Inc/FileSystem.h \
+	../Core/Inc/Macro.h \
+	../Core/Inc/Math3D.h \
+	../Core/Inc/MathMisc.h \
+	../Core/Inc/MemoryMgr.h \
+	../Core/Inc/ScriptParser.h \
+	../Core/Inc/Strings.h \
+	../Core/Inc/TextContainer.h
+
+obj/cygwin/zlib.o : zlib.cpp $(DEPENDS_1)
+	$(CPP) $(OPT_LIBFILES) -o obj/cygwin/zlib.o zlib.cpp
+
+OPT_LIBFILES_2 = -Os -D INLINE=__inline -D JDCT_DEFAULT=JDCT_FLOAT -D JDCT_FASTEST=JDCT_FLOAT -D NO_GETENV
+
+DEPENDS_2 = \
+	jpeglib/jchuff.h \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossls.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/cygwin/jclhuff.o : jpeglib/jclhuff.c $(DEPENDS_2)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jclhuff.o jpeglib/jclhuff.c
+
+DEPENDS_3 = \
+	jpeglib/jchuff.h \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossy.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/cygwin/jcphuff.o : jpeglib/jcphuff.c $(DEPENDS_3)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcphuff.o jpeglib/jcphuff.c
+
+obj/cygwin/jcshuff.o : jpeglib/jcshuff.c $(DEPENDS_3)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcshuff.o jpeglib/jcshuff.c
+
+DEPENDS_4 = \
+	jpeglib/jchuff.h \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/cygwin/jchuff.o : jpeglib/jchuff.c $(DEPENDS_4)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jchuff.o jpeglib/jchuff.c
+
+DEPENDS_5 = \
+	jpeglib/jconfig.h \
+	jpeglib/jdct.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossy.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/cygwin/jcdctmgr.o : jpeglib/jcdctmgr.c $(DEPENDS_5)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcdctmgr.o jpeglib/jcdctmgr.c
+
+obj/cygwin/jddctmgr.o : jpeglib/jddctmgr.c $(DEPENDS_5)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jddctmgr.o jpeglib/jddctmgr.c
+
+DEPENDS_6 = \
+	jpeglib/jconfig.h \
+	jpeglib/jdct.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/cygwin/jfdctflt.o : jpeglib/jfdctflt.c $(DEPENDS_6)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jfdctflt.o jpeglib/jfdctflt.c
+
+obj/cygwin/jidctflt.o : jpeglib/jidctflt.c $(DEPENDS_6)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jidctflt.o jpeglib/jidctflt.c
+
+obj/cygwin/jidctred.o : jpeglib/jidctred.c $(DEPENDS_6)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jidctred.o jpeglib/jidctred.c
+
+DEPENDS_7 = \
+	jpeglib/jconfig.h \
+	jpeglib/jdhuff.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossls.h \
+	jpeglib/jlossy.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/cygwin/jdhuff.o : jpeglib/jdhuff.c $(DEPENDS_7)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdhuff.o jpeglib/jdhuff.c
+
+DEPENDS_8 = \
+	jpeglib/jconfig.h \
+	jpeglib/jdhuff.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossls.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/cygwin/jdlhuff.o : jpeglib/jdlhuff.c $(DEPENDS_8)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdlhuff.o jpeglib/jdlhuff.c
+
+DEPENDS_9 = \
+	jpeglib/jconfig.h \
+	jpeglib/jdhuff.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossy.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/cygwin/jdphuff.o : jpeglib/jdphuff.c $(DEPENDS_9)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdphuff.o jpeglib/jdphuff.c
+
+obj/cygwin/jdshuff.o : jpeglib/jdshuff.c $(DEPENDS_9)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdshuff.o jpeglib/jdshuff.c
+
+DEPENDS_10 = \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossls.h \
+	jpeglib/jlossy.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/cygwin/jcodec.o : jpeglib/jcodec.c $(DEPENDS_10)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcodec.o jpeglib/jcodec.c
+
+DEPENDS_11 = \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossls.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/cygwin/jcdiffct.o : jpeglib/jcdiffct.c $(DEPENDS_11)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcdiffct.o jpeglib/jcdiffct.c
+
+obj/cygwin/jclossls.o : jpeglib/jclossls.c $(DEPENDS_11)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jclossls.o jpeglib/jclossls.c
+
+obj/cygwin/jcpred.o : jpeglib/jcpred.c $(DEPENDS_11)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcpred.o jpeglib/jcpred.c
+
+obj/cygwin/jcscale.o : jpeglib/jcscale.c $(DEPENDS_11)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcscale.o jpeglib/jcscale.c
+
+obj/cygwin/jddiffct.o : jpeglib/jddiffct.c $(DEPENDS_11)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jddiffct.o jpeglib/jddiffct.c
+
+obj/cygwin/jdlossls.o : jpeglib/jdlossls.c $(DEPENDS_11)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdlossls.o jpeglib/jdlossls.c
+
+obj/cygwin/jdpred.o : jpeglib/jdpred.c $(DEPENDS_11)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdpred.o jpeglib/jdpred.c
+
+obj/cygwin/jdscale.o : jpeglib/jdscale.c $(DEPENDS_11)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdscale.o jpeglib/jdscale.c
+
+DEPENDS_12 = \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossy.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/cygwin/jccoefct.o : jpeglib/jccoefct.c $(DEPENDS_12)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jccoefct.o jpeglib/jccoefct.c
+
+obj/cygwin/jclossy.o : jpeglib/jclossy.c $(DEPENDS_12)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jclossy.o jpeglib/jclossy.c
+
+obj/cygwin/jcmaster.o : jpeglib/jcmaster.c $(DEPENDS_12)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcmaster.o jpeglib/jcmaster.c
+
+obj/cygwin/jdcoefct.o : jpeglib/jdcoefct.c $(DEPENDS_12)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdcoefct.o jpeglib/jdcoefct.c
+
+obj/cygwin/jdlossy.o : jpeglib/jdlossy.c $(DEPENDS_12)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdlossy.o jpeglib/jdlossy.c
+
+DEPENDS_13 = \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jmemsys.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/cygwin/jmemmgr.o : jpeglib/jmemmgr.c $(DEPENDS_13)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jmemmgr.o jpeglib/jmemmgr.c
+
+obj/cygwin/jmemnobs.o : jpeglib/jmemnobs.c $(DEPENDS_13)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jmemnobs.o jpeglib/jmemnobs.c
+
+DEPENDS_14 = \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/cygwin/jcapimin.o : jpeglib/jcapimin.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcapimin.o jpeglib/jcapimin.c
+
+obj/cygwin/jcapistd.o : jpeglib/jcapistd.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcapistd.o jpeglib/jcapistd.c
+
+obj/cygwin/jccolor.o : jpeglib/jccolor.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jccolor.o jpeglib/jccolor.c
+
+obj/cygwin/jcinit.o : jpeglib/jcinit.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcinit.o jpeglib/jcinit.c
+
+obj/cygwin/jcmainct.o : jpeglib/jcmainct.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcmainct.o jpeglib/jcmainct.c
+
+obj/cygwin/jcmarker.o : jpeglib/jcmarker.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcmarker.o jpeglib/jcmarker.c
+
+obj/cygwin/jcomapi.o : jpeglib/jcomapi.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcomapi.o jpeglib/jcomapi.c
+
+obj/cygwin/jcparam.o : jpeglib/jcparam.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcparam.o jpeglib/jcparam.c
+
+obj/cygwin/jcprepct.o : jpeglib/jcprepct.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcprepct.o jpeglib/jcprepct.c
+
+obj/cygwin/jcsample.o : jpeglib/jcsample.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jcsample.o jpeglib/jcsample.c
+
+obj/cygwin/jdapimin.o : jpeglib/jdapimin.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdapimin.o jpeglib/jdapimin.c
+
+obj/cygwin/jdapistd.o : jpeglib/jdapistd.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdapistd.o jpeglib/jdapistd.c
+
+obj/cygwin/jdatadst.o : jpeglib/jdatadst.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdatadst.o jpeglib/jdatadst.c
+
+obj/cygwin/jdcolor.o : jpeglib/jdcolor.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdcolor.o jpeglib/jdcolor.c
+
+obj/cygwin/jdinput.o : jpeglib/jdinput.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdinput.o jpeglib/jdinput.c
+
+obj/cygwin/jdmainct.o : jpeglib/jdmainct.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdmainct.o jpeglib/jdmainct.c
+
+obj/cygwin/jdmarker.o : jpeglib/jdmarker.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdmarker.o jpeglib/jdmarker.c
+
+obj/cygwin/jdmaster.o : jpeglib/jdmaster.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdmaster.o jpeglib/jdmaster.c
+
+obj/cygwin/jdmerge.o : jpeglib/jdmerge.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdmerge.o jpeglib/jdmerge.c
+
+obj/cygwin/jdpostct.o : jpeglib/jdpostct.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdpostct.o jpeglib/jdpostct.c
+
+obj/cygwin/jdsample.o : jpeglib/jdsample.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jdsample.o jpeglib/jdsample.c
+
+obj/cygwin/jquant1.o : jpeglib/jquant1.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jquant1.o jpeglib/jquant1.c
+
+obj/cygwin/jquant2.o : jpeglib/jquant2.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jquant2.o jpeglib/jquant2.c
+
+obj/cygwin/jutils.o : jpeglib/jutils.c $(DEPENDS_14)
+	$(CPP) $(OPT_LIBFILES_2) -o obj/cygwin/jutils.o jpeglib/jutils.c
+
+OPT_LIBFILES_3 = -Os -D DYNAMIC_CRC_TABLE -D BUILDFIXED
+
+DEPENDS_15 = \
+	zlib/crc32.h \
+	zlib/zconf.h \
+	zlib/zlib.h \
+	zlib/zutil.h
+
+obj/cygwin/crc32.o : zlib/crc32.c $(DEPENDS_15)
+	$(CPP) $(OPT_LIBFILES_3) -o obj/cygwin/crc32.o zlib/crc32.c
+
+DEPENDS_16 = \
+	zlib/inffast.h \
+	zlib/inffixed.h \
+	zlib/inflate.h \
+	zlib/inftrees.h \
+	zlib/zconf.h \
+	zlib/zlib.h \
+	zlib/zutil.h
+
+obj/cygwin/inflate.o : zlib/inflate.c $(DEPENDS_16)
+	$(CPP) $(OPT_LIBFILES_3) -o obj/cygwin/inflate.o zlib/inflate.c
+
+DEPENDS_17 = \
+	zlib/inffast.h \
+	zlib/inflate.h \
+	zlib/inftrees.h \
+	zlib/zconf.h \
+	zlib/zlib.h \
+	zlib/zutil.h
+
+obj/cygwin/inffast.o : zlib/inffast.c $(DEPENDS_17)
+	$(CPP) $(OPT_LIBFILES_3) -o obj/cygwin/inffast.o zlib/inffast.c
+
+DEPENDS_18 = \
+	zlib/inftrees.h \
+	zlib/zconf.h \
+	zlib/zlib.h \
+	zlib/zutil.h
+
+obj/cygwin/inftrees.o : zlib/inftrees.c $(DEPENDS_18)
+	$(CPP) $(OPT_LIBFILES_3) -o obj/cygwin/inftrees.o zlib/inftrees.c
+
+DEPENDS_19 = \
+	zlib/zconf.h \
+	zlib/zlib.h
+
+obj/cygwin/adler32.o : zlib/adler32.c $(DEPENDS_19)
+	$(CPP) $(OPT_LIBFILES_3) -o obj/cygwin/adler32.o zlib/adler32.c
+
+#------------------------------------------------------------------------------
+#	creating output directories
+#------------------------------------------------------------------------------
+
+obj/cygwin:
+	@mkdir -p obj/cygwin
+

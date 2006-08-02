@@ -15,10 +15,10 @@ void sizebuf_t::Write (const void *data, int length)
 	if (need > maxsize)
 	{
 		if (!allowoverflow)
-			Com_FatalError ("MSG_Write: overflow without allowoverflow (size is %d)", maxsize);
+			appError ("MSG_Write: overflow without allowoverflow (size is %d)", maxsize);
 
 		if (length > maxsize)
-			Com_FatalError ("MSG_Write: %d is > full buffer size", length);
+			appError ("MSG_Write: %d is > full buffer size", length);
 
 		appPrintf ("MSG_Write: overflow (max=%d, need=%d)\n", maxsize, need);
 		Clear ();

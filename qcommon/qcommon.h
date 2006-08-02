@@ -24,7 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Core.h"
 
 //!!!! temp:
-#define Com_FatalError	appFatalError
 #define Com_DropError	appNonFatalError
 
 //#define TRACE_DEBUG		1
@@ -37,10 +36,17 @@ struct cvar_t;
 struct cvarInfo_t;
 struct trace_t;
 struct bspfile_t;
-struct CVec3;
-struct CBox;
-struct CAxis;
-struct cplane_t;
+//??struct CVec3;
+//??struct CBox;
+//??struct CAxis;
+//??struct CPlane;
+
+// game interface/communication strucs
+struct entity_state_t;
+struct entityStateEx_t;
+struct player_state_t;
+struct usercmd_t;
+struct pmove_t;
 
 // empty declarations
 struct CBrush;
@@ -59,8 +65,6 @@ struct CBrush;
 // exports for renderer
 #include "../client/engine_intf.h"
 
-// declarations for game system (!!) + math
-#include "q_shared2.h"
 
 //--------------- some constants ------------------------------
 
@@ -143,20 +147,12 @@ inline void Com_DPrintf (const char*, ...) {}
 #define SAVEGAME_GAME_EXTENSION		"sav"
 #define SAVEGAME_VARS_EXTENSION		"ssv"
 
-// protocol extensions
-#define NEW_PROTOCOL_ID 		"gildor"
-#define NEW_PROTOCOL_VERSION	1
+#define	MAX_STRING_CHARS	1024	// max length of a string passed to TokenizeString()
+#define	MAX_STRING_TOKENS	80		// max tokens resulting from TokenizeString()
 
-/* Protocol extensions history:
- * ----------------------------
- *	0 (no version)
- *		- surface-dependent footsteps (EV_FOOTSTEPn, EV_FALLSHORTn)
- *		- camper sounds (EV_CAMPERn)
- *		- increased max network packet size
- *		- increased download packet size (faster downloading)
- *	1 compatible with v0 (can read demos, recorded with v0 extensions)
- *		-
- */
+#define	MAX_QPATH			64		// max length of a quake game pathname
+#define	MAX_OSPATH			128		// max length of a filesystem pathname
+
 
 
 /*-----------------------------------------------------------------------------
@@ -265,11 +261,78 @@ void	Info_Print (const char *s);
 
 
 /*-----------------------------------------------------------------------------
+	Text parser
+-----------------------------------------------------------------------------*/
+
+// data is an in/out parm, returns a parsed out token
+char *COM_Parse (const char * &data_p, bool allowLineBreaks = true);
+const char *COM_QuoteString (const char *str, bool alwaysQuote);
+
+
+/*-----------------------------------------------------------------------------
+	misc math
+-----------------------------------------------------------------------------*/
+
+// macro version for any types (used 2 times)
+#define VectorSubtract2(a,b,c)	(c[0]=a[0]-b[0],c[1]=a[1]-b[1],c[2]=a[2]-b[2])
+
+
+float ReduceAngle (float a);
+float LerpAngle (float a1, float a2, float frac);
+float AngleSubtract (float a1, float a2);
+void AnglesSubtract (const CVec3 &v1, const CVec3 &v2, CVec3 &v3);
+
+
+/*-----------------------------------------------------------------------------
 	crc.cpp
 -----------------------------------------------------------------------------*/
 
 
 byte	Com_BlockSequenceCRCByte (byte *base, int length, int sequence);
+
+
+/*-----------------------------------------------------------------------------
+	Collision detection (??)
+-----------------------------------------------------------------------------*/
+
+struct csurface_t
+{
+	// standard csurface_t fields (do not change this - used in trace
+	// functions, which are exported to game !)
+	char	shortName[16];
+	unsigned flags;
+	int		value;
+	// field from mapsurface_t (so, csurface_t now contains old
+	//  csurface_t and mapsurface_t)
+	char	fullName[32];			// shortName[] is too short ...
+	// fields added since 4.00
+	int		material;
+	color_t	color;					// color of texture (HL lighting surface, SURF_LIGHT)
+};
+
+// a trace is returned when a box is swept through the world
+// 'trace0_t' used for compatibility with original Q2 mods; engine uses
+// extended structure 'trace_t' (additional fields will be stripped, when
+// passing this structure to game)
+struct trace0_t
+{
+	bool		allsolid;			// if true, plane is not valid; if 'true', startsolid is 'true' too
+	byte		pad1[3];			// qboolean pad
+	bool		startsolid;			// if true, the initial point was in a solid area
+	byte		pad2[3];			// qboolean pad
+	float		fraction;			// time completed, 1.0 = didn't hit anything
+	CVec3		endpos;				// final position
+	CPlane		plane;				// surface normal at impact
+	csurface_t	*surface;			// surface hit
+	int			contents;			// contents on other side of surface hit
+	struct edict_s *ent;			// not set by CM_*() functions; unknown type at this point !
+};
+
+// extended trace info
+struct trace_t : trace0_t
+{
+	int			brushNum;			// number of brush, which caused collision (uninitialized == -1)
+};
 
 
 /*
@@ -281,14 +344,15 @@ PROTOCOL
 */
 
 // declaration from server.h
-typedef enum {
+enum server_state_t
+{
 	ss_dead,
 	ss_loading,
 	ss_game,
 	ss_cinematic,
 	ss_demo,
 	ss_pic
-} server_state_t;
+};
 
 
 // protocol.h -- communications protocols
@@ -305,6 +369,35 @@ typedef enum {
 
 #define	UPDATE_BACKUP		16			// copies of entity_state_t to keep buffered; must be power of two
 #define	UPDATE_MASK			(UPDATE_BACKUP-1)
+
+// protocol extensions
+#define NEW_PROTOCOL_ID 		"gildor"
+#define NEW_PROTOCOL_VERSION	1
+
+/* Protocol extensions history:
+ * ----------------------------
+ *	0 (no version)
+ *		- surface-dependent footsteps (EV_FOOTSTEPn, EV_FALLSHORTn)
+ *		- camper sounds (EV_CAMPERn)
+ *		- increased max network packet size
+ *		- increased download packet size (faster downloading)
+ *	1 compatible with v0 (can read demos, recorded with v0 extensions)
+ *		-
+ */
+
+
+// player_state_t->rdflags (refdef flags)
+#define	RDF_UNDERWATER		1		// warp the screen as apropriate
+#define RDF_NOWORLDMODEL	2		// used for player configuration screen
+//ROGUE
+#define	RDF_IRGOGGLES		4
+#define RDF_UVGOGGLES		8		//?? unused
+// new since 4.00
+#define RDF_THIRD_PERSON	0x10
+
+
+#define	ANGLE2SHORT(x)	(appRound ((x)*65535.0f/360) & 65535)
+#define	SHORT2ANGLE(x)	((x)*(360.0f/65536))
 
 
 
@@ -868,7 +961,7 @@ void	SV_Frame (float msec);
 // added since 4.00
 // Kingpin (used for non-KP maps from scripts too)
 #define SURF_ALPHA				0x1000
-#define	SURF_SPECULAR			0x4000		// have a bug in KP's q_shared.h: SPECULAR and DIFFUSE consts are 0x400 and 0x800
+#define	SURF_SPECULAR			0x4000		// have a bug in KP's headers: SPECULAR and DIFFUSE consts are 0x400 and 0x800
 #define	SURF_DIFFUSE			0x8000
 
 #define SURF_AUTOFLARE			0x2000		// just free flag (should use extra struc for dBsp2Texinfo_t !!)

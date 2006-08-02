@@ -66,7 +66,7 @@ lightmapBlock_t *LM_NewBlock ()
 {
 	// find free slot
 	if (++lightmapsNum == MAX_LIGHTMAPS)
-		Com_FatalError ("LM_NewBlock: MAX_LIGHTMAPS hit");
+		appError ("LM_NewBlock: MAX_LIGHTMAPS hit");
 	lightmapBlock_t &lm = lmBlocks[lightmapsNum - 1];
 	// init fields
 	lm.index     = lightmapsNum;

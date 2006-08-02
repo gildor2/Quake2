@@ -98,20 +98,20 @@ static void SV_WriteLevelFile ()
 {
 	Com_DPrintf("SV_WriteLevelFile()\n");
 
-	char name[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
-	FILE *f = fopen (name, "wb");
+	TString<MAX_OSPATH> Name;
+	Name.sprintf ("./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
+	FILE *f = fopen (Name, "wb");
 	if (!f)
 	{
-		appWPrintf ("Failed to open %s\n", name);
+		appWPrintf ("Failed to open %s\n", *Name);
 		return;
 	}
 	fwrite (sv.configstrings, sizeof(sv.configstrings), 1, f);
 	CM_WritePortalState (f);
 	fclose (f);
 
-	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
-	ge->WriteLevel (name);
+	Name.sprintf ("./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
+	ge->WriteLevel (Name);
 }
 
 
@@ -119,45 +119,43 @@ void SV_ReadLevelFile ()
 {
 	Com_DPrintf ("SV_ReadLevelFile()\n");
 
-	char name[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
-	FILE *f = fopen(name, "rb");
+	TString<MAX_OSPATH> Name;
+	Name.sprintf ("./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
+	FILE *f = fopen (Name, "rb");
 	if (!f)
 	{
-		appWPrintf ("Failed to open %s\n", name);
+		appWPrintf ("Failed to open %s\n", *Name);
 		return;
 	}
 	fread (sv.configstrings, sizeof(sv.configstrings), 1, f);
 	CM_ReadPortalState (f);
 	fclose (f);
 
-	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
-	ge->ReadLevel (name);
+	Name.sprintf ("./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
+	ge->ReadLevel (Name);
 }
 
 
 static void SV_WriteServerFile (bool autosave, const char *dir)
 {
-	char	string[128];
-	char	comment[128];	// used 32 chars
-
 	Com_DPrintf("SV_WriteServerFile(%s, %s)\n", autosave ? "true" : "false", dir);
 
-	char name[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
-	FILE *f = fopen (name, "wb");
+	TString<MAX_OSPATH> Name;
+	Name.sprintf ("./%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
+	FILE *f = fopen (Name, "wb");
 	if (!f)
 	{
-		appWPrintf ("Couldn't write %s\n", name);
+		appWPrintf ("Couldn't write %s\n", *Name);
 		return;
 	}
 	// write the comment field
+	char comment[128];		// used 32 chars
 	memset (comment, 0, sizeof(comment));
 	if (!autosave)
 		appSprintf (ARRAY_ARG(comment), "%s  %s", appTimestamp (), sv.configstrings[CS_NAME]);
 	else
 		appSprintf (ARRAY_ARG(comment), "ENTERING %s", sv.configstrings[CS_NAME]);	// autosaved
-	fwrite (comment, 1, 32, f);
+	fwrite (comment, 32, 1, f);
 
 	// write the mapcmd
 	fwrite (svs.mapcmd, 1, sizeof(svs.mapcmd), f);
@@ -168,6 +166,7 @@ static void SV_WriteServerFile (bool autosave, const char *dir)
 	{
 		if (!(var->flags & CVAR_LATCH))
 			continue;
+		char name[128], string[128];
 		if (strlen(var->name) >= sizeof(name)-1 || strlen(var->string) >= sizeof(string)-1)
 		{
 			appWPrintf ("Cvar too long: %s = %s\n", var->name, var->string);
@@ -184,8 +183,8 @@ static void SV_WriteServerFile (bool autosave, const char *dir)
 	fclose (f);
 
 	// write game state
-	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/%s/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
-	ge->WriteGame (name, autosave);
+	Name.sprintf ("./%s/" SAVEGAME_DIRECTORY "/%s/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
+	ge->WriteGame (Name, autosave);
 
 	// perform screenshot
 	if (!DEDICATED)					// can be uninitialized when dedicated server
@@ -200,23 +199,22 @@ static void SV_WriteServerFile (bool autosave, const char *dir)
 
 static void SV_ReadServerFile ()
 {
-	char	name[MAX_OSPATH], string[128];
-	char	comment[32];
-	char	mapcmd[128];
+	char	comment[32], mapcmd[128];
 
 	Com_DPrintf("SV_ReadServerFile()\n");
 	if (!DEDICATED) SCR_SetLevelshot (SAVEGAME_DIRECTORY "/current/shot");
 
-	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/current/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
-	FILE *f = fopen (name, "rb");
+	TString<MAX_OSPATH> Name;
+	Name.sprintf ("./%s/" SAVEGAME_DIRECTORY "/current/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
+	FILE *f = fopen (Name, "rb");
 	if (!f)
 	{
-		appWPrintf ("Couldn't read %s\n", name);
+		appWPrintf ("Couldn't read %s\n", *Name);
 		return;
 	}
+
 	// read the comment field
 	fread (comment, sizeof(comment), 1, f);
-
 	// read the mapcmd
 	fread (mapcmd, sizeof(mapcmd), 1, f);
 
@@ -224,6 +222,7 @@ static void SV_ReadServerFile ()
 	// these will be things like coop, skill, deathmatch, etc
 	while (true)
 	{
+		char name[128], string[128];
 		if (!fread (name, 1, sizeof(name), f)) break;
 		fread (string, sizeof(string), 1, f);
 		Com_DPrintf ("Set %s = %s\n", name, string);
@@ -238,8 +237,8 @@ static void SV_ReadServerFile ()
 	strcpy (svs.mapcmd, mapcmd);
 
 	// read game state
-	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/current/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
-	ge->ReadGame (name);
+	Name.sprintf ("./%s/" SAVEGAME_DIRECTORY "/current/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
+	ge->ReadGame (Name);
 }
 
 
@@ -263,12 +262,12 @@ static void SV_Loadgame_f (bool usage, int argc, char **argv)
 	}
 
 	// make sure the server.ssv file exists
-	char name[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), argv[1]);
-	FILE *f = fopen (name, "rb");
+	TString<MAX_OSPATH> Name;
+	Name.sprintf ("./%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), argv[1]);
+	FILE *f = fopen (Name, "rb");
 	if (!f)
 	{
-		appWPrintf ("No such savegame: %s\n", name);
+		appWPrintf ("No such savegame: %s\n", *Name);
 		return;
 	}
 	fclose (f);
@@ -815,18 +814,18 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 	}
 
 	// open the demo file
-	char name[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(name), "./%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
+	TString<MAX_OSPATH> Name;
+	Name.sprintf ("./%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
-	appPrintf ("recording to %s\n", name);
-	appMakeDirectoryForFile (name);
-	svs.wdemofile = fopen (name, "wb");
+	appMakeDirectoryForFile (Name);
+	svs.wdemofile = fopen (Name, "wb");
 	if (!svs.wdemofile)
 	{
-		appWPrintf ("ERROR: couldn't open\n");
+		appWPrintf ("ERROR: couldn't write %d\n", *Name);
 		return;
 	}
 
+	appPrintf ("recording to %s\n", *Name);
 	// setup a buffer to catch all multicasts
 	svs.demo_multicast.Init (ARRAY_ARG(svs.demo_multicast_buf));
 

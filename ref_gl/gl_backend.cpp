@@ -1001,7 +1001,7 @@ static void PreprocessShader (shader_t *sh)
 		DrawTextLeft (va("R_PreprocessShader(%s): 0 stages", *currentShader->Name), RGB(1,0,0));
 
 	if (numTmpStages > MAX_RENDER_PASSES)
-		Com_FatalError ("R_PreprocessShader: numStages too large (%d)", numTmpStages);
+		appError ("R_PreprocessShader: numStages too large (%d)", numTmpStages);
 
 	renderPass_t *pass = renderPasses;
 	st = tmpSt;

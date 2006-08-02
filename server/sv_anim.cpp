@@ -141,7 +141,7 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 	velHorz[2] = 0;					// no vertical component
 
 	CVec3 forward, right;
-	AngleVectors (ps->viewangles, &forward, &right, NULL);
+	Euler2Vecs (ps->viewangles, &forward, &right, NULL);
 	float velForward = dot (forward, velHorz);
 	float velRight   = dot (right, velHorz);
 	float absVelHorz = SQRTFAST(velForward*velForward + velRight*velRight);

@@ -56,7 +56,7 @@ platform specification:
 	PLATFORM	= win32 | cygwin | unix
 	COMPILER	= VisualC | GnuC
 	TARGET		= vc-win32 | mingw32 | cygwin | linux
-		When specified TARGET, PLATFORM and COMPILER not needed
+		Should specify either "TARGET" or "PLATFORM"+"COMPILER"
 
 global:
 	CPP_EXCEPT	= 1 == undef | 0		when 0 -- C++ exceptions system disabled
@@ -70,14 +70,14 @@ global:
 per-target:
 	CONSOLE		= 1 | 0 == undef		useless for Visual C++ - automatically detected by presence of main() or WinMain(),
 										but used for Mingw32
-	IMAGEBASE	= base address of executable image
+	IMAGEBASE	= base address of the executable image
 	LIBS		= list of used libraries (exact name, will not search in paths)
 	IMPLIB		= filename				set filename of import library for "dynamic" target type; if not specified -
 										- will not be created
 
 at a time of registration of source files
-	DEFINES
-	INCLUDES
+	DEFINES		= define1[=1] [define2 define3 ...]
+	INCLUDES	= path1 [path2 path3 ...]
 	OBJDIR		= directory for obj files (if not specified, obj files will be placed near c/cpp files)
 	WARNLEVEL	= num					compiler warning level (0 - disable; 1 - max; 2+ - less)
 	OPTIMIZE	= size | speed
@@ -591,13 +591,15 @@ sub AddObjectList {
 				Warning ("unknown INLINES option: [$opt]");
 			}
 			# C++ exceptions
-			$opt = GetSrcOption ("CPP_EXCEPT");
-			if ($opt eq "1" || $opt eq "") {
-				# use compiler defaults
-			} elsif ($opt eq "0") {
-				$options .= " -fno-rtti -fno-exceptions";
-			} else {
-				WarningOnce ("unknown CPP_EXCEPT option: [$opt]");
+			if ($src !~ /\.c$/) {
+				$opt = GetSrcOption ("CPP_EXCEPT");
+				if ($opt eq "1" || $opt eq "") {
+					# use compiler defaults
+				} elsif ($opt eq "0") {
+					$options .= " -fno-rtti -fno-exceptions";
+				} else {
+					WarningOnce ("unknown CPP_EXCEPT option: [$opt]");
+				}
 			}
 		} else {
 			die "unknown compiler";

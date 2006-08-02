@@ -13,79 +13,79 @@ AR   = link.exe -lib -nologo
 #	symbolic targets
 #------------------------------------------------------------------------------
 
-ALL : libs.lib
+ALL : libs-vc-win32.lib
 
 #------------------------------------------------------------------------------
-#	"libs.lib" target
+#	"libs-vc-win32.lib" target
 #------------------------------------------------------------------------------
 
 LIBFILES = \
-	obj/jcapimin.obj \
-	obj/jcapistd.obj \
-	obj/jccoefct.obj \
-	obj/jccolor.obj \
-	obj/jcdctmgr.obj \
-	obj/jcdiffct.obj \
-	obj/jchuff.obj \
-	obj/jcinit.obj \
-	obj/jclhuff.obj \
-	obj/jclossls.obj \
-	obj/jclossy.obj \
-	obj/jcmainct.obj \
-	obj/jcmarker.obj \
-	obj/jcmaster.obj \
-	obj/jcodec.obj \
-	obj/jcomapi.obj \
-	obj/jcparam.obj \
-	obj/jcphuff.obj \
-	obj/jcpred.obj \
-	obj/jcprepct.obj \
-	obj/jcsample.obj \
-	obj/jcscale.obj \
-	obj/jcshuff.obj \
-	obj/jdapimin.obj \
-	obj/jdapistd.obj \
-	obj/jdatadst.obj \
-	obj/jdcoefct.obj \
-	obj/jdcolor.obj \
-	obj/jddctmgr.obj \
-	obj/jddiffct.obj \
-	obj/jdhuff.obj \
-	obj/jdinput.obj \
-	obj/jdlhuff.obj \
-	obj/jdlossls.obj \
-	obj/jdlossy.obj \
-	obj/jdmainct.obj \
-	obj/jdmarker.obj \
-	obj/jdmaster.obj \
-	obj/jdmerge.obj \
-	obj/jdphuff.obj \
-	obj/jdpostct.obj \
-	obj/jdpred.obj \
-	obj/jdsample.obj \
-	obj/jdscale.obj \
-	obj/jdshuff.obj \
-	obj/jfdctflt.obj \
-	obj/jidctflt.obj \
-	obj/jidctred.obj \
-	obj/jmemmgr.obj \
-	obj/jmemnobs.obj \
-	obj/jquant1.obj \
-	obj/jquant2.obj \
-	obj/jutils.obj \
-	obj/adler32.obj \
-	obj/crc32.obj \
-	obj/inffast.obj \
-	obj/inflate.obj \
-	obj/inftrees.obj \
-	obj/zlib.obj
+	obj/win32/jcapimin.obj \
+	obj/win32/jcapistd.obj \
+	obj/win32/jccoefct.obj \
+	obj/win32/jccolor.obj \
+	obj/win32/jcdctmgr.obj \
+	obj/win32/jcdiffct.obj \
+	obj/win32/jchuff.obj \
+	obj/win32/jcinit.obj \
+	obj/win32/jclhuff.obj \
+	obj/win32/jclossls.obj \
+	obj/win32/jclossy.obj \
+	obj/win32/jcmainct.obj \
+	obj/win32/jcmarker.obj \
+	obj/win32/jcmaster.obj \
+	obj/win32/jcodec.obj \
+	obj/win32/jcomapi.obj \
+	obj/win32/jcparam.obj \
+	obj/win32/jcphuff.obj \
+	obj/win32/jcpred.obj \
+	obj/win32/jcprepct.obj \
+	obj/win32/jcsample.obj \
+	obj/win32/jcscale.obj \
+	obj/win32/jcshuff.obj \
+	obj/win32/jdapimin.obj \
+	obj/win32/jdapistd.obj \
+	obj/win32/jdatadst.obj \
+	obj/win32/jdcoefct.obj \
+	obj/win32/jdcolor.obj \
+	obj/win32/jddctmgr.obj \
+	obj/win32/jddiffct.obj \
+	obj/win32/jdhuff.obj \
+	obj/win32/jdinput.obj \
+	obj/win32/jdlhuff.obj \
+	obj/win32/jdlossls.obj \
+	obj/win32/jdlossy.obj \
+	obj/win32/jdmainct.obj \
+	obj/win32/jdmarker.obj \
+	obj/win32/jdmaster.obj \
+	obj/win32/jdmerge.obj \
+	obj/win32/jdphuff.obj \
+	obj/win32/jdpostct.obj \
+	obj/win32/jdpred.obj \
+	obj/win32/jdsample.obj \
+	obj/win32/jdscale.obj \
+	obj/win32/jdshuff.obj \
+	obj/win32/jfdctflt.obj \
+	obj/win32/jidctflt.obj \
+	obj/win32/jidctred.obj \
+	obj/win32/jmemmgr.obj \
+	obj/win32/jmemnobs.obj \
+	obj/win32/jquant1.obj \
+	obj/win32/jquant2.obj \
+	obj/win32/jutils.obj \
+	obj/win32/adler32.obj \
+	obj/win32/crc32.obj \
+	obj/win32/inffast.obj \
+	obj/win32/inflate.obj \
+	obj/win32/inftrees.obj \
+	obj/win32/zlib.obj
 
 LIBFILES_DIRS = \
-	obj
+	obj/win32
 
-libs.lib : $(LIBFILES_DIRS) $(LIBFILES)
-	echo Creating static "libs.lib" ...
-	$(AR) -out:"libs.lib" $(LIBFILES)
+libs-vc-win32.lib : $(LIBFILES_DIRS) $(LIBFILES)
+	echo Creating static "libs-vc-win32.lib" ...
+	$(AR) -out:"libs-vc-win32.lib" $(LIBFILES)
 
 #------------------------------------------------------------------------------
 #	compiling source files
@@ -105,13 +105,15 @@ DEPENDS = \
 	../Core/Inc/ErrorMgr.h \
 	../Core/Inc/FileSystem.h \
 	../Core/Inc/Macro.h \
+	../Core/Inc/Math3D.h \
+	../Core/Inc/MathMisc.h \
 	../Core/Inc/MemoryMgr.h \
 	../Core/Inc/ScriptParser.h \
 	../Core/Inc/Strings.h \
 	../Core/Inc/TextContainer.h
 
-obj/zlib.obj : zlib.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES) -Fo"obj/zlib.obj" zlib.cpp
+obj/win32/zlib.obj : zlib.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES) -Fo"obj/win32/zlib.obj" zlib.cpp
 
 OPT_LIBFILES_2 = -W2 -O1 -Ob2 -GX- -D INLINE=__inline -D JDCT_DEFAULT=JDCT_FLOAT -D JDCT_FASTEST=JDCT_FLOAT -D NO_GETENV
 
@@ -125,8 +127,8 @@ DEPENDS = \
 	jpeglib/jpegint.h \
 	jpeglib/jpeglib.h
 
-obj/jclhuff.obj : jpeglib/jclhuff.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jclhuff.obj" jpeglib/jclhuff.c
+obj/win32/jclhuff.obj : jpeglib/jclhuff.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jclhuff.obj" jpeglib/jclhuff.c
 
 DEPENDS = \
 	jpeglib/jchuff.h \
@@ -138,11 +140,11 @@ DEPENDS = \
 	jpeglib/jpegint.h \
 	jpeglib/jpeglib.h
 
-obj/jcphuff.obj : jpeglib/jcphuff.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcphuff.obj" jpeglib/jcphuff.c
+obj/win32/jcphuff.obj : jpeglib/jcphuff.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcphuff.obj" jpeglib/jcphuff.c
 
-obj/jcshuff.obj : jpeglib/jcshuff.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcshuff.obj" jpeglib/jcshuff.c
+obj/win32/jcshuff.obj : jpeglib/jcshuff.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcshuff.obj" jpeglib/jcshuff.c
 
 DEPENDS = \
 	jpeglib/jchuff.h \
@@ -153,8 +155,8 @@ DEPENDS = \
 	jpeglib/jpegint.h \
 	jpeglib/jpeglib.h
 
-obj/jchuff.obj : jpeglib/jchuff.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jchuff.obj" jpeglib/jchuff.c
+obj/win32/jchuff.obj : jpeglib/jchuff.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jchuff.obj" jpeglib/jchuff.c
 
 DEPENDS = \
 	jpeglib/jconfig.h \
@@ -166,11 +168,11 @@ DEPENDS = \
 	jpeglib/jpegint.h \
 	jpeglib/jpeglib.h
 
-obj/jcdctmgr.obj : jpeglib/jcdctmgr.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcdctmgr.obj" jpeglib/jcdctmgr.c
+obj/win32/jcdctmgr.obj : jpeglib/jcdctmgr.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcdctmgr.obj" jpeglib/jcdctmgr.c
 
-obj/jddctmgr.obj : jpeglib/jddctmgr.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jddctmgr.obj" jpeglib/jddctmgr.c
+obj/win32/jddctmgr.obj : jpeglib/jddctmgr.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jddctmgr.obj" jpeglib/jddctmgr.c
 
 DEPENDS = \
 	jpeglib/jconfig.h \
@@ -181,28 +183,14 @@ DEPENDS = \
 	jpeglib/jpegint.h \
 	jpeglib/jpeglib.h
 
-obj/jfdctflt.obj : jpeglib/jfdctflt.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jfdctflt.obj" jpeglib/jfdctflt.c
+obj/win32/jfdctflt.obj : jpeglib/jfdctflt.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jfdctflt.obj" jpeglib/jfdctflt.c
 
-obj/jidctflt.obj : jpeglib/jidctflt.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jidctflt.obj" jpeglib/jidctflt.c
+obj/win32/jidctflt.obj : jpeglib/jidctflt.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jidctflt.obj" jpeglib/jidctflt.c
 
-obj/jidctred.obj : jpeglib/jidctred.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jidctred.obj" jpeglib/jidctred.c
-
-DEPENDS = \
-	jpeglib/jconfig.h \
-	jpeglib/jdhuff.h \
-	jpeglib/jerror.h \
-	jpeglib/jinclude.h \
-	jpeglib/jlossls.h \
-	jpeglib/jlossy.h \
-	jpeglib/jmorecfg.h \
-	jpeglib/jpegint.h \
-	jpeglib/jpeglib.h
-
-obj/jdhuff.obj : jpeglib/jdhuff.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdhuff.obj" jpeglib/jdhuff.c
+obj/win32/jidctred.obj : jpeglib/jidctred.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jidctred.obj" jpeglib/jidctred.c
 
 DEPENDS = \
 	jpeglib/jconfig.h \
@@ -210,12 +198,26 @@ DEPENDS = \
 	jpeglib/jerror.h \
 	jpeglib/jinclude.h \
 	jpeglib/jlossls.h \
+	jpeglib/jlossy.h \
 	jpeglib/jmorecfg.h \
 	jpeglib/jpegint.h \
 	jpeglib/jpeglib.h
 
-obj/jdlhuff.obj : jpeglib/jdlhuff.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdlhuff.obj" jpeglib/jdlhuff.c
+obj/win32/jdhuff.obj : jpeglib/jdhuff.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdhuff.obj" jpeglib/jdhuff.c
+
+DEPENDS = \
+	jpeglib/jconfig.h \
+	jpeglib/jdhuff.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossls.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/win32/jdlhuff.obj : jpeglib/jdlhuff.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdlhuff.obj" jpeglib/jdlhuff.c
 
 DEPENDS = \
 	jpeglib/jconfig.h \
@@ -227,11 +229,11 @@ DEPENDS = \
 	jpeglib/jpegint.h \
 	jpeglib/jpeglib.h
 
-obj/jdphuff.obj : jpeglib/jdphuff.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdphuff.obj" jpeglib/jdphuff.c
+obj/win32/jdphuff.obj : jpeglib/jdphuff.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdphuff.obj" jpeglib/jdphuff.c
 
-obj/jdshuff.obj : jpeglib/jdshuff.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdshuff.obj" jpeglib/jdshuff.c
+obj/win32/jdshuff.obj : jpeglib/jdshuff.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdshuff.obj" jpeglib/jdshuff.c
 
 DEPENDS = \
 	jpeglib/jconfig.h \
@@ -243,8 +245,8 @@ DEPENDS = \
 	jpeglib/jpegint.h \
 	jpeglib/jpeglib.h
 
-obj/jcodec.obj : jpeglib/jcodec.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcodec.obj" jpeglib/jcodec.c
+obj/win32/jcodec.obj : jpeglib/jcodec.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcodec.obj" jpeglib/jcodec.c
 
 DEPENDS = \
 	jpeglib/jconfig.h \
@@ -255,29 +257,29 @@ DEPENDS = \
 	jpeglib/jpegint.h \
 	jpeglib/jpeglib.h
 
-obj/jcdiffct.obj : jpeglib/jcdiffct.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcdiffct.obj" jpeglib/jcdiffct.c
+obj/win32/jcdiffct.obj : jpeglib/jcdiffct.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcdiffct.obj" jpeglib/jcdiffct.c
 
-obj/jclossls.obj : jpeglib/jclossls.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jclossls.obj" jpeglib/jclossls.c
+obj/win32/jclossls.obj : jpeglib/jclossls.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jclossls.obj" jpeglib/jclossls.c
 
-obj/jcpred.obj : jpeglib/jcpred.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcpred.obj" jpeglib/jcpred.c
+obj/win32/jcpred.obj : jpeglib/jcpred.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcpred.obj" jpeglib/jcpred.c
 
-obj/jcscale.obj : jpeglib/jcscale.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcscale.obj" jpeglib/jcscale.c
+obj/win32/jcscale.obj : jpeglib/jcscale.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcscale.obj" jpeglib/jcscale.c
 
-obj/jddiffct.obj : jpeglib/jddiffct.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jddiffct.obj" jpeglib/jddiffct.c
+obj/win32/jddiffct.obj : jpeglib/jddiffct.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jddiffct.obj" jpeglib/jddiffct.c
 
-obj/jdlossls.obj : jpeglib/jdlossls.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdlossls.obj" jpeglib/jdlossls.c
+obj/win32/jdlossls.obj : jpeglib/jdlossls.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdlossls.obj" jpeglib/jdlossls.c
 
-obj/jdpred.obj : jpeglib/jdpred.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdpred.obj" jpeglib/jdpred.c
+obj/win32/jdpred.obj : jpeglib/jdpred.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdpred.obj" jpeglib/jdpred.c
 
-obj/jdscale.obj : jpeglib/jdscale.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdscale.obj" jpeglib/jdscale.c
+obj/win32/jdscale.obj : jpeglib/jdscale.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdscale.obj" jpeglib/jdscale.c
 
 DEPENDS = \
 	jpeglib/jconfig.h \
@@ -288,20 +290,20 @@ DEPENDS = \
 	jpeglib/jpegint.h \
 	jpeglib/jpeglib.h
 
-obj/jccoefct.obj : jpeglib/jccoefct.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jccoefct.obj" jpeglib/jccoefct.c
+obj/win32/jccoefct.obj : jpeglib/jccoefct.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jccoefct.obj" jpeglib/jccoefct.c
 
-obj/jclossy.obj : jpeglib/jclossy.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jclossy.obj" jpeglib/jclossy.c
+obj/win32/jclossy.obj : jpeglib/jclossy.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jclossy.obj" jpeglib/jclossy.c
 
-obj/jcmaster.obj : jpeglib/jcmaster.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcmaster.obj" jpeglib/jcmaster.c
+obj/win32/jcmaster.obj : jpeglib/jcmaster.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcmaster.obj" jpeglib/jcmaster.c
 
-obj/jdcoefct.obj : jpeglib/jdcoefct.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdcoefct.obj" jpeglib/jdcoefct.c
+obj/win32/jdcoefct.obj : jpeglib/jdcoefct.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdcoefct.obj" jpeglib/jdcoefct.c
 
-obj/jdlossy.obj : jpeglib/jdlossy.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdlossy.obj" jpeglib/jdlossy.c
+obj/win32/jdlossy.obj : jpeglib/jdlossy.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdlossy.obj" jpeglib/jdlossy.c
 
 DEPENDS = \
 	jpeglib/jconfig.h \
@@ -312,11 +314,11 @@ DEPENDS = \
 	jpeglib/jpegint.h \
 	jpeglib/jpeglib.h
 
-obj/jmemmgr.obj : jpeglib/jmemmgr.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jmemmgr.obj" jpeglib/jmemmgr.c
+obj/win32/jmemmgr.obj : jpeglib/jmemmgr.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jmemmgr.obj" jpeglib/jmemmgr.c
 
-obj/jmemnobs.obj : jpeglib/jmemnobs.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jmemnobs.obj" jpeglib/jmemnobs.c
+obj/win32/jmemnobs.obj : jpeglib/jmemnobs.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jmemnobs.obj" jpeglib/jmemnobs.c
 
 DEPENDS = \
 	jpeglib/jconfig.h \
@@ -326,77 +328,77 @@ DEPENDS = \
 	jpeglib/jpegint.h \
 	jpeglib/jpeglib.h
 
-obj/jcapimin.obj : jpeglib/jcapimin.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcapimin.obj" jpeglib/jcapimin.c
+obj/win32/jcapimin.obj : jpeglib/jcapimin.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcapimin.obj" jpeglib/jcapimin.c
 
-obj/jcapistd.obj : jpeglib/jcapistd.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcapistd.obj" jpeglib/jcapistd.c
+obj/win32/jcapistd.obj : jpeglib/jcapistd.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcapistd.obj" jpeglib/jcapistd.c
 
-obj/jccolor.obj : jpeglib/jccolor.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jccolor.obj" jpeglib/jccolor.c
+obj/win32/jccolor.obj : jpeglib/jccolor.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jccolor.obj" jpeglib/jccolor.c
 
-obj/jcinit.obj : jpeglib/jcinit.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcinit.obj" jpeglib/jcinit.c
+obj/win32/jcinit.obj : jpeglib/jcinit.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcinit.obj" jpeglib/jcinit.c
 
-obj/jcmainct.obj : jpeglib/jcmainct.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcmainct.obj" jpeglib/jcmainct.c
+obj/win32/jcmainct.obj : jpeglib/jcmainct.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcmainct.obj" jpeglib/jcmainct.c
 
-obj/jcmarker.obj : jpeglib/jcmarker.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcmarker.obj" jpeglib/jcmarker.c
+obj/win32/jcmarker.obj : jpeglib/jcmarker.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcmarker.obj" jpeglib/jcmarker.c
 
-obj/jcomapi.obj : jpeglib/jcomapi.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcomapi.obj" jpeglib/jcomapi.c
+obj/win32/jcomapi.obj : jpeglib/jcomapi.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcomapi.obj" jpeglib/jcomapi.c
 
-obj/jcparam.obj : jpeglib/jcparam.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcparam.obj" jpeglib/jcparam.c
+obj/win32/jcparam.obj : jpeglib/jcparam.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcparam.obj" jpeglib/jcparam.c
 
-obj/jcprepct.obj : jpeglib/jcprepct.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcprepct.obj" jpeglib/jcprepct.c
+obj/win32/jcprepct.obj : jpeglib/jcprepct.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcprepct.obj" jpeglib/jcprepct.c
 
-obj/jcsample.obj : jpeglib/jcsample.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jcsample.obj" jpeglib/jcsample.c
+obj/win32/jcsample.obj : jpeglib/jcsample.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jcsample.obj" jpeglib/jcsample.c
 
-obj/jdapimin.obj : jpeglib/jdapimin.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdapimin.obj" jpeglib/jdapimin.c
+obj/win32/jdapimin.obj : jpeglib/jdapimin.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdapimin.obj" jpeglib/jdapimin.c
 
-obj/jdapistd.obj : jpeglib/jdapistd.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdapistd.obj" jpeglib/jdapistd.c
+obj/win32/jdapistd.obj : jpeglib/jdapistd.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdapistd.obj" jpeglib/jdapistd.c
 
-obj/jdatadst.obj : jpeglib/jdatadst.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdatadst.obj" jpeglib/jdatadst.c
+obj/win32/jdatadst.obj : jpeglib/jdatadst.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdatadst.obj" jpeglib/jdatadst.c
 
-obj/jdcolor.obj : jpeglib/jdcolor.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdcolor.obj" jpeglib/jdcolor.c
+obj/win32/jdcolor.obj : jpeglib/jdcolor.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdcolor.obj" jpeglib/jdcolor.c
 
-obj/jdinput.obj : jpeglib/jdinput.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdinput.obj" jpeglib/jdinput.c
+obj/win32/jdinput.obj : jpeglib/jdinput.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdinput.obj" jpeglib/jdinput.c
 
-obj/jdmainct.obj : jpeglib/jdmainct.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdmainct.obj" jpeglib/jdmainct.c
+obj/win32/jdmainct.obj : jpeglib/jdmainct.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdmainct.obj" jpeglib/jdmainct.c
 
-obj/jdmarker.obj : jpeglib/jdmarker.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdmarker.obj" jpeglib/jdmarker.c
+obj/win32/jdmarker.obj : jpeglib/jdmarker.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdmarker.obj" jpeglib/jdmarker.c
 
-obj/jdmaster.obj : jpeglib/jdmaster.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdmaster.obj" jpeglib/jdmaster.c
+obj/win32/jdmaster.obj : jpeglib/jdmaster.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdmaster.obj" jpeglib/jdmaster.c
 
-obj/jdmerge.obj : jpeglib/jdmerge.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdmerge.obj" jpeglib/jdmerge.c
+obj/win32/jdmerge.obj : jpeglib/jdmerge.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdmerge.obj" jpeglib/jdmerge.c
 
-obj/jdpostct.obj : jpeglib/jdpostct.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdpostct.obj" jpeglib/jdpostct.c
+obj/win32/jdpostct.obj : jpeglib/jdpostct.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdpostct.obj" jpeglib/jdpostct.c
 
-obj/jdsample.obj : jpeglib/jdsample.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jdsample.obj" jpeglib/jdsample.c
+obj/win32/jdsample.obj : jpeglib/jdsample.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jdsample.obj" jpeglib/jdsample.c
 
-obj/jquant1.obj : jpeglib/jquant1.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jquant1.obj" jpeglib/jquant1.c
+obj/win32/jquant1.obj : jpeglib/jquant1.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jquant1.obj" jpeglib/jquant1.c
 
-obj/jquant2.obj : jpeglib/jquant2.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jquant2.obj" jpeglib/jquant2.c
+obj/win32/jquant2.obj : jpeglib/jquant2.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jquant2.obj" jpeglib/jquant2.c
 
-obj/jutils.obj : jpeglib/jutils.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/jutils.obj" jpeglib/jutils.c
+obj/win32/jutils.obj : jpeglib/jutils.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_2) -Fo"obj/win32/jutils.obj" jpeglib/jutils.c
 
 OPT_LIBFILES_3 = -W2 -O1 -Ob2 -GX- -D DYNAMIC_CRC_TABLE -D BUILDFIXED
 
@@ -406,8 +408,8 @@ DEPENDS = \
 	zlib/zlib.h \
 	zlib/zutil.h
 
-obj/crc32.obj : zlib/crc32.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_3) -Fo"obj/crc32.obj" zlib/crc32.c
+obj/win32/crc32.obj : zlib/crc32.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_3) -Fo"obj/win32/crc32.obj" zlib/crc32.c
 
 DEPENDS = \
 	zlib/inffast.h \
@@ -418,8 +420,8 @@ DEPENDS = \
 	zlib/zlib.h \
 	zlib/zutil.h
 
-obj/inflate.obj : zlib/inflate.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_3) -Fo"obj/inflate.obj" zlib/inflate.c
+obj/win32/inflate.obj : zlib/inflate.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_3) -Fo"obj/win32/inflate.obj" zlib/inflate.c
 
 DEPENDS = \
 	zlib/inffast.h \
@@ -429,8 +431,8 @@ DEPENDS = \
 	zlib/zlib.h \
 	zlib/zutil.h
 
-obj/inffast.obj : zlib/inffast.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_3) -Fo"obj/inffast.obj" zlib/inffast.c
+obj/win32/inffast.obj : zlib/inffast.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_3) -Fo"obj/win32/inffast.obj" zlib/inffast.c
 
 DEPENDS = \
 	zlib/inftrees.h \
@@ -438,20 +440,20 @@ DEPENDS = \
 	zlib/zlib.h \
 	zlib/zutil.h
 
-obj/inftrees.obj : zlib/inftrees.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_3) -Fo"obj/inftrees.obj" zlib/inftrees.c
+obj/win32/inftrees.obj : zlib/inftrees.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_3) -Fo"obj/win32/inftrees.obj" zlib/inftrees.c
 
 DEPENDS = \
 	zlib/zconf.h \
 	zlib/zlib.h
 
-obj/adler32.obj : zlib/adler32.c $(DEPENDS)
-	$(CPP) -MD $(OPT_LIBFILES_3) -Fo"obj/adler32.obj" zlib/adler32.c
+obj/win32/adler32.obj : zlib/adler32.c $(DEPENDS)
+	$(CPP) -MD $(OPT_LIBFILES_3) -Fo"obj/win32/adler32.obj" zlib/adler32.c
 
 #------------------------------------------------------------------------------
 #	creating output directories
 #------------------------------------------------------------------------------
 
-obj:
-	if not exist "obj" mkdir "obj"
+obj/win32:
+	if not exist "obj/win32" mkdir "obj/win32"
 

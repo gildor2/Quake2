@@ -40,7 +40,7 @@ void CL_CheckPredictionError ()
 	VectorSubtract2 (cl.frame.playerstate.pmove.origin, cl.predicted_origins[frame], delta);
 
 	// save the prediction error for interpolation
-	int len = abs(delta[0]) + abs(delta[1]) + abs(delta[2]);	// VectorLength() ?
+	int len = abs(delta[0]) + abs(delta[1]) + abs(delta[2]);	// vec.GetLength() ?
 	if (len > 80 * 8)	// 80 world units (float->int scale is 8 ...)
 	{	// a teleport or something
 		cl.prediction_error.Zero();

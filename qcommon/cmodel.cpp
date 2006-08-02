@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "qcommon.h"
 #include "cmodel.h"
+#include "protocol.h"					// for MATERIAL_* consts
 #include "MapBrush.h"
 
 
@@ -47,13 +48,13 @@ bool cm_showTrace;
 
 struct cnode_t
 {
-	cplane_t *plane;
+	CPlane	*plane;
 	int		children[2];				// negative numbers are leafs
 };
 
 struct cbrushside_t
 {
-	cplane_t *plane;
+	CPlane	*plane;
 	csurface_t *surface;
 };
 
@@ -98,7 +99,7 @@ static cbrushside_t *map_brushSides;
 static surfBounds_t *map_faceBounds;	// [numFaces]; for Q1/HL maps trace
 
 static int		numPlanes;
-static cplane_t	*map_planes;
+static CPlane	*map_planes;
 
 static int		numNodes;
 static cnode_t	*map_nodes;
@@ -147,7 +148,7 @@ static void FloodAreaConnections ();
 class surfMaterial_t : public CStringItem
 {
 public:
-	material_t material;
+	int		material;
 };
 
 
@@ -178,7 +179,7 @@ static void ReadSurfMaterials (const char *filename)
 	const char *s;
 	while (s = COM_Parse (in), in)
 	{
-		material_t	m;
+		int m;
 
 		// s points to material name string
 		switch (toLower (s[0]))
@@ -219,7 +220,7 @@ static void ReadSurfMaterials (const char *filename)
 }
 
 // name must be without "textures/" prefix and without extension
-static material_t GetSurfMaterial (const char *name)
+static int GetSurfMaterial (const char *name)
 {
 	const char *checkname = strrchr (name, '/');		// points to a name without path
 	if (checkname)
@@ -241,9 +242,8 @@ static material_t GetSurfMaterial (const char *name)
 				continue;
 		}
 
-		material_t m = sm->material;
-//		Com_DPrintf ("set material %d for %s\n", m, name);
-		return m;
+//		Com_DPrintf ("set material %d for %s\n", sm->material, name);
+		return sm->material;
 	}
 //	Com_DPrintf ("set default material for %s\n", name);
 	return MATERIAL_CONCRETE;	// default material
@@ -354,16 +354,13 @@ static void LoadPlanes (dPlane_t *data, int size)
 {
 	if (size < 1) Com_DropError ("Map with no planes");
 
-	cplane_t *out;
-	staticAssert(sizeof(cplane_t) == sizeof(dPlane_t), sizeof_cplane_same_as_dplane);
-	// can simply set map_planes=data; note: "data" is dPlane_t, but "map_planes" is cplane_t,
+	CPlane *out;
+	staticAssert(sizeof(CPlane) == sizeof(dPlane_t), sizeof_cplane_same_as_dplane);
+	// can simply set map_planes=data; note: "data" is dPlane_t, but "map_planes" is CPlane,
 	// but both have the same size (see qfiles.h for details) and the same layout
-	out = map_planes = (cplane_t*)data;
+	out = map_planes = (CPlane*)data;
 	for (int i = 0; i < size; i++, out++)
-	{
-		out->SetType ();
-		out->SetSignbits ();
-	}
+		out->Setup ();
 	numPlanes = size;
 }
 
@@ -726,40 +723,70 @@ static void LoadLeafs1 (dBsp1Leaf_t *data, int size)
 }
 
 
-static cplane_t *FindPlane (const CVec3 &norm, float dist)
+#if BRUSH_PROFILE
+static int64 brushFindPlaneTime;
+static int brushFindPlaneCount, brushFindPlaneSuccess;
+#endif
+
+// Most slowest operation: FindPlane()
+// from experiments: only about 10% of search requests successfull
+// On VERY complex map: 1000 found planes == 20Kb of memory
+// So, in a cost of 20Kb of memory we can SIGNIFICANTLY speedup map loading
+// by disabling search in already existent planes.
+#define DONT_SEARCH_PLANES		1
+
+static CPlane *FindPlane (const CVec3 &norm, float dist)
 {
-	cplane_t *p2 = map_planes;
+	BRUSH_STAT(clock(brushFindPlaneTime));
+	BRUSH_STAT(brushFindPlaneCount++);
+	CPlane *p2 = map_planes;
+#if !DONT_SEARCH_PLANES
 	for (int i = 0; i < numPlanes; i++, p2++)
 	{
 		if (p2->dist   != dist) continue;
-		if (p2->normal == norm) return p2;
+		if (p2->normal == norm)
+		{
+			BRUSH_STAT(unclock(brushFindPlaneTime));
+			BRUSH_STAT(brushFindPlaneSuccess++);
+			return p2;
+		}
 	}
+#endif
 	//?? can remember new planes too, and use them when possible
-	p2 = new (dataChain) cplane_t;
+	p2 = new (dataChain) CPlane;
 	p2->normal = norm;
 	p2->dist   = dist;
-	p2->SetType ();
-	p2->SetSignbits ();
+	p2->Setup ();
+	BRUSH_STAT(unclock(brushFindPlaneTime));
 	return p2;
 }
 
-static cplane_t *FindBackplane (cplane_t *plane)
+static CPlane *FindBackplane (CPlane *plane)
 {
-	cplane_t *p2 = map_planes;
+	BRUSH_STAT(clock(brushFindPlaneTime));
+	BRUSH_STAT(brushFindPlaneCount++);
+	CPlane *p2 = map_planes;
 	CVec3 norm;
 	VectorNegate (plane->normal, norm);
 	float dist = -plane->dist;
+#if !DONT_SEARCH_PLANES
 	for (int i = 0; i < numPlanes; i++, p2++)
 	{
 		if (p2->dist   != dist) continue;
-		if (p2->normal == norm) return p2;
+		if (p2->normal == norm)
+		{
+			BRUSH_STAT(unclock(brushFindPlaneTime));
+			BRUSH_STAT(brushFindPlaneSuccess++);
+			return p2;
+		}
 	}
+#endif
 	//?? can remember new planes too, and use them when possible
-	p2 = new (dataChain) cplane_t;
+	p2 = new (dataChain) CPlane;
 	p2->normal = norm;
 	p2->dist   = dist;
-	p2->SetType ();
-	p2->SetSignbits ();
+	p2->Setup ();
+	BRUSH_STAT(unclock(brushFindPlaneTime));
 	return p2;
 }
 
@@ -782,6 +809,12 @@ static void BuildBrushes1 (int numLeafsOrig)
 	// prepare
 	CBrush::mem = new CMemoryChain;
 	int64 time = appCycles64 ();
+#if BRUSH_PROFILE
+	brushFindPlaneTime = brushFindPlaneCount = brushFindPlaneSuccess = 0;
+	int64 brushBevelTime = 0;
+	int64 brushSplitTime = 0;
+	int64 brushConvertTime = 0;
+#endif
 
 	map_brushes = new (dataChain) cbrush_t [numBrushes+1];	// extra for box hull
 
@@ -807,7 +840,9 @@ static void BuildBrushes1 (int numLeafsOrig)
 					// remember brush
 					assert(!leafBrushes[leafnum]);
 					// build bevels for correct trace() against box
+					BRUSH_STAT(clock(brushBevelTime));
 					brush->AddBevels (FindPlane);
+					BRUSH_STAT(unclock(brushBevelTime));
 					leafBrushes[leafnum] = brush;
 					// count number of brush sides
 					for (CBrushSide *s = brush->sides; s; s = s->next)
@@ -828,7 +863,9 @@ static void BuildBrushes1 (int numLeafsOrig)
 
 			const cnode_t &node = map_nodes[nodenum];
 			// split brush with plane
+			BRUSH_STAT(clock(brushSplitTime));
 			CBrush *backBrush = brush->Split (node.plane);
+			BRUSH_STAT(unclock(brushSplitTime));
 			if (!backBrush) Com_DropError ("NULL backBrush");
 			// remember back side ...
 			stack[sptr]  = node.children[1];
@@ -847,6 +884,7 @@ static void BuildBrushes1 (int numLeafsOrig)
 	dBsp2Leaf_t *leaf = map_leafs;
 	cbrushside_t *bs  = map_brushSides;
 	cbrush_t *dst     = map_brushes;
+	BRUSH_STAT(clock(brushConvertTime));
 	for (int i = 0; i < numLeafs; i++, leaf++)
 	{
 		if (!leaf->contents || (leaf->contents == CONTENTS_SOLID && i < numLeafsOrig))
@@ -870,11 +908,22 @@ static void BuildBrushes1 (int numLeafsOrig)
 			}
 		dst++;										// next brush
 	}
+	BRUSH_STAT(unclock(brushConvertTime));
 
 	// finish
 	time = appCycles64 () - time;
 	Com_DPrintf ("Built %d brushes in %g msec, used temporary memory %dKb\n",
 		numBrushes, appCyclesToMsecf (time), CBrush::mem->GetSize() >> 10);
+#if BRUSH_PROFILE
+	Com_DPrintf ("FindPlane: %g ms (found %d/%d)\n"
+				 "SplitBrush: %g ms\n"
+				 "BrushBevels: %g ms\n"
+				 "Convert: %g ms\n",
+		appCyclesToMsecf (brushFindPlaneTime), brushFindPlaneSuccess, brushFindPlaneCount,
+		appCyclesToMsecf (brushSplitTime),
+		appCyclesToMsecf (brushBevelTime),
+		appCyclesToMsecf (brushConvertTime));
+#endif
 	delete CBrush::mem;
 
 	unguard;
@@ -884,27 +933,28 @@ static void BuildBrushes1 (int numLeafsOrig)
 //?? recursive (use 'stack'?)
 static void SetNodeContents (int nodenum, unsigned contents)
 {
-again:
-	if (nodenum < 0)
+	while (true)
 	{
-		// leaf
-		dBsp2Leaf_t &leaf = map_leafs[-1 - nodenum];
-		if (leaf.contents) leaf.contents = contents;
-		// brushes
-		for (int i = 0; i < leaf.numleafbrushes; i++)
+		if (nodenum < 0)
 		{
-			//-------------- test brush --------------------
-			int brushNum = map_leafBrushes[leaf.firstleafbrush + i];
-			cbrush_t &b = map_brushes[brushNum];
-			if (b.contents) b.contents = contents;
+			// leaf
+			dBsp2Leaf_t &leaf = map_leafs[-1 - nodenum];
+			if (leaf.contents) leaf.contents = contents;
+			// brushes
+			for (int i = 0; i < leaf.numleafbrushes; i++)
+			{
+				int brushNum = map_leafBrushes[leaf.firstleafbrush + i];
+				cbrush_t &b = map_brushes[brushNum];
+				if (b.contents) b.contents = contents;
+			}
+			return;
 		}
-	}
-	else
-	{
-		cnode_t *node = map_nodes + nodenum;
-		SetNodeContents (node->children[0], contents);
-		nodenum = node->children[1];
-		goto again;
+		else
+		{
+			cnode_t *node = map_nodes + nodenum;
+			SetNodeContents (node->children[0], contents);
+			nodenum = node->children[1];
+		}
 	}
 }
 
@@ -1040,7 +1090,7 @@ CBrush *CM_BuildBrush (int brushNum, CMemoryChain *mem)
 	cbrushside_t *side;
 	for (i = 0, side = &map_brushSides[b.firstbrushside]; i < b.numsides; i++, side++)
 	{
-		cplane_t *plane = side->plane;
+		CPlane *plane = side->plane;
 		brush = brush->Split (plane);		// use backside
 		if (!brush) break;					// should not happens
 	}
@@ -1109,7 +1159,7 @@ int CM_LeafArea (int leafnum)
 	Temporaty box for entity traces
 -----------------------------------------------------------------------------*/
 
-static cplane_t	boxPlanes[12];
+static CPlane	boxPlanes[12];
 static int		box_headnode;
 
 
@@ -1163,16 +1213,14 @@ static void InitBoxHull ()
 			c->children[side^1] = -1 - numLeafs;		// ... or -> boxLeaf
 
 		// planes
-		cplane_t *p = &boxPlanes[i*2];
+		CPlane *p = &boxPlanes[i*2];
 		p->normal.Zero ();
 		p->normal[i>>1] = 1;
-		p->SetType ();
-		p->SetSignbits ();
+		p->Setup ();
 		p++;											// switch to opposite plane
 		p->normal.Zero ();
 		p->normal[i>>1] = -1;
-		p->SetType ();
-		p->SetSignbits ();
+		p->Setup ();
 	}
 }
 
@@ -1252,7 +1300,7 @@ int	CM_TransformedPointContents (const CVec3 &p, int headnode, const CVec3 &orig
 	if (headnode != box_headnode && (angles[0] || angles[1] || angles[2]))
 	{
 		CAxis axis;
-		axis.FromAngles (angles);
+		axis.FromEuler (angles);
 		TransformPoint (origin, axis, p, p1);
 	}
 	else
@@ -1370,7 +1418,7 @@ static bool TraceBrush (const cbrush_t &brush)
 
 	float enterfrac = -1;
 	float leavefrac = 1;					// used only for validating enterfrac
-	cplane_t *clipplane = NULL;
+	CPlane *clipplane = NULL;
 
 	bool	getout, startout;
 	getout = startout = false;
@@ -1380,16 +1428,16 @@ static bool TraceBrush (const cbrush_t &brush)
 	{
 		float d1, d2, dist;
 
-		cplane_t *plane = side->plane;
+		CPlane *plane = side->plane;
 
 		if (!tr.isPoint)
 		{	// general box case
-			if (plane->type <= PLANE_Z)
+			if (plane->type <= CPlane::PLANE_Z)
 			{
 				// HERE: plane.normal[i] == 0 || 1 for i==type
 				dist = plane->dist - tr.bounds.mins[plane->type]; //?? == + tr.bounds.maxs[plane->type]
 			}
-			else if (plane->type <= PLANE_MZ)
+			else if (plane->type <= CPlane::PLANE_MZ)
 			{
 				// HERE: plane.normal[i] == 0 || -1 for i==type-3
 				dist = plane->dist + tr.bounds.maxs[plane->type-3];
@@ -1405,12 +1453,12 @@ static bool TraceBrush (const cbrush_t &brush)
 		}
 
 		// this is a 2 plane->DistanceTo() calls with a common plane->type analysis
-		if (plane->type <= PLANE_Z)
+		if (plane->type <= CPlane::PLANE_Z)
 		{
 			d1 = tr.start[plane->type] - dist;
 			d2 = tr.end[plane->type] - dist;
 		}
-		else if (plane->type <= PLANE_MZ)
+		else if (plane->type <= CPlane::PLANE_MZ)
 		{
 			d1 = -tr.start[plane->type-3] - dist;
 			d2 = -tr.end[plane->type-3] - dist;
@@ -1538,12 +1586,12 @@ static bool TestBrush (const cbrush_t &brush)
 	cbrushside_t *side;
 	for (i = 0, side = &map_brushSides[brush.firstbrushside]; i < brush.numsides; i++, side++)
 	{
-		cplane_t *plane = side->plane;
+		CPlane *plane = side->plane;
 
 		float size;
-		if (plane->type <= PLANE_Z)
+		if (plane->type <= CPlane::PLANE_Z)
 			size = - tr.bounds.mins[plane->type];		//?? == tr.bounds.maxs[plane->type]
-		else if (plane->type <= PLANE_MZ)
+		else if (plane->type <= CPlane::PLANE_MZ)
 			size = tr.bounds.maxs[plane->type-3];
 		else
 			size = - dot(plane->normal, tr.boundsVecs[plane->signbits]);
@@ -1608,17 +1656,17 @@ static void FindSurface1 (const dBsp2Leaf_t &leaf, float p1f, float p2f)
 	{
 		int faceNum = *leafFaces;
 		const dFace_t &face = bspfile.faces[faceNum];
-		const cplane_t *plane = map_planes + face.planenum;
+		const CPlane *plane = map_planes + face.planenum;
 
 		float d1, d2, dist;
 		if (!tr.isPoint)
 		{	// general box case
-			if (plane->type <= PLANE_Z)
+			if (plane->type <= CPlane::PLANE_Z)
 			{
 				// HERE: plane.normal[i] == 0 || 1 for i==type
 				dist = plane->dist - tr.bounds.mins[plane->type]; //?? == + tr.bounds.maxs[plane->type]
 			}
-			else if (plane->type <= PLANE_MZ)
+			else if (plane->type <= CPlane::PLANE_MZ)
 			{
 				// HERE: plane.normal[i] == 0 || -1 for i==type-3
 				dist = plane->dist + tr.bounds.maxs[plane->type-3];
@@ -1634,12 +1682,12 @@ static void FindSurface1 (const dBsp2Leaf_t &leaf, float p1f, float p2f)
 		}
 
 		// this is a 2 plane->DistanceTo() calls with a common plane->type analysis
-		if (plane->type <= PLANE_Z)
+		if (plane->type <= CPlane::PLANE_Z)
 		{
 			d1 = tr.start[plane->type] - dist;
 			d2 = tr.end[plane->type] - dist;
 		}
-		else if (plane->type <= PLANE_MZ)
+		else if (plane->type <= CPlane::PLANE_MZ)
 		{
 			d1 = -tr.start[plane->type-3] - dist;
 			d2 = -tr.end[plane->type-3] - dist;
@@ -1696,7 +1744,7 @@ static void SetTraceFace1 ()
 	{
 		int faceNum = clipFaces[i];
 		const dFace_t &face = bspfile.faces[faceNum];
-		const cplane_t *plane = map_planes + face.planenum;
+		const CPlane *plane = map_planes + face.planenum;
 		// check face plane
 		if (!face.side)
 		{
@@ -1746,16 +1794,16 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &
 		// find the point distances to the separating plane
 		// and the offset for the size of the box
 		const cnode_t &node = map_nodes[nodeNum];
-		const cplane_t &plane = *node.plane;
+		const CPlane &plane = *node.plane;
 
 		float t1, t2, offset;
-		if (plane.type <= PLANE_Z)
+		if (plane.type <= CPlane::PLANE_Z)
 		{
 			t1 = p1[plane.type] - plane.dist;
 			t2 = p2[plane.type] - plane.dist;
 			offset = tr.bounds.maxs[plane.type];
 		}
-		else if (plane.type <= PLANE_MZ)
+		else if (plane.type <= CPlane::PLANE_MZ)
 		{
 			t1 = -p1[plane.type-3] - plane.dist;
 			t2 = -p2[plane.type-3] - plane.dist;
@@ -1963,7 +2011,7 @@ void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &en
 	CAxis axis;
 	if (rotated)
 	{
-		axis.FromAngles (angles);
+		axis.FromEuler (angles);
 		// transform start/end to axis (model coordinate system)
 		TransformPoint (origin, axis, start, start1);
 		TransformPoint (origin, axis, end,   end1);
@@ -2124,13 +2172,13 @@ static bool TestBrush (const CVec3 &start, const CVec3 &end, const cbrush_t &bru
 	{
 		float	d1, d2, f;
 
-		cplane_t *plane = side->plane;
-		if (plane->type <= PLANE_Z)
+		CPlane *plane = side->plane;
+		if (plane->type <= CPlane::PLANE_Z)
 		{
 			d1 = start[plane->type] - plane->dist;
 			d2 = end[plane->type] - plane->dist;
 		}
-		else if (plane->type <= PLANE_MZ)
+		else if (plane->type <= CPlane::PLANE_MZ)
 		{
 			d1 = -start[plane->type-3] - plane->dist;
 			d2 = -end[plane->type-3] - plane->dist;
@@ -2197,15 +2245,15 @@ static void RecursiveBrushTest (const CVec3 &point1, const CVec3 &point2, int no
 		}
 
 		const cnode_t &node = map_nodes[nodeNum];
-		const cplane_t &plane = *node.plane;
+		const CPlane &plane = *node.plane;
 
 		float t1, t2;
-		if (plane.type <= PLANE_Z)
+		if (plane.type <= CPlane::PLANE_Z)
 		{
 			t1 = p1[plane.type] - plane.dist;
 			t2 = p2[plane.type] - plane.dist;
 		}
-		else if (plane.type <= PLANE_MZ)
+		else if (plane.type <= CPlane::PLANE_MZ)
 		{
 			t1 = -p1[plane.type-3] - plane.dist;
 			t2 = -p2[plane.type-3] - plane.dist;

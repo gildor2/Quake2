@@ -1259,7 +1259,7 @@ static void CL_AddBeams ()
 
 		entity_t ent;
 		memset (&ent, 0, sizeof(ent));
-		Vec2Angles (dist, ent.angles);
+		Vec2Euler (dist, ent.angles);
 		float model_length;
 		if (b->model == cl_mod_lightning)
 		{
@@ -1365,7 +1365,7 @@ static void CL_AddPlayerBeams ()
 		//PMM
 		if (isHeatbeam && isPlayer)
 		{
-			float len = VectorLength (dist);
+			float len = dist.GetLength ();
 			VectorScale (cl.v_forward, len, dist);
 			VectorMA (dist, (hand_multiplier * b->offset[0]), cl.v_right);
 			VectorMA (dist, b->offset[1], cl.v_forward);
@@ -1375,7 +1375,7 @@ static void CL_AddPlayerBeams ()
 		}
 
 		CVec3 angles;
-		Vec2Angles (dist, angles);
+		Vec2Euler (dist, angles);
 
 		int framenum;
 		if (isHeatbeam)
@@ -1387,7 +1387,7 @@ static void CL_AddPlayerBeams ()
 				CVec3 angles;
 				angles.Set (-angles[PITCH], angles[YAW] + 180.0f, 0);
 				CVec3 u, f, r;
-				AngleVectors (angles, &f, &r, &u);
+				Euler2Vecs (angles, &f, &r, &u);
 
 				// if it's a non-origin offset, it's a player, so use the hardcoded player offset
 				if (b->offset[0] || b->offset[1] || b->offset[2])

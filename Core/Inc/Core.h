@@ -99,20 +99,26 @@ extern float GGuardValue;
 #endif
 
 
-// Static assertion: some assertions are compile-time, but preprocessor not allows us
+
+// Static assertion: some assertions are compile-time, but preprocessor do not allow us
 // using in "#if (condition)" something, other than #define'd consts. Use staticAssert()
-// for this purpose. If compiler have ability to check this at compile-time, should be
-// defined special staticAssert() macro, otherwise - using this one (for MAX_DEBUG only!)
-#if !defined(staticAssert) && MAX_DEBUG
-// NOTE: this macro is execution-time (like normal assert()), so, place staticAssert() in
-// code somewhere, where it will be executed as soon as possible
+// for this purpose.
+#if 0
 #define staticAssert(expr,name)		\
 	if (!(expr)) appError ("Assertion: %s (%s)", #expr, __FILE__);
 #endif
 
-#ifndef staticAssert
-#define staticAssert(expr,name)
-#endif
+// helper declararion
+template<int> struct CompileTimeError;
+template<>    struct CompileTimeError<true> {};
+
+#define staticAssert(expr,name)			\
+	{									\
+		CompileTimeError<(expr) != 0> assert_##name; \
+		(void)assert_##name;			\
+	}
+
+
 
 #if MAX_DEBUG
 #define assert(expr)			if (!(expr)) appError ("Assertion: %s (%s)", #expr, __FILE__);
@@ -175,6 +181,7 @@ extern const char PkgVersion[];
 ----------------------------------------------------------------------------*/
 
 class CMemoryChain;
+struct CVec3;
 
 
 //----- miscellaneous ?
@@ -273,6 +280,52 @@ CORE_API void appSleep (unsigned msec);
 
 
 /*-----------------------------------------------------------------------------
+	Byte-order functions
+-----------------------------------------------------------------------------*/
+
+#if LITTLE_ENDIAN
+
+#define LittleShort(n)	((short)n)
+#define LittleLong(n)	((long)n)
+#define LittleFloat(n)	((float)n)
+#define LTL(n)
+
+#else
+
+short	LittleShort (short l);
+int		LittleLong (int l);
+float	LittleFloat (float l);
+
+inline void LTL(short &v)
+{
+	v = LittleShort (v);
+}
+inline void LTL(unsigned short &v)
+{
+	v = LittleShort (v);
+}
+inline void LTL(int &v)
+{
+	v = LittleLong (v);
+}
+inline void LTL(unsigned &v)
+{
+	v = LittleLong (v);
+}
+inline void LTL(float &v)
+{
+	v = LittleFloat (v);
+}
+inline void LTL(CVec3 &v)
+{
+	for (int i = 0; i < 3; i++)
+		v[i] = LittleFloat (v[i]);
+}
+
+#endif
+
+
+/*-----------------------------------------------------------------------------
 	Core includes
 -----------------------------------------------------------------------------*/
 
@@ -284,6 +337,9 @@ CORE_API void appSleep (unsigned msec);
 #include "FileSystem.h"
 #include "ScriptParser.h"
 #include "TextContainer.h"
+
+#include "MathMisc.h"
+#include "Math3D.h"
 
 
 /*-----------------------------------------------------------------------------

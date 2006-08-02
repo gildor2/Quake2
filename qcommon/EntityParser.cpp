@@ -369,6 +369,7 @@ static bool LoadLight ()
 	}
 
 	// spotlight with specified direction
+	// NOTE: qrad3 have "light_spot" entity support, but game will display error "no spawn function"
 	if (!strcmp (classname + 5, "_spot") || FindField ("_spotvector,_spotpoint,_mangle,_spotangle") || slight->sun)
 	{
 		CVec3	vec;
@@ -388,7 +389,7 @@ static bool LoadLight ()
 			ang.Zero ();
 			sscanf (f->value, "%f %f", &ang[YAW], &ang[PITCH]);
 			ang[PITCH] *= -1;
-			AngleVectors (ang, &slight->spotDir, NULL, NULL);
+			Euler2Vecs (ang, &slight->spotDir, NULL, NULL);
 		}
 		else
 		{
@@ -454,8 +455,8 @@ static bool LoadLight ()
 			slight->focus = 1;
 	}
 
-	if ((!classname[5] && style < 32) || !strcmp (classname + 5, "flare") || !strcmp (classname + 5, "_environment"))
-		return false;		// remove: "lightflare", non-switchable "light" and HL sunlight
+	if ((!classname[5] && style < 32) || classname[5])
+		return false;		// remove: "lightflare", non-switchable "light" etc
 
 	return true;
 }
@@ -790,7 +791,8 @@ static bool ProcessEntityHL ()
 	else CHANGE0("weapon_gauss", "weapon_hyperblaster")
 	else CHANGE0("ammo_gaussclip", "ammo_cells")
 	else CHANGE0("weapon_9mmAR", "weapon_machinegun") // machinegun with grenadelauncher
-	else CHANGE0("ammo_9mmAR", "ammo_bullets")
+	else CHANGE0("ammo_9mmclip", "ammo_bullets")
+	else CHANGE0("ammo_9mmAR", "ammo_bullets") // grenades?
 	else CHANGE0("weapon_shotgun", "weapon_supershotgun")
 	else CHANGE0("ammo_buckshot", "ammo_shells")
 	else CHANGE0("weapon_satchel", "ammo_grenades") // bomb with radio-controlled explosion
@@ -920,7 +922,7 @@ static void ParseWorldSpawn ()
 			CVec3 ang;
 			sscanf (f->value, "%f %f", &ang[YAW], &ang[PITCH]);
 			ang[PITCH] *= -1;
-			AngleVectors (ang, &sun->spotDir, NULL, NULL);
+			Euler2Vecs (ang, &sun->spotDir, NULL, NULL);
 		}
 		// get sun color info
 		if (f = FindField (va("_sun%s_color", suffix)))

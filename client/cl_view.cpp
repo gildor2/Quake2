@@ -74,7 +74,7 @@ void V_AddEntity (entity_t *ent)
 		return;
 	entity_t &e = r_entities[r_numentities++];
 	e = *ent;
-	e.pos.axis.FromAngles (e.angles);
+	e.pos.axis.FromEuler (e.angles);
 }
 
 // same as V_AddEntity(), but without axis computation
@@ -142,7 +142,7 @@ void AddEntityWithEffects2 (entity_t *ent, unsigned fx)
 
 void AddEntityWithEffects (entity_t *ent, unsigned fx)
 {
-	ent->pos.axis.FromAngles (ent->angles);
+	ent->pos.axis.FromEuler (ent->angles);
 	AddEntityWithEffects2 (ent, fx);
 }
 
@@ -604,7 +604,7 @@ static void DrawSurfInfo ()
 
 	CVec3 start, end;
 	start = cl.refdef.vieworg;
-	AngleVectors (cl.refdef.viewangles, &end, NULL, NULL);
+	Euler2Vecs (cl.refdef.viewangles, &end, NULL, NULL);
 	end.Scale (500);
 	end.Add (start);
 
@@ -681,7 +681,7 @@ static void DrawOriginInfo ()
 	RE_DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), RGB(0.2,0.4,0.1));
 
 	CVec3 view;
-	AngleVectors (cl.refdef.viewangles, &view, NULL, NULL);
+	Euler2Vecs (cl.refdef.viewangles, &view, NULL, NULL);
 	RE_DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARG(view)), RGB(0.2,0.4,0.1));
 
 	int i = CM_PointLeafnum (cl.refdef.vieworg);

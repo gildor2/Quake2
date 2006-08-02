@@ -219,7 +219,7 @@ static void FindNextChunk (char *name)
 			return;
 		}
 //		if (iff_chunk_len > 1024*1024)
-//			Com_FatalError ("FindNextChunk: %i length is past the 1 meg sanity limit", iff_chunk_len);
+//			appError ("FindNextChunk: %i length is past the 1 meg sanity limit", iff_chunk_len);
 		data_p -= 8;
 		last_chunk = data_p + 8 + Align (iff_chunk_len, 2);
 		if (!memcmp (data_p, name, 4)) return;

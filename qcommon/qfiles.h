@@ -312,7 +312,7 @@ struct dBsp2Model_t
 
 // planes (x&~1) and (x&~1)+1 are always opposites
 
-// the same as cplane_t, but "byte type,signbits,pad[2]") -> "int type"
+// the same as CPlane, but "byte type,signbits,pad[2]") -> "int type"
 struct dPlane_t
 {
 	CVec3	normal;
