@@ -646,9 +646,15 @@ const char *Cvar_BitInfo (unsigned bit);
 #define	MAX_MSGLEN		16384		// max length of a message
 #define MAX_MSGLEN_OLD	1400		// MAX_MSGLEN for old clients (and for IPX protocol - gone)
 
-typedef enum {NA_LOOPBACK, NA_BROADCAST, NA_IP} netadrtype_t;
+enum netadrtype_t
+{
+	NA_LOOPBACK, NA_BROADCAST, NA_IP
+};
 	// NOTE: NA_BROADCAST used for serrching game servers only
-typedef enum {NS_CLIENT, NS_SERVER} netsrc_t;
+enum netsrc_t
+{
+	NS_CLIENT, NS_SERVER
+};
 
 struct netadr_t
 {

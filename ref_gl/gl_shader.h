@@ -216,13 +216,13 @@ struct shaderStage_t
 	Shader itself
 -----------------------------------------------------------------------------*/
 
-typedef enum	//?? change this
+enum shaderType_t			//?? change this
 {
 	SHADERTYPE_NORMAL,
 	SHADERTYPE_SKY,
 	SHADERTYPE_FOG,			//?? make this as non-shader?
 	SHADERTYPE_PORTAL
-} shaderType_t;
+};
 
 
 class shader_t : public CBasicImage

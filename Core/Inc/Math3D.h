@@ -5,7 +5,7 @@
 =============================================================================*/
 
 /*-----------------------------------------------------------------------------
-	Vectors
+	Vector
 -----------------------------------------------------------------------------*/
 
 struct CORE_API CVec3
@@ -54,6 +54,7 @@ struct CORE_API CVec3
 	float GetLength ();
 	float Normalize ();			// returns vector length
 	float NormalizeFast ();		//?? 2-arg version too?
+	void FindAxisVectors (CVec3 &right, CVec3 &up) const;
 };
 
 inline bool operator== (const CVec3 &v1, const CVec3 &v2)
@@ -134,13 +135,12 @@ CORE_API float VectorNormalize (const CVec3 &v, CVec3 &out);
 
 
 /*-----------------------------------------------------------------------------
-	Planes
+	Plane
 -----------------------------------------------------------------------------*/
 
 struct CORE_API CPlane
 {
 	// normal type
-	//?? hide consts, use from CPlane methods only
 	enum
 	{
 		PLANE_X,					// { 1, 0, 0}
@@ -281,7 +281,6 @@ enum
 };
 
 CORE_API void Euler2Vecs (const CVec3 &angles, CVec3 *forward, CVec3 *right, CVec3 *up);
-CORE_API void MakeNormalVectors (const CVec3 &forward, CVec3 &right, CVec3 &up);
 CORE_API void Vec2Euler (const CVec3 &vec, CVec3 &angles);
 CORE_API float Vec2Yaw (const CVec3 &vec);
 

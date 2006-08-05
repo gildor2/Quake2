@@ -24,7 +24,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MENU_SCROLL_BORDER	32
 #define MENU_SCROLL_AHEAD	3
 
-typedef enum {
+enum menuItemType_t
+{
 	MTYPE_SLIDER,
 	MTYPE_LIST,
 	MTYPE_ACTION,
@@ -32,7 +33,7 @@ typedef enum {
 	MTYPE_SPINCONTROL2,		// uses *CStringItem list
 	MTYPE_SEPARATOR,
 	MTYPE_FIELD
-} menuItemType_t;
+};
 
 #define QMF_LEFT_JUSTIFY	0x00000001
 #define QMF_GRAYED			0x00000002

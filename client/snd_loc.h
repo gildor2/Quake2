@@ -20,13 +20,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // snd_loc.h -- private sound functions
 
 // !!! if this is changed, the asm code must change !!!
-typedef struct
+struct portable_samplepair_t
 {
 	int			left;
 	int			right;
-} portable_samplepair_t;
+};
 
-typedef struct
+struct sfxcache_t
 {
 	int 		length;
 	int 		loopstart;
@@ -34,7 +34,7 @@ typedef struct
 	int 		width;
 	int 		stereo;
 	byte		data[1];		// variable sized
-} sfxcache_t;
+};
 
 struct sfx_t
 {
@@ -60,7 +60,7 @@ struct playsound_t
 	unsigned begin;				// begin on this sample
 };
 
-typedef struct
+struct dma_t
 {
 	int		channels;
 	int		samples;			// mono samples in buffer
@@ -69,10 +69,10 @@ typedef struct
 	int		samplebits;
 	int		speed;
 	byte	*buffer;
-} dma_t;
+};
 
 // !!! if this is changed, the asm code must change !!!
-typedef struct
+struct channel_t
 {
 	sfx_t	*sfx;				// sfx number
 	int		leftvol;			// 0-255 volume
@@ -87,9 +87,9 @@ typedef struct
 	byte	master_vol;			// 0-255 master volume
 	int		fixed_origin:1;		// use origin instead of fetching entnum's origin
 	int		autosound:1;		// from an entity->sound, cleared each frame
-} channel_t;
+};
 
-typedef struct
+struct wavinfo_t
 {
 	int		rate;
 	int		width;
@@ -97,7 +97,7 @@ typedef struct
 	int		loopstart;
 	int		samples;
 	int		dataofs;			// chunk starts this many bytes from file start
-} wavinfo_t;
+};
 
 
 /*

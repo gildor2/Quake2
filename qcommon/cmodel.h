@@ -79,8 +79,15 @@ struct splash_t
 };
 
 
-typedef enum {map_q2, map_kp, map_q1, map_hl} mapType_t;
-typedef enum {fog_no, fog_linear, fog_exp, fog_exp2} fogMode_t;
+enum mapType_t
+{
+	map_q2, map_kp, map_q1, map_hl
+};
+
+enum fogMode_t
+{
+	fog_no, fog_linear, fog_exp, fog_exp2
+};
 
 
 struct bspfile_t

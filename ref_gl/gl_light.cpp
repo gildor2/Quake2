@@ -142,7 +142,7 @@ void CPointLight::Show () const
 		float scale = SQRTFAST(1.0f - dot * dot) * DEBUG_SPOT_SIZE;
 		dot *= DEBUG_SPOT_SIZE;
 		CVec3 forward, right, up;
-		MakeNormalVectors (spotDir, right, up);
+		spotDir.FindAxisVectors (right, up);
 		VectorMA (origin, dot, spotDir, forward);
 		bufVertex_t	vecs[5];
 		for (int i = 0; i < 4; i++)
@@ -612,11 +612,14 @@ static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 		if (*out > m) m = *out;
 	// normalize color axis and copy to grid
 	if (m > 255 * CACHE_LIGHT_SCALE)
-		m = 255.0f / CACHE_LIGHT_SCALE / m;
+		m = 255.0f * CACHE_LIGHT_SCALE / m;
 	else
-		m = 1.0f / CACHE_LIGHT_SCALE;
+		m  = 1.0f;
 	for (i = 0, out = entityColorAxis[0].v, dst = cell->c[0]; i < 6*3; i++, out++, dst++)
-		*dst = appRound (*out * m);
+	{
+		*out *= m;									// normalize entityColorAxis[] first (used in GatherWorldLight())
+		*dst = appRound (*out / CACHE_LIGHT_SCALE);	// then store normalized value with CACHE_LIGHT_SCALE coefficient
+	}
 #else
 	for (i = 0, out = entityColorAxis[0].v, dst = cell->c[0]; i < 6; i++)
 	{
@@ -805,7 +808,6 @@ void LightForEntity (refEntity_t *ent)
 	memset (entityColorAxis, 0, sizeof(entityColorAxis));
 	GatherWorldLight (ent);
 	GatherDlights (ent);
-
 
 	// swap left and right lights when mirrored entity
 	if (ent->mirror)

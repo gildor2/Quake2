@@ -91,7 +91,8 @@ static CRenderModel *cl_mod_explo4_big;
 
 #define NUM_STEP_MATERIALS	12
 
-typedef enum {
+enum impactType_t
+{
 	IMPACT_SILENT = -1,
 	IMPACT_DIRT,
 	IMPACT_METAL,
@@ -101,7 +102,7 @@ typedef enum {
 	IMPACT_WOOD,
 
 	IMPACT_COUNT
-} impactType_t;
+};
 
 static const impactType_t materialImpacts[NUM_STEP_MATERIALS + 1] = {
 	IMPACT_SILENT,		// silent
@@ -272,10 +273,10 @@ void CL_RegisterTEntModels ()
 }
 
 
-typedef enum
+enum exptype_t
 {
 	ex_free, ex_explosion, ex_misc, ex_flash, ex_mflash, ex_poly
-} exptype_t;
+};
 
 struct explosion_t
 {

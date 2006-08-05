@@ -19,14 +19,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // vid.h -- video driver defs
 
-typedef struct
+struct viddef_t
 {
 	int		width, height;			// coordinates from main game
-} viddef_t;
+};
 
-extern	viddef_t	viddef;			// global video state
+extern	viddef_t viddef;			// global video state
 
 // Video module initialisation etc
-void	Vid_Init (void);
-void	Vid_Shutdown (void);
-void	Vid_Tick (void);
+void	Vid_Init ();
+void	Vid_Shutdown ();
+void	Vid_Tick ();

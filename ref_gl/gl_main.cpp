@@ -886,10 +886,10 @@ void DumpLoadStats ()
 	if (!r_stats->integer) return;
 
 	// draw loading statistics
-	typedef struct {
+	struct statInfo_t {
 		int64 *data;
 		const char *name;
-	} statInfo_t;
+	};
 	static const statInfo_t info[] = {
 #define F(field,name)	&gl_ldStats.field, name
 		F(imgResample,		"tex resample"),
@@ -944,7 +944,8 @@ CRenderModel *RegisterModel (const char *name)
 
 void SetSky (const char *name, float rotate, const CVec3 &axis)
 {
-	shader_t *old = gl_skyShader;
+	if (!map.haveSkySurfaces) return;
+
 	// find sky shader
 	shader_t *shader = NULL;
 	TString<64> Name2;
@@ -974,8 +975,8 @@ void SetSky (const char *name, float rotate, const CVec3 &axis)
 		shader->skyAxis   = axis;
 	}
 
-	if (shader == old)
-		return;		// sky is not changed
+	shader_t *old = gl_skyShader;
+	if (shader == old) return;		// sky was not changed
 
 	gl_skyShader = shader;
 	// change all sky surfaces

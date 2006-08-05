@@ -118,7 +118,7 @@ void appDisplayError ()
 // window size changed
 static void SigWinchHandler (int signum)
 {
-	//!! on Unix we will always have console; when have GUI/console - should ignore this signal?!
+	//!! on Unix we will always have console; when have GUI+console - should ignore this signal?!
 	struct winsize ws;
 	if (ioctl (STDOUT_FILENO, TIOCGWINSZ, &ws) != -1)
 		GScreenWidth = ws.ws_col;

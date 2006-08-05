@@ -47,6 +47,18 @@ float CVec3::NormalizeFast ()
 	return len2 * denom;
 }
 
+// source vector should be normalized
+void CVec3::FindAxisVectors (CVec3 &right, CVec3 &up) const
+{
+	// create any vector, not collinear with "this"
+	right.Set (v[2], -v[0], v[1]);
+	// subtract projection on source (make vector orthogonal to source)
+	VectorMA (right, -dot(right, *this), *this);
+	right.Normalize ();
+	// generate third axis vector
+	cross (right, *this, up);
+}
+
 void cross (const CVec3 &v1, const CVec3 &v2, CVec3 &result)
 {
 	result[0] = v1[1] * v2[2] - v1[2] * v2[1];
@@ -349,19 +361,6 @@ void Euler2Vecs (const CVec3 &angles, CVec3 *forward, CVec3 *right, CVec3 *up)
 
 	if (up)
 		up->Set (cr*sp*cy + sr*sy, cr*sp*sy - sr*cy, cr*cp);
-}
-
-
-// Gives "forward" (normalized!) and makes 2 additional axes for it
-void MakeNormalVectors (const CVec3 &forward, CVec3 &right, CVec3 &up)
-{
-	// this rotate and negate guarantees a vector
-	// not colinear with the original
-	right.Set (forward[2], -forward[0], forward[1]);
-	float d = dot(right, forward);
-	VectorMA (right, -d, forward);
-	right.Normalize ();
-	cross (right, forward, up);
 }
 
 

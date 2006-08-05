@@ -67,7 +67,7 @@ static void Menu_DMOptions_f ();
 
 /*---------- Support Routines ------------*/
 
-void M_ForceMenuOn (void)
+void M_ForceMenuOn ()
 {
 	if (!m_current) M_Menu_Main_f ();
 }
@@ -249,7 +249,7 @@ const char *menuMain_t::menuNames[] =
 	"quit"
 };
 
-void M_Menu_Main_f (void)
+void M_Menu_Main_f ()
 {
 	mainMenu.Push ();
 }
@@ -298,7 +298,7 @@ struct multiplayerMenu_t : menuFramework_t
 };
 static multiplayerMenu_t multiplayerMenu;
 
-static void Menu_Multiplayer_f (void)
+static void Menu_Multiplayer_f ()
 {
 	multiplayerMenu.Push ();
 }
@@ -502,7 +502,7 @@ static keysMenu_t keysMenu;
 char *keysMenu_t::bindnames[MAX_KEYS_MENU][2];
 
 
-static void Menu_Keys_f (void)
+static void Menu_Keys_f ()
 {
 	keysMenu.Push ();
 }
@@ -736,7 +736,7 @@ menuList_t	optionsMenu_t::s_8bit;
 menuList_t	optionsMenu_t::s_reverse;
 menuList_t	optionsMenu_t::compatibility_list;
 
-static void Menu_Options_f (void)
+static void Menu_Options_f ()
 {
 	optionsMenu.Push ();
 }
@@ -829,7 +829,7 @@ struct creditsMenu_t : menuFramework_t
 };
 static creditsMenu_t creditsMenu;
 
-static void Menu_Credits_f (void)
+static void Menu_Credits_f ()
 {
 	creditsMenu.Push ();
 }
@@ -912,7 +912,7 @@ struct gameMenu_t : menuFramework_t
 };
 static gameMenu_t gameMenu;
 
-static void Menu_Game_f (void)
+static void Menu_Game_f ()
 {
 	gameMenu.Push ();
 }
@@ -1047,14 +1047,14 @@ static savegameMenu_t savegameMenu;
 bool savegameMenu_t::saveMenu;
 bool savegameMenu_t::m_savevalid[MAX_SAVEGAMES];
 
-static void Menu_LoadGame_f (void)
+static void Menu_LoadGame_f ()
 {
 	if (savegameMenu.saveMenu) savegameMenu.cursor++;	// save->load
 	savegameMenu.saveMenu = false;
 	savegameMenu.Push ();
 }
 
-static void Menu_SaveGame_f (void)
+static void Menu_SaveGame_f ()
 {
 	if (!savegameMenu.saveMenu) savegameMenu.cursor--;	// load->save
 	savegameMenu.saveMenu = true;
@@ -1102,7 +1102,7 @@ struct joinserverMenu_t : menuFramework_t
 	static void NullCursorDraw (void *self)
 	{}
 
-	static void SearchLocalGames (void)
+	static void SearchLocalGames ()
 	{
 		num_servers = 0;
 		for (int i = 0; i < MAX_LOCAL_SERVERS; i++)
@@ -1158,7 +1158,7 @@ struct joinserverMenu_t : menuFramework_t
 };
 static joinserverMenu_t joinserverMenu;
 
-static void Menu_JoinServer_f (void)
+static void Menu_JoinServer_f ()
 {
 	joinserverMenu.Push ();
 }
@@ -1507,7 +1507,7 @@ menuList2_t	startserverMenu_t::startmap_list;
 menuList_t	startserverMenu_t::rules_box;
 
 
-static void Menu_StartServer_f (void)
+static void Menu_StartServer_f ()
 {
 	startserverMenu.Push ();
 }
@@ -1814,7 +1814,7 @@ menuList_t	downloadOptionsMenu_t::allow_download_players_box;
 menuList_t	downloadOptionsMenu_t::allow_download_sounds_box;
 
 
-static void Menu_DownloadOptions_f (void)
+static void Menu_DownloadOptions_f ()
 {
 	downloadOptionsMenu.Push ();
 }
@@ -1867,7 +1867,7 @@ struct addressBookMenu_t : menuFramework_t
 };
 static addressBookMenu_t addressBookMenu;
 
-static void Menu_AddressBook_f (void)
+static void Menu_AddressBook_f ()
 {
 	addressBookMenu.Push ();
 }
@@ -2257,7 +2257,7 @@ clientInfo_t playerConfigMenu_t::ci;
 centity_t playerConfigMenu_t::cent;
 
 
-static void Menu_PlayerConfig_f (void)
+static void Menu_PlayerConfig_f ()
 {
 	playerConfigMenu.Push ();
 }
@@ -2271,7 +2271,7 @@ BROWSE FOR MAP
 =======================================================================
 */
 
-typedef struct
+struct thumbParams_t
 {
 	unsigned short w, h;	// thumbnail sizes
 	byte	cx, cy;			// number of thumbnail on screen
@@ -2279,14 +2279,14 @@ typedef struct
 	int		count;			// number of maps
 	int		top;
 	int		current;
-} thumbParams_t;
+};
 
-typedef struct
+struct thumbLayout_t
 {
 	unsigned short width;	// max screen width
 	byte	cx, cy;			// count of thumbs per x/y side
 	unsigned short w, h;	// thumb sizes
-} thumbLayout_t;
+};
 
 
 static const thumbLayout_t thumbLayout[] =
@@ -2511,7 +2511,7 @@ CFileList *dmbrowseMenu_t::browse_list;
 thumbParams_t dmbrowseMenu_t::thumbs;
 
 
-static void Menu_DMBrowse_f (void)
+static void Menu_DMBrowse_f ()
 {
 	dmbrowseMenu.Push ();
 }
@@ -2775,7 +2775,7 @@ menuList_t	videoMenu_t::textureFilter;
 float videoMenu_t::old_gamma, videoMenu_t::old_contrast, videoMenu_t::old_bright;
 
 
-static void Menu_Video_f (void)
+static void Menu_Video_f ()
 {
 	videoMenu.Push ();
 }
@@ -2828,7 +2828,7 @@ struct quitMenu_t : menuFramework_t
 };
 static quitMenu_t quitMenu;
 
-static void Menu_Quit_f (void)
+static void Menu_Quit_f ()
 {
 	quitMenu.Push ();
 }
@@ -2927,7 +2927,7 @@ struct testMenu_t : menuFramework_t
 };
 static testMenu_t testMenu;
 
-static void Menu_Test_f (void)
+static void Menu_Test_f ()
 {
 	testMenu.Push ();
 }
@@ -2935,14 +2935,12 @@ static void Menu_Test_f (void)
 
 #endif
 
-//=============================================================================
 
-/*
-=================
-M_Init
-=================
-*/
-void M_Init (void)
+/*-----------------------------------------------------------------------------
+	Menu registration
+-----------------------------------------------------------------------------*/
+
+void M_Init ()
 {
 	RegisterCommand ("menu_main", M_Menu_Main_f);
 	RegisterCommand ("menu_game", Menu_Game_f);

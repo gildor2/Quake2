@@ -69,7 +69,7 @@ struct vertexMd3_t	//?? == dMd3XyzNormal_t (rename one of types? derive struc wi
 	short	normal;
 };
 
-typedef enum
+enum surfaceType_t
 {
 	SURFACE_PLANAR,				// surfacePlanar_t
 	SURFACE_TRISURF,			// surfaceTrisurf_t (unused??)
@@ -77,7 +77,7 @@ typedef enum
 	SURFACE_POLY,				// surfacePoly_t
 	SURFACE_PARTICLE,			// particle_t
 	SURFACE_ENTITY				// refEntity_t
-} surfaceType_t;
+};
 
 // Planar surface: same normal for all vertexes
 class inlineModel_t;			// forward
@@ -265,6 +265,7 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 	bool	haveSunAmbient;
 	CVec3	sunAmbient;
 	CVec3	ambientLight;
+	bool	haveSkySurfaces;
 };
 
 

@@ -54,21 +54,21 @@ struct glconfig_t
 #define GL_SUPPORT(ext)		(gl_config.extensionMask & (ext))
 
 
-typedef enum
+enum gl_cullMode_t	//?? remove this? use GL_ constants?
 {
 	CULL_FRONT,
 	CULL_BACK,
 	CULL_NONE
-} gl_cullMode_t;	//?? remove this? use GL_ constants?
+};
 
 
-typedef enum
+enum gl_depthMode_t
 {
 	DEPTH_NEAR,		// Z -> 0          (0, 0)
 	DEPTH_HACK,		// Z /= 3          (0, 0.333)
 	DEPTH_NORMAL,	// keep original Z (0, 1)
 	DEPTH_FAR		// Z -> 1          (1, 1)
-} gl_depthMode_t;
+};
 
 
 //!! make struc tmuState_t, gl_state_t will have 'tmuState_t _old[32], _new[32]'; GL_SelectTexture() will set

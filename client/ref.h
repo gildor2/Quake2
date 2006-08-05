@@ -74,13 +74,13 @@ struct entity_t
 };
 
 
-typedef enum
+enum beamType_t
 {
 	BEAM_STANDARD,
 	//?? add BEAM_FLAT
 	BEAM_STAR,
 	BEAM_CYLINDER
-} beamType_t;
+};
 
 
 struct beam_t
@@ -113,11 +113,11 @@ struct dlight_t
 };
 
 
-typedef enum
+enum particleType_t
 {
 	PT_DEFAULT,
 	PT_SPARKLE
-} particleType_t;
+};
 
 struct particle_t
 {

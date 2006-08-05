@@ -1395,17 +1395,55 @@ int CM_BoxLeafnums (const CBox &bounds, int *list, int listsize, int *topnode, i
 static struct
 {
 	CVec3	start, end;
-	CBox	bounds;			// trace box bounds; symetric, bounds.maxs == bounds half-size
-	CVec3	boundsVecs[8];	// corners of bounds
 	trace_t	trace;
 	unsigned contents;
 	unsigned skipContents;
-	bool	isPoint;
-	int		numClipFaces;	// for q1/hl surface trace
+	int		numClipFaces;			// for q1/hl surface trace
+	// following fields used in GetTraceOffset() and SplitTrace() only
+	CBox	bounds;					// trace box bounds; symetric, bounds.maxs == bounds half-size
+	CVec3	boundsVecs[8];			// corners of bounds
+	bool	isPoint;				// used outside of these functions, but exclusively for SplitTrace()
 } tr;
 static int traceFrame;		// cannot place into "tr": should increment value between frames ("tr" will be zeroed)
 
-static int clipFaces[MAX_CLIP_FACES]; // tr.numClipFaces
+static int clipFaces[MAX_CLIP_FACES]; // [tr.numClipFaces]
+
+
+FORCEINLINE float GetTraceOffset (const CPlane &plane)
+{
+	if (plane.type <= CPlane::PLANE_Z)
+		// HERE: plane.normal[i] == 0 || 1 for i==type
+		return tr.bounds.maxs[plane.type]; // symmetric bounds => == - tr.bounds.mins[plane->type]
+	else if (plane.type <= CPlane::PLANE_MZ)
+		// HERE: plane.normal[i] == 0 || -1 for i==type-3
+		return tr.bounds.maxs[plane.type-3];
+	else
+		return -dot(plane.normal, tr.boundsVecs[plane.signbits]);
+}
+
+
+FORCEINLINE float SplitTrace (const CVec3 &p1, const CVec3 &p2, const CPlane &plane, float &d1, float &d2, bool isPoint = true)
+{
+	// this is a 2 plane->DistanceTo() calls with a common plane->type analysis
+	if (plane.type <= CPlane::PLANE_Z)
+	{
+		d1 = p1[plane.type] - plane.dist;
+		d2 = p2[plane.type] - plane.dist;
+	}
+	else if (plane.type <= CPlane::PLANE_MZ)
+	{
+		d1 = -p1[plane.type-3] - plane.dist;
+		d2 = -p2[plane.type-3] - plane.dist;
+	}
+	else
+	{
+		d1 = dot(plane.normal, p1) - plane.dist;
+		d2 = dot(plane.normal, p2) - plane.dist;
+	}
+	if (isPoint) return 0;
+
+	return GetTraceOffset (plane);
+}
 
 
 // return 'true' when brush clipped trace
@@ -1418,7 +1456,7 @@ static bool TraceBrush (const cbrush_t &brush)
 
 	float enterfrac = -1;
 	float leavefrac = 1;					// used only for validating enterfrac
-	CPlane *clipplane = NULL;
+	const CPlane *clipplane = NULL;
 
 	bool	getout, startout;
 	getout = startout = false;
@@ -1426,48 +1464,12 @@ static bool TraceBrush (const cbrush_t &brush)
 
 	for (i = 0, side = &map_brushSides[brush.firstbrushside]; i < brush.numsides; i++, side++)
 	{
-		float d1, d2, dist;
+		const CPlane *plane = side->plane;
+		float d1, d2;
+		float dist = SplitTrace (tr.start, tr.end, *plane, d1, d2, tr.isPoint);
+		d1 -= dist;
+		d2 -= dist;
 
-		CPlane *plane = side->plane;
-
-		if (!tr.isPoint)
-		{	// general box case
-			if (plane->type <= CPlane::PLANE_Z)
-			{
-				// HERE: plane.normal[i] == 0 || 1 for i==type
-				dist = plane->dist - tr.bounds.mins[plane->type]; //?? == + tr.bounds.maxs[plane->type]
-			}
-			else if (plane->type <= CPlane::PLANE_MZ)
-			{
-				// HERE: plane.normal[i] == 0 || -1 for i==type-3
-				dist = plane->dist + tr.bounds.maxs[plane->type-3];
-			}
-			else
-			{
-				dist = plane->dist - dot (plane->normal, tr.boundsVecs[plane->signbits]);
-			}
-		}
-		else
-		{	// special point case
-			dist = plane->dist;
-		}
-
-		// this is a 2 plane->DistanceTo() calls with a common plane->type analysis
-		if (plane->type <= CPlane::PLANE_Z)
-		{
-			d1 = tr.start[plane->type] - dist;
-			d2 = tr.end[plane->type] - dist;
-		}
-		else if (plane->type <= CPlane::PLANE_MZ)
-		{
-			d1 = -tr.start[plane->type-3] - dist;
-			d2 = -tr.end[plane->type-3] - dist;
-		}
-		else
-		{
-			d1 = dot(plane->normal, tr.start) - dist;
-			d2 = dot(plane->normal, tr.end) - dist;
-		}
 		TRACE(va("plane: %g %g %g : %g -- d1=%g d2=%g (%s)",VECTOR_ARG(plane->normal),plane->dist, d1, d2, side->surface->fullName),RGB(1,0,0));
 		// d1 and d2: 0 -- on plane, <0 -- inside brush plane, >0 -- outside brush plane
 
@@ -1586,17 +1588,8 @@ static bool TestBrush (const cbrush_t &brush)
 	cbrushside_t *side;
 	for (i = 0, side = &map_brushSides[brush.firstbrushside]; i < brush.numsides; i++, side++)
 	{
-		CPlane *plane = side->plane;
-
-		float size;
-		if (plane->type <= CPlane::PLANE_Z)
-			size = - tr.bounds.mins[plane->type];		//?? == tr.bounds.maxs[plane->type]
-		else if (plane->type <= CPlane::PLANE_MZ)
-			size = tr.bounds.maxs[plane->type-3];
-		else
-			size = - dot(plane->normal, tr.boundsVecs[plane->signbits]);
-
-		float d = plane->DistanceTo (tr.start) - size;
+		const CPlane &plane = *side->plane;
+		float d = plane.DistanceTo (tr.start) - GetTraceOffset (plane) - DIST_EPSILON;	// -DIST_EPSILON move surface farther of trace
 		// if completely in front of face, no intersection
 		if (d > 0) return false;
 		if (d > clipdist)
@@ -1658,45 +1651,10 @@ static void FindSurface1 (const dBsp2Leaf_t &leaf, float p1f, float p2f)
 		const dFace_t &face = bspfile.faces[faceNum];
 		const CPlane *plane = map_planes + face.planenum;
 
-		float d1, d2, dist;
-		if (!tr.isPoint)
-		{	// general box case
-			if (plane->type <= CPlane::PLANE_Z)
-			{
-				// HERE: plane.normal[i] == 0 || 1 for i==type
-				dist = plane->dist - tr.bounds.mins[plane->type]; //?? == + tr.bounds.maxs[plane->type]
-			}
-			else if (plane->type <= CPlane::PLANE_MZ)
-			{
-				// HERE: plane.normal[i] == 0 || -1 for i==type-3
-				dist = plane->dist + tr.bounds.maxs[plane->type-3];
-			}
-			else
-			{
-				dist = plane->dist - dot (plane->normal, tr.boundsVecs[plane->signbits]);
-			}
-		}
-		else
-		{	// special point case
-			dist = plane->dist;
-		}
-
-		// this is a 2 plane->DistanceTo() calls with a common plane->type analysis
-		if (plane->type <= CPlane::PLANE_Z)
-		{
-			d1 = tr.start[plane->type] - dist;
-			d2 = tr.end[plane->type] - dist;
-		}
-		else if (plane->type <= CPlane::PLANE_MZ)
-		{
-			d1 = -tr.start[plane->type-3] - dist;
-			d2 = -tr.end[plane->type-3] - dist;
-		}
-		else
-		{
-			d1 = dot(plane->normal, tr.start) - dist;
-			d2 = dot(plane->normal, tr.end) - dist;
-		}
+		float d1, d2;
+		float dist = SplitTrace (tr.start, tr.end, *plane, d1, d2, tr.isPoint);
+		d1 -= dist;
+		d2 -= dist;
 
 		int s1 = IsNegative (d1);
 		int s2 = IsNegative (d2);
@@ -1796,38 +1754,16 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &
 		const cnode_t &node = map_nodes[nodeNum];
 		const CPlane &plane = *node.plane;
 
-		float t1, t2, offset;
-		if (plane.type <= CPlane::PLANE_Z)
-		{
-			t1 = p1[plane.type] - plane.dist;
-			t2 = p2[plane.type] - plane.dist;
-			offset = tr.bounds.maxs[plane.type];
-		}
-		else if (plane.type <= CPlane::PLANE_MZ)
-		{
-			t1 = -p1[plane.type-3] - plane.dist;
-			t2 = -p2[plane.type-3] - plane.dist;
-			offset = tr.bounds.maxs[plane.type-3];
-		}
-		else
-		{
-			t1 = dot (plane.normal, p1) - plane.dist;
-			t2 = dot (plane.normal, p2) - plane.dist;
-			if (tr.isPoint)
-				offset = 0;
-			else
-				offset = fabs (tr.bounds.maxs[0]*plane.normal[0]) +		// == -dot (plane.normal, tr.boundsVecs[plane.signbits])
-						 fabs (tr.bounds.maxs[1]*plane.normal[1]) +
-						 fabs (tr.bounds.maxs[2]*plane.normal[2]);
-		}
+		float d1, d2;
+		float offset = SplitTrace (p1, p2, plane, d1, d2, tr.isPoint);
 
 		// see which sides we need to consider
-		if (t1 >= offset && t2 >= offset)
+		if (d1 >= offset && d2 >= offset)
 		{
 			nodeNum = node.children[0];
 			continue;
 		}
-		if (t1 < -offset && t2 < -offset)
+		if (d1 < -offset && d2 < -offset)
 		{
 			nodeNum = node.children[1];
 			continue;
@@ -1836,7 +1772,7 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &
 		int side;
 		float frac1, frac2;
 		// put the crosspoint DIST_EPSILON pixels on the near side
-		if (t1 == t2)
+		if (d1 == d2)
 		{
 			frac1 = 1;
 			frac2 = 0;
@@ -1844,23 +1780,23 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &
 		}
 		else
 		{
-			float idist = 1.0f / (t1 - t2);
+			float idist = 1.0f / (d1 - d2);
 			offset += DIST_EPSILON;
 #if 0
-			if (t1 < t2)						// NOTE: here idist<0
+			if (d1 < d2)						// NOTE: here idist<0
 			{
-				frac1 = (t1 - offset) * idist;	// -offset*idist > 0
-				frac2 = (t1 + offset) * idist;	// +offset*idist < 0
+				frac1 = (d1 - offset) * idist;	// -offset*idist > 0
+				frac2 = (d1 + offset) * idist;	// +offset*idist < 0
 				side  = 1;
 			}
-			else if (t1 > t2)					// here idist>0
+			else if (d1 > d2)					// here idist>0
 			{
-				frac1 = (t1 + offset) * idist;	// +offset*idist > 0
-				frac2 = (t1 - offset) * idist;	// -offset*idist < 0
+				frac1 = (d1 + offset) * idist;	// +offset*idist > 0
+				frac2 = (d1 - offset) * idist;	// -offset*idist < 0
 				side  = 0;
 			}
 #else
-			frac1 = frac2 = t1 * idist;
+			frac1 = frac2 = d1 * idist;
 			float offset2;
 			FAbsSign (idist, offset2, side);	// side=1 when t1<t2
 			offset2 *= offset;					// offset2 = fabs(idist)*offset; >0
@@ -1944,7 +1880,7 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CB
 		float f = (tr.bounds.mins[i] + tr.bounds.maxs[i]) / 2;	// center of bounds
 		tr.start[i] += f;
 		tr.end[i]   += f;
-		tr.bounds.mins[i] -= f;
+		tr.bounds.mins[i] -= f;				// move bounds center to {0,0,0}
 		tr.bounds.maxs[i] -= f;
 	}
 	for (int boundsVec = 0; boundsVec < 8; boundsVec++)
@@ -2170,24 +2106,8 @@ static bool TestBrush (const CVec3 &start, const CVec3 &end, const cbrush_t &bru
 	float lf =  1;					// leavefrac
 	for (i = 0, side = &map_brushSides[brush.firstbrushside]; i < brush.numsides; i++, side++)
 	{
-		float	d1, d2, f;
-
-		CPlane *plane = side->plane;
-		if (plane->type <= CPlane::PLANE_Z)
-		{
-			d1 = start[plane->type] - plane->dist;
-			d2 = end[plane->type] - plane->dist;
-		}
-		else if (plane->type <= CPlane::PLANE_MZ)
-		{
-			d1 = -start[plane->type-3] - plane->dist;
-			d2 = -end[plane->type-3] - plane->dist;
-		}
-		else
-		{
-			d1 = dot (plane->normal, start) - plane->dist;
-			d2 = dot (plane->normal, end) - plane->dist;
-		}
+		float d1, d2;
+		SplitTrace (start, end, *side->plane, d1, d2);
 
 		// d1 and d2: 0 -- on plane, <0 -- inside brush plane, >0 -- outside brush plane
 		if (d1 >= 0 && d2 >= 0)		// start and end points are outside this plane
@@ -2198,7 +2118,7 @@ static bool TestBrush (const CVec3 &start, const CVec3 &end, const cbrush_t &bru
 		// check for situation, when line crosses 2 planes outside brush (in this case,
 		// line will leave brush before enter -- "inside-out")
 		// here: d1 != d1 (have different signs)
-		f = d1 / (d1 - d2);
+		float f = d1 / (d1 - d2);
 		if (d1 > d2)
 		{
 			if (f > ef) ef = f;
@@ -2247,50 +2167,36 @@ static void RecursiveBrushTest (const CVec3 &point1, const CVec3 &point2, int no
 		const cnode_t &node = map_nodes[nodeNum];
 		const CPlane &plane = *node.plane;
 
-		float t1, t2;
-		if (plane.type <= CPlane::PLANE_Z)
-		{
-			t1 = p1[plane.type] - plane.dist;
-			t2 = p2[plane.type] - plane.dist;
-		}
-		else if (plane.type <= CPlane::PLANE_MZ)
-		{
-			t1 = -p1[plane.type-3] - plane.dist;
-			t2 = -p2[plane.type-3] - plane.dist;
-		}
-		else
-		{
-			t1 = dot(plane.normal, p1) - plane.dist;
-			t2 = dot(plane.normal, p2) - plane.dist;
-		}
+		float d1, d2;
+		SplitTrace (p1, p2, plane, d1, d2);
 
 		int s1, s2;
-		s1 = IsNegative (t1); s2 = IsNegative (t2);
+		s1 = IsNegative (d1); s2 = IsNegative (d2);
 		if (s1 == s2)
 		{
-			nodeNum = node.children[s1];	// t1 >= 0  => [0], < 0  => [1]
+			nodeNum = node.children[s1];	// d1 >= 0  => [0], < 0  => [1]
 			continue;
 		}
 
 		// here: sign(t1) != sign(t2), t1-t2 != 0
-		float idist = 1.0f / (t1 - t2);
+		float idist = 1.0f / (d1 - d2);
 		float frac1, frac2;
 		int side;
 #if 0
-		if (t1 < t2)						// t1<0, t2>=0; here idist<0
+		if (d1 < d2)						// d1<0, d2>=0; here idist<0
 		{
-			frac1 = (t1 - DIST_EPSILON) * idist;
-			frac2 = (t1 + DIST_EPSILON) * idist;
+			frac1 = (d1 - DIST_EPSILON) * idist;
+			frac2 = (d1 + DIST_EPSILON) * idist;
 			side  = 1;
 		}
-		else								// t1>=0, t2<0
+		else								// d1>=0, d2<0
 		{
-			frac1 = (t1 + DIST_EPSILON) * idist;
-			frac2 = (t1 - DIST_EPSILON) * idist;
+			frac1 = (d1 + DIST_EPSILON) * idist;
+			frac2 = (d1 - DIST_EPSILON) * idist;
 			side  = 0;
 		}
 #else
-		frac1 = frac2 = t1 * idist;
+		frac1 = frac2 = d1 * idist;
 		float offset2;
 		FAbsSign (idist, offset2, side);	// side=1 when t1<t2 (when t1<0 and t2>0)
 		offset2 *= DIST_EPSILON;			// offset2 = fabs(idist)*DIST_EPSILON; >0

@@ -634,12 +634,12 @@ void CL_ParseMuzzleFlash ()
 	//		snd_name may be %d:rand()%5+1 -- may always pass for sprintf()
 	//		snd_name is "weapons/%s.wav"
 	//	2. sound(NULL,i,CHAN_AUTO,<snd_name>,vol,ATTN_NORM,0.1)
-	typedef struct {
+	struct mzTable_t {
 		byte	r, g, b;
 		bool	allowSilencer;		// if false, sound volume will be forced to 1
 		const char *sound;
 		const char *sound2;
-	} mzTable_t;
+	};
 	static const mzTable_t mzTable[] = {
 #define F(r,g,b,sil,snd1,snd2)		{ byte(r*255.0f),byte(g*255.0f),byte(b*255.0f),sil,snd1,snd2 }
 	F(1,1,0,	true,	"blastf1a", NULL),			// MZ_BLASTER
@@ -1660,7 +1660,7 @@ void CL_RailTrail (const CVec3 &start, const CVec3 &end)
 	float len = vec.NormalizeFast ();
 
 	CVec3 right, up;
-	MakeNormalVectors (vec, right, up);
+	vec.FindAxisVectors (right, up);
 
 	for (int i = 0; i < len; i++)
 	{
@@ -1928,8 +1928,8 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
 
 void CL_ParticleSteamEffect (const CVec3 &org, const CVec3 &dir, int color, int count, int magnitude)
 {
-	CVec3 r, u;
-	MakeNormalVectors (dir, r, u);
+	CVec3 right, up;
+	dir.FindAxisVectors (right, up);
 
 	for (int i = 0; i < count; i++)
 	{
@@ -1942,8 +1942,8 @@ void CL_ParticleSteamEffect (const CVec3 &org, const CVec3 &dir, int color, int 
 		for (int j = 0; j < 3; j++)
 			p->org[j] = org[j] + magnitude * 0.1f * crand();
 		VectorScale (dir, magnitude, p->vel);
-		VectorMA (p->vel, crand() * magnitude / 3, r);
-		VectorMA (p->vel, crand() * magnitude / 3, u);
+		VectorMA (p->vel, crand() * magnitude / 3, right);
+		VectorMA (p->vel, crand() * magnitude / 3, up);
 
 		p->accel[2] = -PARTICLE_GRAVITY/2;
 	}
@@ -1953,8 +1953,8 @@ void CL_ParticleSteamEffect (const CVec3 &org, const CVec3 &dir, int color, int 
 // same as CL_ParticleSteamEffect, but unaffected by gravity
 void CL_ParticleSmokeEffect (const CVec3 &org, const CVec3 &dir)
 {
-	CVec3 r, u;
-	MakeNormalVectors (dir, r, u);
+	CVec3 right, up;
+	dir.FindAxisVectors (right, up);
 
 	const float magnitude = 20;
 	for (int i = 0; i < 20; i++)
@@ -1968,8 +1968,8 @@ void CL_ParticleSmokeEffect (const CVec3 &org, const CVec3 &dir)
 		for (int j = 0; j < 3; j++)
 			p->org[j] = org[j] + magnitude * 0.1 * crand();
 		VectorScale (dir, magnitude, p->vel);
-		VectorMA (p->vel, crand() * magnitude / 3, r);
-		VectorMA (p->vel, crand() * magnitude / 3, u);
+		VectorMA (p->vel, crand() * magnitude / 3, right);
+		VectorMA (p->vel, crand() * magnitude / 3, up);
 
 		p->accel[2] = 0;
 	}
@@ -1981,16 +1981,16 @@ void CL_TrackerTrail (centity_t &ent)
 	CVec3 end;
 	Lerp (ent.prev.origin, ent.current.origin, cl.lerpfrac, end);
 	CVec3 move = ent.prevTrail;
-	CVec3 forward;
-	VectorSubtract (end, ent.prevTrail, forward);
-	float len = forward.NormalizeFast ();
+	CVec3 dir;
+	VectorSubtract (end, ent.prevTrail, dir);
+	float len = dir.NormalizeFast ();
 
 	ent.prevTrail = end;
 
 	CVec3 right, up;
-	MakeNormalVectors (forward, right, up);
+	dir.FindAxisVectors (right, up);
 
-	CVec3 vec = forward;
+	CVec3 vec = dir;
 	vec.Scale (3);
 
 	// FIXME: this is a really silly way to have a loop
@@ -2003,7 +2003,7 @@ void CL_TrackerTrail (centity_t &ent)
 
 		p->alphavel = -2.0;
 		p->color    = 0;
-		float dist = dot (move, forward);
+		float dist = dot (move, dir);
 		VectorMA (move, 8 * cos(dist), up, p->org);
 		p->vel.Set (0, 0, 5);
 

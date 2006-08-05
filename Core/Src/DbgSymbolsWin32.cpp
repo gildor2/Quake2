@@ -18,7 +18,7 @@ bool osGetAddressPackage (address_t address, char *pkgName, int bufSize, int &of
 		return false;
 
 	char *s;
-	if (s = strrchr (module, '.'))
+	if (s = strrchr (module, '.'))	// cut extension
 		*s = 0;
 	if (s = strrchr (module, '\\'))
 		strcpy (module, s+1);		// remove "path\" part

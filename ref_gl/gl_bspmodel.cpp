@@ -463,7 +463,11 @@ static bool CanEnvmap (const dFace_t *surf, int headnode, CVec3 **pverts, int nu
 
 static shader_t *CreateSurfShader2 (unsigned sflags, const dBsp2Texinfo_t *stex, const dBsp2Texinfo_t *mapTextures)
 {
-	if (sflags & SHADER_SKY) return gl_skyShader;
+	if (sflags & SHADER_SKY)
+	{
+		map.haveSkySurfaces = true;
+		return gl_skyShader;
+	}
 
 	/*---------- check for texture animation ----------*/
 	char textures[MAX_QPATH * MAX_STAGE_TEXTURES];
@@ -567,7 +571,11 @@ static int FindMiptex1 (const char *texName)
 
 static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 {
-	if (sflags & SHADER_SKY) return gl_skyShader;
+	if (sflags & SHADER_SKY)
+	{
+		map.haveSkySurfaces = true;
+		return gl_skyShader;
+	}
 
 	// get pointer to 1st char of real texture name (for hl -- cut wads/wad_name/)
 	const char *srcTexName;

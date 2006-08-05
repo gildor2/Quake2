@@ -163,15 +163,19 @@ struct client_state_t
 extern	client_state_t	cl;
 
 
-typedef enum {
+enum connstate_t
+{
 	ca_uninitialized,
 	ca_disconnected, 			// not talking to a server
 	ca_connecting,				// sending request packets to the server
 	ca_connected,				// netchan_t established, waiting for svc_serverdata
 	ca_active					// game views should be displayed
-} connstate_t;
+};
 
-typedef enum {key_game, key_console, key_message, key_menu, key_bindingMenu} keydest_t;
+enum keydest_t
+{
+	key_game, key_console, key_message, key_menu, key_bindingMenu
+};
 
 // the client_static_t structure is persistant through an arbitrary number
 // of server connections

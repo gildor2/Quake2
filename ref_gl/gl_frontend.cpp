@@ -590,8 +590,8 @@ static node_t *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
 #define PUSH_NODE(n, start, end) \
 	st = &stack[sptr++]; \
 	st->node = n;		\
-	st->v1 = start;		\
-	st->v2 = end;
+	st->v1   = start;	\
+	st->v2   = end;
 
 #define POP_NODE()		\
 	if (!sptr)			\
@@ -600,8 +600,8 @@ static node_t *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
 	{					\
 		st = &stack[--sptr]; \
 		node = st->node; \
-		v1a = st->v1;	\
-		v2a = st->v2;	\
+		v1a  = st->v1;	\
+		v2a  = st->v2;	\
 	}
 
 	while (node)
