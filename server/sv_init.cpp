@@ -220,7 +220,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 
 	// load and spawn all other entities
 	guard(ge.SpawnEntities);
-	ge->SpawnEntities (sv.name, CM_EntityString(), spawnpoint);
+	ge->SpawnEntities (sv.name, bspfile.entStr, spawnpoint);
 	unguard;
 
 	// run two frames to allow everything to settle

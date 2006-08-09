@@ -6,7 +6,7 @@ bspfile_t bspfile;
 static lump_t *lumps;
 
 
-//?? move swappers to qfiles.h as methods for structures
+//?? move swappers to FileFormats.h as methods for structures
 #if !LITTLE_ENDIAN
 static void SwapQ2BspFile (bspfile_t *f)
 {
@@ -33,14 +33,14 @@ static void SwapQ2BspFile (bspfile_t *f)
 	// planes
 	for (i = 0; i < f->numPlanes; i++)
 	{
-		LTL(f->planes[i].normal);
-		LTL(f->planes[i].dist);
+		LTL(f->planes2[i].normal);
+		LTL(f->planes2[i].dist);
 	}
 
 	// texinfos
 	for (i = 0; i < f->numTexinfo; i++)
 	{
-		dBsp2Texinfo_t &d = f->texinfo[i];
+		dBsp2Texinfo_t &d = f->texinfo2[i];
 		float *vec = &d.vecs[0].vec[0];		// hack to get all ([3]+1)[2] == 8 components of dBsp2Texinfo_t.vecs[]
 		for (j = 0; j < 8; j++)
 			LTL(vec[j]);
@@ -52,7 +52,7 @@ static void SwapQ2BspFile (bspfile_t *f)
 	// faces
 	for (i = 0; i < f->numFaces; i++)
 	{
-		dFace_t &face = f->faces[i];
+		dBspFace_t &face = f->faces2[i];
 		LTL(face.texinfo);
 		LTL(face.planenum);
 		LTL(face.side);
@@ -65,7 +65,7 @@ static void SwapQ2BspFile (bspfile_t *f)
 	for (i = 0; i < f->numNodes; i++)
 	{
 		dBsp2Node_t &node = f->nodes2[i];
-		LTL(node.planenum);
+		LTL(node.planeNum);
 		for (j = 0; j < 3; j++)
 		{
 			LTL(node.mins[j]);
@@ -73,8 +73,8 @@ static void SwapQ2BspFile (bspfile_t *f)
 		}
 		LTL(node.children[0]);
 		LTL(node.children[1]);
-		LTL(node.firstface);
-		LTL(node.numfaces);
+//		LTL(node.firstFace); -- unused
+//		LTL(node.numFaces);
 	}
 
 	// leafs
@@ -143,26 +143,24 @@ static void SwapQ2BspFile (bspfile_t *f)
 		LTL(f->brushsides[i].planenum);
 		LTL(f->brushsides[i].texinfo);
 	}
-
-	// visibility
-	if (f->visDataSize)		// should process this only when map have visibility data
-	{
-		LTL(f->vis->numclusters);
-		j = f->vis->numclusters;
-		for (i = 0; i < j ; i++)
-		{
-			LTL(f->vis->bitofs[i][0]);
-			LTL(f->vis->bitofs[i][1]);
-		}
-	}
 }
 
 static void SwapQ1BspFile (bspfile_t *f)
 {
 	//!! implement this
+	assert(0);
+}
+
+static void SwapQ3BspFile (bspfile_t *f)
+{
+	//!! implement this
+	// NOTE: most work may be done with SwapDwordBlock() function (except shaders/fogs: have name[] fields) -
+	//		 there is no byte/short fields, only int32/float
+	assert(0);
 }
 
 #endif // LITTLE_ENDIAN
+
 
 static void ProcessQ2BspFile (bspfile_t *f)
 {
@@ -197,8 +195,8 @@ static void ProcessQ2BspFile (bspfile_t *f)
 
 	// silly check for correct lightmaps
 	for (i = 0; i < f->numFaces; i++)
-		if (f->faces[i].lightofs > f->lightDataSize)
-			f->faces[i].lightofs = -1;
+		if (f->faces2[i].lightofs > f->lightDataSize)
+			f->faces2[i].lightofs = -1;
 
 	// get numClusters (have in dBsp2Vis_t, but Q2 recomputes this ...)
 	f->numClusters = 0;
@@ -206,7 +204,6 @@ static void ProcessQ2BspFile (bspfile_t *f)
 		if (f->leafs2[i].cluster >= f->numClusters)
 			f->numClusters = f->leafs2[i].cluster + 1;
 }
-
 
 static void ProcessQ1BspFile (bspfile_t *f)
 {
@@ -226,14 +223,25 @@ static void ProcessQ1BspFile (bspfile_t *f)
 	}
 	for (i = 0; i < f->numFaces; i++)
 	{
-		dFace_t &face = f->faces[i];
+		dBspFace_t &face = f->faces2[i];
 		// silly check for correct lightmaps
 		if (face.lightofs > f->lightDataSize)
 			face.lightofs = -1;
 	}
 }
 
+static void ProcessQ3BspFile (bspfile_t *f)
+{
+	int i;
+	// get numClusters (have in dBsp3Vis_t, but Q3 recomputes this ...)
+	f->numClusters = 0;
+	for (i = 0; i < f->numLeafs; i++)
+		if (f->leafs3[i].cluster >= f->numClusters)
+			f->numClusters = f->leafs3[i].cluster + 1;
+}
 
+
+//?? should move LoadQxSubmodels() to cmodel.cpp, but this work will be used for entstring processing
 static void LoadQ2Submodels (bspfile_t *f, dBsp2Model_t *data)
 {
 	if (f->numModels < 1)
@@ -242,12 +250,12 @@ static void LoadQ2Submodels (bspfile_t *f, dBsp2Model_t *data)
 	cmodel_t *out = f->models = new (f->extraChain) cmodel_t[f->numModels];
 	for (int i = 0; i < f->numModels; i++, data++, out++)
 	{
-		out->bounds    = data->bounds;
-		out->radius    = VectorDistance (out->bounds.mins, out->bounds.maxs) / 2;
-		out->headnode  = data->headnode;
-		out->flags     = 0;
-		out->firstface = data->firstface;
-		out->numfaces  = data->numfaces;
+		out->bounds     = data->bounds;
+		out->radius     = VectorDistance (out->bounds.mins, out->bounds.maxs) / 2;
+		out->headnode   = data->headnode;
+		out->flags      = 0;
+		out->firstface  = data->firstface;
+		out->numfaces   = data->numfaces;
 		out->color.rgba = RGBA(1,1,1,1);
 		// dBsp2Model_t have unused field "origin"
 	}
@@ -261,15 +269,20 @@ static void LoadQ1Submodels (bspfile_t *f, dBsp1Model_t *data)
 	cmodel_t *out = f->models = new (f->extraChain) cmodel_t[f->numModels];
 	for (int i = 0; i < f->numModels; i++, data++, out++)
 	{
-		out->bounds    = data->bounds;
-		out->radius    = VectorDistance (out->bounds.mins, out->bounds.maxs) / 2;
-		out->headnode  = data->headnode[0];
-		out->flags     = 0;
-		out->firstface = data->firstface;
-		out->numfaces  = data->numfaces;
+		out->bounds     = data->bounds;
+		out->radius     = VectorDistance (out->bounds.mins, out->bounds.maxs) / 2;
+		out->headnode   = data->headnode[0];
+		out->flags      = 0;
+		out->firstface  = data->firstface;
+		out->numfaces   = data->numfaces;
 		out->color.rgba = RGBA(1,1,1,1);
 		// dBsp1Model_t have unused field "origin"
 	}
+}
+
+static void LoadQ3Submodels (bspfile_t *f, dBsp3Model_t *data)
+{
+	//!! implement
 }
 
 
@@ -305,6 +318,19 @@ static void DecompressVis (byte *dst, void *vis, int pos, int rowSize)
 
 static void LoadQ2Vis (bspfile_t *f, dBsp2Vis_t *vis, int size)
 {
+#if !LITTLE_ENDIAN
+	if (size)		// should process this only when map have visibility data
+	{
+		LTL(vis->numClusters);
+		int j = vis->numClusters;
+		for (int i = 0; i < j ; i++)
+		{
+			LTL(vis->bitOfs[i][0]);
+			LTL(vis->bitOfs[i][1]);
+		}
+	}
+#endif
+
 	if (!size)
 	{
 		Com_DPrintf ("No visinfo in map\n");
@@ -326,7 +352,7 @@ static void LoadQ2Vis (bspfile_t *f, dBsp2Vis_t *vis, int size)
 	byte *dst = new (f->extraChain) byte [rowSize * f->numClusters];
 	f->visInfo = dst;
 	for (int i = 0; i < f->numClusters; i++, dst += rowSize)
-		DecompressVis (dst, vis, vis->bitofs[i][DVIS_PVS], rowSize);
+		DecompressVis (dst, vis, vis->bitOfs[i][dBsp2Vis_t::PVS], rowSize);
 	Com_DPrintf ("Decompressed vis: %d -> %d bytes\n", size, rowSize * f->numClusters);
 }
 
@@ -355,6 +381,30 @@ static void LoadQ1Vis (bspfile_t *f, byte *vis, int size)
 	Com_DPrintf ("Decompressed vis: %d -> %d bytes\n", size, rowSize * f->numClusters);
 }
 
+static void LoadQ3Vis (bspfile_t *f, dBsp3Vis_t* vis, int size)
+{
+	if (!size)
+	{
+		Com_DPrintf ("No visinfo in map\n");
+		if (f->numClusters > 1)
+		{
+			if (developer->integer)
+				appWPrintf ("WARNING: map with cluster info but without visinfo\n");
+		}
+		f->numClusters = 1;				// required
+		f->visInfo     = NULL;
+		return;
+	}
+	// NOTE: 'size' is ignored later
+
+	int rowSize = (f->numClusters + 7) >> 3;
+	if (rowSize != vis->rowSize) Com_DPrintf ("LoadQ3Vis: vis.rowSize=%d != computed=%d\n", vis->rowSize, rowSize);
+
+	f->visInfo = (byte*)vis + sizeof(dBsp3Vis_t);
+	f->visRowSize = vis->rowSize;
+}
+
+
 static int CheckLump (int lump, void **ptr, int size)
 {
 	int length = lumps[lump].filelen;
@@ -382,32 +432,29 @@ void LoadQ2BspFile ()
 		((int *)bspfile.file)[i] = LittleLong (((int *)bspfile.file)[i]);
 #endif
 
-	if (header->version != BSP2_VERSION)
-		Com_DropError ("%s is version %d, not " STR(BSP2_VERSION) "\n", bspfile.name, header->version);
-
 	bspfile.type = map_q2;
 	Com_DPrintf ("Loading Q2 bsp %s\n", bspfile.name);
 
 #define C(num,field,count,type) \
-	bspfile.count = CheckLump(Q2LUMP_##num, (void**)&bspfile.field, sizeof(type))
+	bspfile.count = CheckLump(dBsp2Hdr_t::LUMP_##num, (void**)&bspfile.field, sizeof(type))
 	C(LIGHTING, lighting, lightDataSize, byte);
-	C(VERTEXES, vertexes, numVertexes, CVec3);
-	C(PLANES, planes, numPlanes, dPlane_t);
+	C(VERTEXES, vertexes2, numVertexes, CVec3);
+	C(PLANES, planes2, numPlanes, dBsp2Plane_t);
 	C(LEAFS, leafs2, numLeafs, dBsp2Leaf_t);
 	C(NODES, nodes2, numNodes, dBsp2Node_t);
 	C(TEXINFO, texinfo2, numTexinfo, dBsp2Texinfo_t);
-	C(FACES, faces, numFaces, dFace_t);
-	C(LEAFFACES, leaffaces, numLeaffaces, unsigned short);
-	C(LEAFBRUSHES, leafbrushes, numLeafbrushes, unsigned short);
+	C(FACES, faces2, numFaces, dBspFace_t);
+	C(LEAFFACES, leaffaces2, numLeaffaces, unsigned short);
+	C(LEAFBRUSHES, leafbrushes2, numLeafbrushes, unsigned short);
 	C(SURFEDGES, surfedges, numSurfedges, int);
 	C(EDGES, edges, numEdges, dEdge_t);
-	C(BRUSHES, brushes, numBrushes, dBsp2Brush_t);
-	C(BRUSHSIDES, brushsides, numBrushSides, dBsp2Brushside_t);
+	C(BRUSHES, brushes2, numBrushes, dBsp2Brush_t);
+	C(BRUSHSIDES, brushsides2, numBrushSides, dBsp2Brushside_t);
 	C(AREAS, areas, numAreas, darea_t);
 	C(AREAPORTALS, areaportals, numAreaportals, dareaportal_t);
 
 	dBsp2Model_t *models;
-	bspfile.numModels = CheckLump (Q2LUMP_MODELS, (void**)&models, sizeof(dBsp2Model_t));	// not in bspfile_t struc
+	bspfile.numModels = CheckLump (dBsp2Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp2Model_t));	// not in bspfile_t struc
 	LoadQ2Submodels (&bspfile, models);
 
 #if !LITTLE_ENDIAN
@@ -418,10 +465,10 @@ void LoadQ2BspFile ()
 
 	// load visinfo
 	dBsp2Vis_t *vis;
-	int visDataSize = CheckLump (Q2LUMP_VISIBILITY, (void**)&vis, 1);
+	int visDataSize = CheckLump (dBsp2Hdr_t::LUMP_VISIBILITY, (void**)&vis, 1);
 	LoadQ2Vis (&bspfile, vis, visDataSize);
 	// load entstring after all: we may require to change something
-	char *entString = (char*)header + header->lumps[Q2LUMP_ENTITIES].fileofs;
+	char *entString = (char*)header + header->lumps[dBsp2Hdr_t::LUMP_ENTITIES].fileofs;
 	// detect kingpin map entities
 	if (strstr (entString, "\"classname\" \"junior\"") ||
 		strstr (entString, "\"classname\" \"lightflare\"") ||
@@ -458,25 +505,25 @@ void LoadQ1BspFile ()
 	Com_DPrintf ("Loading %s bsp %s\n", bspfile.type == map_q1 ? "Q1" : "HL", bspfile.name);
 
 #define C(num,field,count,type) \
-	bspfile.count = CheckLump(Q1LUMP_##num, (void**)&bspfile.field, sizeof(type))
+	bspfile.count = CheckLump(dBsp1Hdr_t::LUMP_##num, (void**)&bspfile.field, sizeof(type))
 	C(LIGHTING, lighting, lightDataSize, byte);
-	C(VERTEXES, vertexes, numVertexes, CVec3);
-	C(PLANES, planes, numPlanes, dPlane_t);
+	C(VERTEXES, vertexes2, numVertexes, CVec3);
+	C(PLANES, planes2, numPlanes, dBsp2Plane_t);
 	C(LEAFS, leafs1, numLeafs, dBsp1Leaf_t);
 	C(NODES, nodes1, numNodes, dBsp1Node_t);
 	C(TEXINFO, texinfo1, numTexinfo, dBsp1Texinfo_t);
-	C(FACES, faces, numFaces, dFace_t);
-	C(MARKSURFACES, leaffaces, numLeaffaces, unsigned short);
+	C(FACES, faces2, numFaces, dBspFace_t);
+	C(MARKSURFACES, leaffaces2, numLeaffaces, unsigned short);
 	C(SURFEDGES, surfedges, numSurfedges, int);
 	C(EDGES, edges, numEdges, dEdge_t);
 
-	bspfile.miptex1 = (dBsp1MiptexLump_t*)(bspfile.file + lumps[Q1LUMP_TEXTURES].fileofs);
+	bspfile.miptex1 = (dBsp1MiptexLump_t*)(bspfile.file + lumps[dBsp1Hdr_t::LUMP_TEXTURES].fileofs);
 #if !LITTLE_ENDIAN
 	//!! swap miptex1 lump
 #endif
 
 	dBsp1Model_t *models;
-	bspfile.numModels = CheckLump (Q1LUMP_MODELS, (void**)&models, sizeof(dBsp1Model_t));	// not in bspfile_t struc
+	bspfile.numModels = CheckLump (dBsp1Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp1Model_t));	// not in bspfile_t struc
 	LoadQ1Submodels (&bspfile, models);
 
 #if !LITTLE_ENDIAN
@@ -487,10 +534,66 @@ void LoadQ1BspFile ()
 
 	// load visinfo
 	byte *vis;
-	int visDataSize = CheckLump (Q1LUMP_VISIBILITY, (void**)&vis, 1);
+	int visDataSize = CheckLump (dBsp1Hdr_t::LUMP_VISIBILITY, (void**)&vis, 1);
 	LoadQ1Vis (&bspfile, vis, visDataSize);
 	// load entstring after all: we may require to change something
-	char *entString = (char*)header + header->lumps[Q2LUMP_ENTITIES].fileofs;
+	char *entString = (char*)header + header->lumps[dBsp1Hdr_t::LUMP_ENTITIES].fileofs;
+	bspfile.entStr = ProcessEntstring (entString);
+	bspfile.entStrSize = strlen (bspfile.entStr);
+
+#undef C
+	unguard;
+}
+
+
+void LoadQ3BspFile ()
+{
+	guard(LoadQ3BspFile);
+
+	dBsp3Hdr_t *header = (dBsp3Hdr_t *) bspfile.file;
+	lumps = header->lumps;
+
+#if !LITTLE_ENDIAN
+	// swap the header
+	for (int i = 0; i < sizeof(dBsp3Hdr_t) / 4; i++)
+		((int *)bspfile.file)[i] = LittleLong (((int *)bspfile.file)[i]);
+#endif
+
+	bspfile.type = map_q3;
+	Com_DPrintf ("Loading Q3 bsp %s\n", bspfile.name);
+
+#define C(num,field,count,type) \
+	bspfile.count = CheckLump(dBsp3Hdr_t::LUMP_##num, (void**)&bspfile.field, sizeof(type))
+//	C(LIGHTING, lighting, lightDataSize, byte);
+	C(VERTEXES, vertexes3, numVertexes, dBsp3Vert_t);
+	C(INDEXES, indexes3, numIndexes, int);
+	C(PLANES, planes3, numPlanes, dBsp3Plane_t);
+	C(LEAFS, leafs3, numLeafs, dBsp3Leaf_t);
+	C(NODES, nodes3, numNodes, dBsp3Node_t);
+	C(SHADERS, texinfo3, numTexinfo, dBsp3Shader_t);
+	C(FACES, faces3, numFaces, dBsp3Face_t);
+	C(LEAFFACES, leaffaces3, numLeaffaces, int);
+	C(LEAFBRUSHES, leafbrushes3, numLeafbrushes, int);
+	C(BRUSHES, brushes3, numBrushes, dBsp2Brush_t);
+	C(BRUSHSIDES, brushsides3, numBrushSides, dBsp2Brushside_t);
+	//!! C(FOGS, ...);
+
+	dBsp3Model_t *models;
+	bspfile.numModels = CheckLump (dBsp3Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp3Model_t));	// not in bspfile_t struc
+	LoadQ3Submodels (&bspfile, models);		//!!! empty
+
+#if !LITTLE_ENDIAN
+	// swap everything
+	SwapQ3BspFile (&bspfile);
+#endif
+	ProcessQ3BspFile (&bspfile);
+
+	// load visinfo
+	dBsp3Vis_t *vis;
+	int visDataSize = CheckLump (dBsp3Hdr_t::LUMP_VISIBILITY, (void**)&vis, 1);
+	LoadQ3Vis (&bspfile, vis, visDataSize);
+	// load entstring after all: we may require to change something
+	char *entString = (char*)header + header->lumps[dBsp3Hdr_t::LUMP_ENTITIES].fileofs;
 	bspfile.entStr = ProcessEntstring (entString);
 	bspfile.entStrSize = strlen (bspfile.entStr);
 
@@ -532,15 +635,28 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 	bspfile.extraChain = new CMemoryChain;
 
 	map_clientLoaded = clientload;
-	switch (LittleLong(*(unsigned *)bspfile.file))
+	unsigned *h = (unsigned*)bspfile.file;
+	unsigned id1 = LittleLong(h[0]);
+	unsigned id2 = LittleLong(h[1]);
+	switch (id1)
 	{
-		case BSP2_IDENT:
+	case BSP_IDENT:
+		switch (id2)
+		{
+		case BSP2_VERSION:
 			LoadQ2BspFile ();
 			return &bspfile;
-		case BSP1_VERSION:
-		case BSPHL_VERSION:
-			LoadQ1BspFile ();
+		case BSP3_VERSION:
+			LoadQ3BspFile ();
 			return &bspfile;
+		default:
+			appPrintf (S_RED"Unknown bsp version %d\n", id2);
+		};
+		break;
+	case BSP1_VERSION:
+	case BSPHL_VERSION:
+		LoadQ1BspFile ();
+		return &bspfile;
 	}
 	// error
 	delete bspfile.file;

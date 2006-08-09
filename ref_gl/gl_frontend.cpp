@@ -1484,7 +1484,6 @@ static node_t *WalkBspTree ()
 				PUSH_NODE(node->children[1], dlight1);
 				node = node->children[0];
 				dlightMask = dlight0;
-				continue;
 			}
 			else
 			{
@@ -1492,8 +1491,8 @@ static node_t *WalkBspTree ()
 				PUSH_NODE(node->children[0], dlight0);
 				node = node->children[1];
 				dlightMask = dlight1;
-				continue;
 			}
+			continue;
 		}
 
 		// HERE: node is leaf

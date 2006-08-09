@@ -16,6 +16,7 @@ rc1 - spawnpoint in solid
 rf - bad collision in {-6, -12, -306}
 rtldm2 - underwater is dark -- water surface break vis but should not break light?
   kasteel -- too
+q1dm6 - have not working teleport {260,-1770,150} + "item_weapon" -- unknown weapon ?
 -----------------
 HL:
 bounce - bad "trigger_push" (jumppads)

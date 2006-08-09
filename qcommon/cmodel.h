@@ -1,7 +1,7 @@
 #ifndef CMODEL_H
 #define CMODEL_H
 
-#include "qfiles.h"
+#include "FileFormats.h"
 
 
 // cmodel_t.flags
@@ -81,7 +81,7 @@ struct splash_t
 
 enum mapType_t
 {
-	map_q2, map_kp, map_q1, map_hl
+	map_q2, map_kp, map_q1, map_hl, map_q3
 };
 
 enum fogMode_t
@@ -103,10 +103,20 @@ struct bspfile_t
 	const char	*entStr;
 
 	int			numPlanes;
-	dPlane_t	*planes;
+	union {
+		dBsp2Plane_t *planes2;
+		dBsp3Plane_t *planes3;
+	};
+	CPlane		*planes;				// generated
 
 	int			numVertexes;
-	CVec3		*vertexes;
+	union {
+		CVec3       *vertexes2;
+		dBsp3Vert_t *vertexes3;
+	};
+
+	int			numIndexes;
+	unsigned	*indexes3;
 
 	int			numModels;
 	cmodel_t	*models;
@@ -115,7 +125,10 @@ struct bspfile_t
 	byte		*lighting;
 
 	int			numFaces;
-	dFace_t		*faces;
+	union {
+		dBspFace_t  *faces2;
+		dBsp3Face_t *faces3;
+	};
 
 	//?? access to this as methods; remove CM_ClusterPVS(); same for renderer
 	int			visRowSize;
@@ -124,21 +137,29 @@ struct bspfile_t
 
 	int			numNodes;
 	union {
-		dBsp2Node_t	*nodes2;
 		dBsp1Node_t	*nodes1;
+		dBsp2Node_t	*nodes2;
+		dBsp3Node_t *nodes3;
 	};
 
 	int			numLeafs;
 	union {
-		dBsp2Leaf_t	*leafs2;
 		dBsp1Leaf_t *leafs1;
+		dBsp2Leaf_t	*leafs2;
+		dBsp3Leaf_t *leafs3;
 	};
 
 	int			numLeaffaces;
-	unsigned short *leaffaces;
+	union {
+		unsigned short *leaffaces2;
+		unsigned int   *leaffaces3;
+	};
 
 	int			numLeafbrushes;
-	unsigned short *leafbrushes;
+	union {
+		unsigned short *leafbrushes2;
+		unsigned int   *leafbrushes3;
+	};
 
 	int			numEdges;
 	dEdge_t		*edges;
@@ -147,10 +168,16 @@ struct bspfile_t
 	int			*surfedges;
 
 	int			numBrushes;
-	dBsp2Brush_t *brushes;
+	union {
+		dBsp2Brush_t *brushes2;
+		dBsp3Brush_t *brushes3;
+	};
 
 	int			numBrushSides;
-	dBsp2Brushside_t *brushsides;
+	union {
+		dBsp2Brushside_t *brushsides2;
+		dBsp3Brushside_t *brushsides3;
+	};
 
 	int			numAreas;
 	darea_t		*areas;
@@ -158,10 +185,11 @@ struct bspfile_t
 	int			numAreaportals;
 	dareaportal_t *areaportals;
 
-	int			numTexinfo;				//?? currently used both texinfo1 & texinfo2 arrays (texinfo2 generated from texinfo1 for Q1/HL map)
+	int			numTexinfo;
 	union {
+		dBsp1Texinfo_t *texinfo1;		// note: texinfo2 will be generated from texinfo1 for Q1/HL map
 		dBsp2Texinfo_t *texinfo2;
-		dBsp1Texinfo_t *texinfo1;
+		dBsp3Shader_t  *texinfo3;
 	};
 	csurface_t	*surfaces;				// generated
 

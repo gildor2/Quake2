@@ -322,7 +322,8 @@ struct player_state_t
 
 
 // muzzle flashes / player effects
-enum {
+enum
+{
 	MZ_BLASTER,
 	MZ_MACHINEGUN,
 	MZ_SHOTGUN,
@@ -354,7 +355,8 @@ enum {
 
 
 // monster muzzle flashes
-enum {
+enum
+{
 	MZ2_TANK_BLASTER_1 = 1, MZ2_TANK_BLASTER_2, MZ2_TANK_BLASTER_3,
 	MZ2_TANK_MACHINEGUN_1, MZ2_TANK_MACHINEGUN_2, MZ2_TANK_MACHINEGUN_3,
 	MZ2_TANK_MACHINEGUN_4, MZ2_TANK_MACHINEGUN_5, MZ2_TANK_MACHINEGUN_6,
@@ -538,7 +540,8 @@ enum
 
 
 
-enum {
+enum
+{
 	SPLASH_UNKNOWN,
 	SPLASH_SPARKS,
 	SPLASH_BLUE_WATER,
@@ -553,7 +556,8 @@ enum {
 
 
 // player_state->stats[] indexes
-enum {
+enum
+{
 	STAT_HEALTH_ICON,
 	STAT_HEALTH,
 	STAT_AMMO_ICON,

@@ -25,6 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	- CM_BoxClusters(CBox&, dst) -- BoxLeafnums()+LeafCluster()+compress list (no duplicated clusters) -- used few times in server
 	- CM_BoxPVS(CBox&, dst) -- have SV_FatPVS() func; may be useful for renderer too
 	? CM_InPVS(pos1, pos2) -- have func in sv_game.cpp (uses PVS + areas)
+  - can create abstract CMapLoader with "virtual Load()" - it will check map format and load when supported
+    (similar to CFileContainerArc ?)
 */
 
 
@@ -98,9 +100,6 @@ static cbrushside_t *map_brushSides;
 
 static surfBounds_t *map_faceBounds;	// [numFaces]; for Q1/HL maps trace
 
-static int		numPlanes;
-static CPlane	*map_planes;
-
 static int		numNodes;
 static cnode_t	*map_nodes;
 
@@ -115,9 +114,6 @@ static cmodel_t	*map_cmodels;
 
 static int		numBrushes;
 static cbrush_t	*map_brushes;
-
-static int		numentitychars;
-static const char *map_entitystring;
 
 static int		numAreas;
 static carea_t	*map_areas;
@@ -251,6 +247,28 @@ static int GetSurfMaterial (const char *name)
 
 
 /*-----------------------------------------------------------------------------
+	common bsp loading code
+-----------------------------------------------------------------------------*/
+
+// T is dBsp[123]Node_t
+template<class T> static void LoadNodes (T *data, int size)
+{
+	if (size < 1) Com_DropError ("map has no nodes");
+
+	cnode_t *out;
+	out = map_nodes = new (dataChain) cnode_t [size + 6];		// extra for box hull
+
+	numNodes = size;
+	for (int i = 0; i < size; i++, data++, out++)
+	{
+		out->plane       = bspfile.planes + data->planeNum;
+		out->children[0] = data->children[0];
+		out->children[1] = data->children[1];
+	}
+}
+
+
+/*-----------------------------------------------------------------------------
 	q2 bsp map loading
 -----------------------------------------------------------------------------*/
 
@@ -269,17 +287,16 @@ static void LoadSurfaces2 (dBsp2Texinfo_t *data, int size)
 
 	ReadSurfMaterials ("sound/materials.lst");
 
-	dBsp2Texinfo_t *in = data;
 	csurface_t	*out;
 	out = bspfile.surfaces = new (dataChain) csurface_t [size];
 
-	for (int i = 0; i < size; i++, in++, out++)
+	for (int i = 0; i < size; i++, data++, out++)
 	{
-		appStrncpyz (out->shortName, in->texture, sizeof(out->shortName));	// texture name limited to 16 chars (compatibility with older mods?)
-		appStrncpyz (out->fullName, in->texture, sizeof(out->fullName));	// name limited to 32 chars (w/o "textures/" and ".wal")
-		int f = in->flags;
+		appStrncpyz (out->shortName, data->texture, sizeof(out->shortName));	// texture name limited to 16 chars (compatibility with older mods?)
+		appStrncpyz (out->fullName, data->texture, sizeof(out->fullName));		// name limited to 32 chars (w/o "textures/" and ".wal")
+		int f = data->flags;
 		out->flags = f & ~SURF_KP_MATERIAL;
-		out->value = in->value;
+		out->value = data->value;
 
 		int m;
 		if		(f & SURF_CONCRETE)	m = MATERIAL_CONCRETE;
@@ -291,44 +308,23 @@ static void LoadSurfaces2 (dBsp2Texinfo_t *data, int size)
 		else if (f & SURF_TILE)		m = MATERIAL_TILE;
 		else if (f & SURF_WOOD)		m = MATERIAL_WOOD;
 		else if (f & SURF_WATER)	m = MATERIAL_WATER;
-		else						m = GetSurfMaterial (in->texture);
+		else						m = GetSurfMaterial (data->texture);
 		out->material = m;
-	}
-}
-
-
-static void LoadNodes2 (dBsp2Node_t *data, int size)
-{
-	dBsp2Node_t *in = data;
-
-	if (size < 1) Com_DropError ("map has no nodes");
-
-	cnode_t *out;
-	out = map_nodes = new (dataChain) cnode_t [size + 6];		// extra for box hull
-
-	numNodes = size;
-	for (int i = 0; i < size; i++, out++, in++)
-	{
-		out->plane       = map_planes + in->planenum;
-		out->children[0] = in->children[0];
-		out->children[1] = in->children[1];
 	}
 }
 
 
 static void LoadBrushes2 (dBsp2Brush_t *data, int size)
 {
-	dBsp2Brush_t *in = data;
-
 	cbrush_t	*out;
 	out = map_brushes = new (dataChain) cbrush_t [size + 1];	// extra for box hull
 	numBrushes = size;
 
-	for (int i = 0; i < size; i++, out++, in++)
+	for (int i = 0; i < size; i++, data++, out++)
 	{
-		out->firstbrushside = in->firstside;
-		out->numsides       = in->numsides;
-		out->contents       = in->contents;
+		out->firstbrushside = data->firstside;
+		out->numsides       = data->numsides;
+		out->contents       = data->contents;
 	}
 }
 
@@ -350,18 +346,17 @@ static void LoadLeafs2 (dBsp2Leaf_t *data, int size)
 }
 
 
-static void LoadPlanes (dPlane_t *data, int size)
+static void LoadPlanes2 (dBsp2Plane_t *data, int size)
 {
 	if (size < 1) Com_DropError ("Map with no planes");
 
 	CPlane *out;
-	staticAssert(sizeof(CPlane) == sizeof(dPlane_t), sizeof_cplane_same_as_dplane);
-	// can simply set map_planes=data; note: "data" is dPlane_t, but "map_planes" is CPlane,
-	// but both have the same size (see qfiles.h for details) and the same layout
-	out = map_planes = (CPlane*)data;
+	staticAssert(sizeof(CPlane) == sizeof(dBsp2Plane_t), sizeof_cplane_same_as_dplane);
+	// can simply set bspfile.planes=data; note: "data" is dBsp2Plane_t, but "bspfile.planes" is CPlane,
+	// but both have the same size (see FileFormats.h for details) and the same layout
+	out = bspfile.planes = (CPlane*)data;
 	for (int i = 0; i < size; i++, out++)
 		out->Setup ();
-	numPlanes = size;
 }
 
 
@@ -381,16 +376,14 @@ inline void LoadLeafBrushes (unsigned short *data, int size)
 
 static void LoadBrushSides2 (dBsp2Brushside_t *data, int size)
 {
-	dBsp2Brushside_t *in = data;
-
 	cbrushside_t *out;
 	out = map_brushSides = new (dataChain) cbrushside_t [size + 6];		// extra for box hull
 	numBrushSides = size;
 
-	for (int i = 0; i < size; i++, in++, out++)
+	for (int i = 0; i < size; i++, data++, out++)
 	{
-		out->plane = &map_planes[in->planenum];
-		int j = in->texinfo;
+		out->plane = &bspfile.planes[data->planenum];
+		int j = data->texinfo;
 		if (j >= bspfile.numTexinfo)
 			Com_DropError ("Bad brushside texinfo");
 		out->surface = &bspfile.surfaces[j];
@@ -400,16 +393,14 @@ static void LoadBrushSides2 (dBsp2Brushside_t *data, int size)
 
 static void LoadAreas (darea_t *data, int size)
 {
-	darea_t *in = data;
-
 	carea_t *out;
 	out = map_areas = new (dataChain) carea_t [size];
 	numAreas = size;
 
-	for (int i = 0; i < size; i++, in++, out++)
+	for (int i = 0; i < size; i++, data++, out++)
 	{
-		out->numareaportals  = in->numareaportals;
-		out->firstareaportal = in->firstareaportal;
+		out->numareaportals  = data->numareaportals;
+		out->firstareaportal = data->firstareaportal;
 		out->floodvalid      = 0;
 		out->floodnum        = 0;
 	}
@@ -423,26 +414,18 @@ inline void LoadAreaPortals (dareaportal_t *data, int size)
 }
 
 
-inline void LoadEntityString (const char *data, int size)
-{
-	numentitychars   = size;
-	map_entitystring = data;
-}
-
-
 static void LoadQ2Map (bspfile_t *bsp)
 {
-	LoadPlanes (bsp->planes, bsp->numPlanes);
-	LoadNodes2 (bsp->nodes2, bsp->numNodes);
+	LoadPlanes2 (bsp->planes2, bsp->numPlanes);
 	LoadSurfaces2 (bsp->texinfo2, bsp->numTexinfo);
+	LoadBrushes2 (bsp->brushes2, bsp->numBrushes);
+	LoadBrushSides2 (bsp->brushsides2, bsp->numBrushSides);
+	LoadNodes (bsp->nodes2, bsp->numNodes);
 	LoadLeafs2 (bsp->leafs2, bsp->numLeafs);
-	LoadLeafBrushes (bsp->leafbrushes, bsp->numLeafbrushes);
-	LoadBrushes2 (bsp->brushes, bsp->numBrushes);
-	LoadBrushSides2 (bsp->brushsides, bsp->numBrushSides);
+	LoadLeafBrushes (bsp->leafbrushes2, bsp->numLeafbrushes);
 	LoadSubmodels (bsp->models, bsp->numModels);
 	LoadAreas (bsp->areas, bsp->numAreas);
 	LoadAreaPortals (bsp->areaportals, bsp->numAreaportals);
-	LoadEntityString (bsp->entStr, bsp->entStrSize);
 }
 
 
@@ -457,19 +440,18 @@ static void LoadSurfaces1 (dBsp1Texinfo_t *data, int size)
 	//?? hack (?): convert bsp1 -> bsp2 texinfo
 	//?? note: this will be used by renderer too!
 	// note: this will erase texinfo1 field!
-	dBsp1Texinfo_t *in = data;
 	dBsp2Texinfo_t *out;
 	out = bspfile.texinfo2 = new (dataChain) dBsp2Texinfo_t [size];
 
 	const char *texNames[4096];
 	memset (texNames, 0, sizeof(texNames));
 
-	for (int i = 0; i < size; i++, in++, out++)
+	for (int i = 0; i < size; i++, data++, out++)
 	{
 		out->value = 0;
 		unsigned flags = 0;
 		// find miptex
-		int miptex = in->miptex;
+		int miptex = data->miptex;
 		int offset = bspfile.miptex1->dataofs[miptex];
 		if (offset != -1)
 		{
@@ -534,7 +516,7 @@ static void LoadSurfaces1 (dBsp1Texinfo_t *data, int size)
 			flags |= SURF_NODRAW;	// not used, but ...
 		}
 		out->flags = flags;
-		memcpy (out->vecs, in->vecs, sizeof(out->vecs));
+		memcpy (out->vecs, data->vecs, sizeof(out->vecs));
 		out->nexttexinfo = -1;		// no next texture: animation will be processed later
 		// HL indirect sun light
 		if (bspfile.type == map_hl && (flags & SURF_SKY))
@@ -548,7 +530,7 @@ static void LoadSurfaces1 (dBsp1Texinfo_t *data, int size)
 }
 
 
-static void LoadFaces1 (dFace_t *data, int size)
+static void LoadFaces1 (dBspFace_t *data, int size)
 {
 	// compute face bounds in face.plane coordinates (2D)
 	// note: same work performed in renderer too
@@ -556,7 +538,7 @@ static void LoadFaces1 (dFace_t *data, int size)
 	out = map_faceBounds = new (dataChain) surfBounds_t [size];
 	// get map data
 	const dEdge_t *edges = bspfile.edges;
-	const CVec3 *verts   = bspfile.vertexes;
+	const CVec3 *verts   = bspfile.vertexes2;
 	const int *surfedges = bspfile.surfedges;
 
 	for (int i = 0; i < size; i++, data++, out++)
@@ -587,25 +569,6 @@ static void LoadFaces1 (dFace_t *data, int size)
 		out->mins[1] = mins[1];
 		out->maxs[0] = maxs[0];
 		out->maxs[1] = maxs[1];
-	}
-}
-
-
-static void LoadNodes1 (dBsp1Node_t *data, int size)
-{
-	dBsp1Node_t *in = data;
-
-	if (size < 1) Com_DropError ("map has no nodes");
-
-	cnode_t *out;
-	out = map_nodes = new (dataChain) cnode_t [size + 6];		// extra for box hull
-
-	numNodes = size;
-	for (int i = 0; i < size; i++, out++, in++)
-	{
-		out->plane       = map_planes + in->planenum;
-		out->children[0] = in->children[0];
-		out->children[1] = in->children[1];
 	}
 }
 
@@ -739,9 +702,9 @@ static CPlane *FindPlane (const CVec3 &norm, float dist)
 {
 	BRUSH_STAT(clock(brushFindPlaneTime));
 	BRUSH_STAT(brushFindPlaneCount++);
-	CPlane *p2 = map_planes;
+	CPlane *p2 = bspfile.planes;
 #if !DONT_SEARCH_PLANES
-	for (int i = 0; i < numPlanes; i++, p2++)
+	for (int i = 0; i < bspfile.numPlanes; i++, p2++)
 	{
 		if (p2->dist   != dist) continue;
 		if (p2->normal == norm)
@@ -765,12 +728,12 @@ static CPlane *FindBackplane (CPlane *plane)
 {
 	BRUSH_STAT(clock(brushFindPlaneTime));
 	BRUSH_STAT(brushFindPlaneCount++);
-	CPlane *p2 = map_planes;
+	CPlane *p2 = bspfile.planes;
 	CVec3 norm;
 	VectorNegate (plane->normal, norm);
 	float dist = -plane->dist;
 #if !DONT_SEARCH_PLANES
-	for (int i = 0; i < numPlanes; i++, p2++)
+	for (int i = 0; i < bspfile.numPlanes; i++, p2++)
 	{
 		if (p2->dist   != dist) continue;
 		if (p2->normal == norm)
@@ -972,13 +935,13 @@ static void ProcessModels1 ()
 
 static void LoadQ1Map (bspfile_t *bsp)
 {
-	LoadPlanes (bsp->planes, bsp->numPlanes);
-	LoadNodes1 (bsp->nodes1, bsp->numNodes);
+	LoadPlanes2 (bsp->planes2, bsp->numPlanes);
+	LoadNodes (bsp->nodes1, bsp->numNodes);
 	LoadSurfaces1 (bsp->texinfo1, bsp->numTexinfo);
 	LoadLeafs1 (bsp->leafs1, bsp->numLeafs);
 	LoadSubmodels (bsp->models, bsp->numModels);
 	BuildBrushes1 (bsp->numLeafs);
-	LoadFaces1 (bsp->faces, bsp->numFaces);
+	LoadFaces1 (bsp->faces2, bsp->numFaces);
 
 #if MAX_DEBUG
 	if (map_cmodels[0].headnode)
@@ -994,9 +957,137 @@ static void LoadQ1Map (bspfile_t *bsp)
 //	map_areas[0].floodnum        = 0;
 	numareaportals = 0;
 
-	LoadEntityString (bsp->entStr, bsp->entStrSize);
-
 	ProcessModels1 ();
+}
+
+
+/*-----------------------------------------------------------------------------
+	q3 bsp loading
+-----------------------------------------------------------------------------*/
+
+static unsigned Q3Contents (unsigned f)
+{
+	unsigned r = 0;
+#define T(c)	if (f & Q3_CONTENTS_##c) r |= CONTENTS_##c;
+	T(SOLID)
+	T(LAVA)
+	T(SLIME)
+	T(WATER)
+	T(PLAYERCLIP)
+	T(MONSTERCLIP)
+#undef T
+	return r;
+}
+
+static void LoadBrushes3 (dBsp3Brush_t *data, int size)
+{
+	cbrush_t	*out;
+	out = map_brushes = new (dataChain) cbrush_t [size + 1];	// extra for box hull
+	numBrushes = size;
+
+	for (int i = 0; i < size; i++, data++, out++)
+	{
+		out->firstbrushside = data->firstside;
+		out->numsides       = data->numsides;
+		out->contents       = Q3Contents (bspfile.texinfo3[data->shaderNum].contentFlags);
+	}
+}
+
+
+void LoadLeafBrushes3 (unsigned *data, int size)
+{
+	if (size < 1) Com_DropError ("Map with no leafbrushes");
+
+	// NOTE: uses int -> short conversion
+	unsigned short *out;
+	out = map_leafBrushes = new (dataChain) unsigned short [size+1];	// extra for box hull
+	numLeafBrushes = size;
+	for (int i = 0; i < size; i++, data++, out++)
+	{
+		assert(*data < 65535);
+		*out = *data;
+	}
+}
+
+
+static void LoadLeafs3 (dBsp3Leaf_t *data, int size)
+{
+	if (size < 1) Com_DropError ("Map with no leafs");
+
+	dBsp2Leaf_t *out;
+	out = map_leafs = new (dataChain) dBsp2Leaf_t [size + 1];		// extra for box hull
+	numLeafs = size;
+
+	for (int i = 0; i < size; i++, data++, out++)
+	{
+		// NOTE: some fields uses "short" in q2, but corresponding q3 field used "int"
+		// To increase limits should use something else than dBsp2Leaf_t
+		assert(data->cluster < 65536);
+		assert(data->firstleafbrush < 65536);
+		out->cluster        = data->cluster;
+		out->area           = 0;  //?? data->area -- q3 areas too different from q2
+		out->firstleafbrush = data->firstleafbrush;
+		out->numleafbrushes = data->numleafbrushes;
+
+		out->contents = 0xFFFFFFFF; //!! compute leaf contents from brushes
+		//!! NOTE: q3 uses surfaces from leafs to trace with patches!
+	}
+
+	if (!(map_leafs[0].contents & CONTENTS_SOLID))
+		Com_DropError ("map leaf 0 is not CONTENTS_SOLID");
+}
+
+
+static void LoadPlanes3 (dBsp3Plane_t *data, int size)
+{
+	if (size < 1) Com_DropError ("Map with no planes");
+
+	CPlane *out;
+	out = bspfile.planes = new CPlane [size];
+	for (int i = 0; i < size; i++, data++, out++)
+	{
+		out->normal = data->normal;
+		out->dist   = data->dist;
+		out->Setup ();
+	}
+}
+
+
+static void LoadSurfaces3 (dBsp3Shader_t *data, int size)
+{
+	if (size < 1) Com_DropError ("Map with no shaders");
+
+	csurface_t	*out;
+	out = bspfile.surfaces = new (dataChain) csurface_t [size];
+
+	for (int i = 0; i < size; i++, data++, out++)
+	{
+		appStrncpyz (out->shortName, data->name, sizeof(out->shortName));	// texture name limited to 16 chars (compatibility with older mods?)
+		appStrncpyz (out->fullName, data->name, sizeof(out->fullName));		// name limited to 32 chars (w/o "textures/" and ".wal")
+		out->value = 0; //!! get light value from shader
+		out->flags = 0; //!! convert from data->surfaceFlags
+
+		//?? SURF_FLESH, SURF_NOSTEPS, SURF_METALSTEPS, SURF_DUST
+		int m = GetSurfMaterial (data->name);
+		out->material = m;
+	}
+}
+
+
+//!! LoadSubmodels3 (): should create 1 leaf to hold all brushes
+
+static void LoadQ3Map (bspfile_t *bsp)
+{
+	LoadPlanes3 (bsp->planes3, bsp->numPlanes);
+	LoadNodes (bsp->nodes3, bsp->numNodes);
+	LoadSurfaces3 (bsp->texinfo3, bsp->numTexinfo);
+	LoadBrushes3 (bsp->brushes3, bsp->numBrushes);
+//!!	LoadBrushSides2 (bsp->brushsides2, bsp->numBrushSides);
+	LoadLeafBrushes3 (bsp->leafbrushes3, bsp->numLeafbrushes);
+	LoadLeafs3 (bsp->leafs3, bsp->numLeafs);
+//!!	LoadSubmodels3 (bsp->models, bsp->numModels);
+//!!	LoadAreas (bsp->areas, bsp->numAreas);
+//!!	LoadAreaPortals (bsp->areaportals, bsp->numAreaportals);
 }
 
 
@@ -1012,7 +1103,9 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 	map_noareas = Cvar_Get ("map_noareas", "0");
 
 	static unsigned	last_checksum;
-	if (map_name[0] && !stricmp (map_name, name) && (clientload || !Cvar_VariableInt ("flushmap")))		//?? rename flushmap -> map_flush
+	//?? remove flushmap from CM_LoadMap() (always reload map, but with care: do not reload map
+	//?? for client, when loaded for server); keep flushmap in LoadBspFile() only
+	if (map_name[0] && !stricmp (map_name, name) && (clientload || !Cvar_VariableInt ("flushmap")))
 	{
 		*checksum = last_checksum;
 		if (!clientload)
@@ -1024,8 +1117,7 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 	}
 
 	// free old stuff
-	numPlanes = numNodes = numLeafs = numcmodels = numentitychars = 0;
-	map_entitystring = "";
+	numNodes = numLeafs = numcmodels = 0;
 	map_name[0] = 0;
 	map_loaded  = false;
 	if (dataChain) delete dataChain;
@@ -1053,6 +1145,9 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 	case map_q1:
 	case map_hl:
 		LoadQ1Map (bsp);
+		break;
+	case map_q3:
+		LoadQ3Map (bsp);
 		break;
 	default:
 		Com_DropError ("unknown bsp->type for %s", name);
@@ -1127,11 +1222,6 @@ int CM_NumClusters ()
 int CM_NumInlineModels ()
 {
 	return numcmodels;
-}
-
-const char *CM_EntityString ()
-{
-	return map_entitystring;
 }
 
 int CM_LeafContents (int leafnum)
@@ -1643,13 +1733,13 @@ static void TestLeaf (const dBsp2Leaf_t &leaf)
 
 static void FindSurface1 (const dBsp2Leaf_t &leaf, float p1f, float p2f)
 {
-	const unsigned short *leafFaces = bspfile.leaffaces + leaf.firstleafface;
+	const unsigned short *leafFaces = bspfile.leaffaces2 + leaf.firstleafface;
 	TRACE("----------------",RGB(1,1,0));
 	for (int i = 0; i < leaf.numleaffaces; i++, leafFaces++)
 	{
 		int faceNum = *leafFaces;
-		const dFace_t &face = bspfile.faces[faceNum];
-		const CPlane *plane = map_planes + face.planenum;
+		const dBspFace_t &face = bspfile.faces2[faceNum];
+		const CPlane *plane = bspfile.planes + face.planenum;
 
 		float d1, d2;
 		float dist = SplitTrace (tr.start, tr.end, *plane, d1, d2, tr.isPoint);
@@ -1701,8 +1791,8 @@ static void SetTraceFace1 ()
 	for (int i = 0; i < tr.numClipFaces; i++)
 	{
 		int faceNum = clipFaces[i];
-		const dFace_t &face = bspfile.faces[faceNum];
-		const CPlane *plane = map_planes + face.planenum;
+		const dBspFace_t &face = bspfile.faces2[faceNum];
+		const CPlane *plane = bspfile.planes + face.planenum;
 		// check face plane
 		if (!face.side)
 		{

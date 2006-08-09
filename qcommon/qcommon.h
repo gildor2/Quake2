@@ -147,11 +147,11 @@ inline void Com_DPrintf (const char*, ...) {}
 #define SAVEGAME_GAME_EXTENSION		"sav"
 #define SAVEGAME_VARS_EXTENSION		"ssv"
 
-#define	MAX_STRING_CHARS	1024	// max length of a string passed to TokenizeString()
-#define	MAX_STRING_TOKENS	80		// max tokens resulting from TokenizeString()
+#define	MAX_STRING_CHARS	1024			// max length of a string passed to TokenizeString()
+#define	MAX_STRING_TOKENS	80				// max tokens resulting from TokenizeString()
 
-#define	MAX_QPATH			64		// max length of a quake game pathname
-#define	MAX_OSPATH			128		// max length of a filesystem pathname
+#define	MAX_QPATH			64				// max length of a quake game pathname
+#define	MAX_OSPATH			128				// max length of a filesystem pathname
 
 
 
@@ -276,7 +276,6 @@ const char *COM_QuoteString (const char *str, bool alwaysQuote);
 // macro version for any types (used 2 times)
 #define VectorSubtract2(a,b,c)	(c[0]=a[0]-b[0],c[1]=a[1]-b[1],c[2]=a[2]-b[2])
 
-
 float ReduceAngle (float a);
 float LerpAngle (float a1, float a2, float frac);
 float AngleSubtract (float a1, float a2);
@@ -299,15 +298,15 @@ struct csurface_t
 {
 	// standard csurface_t fields (do not change this - used in trace
 	// functions, which are exported to game !)
-	char	shortName[16];
-	unsigned flags;
-	int		value;
+	char		shortName[16];
+	unsigned	flags;
+	int			value;
 	// field from mapsurface_t (so, csurface_t now contains old
 	//  csurface_t and mapsurface_t)
-	char	fullName[32];			// shortName[] is too short ...
+	char		fullName[32];		// shortName[] is too short ...
 	// fields added since 4.00
-	int		material;
-	color_t	color;					// color of texture (HL lighting surface, SURF_LIGHT)
+	int			material;
+	color_t		color;				// color of texture (HL lighting surface, SURF_LIGHT)
 };
 
 // a trace is returned when a box is swept through the world
@@ -762,7 +761,6 @@ cmodel_t *CM_InlineModel (int index);
 
 int		CM_NumClusters ();
 int		CM_NumInlineModels ();
-const char *CM_EntityString ();
 
 // creates a clipping hull for an arbitrary box
 int		CM_HeadnodeForBox (const CBox &box);
@@ -899,8 +897,11 @@ void	SV_Frame (float msec);
 	Quake2 map format consts
 -----------------------------------------------------------------------------*/
 
-// from qfiles.h -- but required more frequently (may be, move all MAX_MAP_XXX consts here?)
-#define MAX_MAP_AREAS	256
+// from FileFormats.h
+#define MAX_MAP_AREAS			256
+#define	MAX_MAP_AREAPORTALS		1024
+#define	MAX_MAP_LEAFS			0x20000		// 128k for Q3, 64k for Q2, 8k for Q1
+#define	MAX_MAP_FACES			0x20000 	// 128k for Q3, 64k for Q1/Q2
 
 // contents flags are seperate bits
 // a given brush can contribute multiple content bits

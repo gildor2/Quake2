@@ -181,28 +181,37 @@ public:
 	BSP model (world)
 -----------------------------------------------------------------------------*/
 
+// fields, marked with "*leaf" for leafs only, "*node" for nodes only
 struct node_t
 {
+	//---- common fields (taken directly from map) ----
 	int		isNode:1;			// true if this is a leaf
-	int		haveAlpha:1;		// true if leaf have surface(s) with translucent shader
-	byte	frustumMask;
-	int		visFrame, frame;	// PVS-cull frame, frustum-cull frame
-	// leaf geometry
-	CBox	bounds;
-	CPlane	*plane;
 	// tree structure
-	node_t	*parent, *children[2];
+	CPlane	*plane;				// *node
+	node_t	*parent;
+	node_t	*children[2];		// *node
+	CBox	bounds;				// used for culling
+	//?? also leaf may have:
+	//?? for collision: also have "contents" + "brushes"
+	//??   + q3: "patches" (taken from "surfaces")
+	//?? for rendering: surfaces
+
+	//------------ renderer fields --------------------
+	int		haveAlpha:1;		// true if leaf have surface(s) with translucent shader
+	byte	frustumMask;		// *leaf
+	int		visFrame, frame;	// PVS-cull frame, frustum-cull frame
+								//?? rename "frame" to "drawFrame" ?
 	// BSP draw sequence (dynamic)
 	int		drawOrder;			// 0 - first, 1 - next etc.
 	node_t	*drawNext;
-	refEntity_t *drawEntity;
-	particle_t *drawParticle;
-	beam_t	*drawBeam;
+	refEntity_t *drawEntity;	// *leaf
+	particle_t *drawParticle;	// *leaf
+	beam_t	*drawBeam;			// *leaf
 	// visibility params
-	int		cluster, area;
-	// surfaces (only if isNode==false)
-	surfaceBase_t **leafFaces;
-	int		numLeafFaces;
+	int		cluster, area;		// *leaf
+	// surfaces
+	surfaceBase_t **leafFaces;	// *leaf
+	int		numLeafFaces;		// *leaf
 };
 
 
@@ -229,9 +238,6 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 	TString<64> Name;			//?? used for verifying "is map loaded" only
 	CMemoryChain *dataChain;
 	//?? shaders, fog, lightGrid (Q3)
-	// planes
-	CPlane	*planes;
-	int		numPlanes;
 	// bsp
 	node_t	*nodes;				// nodes[numNodes], leafs[numLeafsNodes-numNodes]
 	int		numNodes;

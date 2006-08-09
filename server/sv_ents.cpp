@@ -28,7 +28,7 @@ Build a client frame structure
 =============================================================================
 */
 
-static byte fatpvs[65536/8];				// 65536 is MAX_MAP_LEAFS
+static byte fatpvs[MAX_MAP_LEAFS/8];
 
 // The client will interpolate the view position, so we can't use a single PVS point
 //?? move to cmodel.cpp, name 'void CM_BoxPVS(const CBox&, byte *pvs)'

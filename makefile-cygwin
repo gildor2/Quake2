@@ -523,10 +523,10 @@ DEPENDS_9 = \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	server/game.h \
 	server/server.h
 
@@ -741,9 +741,9 @@ DEPENDS_15 = \
 	client/renderer.h \
 	client/rexp_exp.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -783,11 +783,11 @@ DEPENDS_16 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/MapBrush.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -829,10 +829,10 @@ DEPENDS_17 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -873,10 +873,10 @@ DEPENDS_18 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -915,9 +915,9 @@ DEPENDS_19 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -956,9 +956,9 @@ DEPENDS_20 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -998,9 +998,9 @@ DEPENDS_21 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -1041,9 +1041,9 @@ DEPENDS_22 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
@@ -1083,9 +1083,9 @@ DEPENDS_23 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
@@ -1124,9 +1124,9 @@ DEPENDS_24 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
@@ -1164,9 +1164,9 @@ DEPENDS_25 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
@@ -1571,10 +1571,10 @@ DEPENDS_35 = \
 	client/rexp_intf.h \
 	client/sound.h \
 	client/vid.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h
+	qcommon/qcommon.h
 
 Release/obj-cygwin/q2stat/cl_download.o : client/cl_download.cpp $(DEPENDS_35)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_download.o client/cl_download.cpp
@@ -1702,11 +1702,11 @@ DEPENDS_38 = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/MapBrush.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h
+	qcommon/qcommon.h
 
 Release/obj-cygwin/q2stat/cmodel.o : qcommon/cmodel.cpp $(DEPENDS_38)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cmodel.o qcommon/cmodel.cpp
@@ -1832,14 +1832,30 @@ DEPENDS_42 = \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
-	qcommon/MapBrush.h \
-	qcommon/qcommon.h
+	qcommon/FileFormats.h \
+	qcommon/cmodel.h \
+	qcommon/protocol.h \
+	qcommon/qcommon.h \
+	server/game.h \
+	server/server.h
 
-Release/obj-cygwin/q2stat/MapBrush.o : qcommon/MapBrush.cpp $(DEPENDS_42)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/MapBrush.o qcommon/MapBrush.cpp
+Release/obj-cygwin/q2stat/sv_game.o : server/sv_game.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_game.o server/sv_game.cpp
 
-Release/obj-cygwin/dedstat/MapBrush.o : qcommon/MapBrush.cpp $(DEPENDS_42)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/MapBrush.o qcommon/MapBrush.cpp
+Release/obj-cygwin/dedstat/sv_game.o : server/sv_game.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_game.o server/sv_game.cpp
+
+Release/obj-cygwin/q2stat/sv_init.o : server/sv_init.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_init.o server/sv_init.cpp
+
+Release/obj-cygwin/dedstat/sv_init.o : server/sv_init.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_init.o server/sv_init.cpp
+
+Release/obj-cygwin/q2stat/sv_world.o : server/sv_world.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_world.o server/sv_world.cpp
+
+Release/obj-cygwin/dedstat/sv_world.o : server/sv_world.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_world.o server/sv_world.cpp
 
 DEPENDS_43 = \
 	Core/Inc/Build.h \
@@ -1861,30 +1877,21 @@ DEPENDS_43 = \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
-	qcommon/protocol.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h \
-	server/game.h \
-	server/server.h
+	qcommon/qcommon.h
 
-Release/obj-cygwin/q2stat/sv_game.o : server/sv_game.cpp $(DEPENDS_43)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_game.o server/sv_game.cpp
+Release/obj-cygwin/q2stat/EntityParser.o : qcommon/EntityParser.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/EntityParser.o qcommon/EntityParser.cpp
 
-Release/obj-cygwin/dedstat/sv_game.o : server/sv_game.cpp $(DEPENDS_43)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_game.o server/sv_game.cpp
+Release/obj-cygwin/dedstat/EntityParser.o : qcommon/EntityParser.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/EntityParser.o qcommon/EntityParser.cpp
 
-Release/obj-cygwin/q2stat/sv_init.o : server/sv_init.cpp $(DEPENDS_43)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_init.o server/sv_init.cpp
+Release/obj-cygwin/q2stat/model.o : qcommon/model.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/model.o qcommon/model.cpp
 
-Release/obj-cygwin/dedstat/sv_init.o : server/sv_init.cpp $(DEPENDS_43)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_init.o server/sv_init.cpp
-
-Release/obj-cygwin/q2stat/sv_world.o : server/sv_world.cpp $(DEPENDS_43)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_world.o server/sv_world.cpp
-
-Release/obj-cygwin/dedstat/sv_world.o : server/sv_world.cpp $(DEPENDS_43)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_world.o server/sv_world.cpp
+Release/obj-cygwin/dedstat/model.o : qcommon/model.cpp $(DEPENDS_43)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/model.o qcommon/model.cpp
 
 DEPENDS_44 = \
 	Core/Inc/Build.h \
@@ -1906,21 +1913,14 @@ DEPENDS_44 = \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
-	qcommon/cmodel.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h
+	qcommon/MapBrush.h \
+	qcommon/qcommon.h
 
-Release/obj-cygwin/q2stat/EntityParser.o : qcommon/EntityParser.cpp $(DEPENDS_44)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/EntityParser.o qcommon/EntityParser.cpp
+Release/obj-cygwin/q2stat/MapBrush.o : qcommon/MapBrush.cpp $(DEPENDS_44)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/MapBrush.o qcommon/MapBrush.cpp
 
-Release/obj-cygwin/dedstat/EntityParser.o : qcommon/EntityParser.cpp $(DEPENDS_44)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/EntityParser.o qcommon/EntityParser.cpp
-
-Release/obj-cygwin/q2stat/model.o : qcommon/model.cpp $(DEPENDS_44)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/model.o qcommon/model.cpp
-
-Release/obj-cygwin/dedstat/model.o : qcommon/model.cpp $(DEPENDS_44)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/model.o qcommon/model.cpp
+Release/obj-cygwin/dedstat/MapBrush.o : qcommon/MapBrush.cpp $(DEPENDS_44)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/MapBrush.o qcommon/MapBrush.cpp
 
 DEPENDS_45 = \
 	Core/Inc/Build.h \

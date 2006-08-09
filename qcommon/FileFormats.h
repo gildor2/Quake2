@@ -1,7 +1,8 @@
-#ifndef QFILES_H
-#define QFILES_H
+#ifndef FILE_FORMATS_H
+#define FILE_FORMATS_H
 
-//?? rename file
+//?? may be, hide some strucs/consts (at least, for md2/md3) inside special namespaces
+//?? (e.g. DMd2::Vert, DMd3::Hdr etc)
 
 /*-----------------------------------------------------------------------------
 	.MD2 model file format
@@ -232,34 +233,8 @@ struct dWal_t
 	Quake2 .BSP file format
 -----------------------------------------------------------------------------*/
 
-#define BSP2_IDENT			BYTES4('I','B','S','P')
+#define BSP_IDENT			BYTES4('I','B','S','P')
 #define BSP2_VERSION		38
-
-
-// upper design bounds
-// leaffaces, leafbrushes, planes, and verts are still bounded by
-// 16 bit short limits
-//#define	MAX_MAP_MODELS		1024
-//#define	MAX_MAP_BRUSHES		8192
-//#define	MAX_MAP_ENTITIES	2048
-//#define	MAX_MAP_ENTSTRING	0x40000
-//#define	MAX_MAP_TEXINFO		8192
-
-//--#define	MAX_MAP_AREAS		256 --> moved to qcommon.h
-#define	MAX_MAP_AREAPORTALS	1024
-//#define	MAX_MAP_PLANES		65536
-//#define	MAX_MAP_NODES		65536
-//#define	MAX_MAP_BRUSHSIDES	65536
-#define	MAX_MAP_LEAFS		65536
-//#define	MAX_MAP_VERTS		65536
-#define	MAX_MAP_FACES		65536
-//#define	MAX_MAP_LEAFFACES	65536
-//#define	MAX_MAP_LEAFBRUSHES 65536
-//??#define	MAX_MAP_PORTALS		65536 -- what is it?
-//#define	MAX_MAP_EDGES		128000
-//#define	MAX_MAP_SURFEDGES	256000
-//#define	MAX_MAP_LIGHTING	0x200000
-//#define	MAX_MAP_VISIBILITY	0x100000
 
 
 struct lump_t						// common for all quake-based bsp files (q1,q2,q3,hl)
@@ -268,43 +243,42 @@ struct lump_t						// common for all quake-based bsp files (q1,q2,q3,hl)
 };
 
 
-enum
-{
-	Q2LUMP_ENTITIES,				// char[]
-	Q2LUMP_PLANES,					// dPlane_t[]
-	Q2LUMP_VERTEXES,				// CVec3[]
-	Q2LUMP_VISIBILITY,				// dBsp2Vis_t[] + byte[]
-	Q2LUMP_NODES,					// dBsp2Node_t[]
-	Q2LUMP_TEXINFO,					// dBsp2Texinfo_t[]
-	Q2LUMP_FACES,					// dFace_t[]
-	Q2LUMP_LIGHTING,				// byte[]
-	Q2LUMP_LEAFS,					// dBsp2Leaf_t[]
-	Q2LUMP_LEAFFACES,				// short[]
-	Q2LUMP_LEAFBRUSHES,				// short[]
-	Q2LUMP_EDGES,					// dEdge_t[]
-	Q2LUMP_SURFEDGES,				// int[]
-	Q2LUMP_MODELS,					// dBsp2Model_t[]
-	Q2LUMP_BRUSHES,					// dBsp2Brush_t[]
-	Q2LUMP_BRUSHSIDES,				// dBsp2Brushside_t[]
-	Q2LUMP_POP,						// ?
-	Q2LUMP_AREAS,					// darea_t[]
-	Q2LUMP_AREAPORTALS,				// dareaportal_t[]
-
-	Q2LUMP_COUNT					// should be last
-};
-
-
 struct dBsp2Hdr_t
 {
-	unsigned ident;					// BSP2_IDENT
+	enum
+	{
+		LUMP_ENTITIES,				// char[]
+		LUMP_PLANES,				// dBsp2Plane_t[]
+		LUMP_VERTEXES,				// CVec3[]
+		LUMP_VISIBILITY,			// dBsp2Vis_t[] + byte[]
+		LUMP_NODES,					// dBsp2Node_t[]
+		LUMP_TEXINFO,				// dBsp2Texinfo_t[]
+		LUMP_FACES,					// dBspFace_t[]
+		LUMP_LIGHTING,				// byte[]
+		LUMP_LEAFS,					// dBsp2Leaf_t[]
+		LUMP_LEAFFACES,				// short[]
+		LUMP_LEAFBRUSHES,			// short[]
+		LUMP_EDGES,					// dEdge_t[]
+		LUMP_SURFEDGES,				// int[]
+		LUMP_MODELS,				// dBsp2Model_t[]
+		LUMP_BRUSHES,				// dBsp2Brush_t[]
+		LUMP_BRUSHSIDES,			// dBsp2Brushside_t[]
+		LUMP_POP,					// ?
+		LUMP_AREAS,					// darea_t[]
+		LUMP_AREAPORTALS,			// dareaportal_t[]
+
+		LUMP_COUNT					// should be last
+	};
+
+	unsigned ident;					// BSP_IDENT
 	unsigned version;				// BSP2_VERSION
-	lump_t	lumps[Q2LUMP_COUNT];
+	lump_t	lumps[LUMP_COUNT];
 };
 
 struct dBsp2Model_t
 {
 	CBox	bounds;
-	CVec3	origin;					// unused! (for sounds or lights ?)
+	CVec3	origin;					// unused
 	int		headnode;
 	int		firstface, numfaces;	// submodels just draw faces without walking the bsp tree
 };
@@ -313,7 +287,7 @@ struct dBsp2Model_t
 // planes (x&~1) and (x&~1)+1 are always opposites
 
 // the same as CPlane, but "byte type,signbits,pad[2]") -> "int type"
-struct dPlane_t
+struct dBsp2Plane_t
 {
 	CVec3	normal;
 	float	dist;
@@ -325,11 +299,10 @@ struct dPlane_t
 
 struct dBsp2Node_t
 {
-	int		planenum;
+	int		planeNum;
 	int		children[2];			// negative numbers are -(leafs+1), not nodes
 	short	mins[3], maxs[3];		// for frustom culling
-	unsigned short firstface;		// unused
-	unsigned short numfaces;		// unused
+	short	firstFace, numFaces;	// unused
 };
 
 struct dBsp2Leaf_t
@@ -341,11 +314,8 @@ struct dBsp2Leaf_t
 
 	short	mins[3], maxs[3];		// for frustum culling
 
-	unsigned short firstleafface;
-	unsigned short numleaffaces;
-
-	unsigned short firstleafbrush;
-	unsigned short numleafbrushes;
+	unsigned short firstleafface, numleaffaces;
+	unsigned short firstleafbrush, numleafbrushes;
 };
 
 struct dBsp2Texinfo_t
@@ -369,7 +339,7 @@ struct dEdge_t
 };
 
 #define	MAXLIGHTMAPS	4
-struct dFace_t
+struct dBspFace_t
 {
 	unsigned short planenum;
 	short	side;
@@ -387,7 +357,7 @@ struct dBsp2Brush_t
 {
 	int		firstside;
 	int		numsides;
-	int		contents;
+	unsigned contents;
 };
 
 struct dBsp2Brushside_t
@@ -399,16 +369,16 @@ struct dBsp2Brushside_t
 // the visibility lump consists of a header with a count, then
 // byte offsets for the PVS and PHS of each cluster, then the raw
 // compressed bit vectors
-enum
-{
-	DVIS_PVS,
-	DVIS_PHS						// unused
-};
-
 struct dBsp2Vis_t
 {
-	int		numclusters;
-	int		bitofs[8][2];			// bitofs[numclusters][2]
+	enum
+	{
+		PVS,
+		PHS							// unused
+	};
+
+	int		numClusters;
+	int		bitOfs[8][2];			// bitOfs[numClusters][2]
 };
 
 // each area has a list of portals that lead into other areas
@@ -452,32 +422,31 @@ struct darea_t
 #define BSP1_VERSION		29
 #define BSPHL_VERSION		30
 
-enum
-{
-	Q1LUMP_ENTITIES,		// char[]
-	Q1LUMP_PLANES,			// dPlane_t[]
-	Q1LUMP_TEXTURES,
-	Q1LUMP_VERTEXES,		// CVec3[]
-	Q1LUMP_VISIBILITY,
-	Q1LUMP_NODES,			// dBsp1Node_t (q2->q1: int->short children[2])
-	Q1LUMP_TEXINFO,			// dBsp1Texinfo_t[]
-	Q1LUMP_FACES,			// dFace_t
-	Q1LUMP_LIGHTING,		// byte[] (q1: monochrome, hl: rgb == q2)
-	Q1LUMP_CLIPNODES,
-	Q1LUMP_LEAFS,			// dBsp1Leaf_t[]
-	Q1LUMP_MARKSURFACES,	// short[] (== Q2LUMP_LEAFFACES)
-	Q1LUMP_EDGES,			// dEdge_t[]
-	Q1LUMP_SURFEDGES,		// int[]
-	Q1LUMP_MODELS,			// dBsp1Model_t[] (almost as in q2)
-
-	Q1LUMP_COUNT			// should be last
-};
-
-
 struct dBsp1Hdr_t
 {
+	enum
+	{
+		LUMP_ENTITIES,		// char[]
+		LUMP_PLANES,		// dBsp2Plane_t[]
+		LUMP_TEXTURES,
+		LUMP_VERTEXES,		// CVec3[]
+		LUMP_VISIBILITY,
+		LUMP_NODES,			// dBsp1Node_t (q2->q1: int->short children[2])
+		LUMP_TEXINFO,		// dBsp1Texinfo_t[]
+		LUMP_FACES,			// dBspFace_t
+		LUMP_LIGHTING,		// byte[] (q1: monochrome, hl: rgb == q2)
+		LUMP_CLIPNODES,
+		LUMP_LEAFS,			// dBsp1Leaf_t[]
+		LUMP_MARKSURFACES,	// short[] (== Q2LUMP_LEAFFACES)
+		LUMP_EDGES,			// dEdge_t[]
+		LUMP_SURFEDGES,		// int[]
+		LUMP_MODELS,		// dBsp1Model_t[] (almost as in q2)
+
+		LUMP_COUNT			// should be last
+	};
+
 	unsigned version;		// BSP1_VERSION or BSPHL_VERSION
-	lump_t	lumps[Q1LUMP_COUNT];
+	lump_t	lumps[LUMP_COUNT];
 };
 
 #define	Q1_MAP_HULLS		4
@@ -485,7 +454,7 @@ struct dBsp1Hdr_t
 struct dBsp1Model_t
 {
 	CBox	bounds;
-	CVec3	origin;						//?? unused? (check)
+	CVec3	origin;						// unused
 	int		headnode[Q1_MAP_HULLS]; 	// used mostly headnode[0]; other - for entity clipping
 	int		visleafs;					// not including the solid leaf 0 (UNUSED field!)
 	int		firstface, numfaces;
@@ -544,11 +513,10 @@ struct dBsp1Texinfo_t
 
 struct dBsp1Node_t
 {
-	int		planenum;
+	int		planeNum;
 	short	children[2];			// negative numbers are -(leafs+1), not nodes
 	short	mins[3], maxs[3];		// for frustum culling
-	unsigned short firstface;		// unused
-	unsigned short numfaces;		// unused
+	short	firstFace, numFaces;	// unused
 };
 
 
@@ -579,9 +547,143 @@ struct dBsp1Clipnode_t				// unused
 	Quake3 .BSP file format
 -----------------------------------------------------------------------------*/
 
-// NOTE: dbrush_t and dbrushside_t == dBsp2... with exception: texinfo -> shader
-// dheader_t == dBsp2Hdr_t
-// dnode_t == dBsp2Node_t w/o unused fields (firstface/numfaces)
+#define BSP3_VERSION		46
+
+struct dBsp3Hdr_t
+{
+	enum
+	{
+		LUMP_ENTITIES,				// char[]
+		LUMP_SHADERS,				// dBsp3Shader_t[]; used instead of TEXINFO
+		LUMP_PLANES,				// dBsp3Plane_t[]
+		LUMP_NODES,					// dBsp3Node_t[]
+		LUMP_LEAFS,					// dBsp3Leaf_t[]
+		LUMP_LEAFFACES,				// int[]
+		LUMP_LEAFBRUSHES,			// int[]
+		LUMP_MODELS,				// dBsp3Model_t[]
+		LUMP_BRUSHES,				// dBsp3Brush_t[]
+		LUMP_BRUSHSIDES,			// dBsp3Brushside_t[]
+		LUMP_VERTEXES,				// dBsp3Vert_t[]
+		LUMP_INDEXES,				// int[]
+		LUMP_FOGS,					// dBsp3Fog_t
+		LUMP_FACES,					// dBsp3Face_t[]
+		LUMP_LIGHTMAPS,				//?? byte[]
+		LUMP_LIGHTGRID,				// unused
+		LUMP_VISIBILITY,			// dBsp3Vis_t[] + byte[]
+
+		LUMP_COUNT					// should be last
+	};
+
+	unsigned ident;					// BSP_IDENT
+	unsigned version;				// BSP3_VERSION
+	lump_t	lumps[LUMP_COUNT];
+};
+
+// comparision with dBsp2Model_t: without usuded "origin" + use brushes instead of headnode
+struct dBsp3Model_t
+{
+	CBox	bounds;
+	int		firstface, numfaces;	// submodels just draw faces without walking the bsp tree
+	int		firstBrush, numBrushes;
+};
+
+// the same as CPlane, but removed "byte type,signbits,pad[2]"
+struct dBsp3Plane_t
+{
+	CVec3	normal;
+	float	dist;
+};
+
+// comparision with dBsp2Node_t: mins/maxs short[]->int[], and removed unused firstface/numfaces
+struct dBsp3Node_t
+{
+	int		planeNum;
+	int		children[2];			// negative numbers are -(leafs+1), not nodes
+	int		mins[3], maxs[3];		// for frustom culling
+};
+
+struct dBsp3Leaf_t
+{
+	int		cluster;
+	int		area;
+
+	int		mins[3], maxs[3];		// for frustum culling
+
+	int 	firstleafface, numleaffaces;
+	int 	firstleafbrush, numleafbrushes;
+};
+
+// texinfo analog
+struct dBsp3Shader_t
+{
+	char	name[MAX_QPATH];
+	unsigned surfaceFlags;
+	unsigned contentFlags;
+};
+
+struct dBsp3Face_t
+{
+	enum
+	{
+		BAD, PLANAR, PATCH, TRISURF, FLARE
+	};
+
+	int		shaderNum;
+	int		fogNum;
+	int		surfaceType;			// value from enum above
+	int		firstVert, numVerts;
+	int		firstIndex, numIndexes;
+	int		lightmapNum;
+	int		lightmapParms[4];		// X, Y, width, height -- unused
+	CVec3	flareOrigin;			// for FLARE
+	CVec3	lightmapVecs[3];		// [2] - normal; for FLARE [0] - color; for PATCH [0,1] - bounds
+	int		patchWidth, patchHeight;
+};
+
+// comparision with dBsp2Brush_t: int contents -> shaderNum
+struct dBsp3Brush_t
+{
+	int		firstside;
+	int		numsides;
+	int		shaderNum;				// for contents info
+};
+
+struct dBsp3Brushside_t
+{
+	int		planenum;				// facing out of the leaf
+	int		shaderNum;				//?? which shaderNum used: from brushside or from brush ?
+};
+
+struct dBsp3Vert_t
+{
+	CVec3	v;
+	float	st[2];
+	float	lm[2];
+	CVec3	normal;
+	color_t	c;
+};
+
+struct dBsp3Fog_t
+{
+	char	name[MAX_QPATH];		// shader name
+	int		brushNum;
+	int		visibleSide;			// -1 == none
+};
+
+// the visibility lump consists of a header with a count, then the raw compressed bit vectors
+struct dBsp3Vis_t
+{
+	int		numClusters;
+	int		rowSize;
+};
+
+#define Q3_CONTENTS_SOLID			0x000001
+#define Q3_CONTENTS_LAVA			0x000002
+#define	Q3_CONTENTS_SLIME			0x000010
+#define	Q3_CONTENTS_WATER			0x000020
+#define	Q3_CONTENTS_FOG				0x000040
+#define	Q3_CONTENTS_PLAYERCLIP		0x010000
+#define	Q3_CONTENTS_MONSTERCLIP		0x020000
 
 
-#endif // QFILES_H
+#endif // FILE_FORMATS_H

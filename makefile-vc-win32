@@ -524,10 +524,10 @@ DEPENDS = \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	server/game.h \
 	server/server.h
 
@@ -763,9 +763,9 @@ DEPENDS = \
 	client/renderer.h \
 	client/rexp_exp.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -805,11 +805,11 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/MapBrush.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -851,10 +851,10 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -895,10 +895,10 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -937,9 +937,9 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -978,9 +978,9 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -1020,9 +1020,9 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
@@ -1063,9 +1063,9 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
@@ -1105,9 +1105,9 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
@@ -1146,9 +1146,9 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
@@ -1186,9 +1186,9 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
@@ -1626,10 +1626,10 @@ DEPENDS = \
 	client/rexp_intf.h \
 	client/sound.h \
 	client/vid.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h
+	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/cl_download.obj : client/cl_download.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_download.obj" client/cl_download.cpp
@@ -1757,11 +1757,11 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/MapBrush.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h
+	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/cmodel.obj : qcommon/cmodel.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cmodel.obj" qcommon/cmodel.cpp
@@ -1887,39 +1887,10 @@ DEPENDS = \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
-	qcommon/MapBrush.h \
-	qcommon/qcommon.h
-
-Release/obj-win32/q2stat/MapBrush.obj : qcommon/MapBrush.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/MapBrush.obj" qcommon/MapBrush.cpp
-
-Release/obj-win32/dedstat/MapBrush.obj : qcommon/MapBrush.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/MapBrush.obj" qcommon/MapBrush.cpp
-
-DEPENDS = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/CoreGnuC.h \
-	Core/Inc/CoreUnix.h \
-	Core/Inc/CoreVisualC.h \
-	Core/Inc/CoreWin32.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/ErrorMgr.h \
-	Core/Inc/FileSystem.h \
-	Core/Inc/Macro.h \
-	Core/Inc/Math3D.h \
-	Core/Inc/MathMisc.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	client/engine.h \
-	client/engine_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/qcommon.h \
-	qcommon/qfiles.h \
 	server/game.h \
 	server/server.h
 
@@ -1961,9 +1932,9 @@ DEPENDS = \
 	Core/Inc/TextContainer.h \
 	client/engine.h \
 	client/engine_intf.h \
+	qcommon/FileFormats.h \
 	qcommon/cmodel.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h
+	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/EntityParser.obj : qcommon/EntityParser.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/EntityParser.obj" qcommon/EntityParser.cpp
@@ -1976,6 +1947,35 @@ Release/obj-win32/q2stat/model.obj : qcommon/model.cpp $(DEPENDS)
 
 Release/obj-win32/dedstat/model.obj : qcommon/model.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/model.obj" qcommon/model.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/engine.h \
+	client/engine_intf.h \
+	qcommon/MapBrush.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/MapBrush.obj : qcommon/MapBrush.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/MapBrush.obj" qcommon/MapBrush.cpp
+
+Release/obj-win32/dedstat/MapBrush.obj : qcommon/MapBrush.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/MapBrush.obj" qcommon/MapBrush.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \

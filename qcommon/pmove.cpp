@@ -564,11 +564,7 @@ static void AirMove ()
 		// walking on ground
 		pml.velocity[2] = 0; //!!! this is before the accel
 		Accelerate (wishdir, wishspeed, pm_accelerate);
-
-		if(pm->s.gravity > 0)
-			pml.velocity[2] = 0;
-		else
-			pml.velocity[2] -= pm->s.gravity * pml.frametime;
+		pml.velocity[2] = (pm->s.gravity > 0) ? 0 : pml.velocity[2] -= pm->s.gravity * pml.frametime;
 
 		if (!pml.velocity[0] && !pml.velocity[1])
 			return;

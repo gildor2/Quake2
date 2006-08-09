@@ -17,24 +17,6 @@ bspModel_t map;
 	Common BSP loading code
 -----------------------------------------------------------------------------*/
 
-// "stride" = sizeof(dPlane_t) or sizeof(dplane3_t)
-// Both this structures has same fields, except Q3 lost "type"
-static void LoadPlanes (const dPlane_t *data, int count, int stride)
-{
-	CPlane *out;
-
-	map.numPlanes = count;
-	map.planes = out = new (map.dataChain) CPlane [count];
-
-	for (int i = 0; i < count; i++, data = OffsetPointer(data, stride), out++)
-	{
-		out->normal = data->normal;
-		out->dist   = data->dist;
-		out->Setup ();
-	}
-}
-
-
 //?? can avoid copying
 inline void LoadVisinfo (const bspfile_t &f)
 {
@@ -341,7 +323,7 @@ static void LoadLeafsNodes2 (const dBsp2Node_t *nodes, int numNodes, const dBsp2
 	for (i = 0; i < numNodes; i++, nodes++, out++)
 	{
 		out->isNode = true;
-		out->plane  = map.planes + nodes->planenum;
+		out->plane  = bspfile.planes + nodes->planeNum;
 		// setup children[]
 		for (j = 0; j < 2; j++)
 		{
@@ -430,7 +412,7 @@ static unsigned SurfFlagsToShaderFlags2 (unsigned flags)
 }
 
 
-static bool CanEnvmap (const dFace_t *surf, int headnode, CVec3 **pverts, int numVerts)
+static bool CanEnvmap (const dBspFace_t *surf, int headnode, CVec3 **pverts, int numVerts)
 {
 //	if (!gl_autoReflect->integer)		??
 //		return false;
@@ -444,7 +426,7 @@ static bool CanEnvmap (const dFace_t *surf, int headnode, CVec3 **pverts, int nu
 		mid.Add (*pverts[i]);
 	mid.Scale (1.0f / numVerts);
 	// get trace points
-	CVec3 &norm = (map.planes + surf->planenum)->normal;
+	CVec3 &norm = (bspfile.planes + surf->planenum)->normal;
 	// vector with length 1 is not enough for non-axial surfaces
 	VectorMA (mid,  2, norm, p1);
 	VectorMA (mid, -2, norm, p2);
@@ -676,7 +658,7 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 }
 
 
-static void InitSurfaceLightmap2 (const dFace_t *face, surfacePlanar_t *surf, float mins[2], float maxs[2])
+static void InitSurfaceLightmap2 (const dBspFace_t *face, surfacePlanar_t *surf, float mins[2], float maxs[2])
 {
 	int		size[2];				// lightmap size
 	int		imins[2], imaxs[2];		// int mins/maxs, aligned to lightmap grid
@@ -718,7 +700,7 @@ static void InitSurfaceLightmap2 (const dFace_t *face, surfacePlanar_t *surf, fl
 }
 
 
-static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *surfedges, const dEdge_t *edges,
+static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *surfedges, const dEdge_t *edges,
 	CVec3 *verts, const dBsp2Texinfo_t *tex, const cmodel_t *models, int numModels)
 {
 	int		j;
@@ -855,7 +837,7 @@ static void LoadSurfaces2 (const dFace_t *surfs, int numSurfaces, const int *sur
 		s->shader = shader;
 		map.faces[i] = s;
 
-		s->plane = map.planes[surfs->planenum];
+		s->plane = bspfile.planes[surfs->planenum];
 		if (surfs->side)
 		{
 			// backface (needed for backface culling)
@@ -1264,14 +1246,12 @@ static void LoadBsp2 ()
 {
 	guard(LoadBsp2);
 
-	// Load planes
-	LoadPlanes (bspfile.planes, bspfile.numPlanes, sizeof(dPlane_t));
 	// Load surfaces
 START_PROFILE(LoadSurfaces2)
-	LoadSurfaces2 (bspfile.faces, bspfile.numFaces, bspfile.surfedges, bspfile.edges, bspfile.vertexes,
+	LoadSurfaces2 (bspfile.faces2, bspfile.numFaces, bspfile.surfedges, bspfile.edges, bspfile.vertexes2,
 		bspfile.texinfo2, bspfile.models, bspfile.numModels);
 END_PROFILE
-	LoadLeafSurfaces2 (bspfile.leaffaces, bspfile.numLeaffaces);
+	LoadLeafSurfaces2 (bspfile.leaffaces2, bspfile.numLeaffaces);
 START_PROFILE(GenerateLightmaps2)
 	GenerateLightmaps2 (bspfile.lighting, bspfile.lightDataSize);
 END_PROFILE
@@ -1313,6 +1293,8 @@ END_PROFILE
 -----------------------------------------------------------------------------*/
 
 // code is (almost) the same as for LoadLeafsNodes2(), but uses index "1" instead of "2"
+// + no area/cluster info
+//?? try to use template?
 static void LoadLeafsNodes1 (const dBsp1Node_t *nodes, int numNodes, const dBsp1Leaf_t *leafs, int numLeafs)
 {
 	node_t	*out;
@@ -1326,7 +1308,7 @@ static void LoadLeafsNodes1 (const dBsp1Node_t *nodes, int numNodes, const dBsp1
 	for (i = 0; i < numNodes; i++, nodes++, out++)
 	{
 		out->isNode = true;
-		out->plane  = map.planes + nodes->planenum;
+		out->plane  = bspfile.planes + nodes->planeNum;
 		// setup children[]
 		for (j = 0; j < 2; j++)
 		{
@@ -1413,14 +1395,12 @@ static void LoadBsp1 ()
 
 	if (bspfile.type == map_q1) map.monoLightmap = true;
 
-	// Load planes
-	LoadPlanes (bspfile.planes, bspfile.numPlanes, sizeof(dPlane_t));
 	// Load surfaces
 START_PROFILE(LoadSurfaces2)
-	LoadSurfaces2 (bspfile.faces, bspfile.numFaces, bspfile.surfedges, bspfile.edges, bspfile.vertexes,
+	LoadSurfaces2 (bspfile.faces2, bspfile.numFaces, bspfile.surfedges, bspfile.edges, bspfile.vertexes2,
 		bspfile.texinfo2, bspfile.models, bspfile.numModels);
 END_PROFILE
-	LoadLeafSurfaces2 (bspfile.leaffaces, bspfile.numLeaffaces);
+	LoadLeafSurfaces2 (bspfile.leaffaces2, bspfile.numLeaffaces);
 START_PROFILE(GenerateLightmaps2)
 	GenerateLightmaps2 (bspfile.lighting, bspfile.lightDataSize);
 END_PROFILE

@@ -8,6 +8,8 @@ cvar_t	*developer;
 cvar_t	*timescale;
 cvar_t	*timedemo;
 cvar_t	*sv_cheats;
+static cvar_t *nointro;
+
 
 #if !DEDICATED_ONLY
 static cvar_t dummyDedicated;
@@ -643,9 +645,6 @@ static void PushCmdline ()
 /*-----------------------------------------------------------------------------
 	Initialization
 -----------------------------------------------------------------------------*/
-
-static cvar_t	*nointro;
-
 
 void Com_Init (const char *cmdline)
 {
