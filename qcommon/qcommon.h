@@ -36,10 +36,10 @@ struct cvar_t;
 struct cvarInfo_t;
 struct trace_t;
 struct bspfile_t;
-//??struct CVec3;
-//??struct CBox;
-//??struct CAxis;
-//??struct CPlane;
+
+// cmodel interface
+struct CBspNode;
+struct CBspLeaf;
 
 // game interface/communication strucs
 struct entity_state_t;
@@ -773,16 +773,6 @@ int		CM_PointModelContents (const CVec3 &p);
 bool	CM_CombineTrace (trace_t &trace1, const trace_t &trace2);
 
 const byte *CM_ClusterPVS (int cluster);
-
-int		CM_PointLeafnum (const CVec3 &p, int num = 0);
-
-// call with topnode set to the headnode, returns with topnode
-// set to the first node that splits the box
-int		CM_BoxLeafnums (const CBox &bounds, int *list, int listsize, int *topnode = NULL, int headnode = 0);
-
-int		CM_LeafContents (int leafnum);
-int		CM_LeafCluster (int leafnum);
-int		CM_LeafArea (int leafnum);
 
 void	CM_SetAreaPortalState (int portalnum, bool open);
 bool	CM_AreasConnected (int area1, int area2);

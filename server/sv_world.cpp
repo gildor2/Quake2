@@ -296,16 +296,16 @@ void SV_LinkEdict (edict_t *ent)
 	ent->areanum2     = 0;
 
 	// get all leafs, including solids
-	int leafs[MAX_TOTAL_ENT_LEAFS];
+	CBspLeaf *leafs[MAX_TOTAL_ENT_LEAFS];
 	int topnode;
-	int num_leafs = CM_BoxLeafnums (ent->absBounds, ARRAY_ARG(leafs), &topnode);
+	int num_leafs = CM_BoxLeafs (ent->absBounds, ARRAY_ARG(leafs), &topnode);
 
 	// set areas
 	int clusters[MAX_TOTAL_ENT_LEAFS];
 	for (i = 0; i < num_leafs; i++)
 	{
-		clusters[i] = CM_LeafCluster (leafs[i]);
-		int area = CM_LeafArea (leafs[i]);
+		clusters[i] = leafs[i]->cluster;
+		int area = leafs[i]->area;
 		if (area)
 		{	// doors may legally straggle two areas,
 			// but nothing should evern need more than that

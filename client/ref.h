@@ -127,7 +127,7 @@ struct particle_t
 	bool	isNew;
 	particleType_t type;
 	float	alpha;
-	int		leafNum;				// -1 -- uninitialized
+	const CBspLeaf *leaf;			// NULL -- uninitialized
 	// some physics
 	CVec3	vel;					// org += vel * time
 	CVec3	accel;					// vel += accel * time

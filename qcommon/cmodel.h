@@ -1,3 +1,9 @@
+/*=============================================================================
+
+	Map and model stuff
+
+=============================================================================*/
+
 #ifndef CMODEL_H
 #define CMODEL_H
 
@@ -25,12 +31,38 @@ struct cmodel_t
 	unsigned contents;					// contents of all model brushes; used only with CMODEL_CONTENTS
 	color_t	color;						// set by Half-Life entities
 	CVec3	origin;
+	//!! + renderer info
 };
 
 
-/*-----------------------------------------------------------------------------
-	Map and model stuff
------------------------------------------------------------------------------*/
+struct cbrush_t;						//?? forward; change to CBrush?
+
+struct CBspBaseNode
+{
+	bool		isLeaf:1;
+	int			num:31;					// node or leaf number
+	CBspBaseNode *parent;				// parent node or NULL for root
+	CBox		bounds;					// for culling
+};
+
+struct CBspNode : public CBspBaseNode
+{
+	CBspBaseNode *children[2];
+	CPlane		*plane;
+	//!! + renderer info
+};
+
+struct CBspLeaf : public CBspBaseNode
+{
+	unsigned	contents;
+	int			cluster;
+	int			area;
+	unsigned	firstFace, numFaces;
+	unsigned	numBrushes;
+	cbrush_t	**brushes;
+	//!! + renderer info
+};
+
 
 struct lightFlare_t
 {
@@ -141,6 +173,7 @@ struct bspfile_t
 		dBsp2Node_t	*nodes2;
 		dBsp3Node_t *nodes3;
 	};
+	CBspNode	*nodes;					// [numNodes]; generated
 
 	int			numLeafs;
 	union {
@@ -148,6 +181,7 @@ struct bspfile_t
 		dBsp2Leaf_t	*leafs2;
 		dBsp3Leaf_t *leafs3;
 	};
+	CBspLeaf	*leafs;					// [numLeafs]; generated
 
 	int			numLeaffaces;
 	union {
@@ -180,10 +214,10 @@ struct bspfile_t
 	};
 
 	int			numAreas;
-	darea_t		*areas;
+	dArea_t		*areas;
 
 	int			numAreaportals;
-	dareaportal_t *areaportals;
+	dAreaPortal_t *areaportals;
 
 	int			numTexinfo;
 	union {
@@ -236,6 +270,11 @@ CBrush *CM_BuildBrush (int brushNum, CMemoryChain *mem);
 #endif
 
 const char *ProcessEntstring (const char *entString);
+
+const CBspLeaf *CM_FindLeaf (const CVec3 &p, int headnode = 0);
+// call with topnode set to the headnode, returns with topnode
+// set to the first node that splits the box
+int CM_BoxLeafs (const CBox &bounds, CBspLeaf **list, int listsize, int *topnode = NULL, int headnode = 0);
 
 
 #endif // CMODEL_H

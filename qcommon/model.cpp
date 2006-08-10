@@ -28,7 +28,7 @@ static void SwapQ2BspFile (bspfile_t *f)
 
 	// vertexes
 	for (i = 0; i < f->numVertexes; i++)
-		LTL(f->vertexes[i]);
+		LTL(f->vertexes2[i]);
 
 	// planes
 	for (i = 0; i < f->numPlanes; i++)
@@ -98,11 +98,11 @@ static void SwapQ2BspFile (bspfile_t *f)
 
 	// leaffaces
 	for (i = 0; i < f->numLeaffaces; i++)
-		LTL(f->leaffaces[i]);
+		LTL(f->leaffaces2[i]);
 
 	// leafbrushes
 	for (i = 0; i < f->numLeafbrushes; i++)
-		LTL(f->leafbrushes[i]);
+		LTL(f->leafbrushes2[i]);
 
 	// surfedges
 	for (i = 0; i < f->numSurfedges; i++)
@@ -118,30 +118,30 @@ static void SwapQ2BspFile (bspfile_t *f)
 	// brushes
 	for (i = 0; i < f->numBrushes; i++)
 	{
-		LTL(f->brushes[i].firstside);
-		LTL(f->brushes[i].numsides);
-		LTL(f->brushes[i].contents);
+		LTL(f->brushes2[i].firstside);
+		LTL(f->brushes2[i].numsides);
+		LTL(f->brushes2[i].contents);
 	}
 
 	// areas
 	for (i = 0; i < f->numAreas; i++)
 	{
-		LTL(f->areas[i].numareaportals);
-		LTL(f->areas[i].firstareaportal);
+		LTL(f->areas[i].numAreaPortals);
+		LTL(f->areas[i].firstAreaPortal);
 	}
 
 	// areasportals
 	for (i = 0; i < f->numAreaportals; i++)
 	{
-		LTL(f->areaportals[i].portalnum);
-		LTL(f->areaportals[i].otherarea);
+		LTL(f->areaportals[i].portalNum);
+		LTL(f->areaportals[i].otherArea);
 	}
 
 	// brushsides
 	for (i = 0; i < f->numBrushSides; i++)
 	{
-		LTL(f->brushsides[i].planenum);
-		LTL(f->brushsides[i].texinfo);
+		LTL(f->brushsides2[i].planenum);
+		LTL(f->brushsides2[i].texinfo);
 	}
 }
 
@@ -450,8 +450,8 @@ void LoadQ2BspFile ()
 	C(EDGES, edges, numEdges, dEdge_t);
 	C(BRUSHES, brushes2, numBrushes, dBsp2Brush_t);
 	C(BRUSHSIDES, brushsides2, numBrushSides, dBsp2Brushside_t);
-	C(AREAS, areas, numAreas, darea_t);
-	C(AREAPORTALS, areaportals, numAreaportals, dareaportal_t);
+	C(AREAS, areas, numAreas, dArea_t);
+	C(AREAPORTALS, areaportals, numAreaportals, dAreaPortal_t);
 
 	dBsp2Model_t *models;
 	bspfile.numModels = CheckLump (dBsp2Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp2Model_t));	// not in bspfile_t struc

@@ -19,6 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "server.h"
+#include "cmodel.h"
 
 /*
 =============================================================================
@@ -43,17 +44,13 @@ static void SV_FatPVS (const CVec3 &org)
 		bounds.maxs[i] = org[i] + 8;
 	}
 
-	int leafs[64];
-	int count = CM_BoxLeafnums (bounds, ARRAY_ARG(leafs));
+	CBspLeaf *leafs[64];
+	int count = CM_BoxLeafs (bounds, ARRAY_ARG(leafs));
 	if (count < 1)
 		appError ("SV_FatPVS: count < 1");
 	int numDwords = (CM_NumClusters()+31) / 32;
 
-	// convert leafs to clusters
-	for (i = 0; i < count; i++)
-		leafs[i] = CM_LeafCluster (leafs[i]);
-
-	memcpy (fatpvs, CM_ClusterPVS (leafs[0]), numDwords * 4);
+	memcpy (fatpvs, CM_ClusterPVS (leafs[0]->cluster), numDwords * 4);
 	// or in all the other leaf bits
 	for (i = 1; i < count; i++)
 	{
@@ -61,7 +58,7 @@ static void SV_FatPVS (const CVec3 &org)
 			if (leafs[i] == leafs[j]) break;
 		if (j != i) continue;		// already have the cluster we want
 
-		const byte *src = CM_ClusterPVS (leafs[i]);
+		const byte *src = CM_ClusterPVS (leafs[i]->cluster);
 		for (j = 0; j < numDwords; j++)
 			((long *)fatpvs)[j] |= ((long *)src)[j];
 	}
@@ -88,7 +85,7 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 	for (i = 0; i < 3; i++)
 		org[i] = cl_ent->client->ps.pmove.origin[i]*0.125f + cl_ent->client->ps.viewoffset[i];
 
-	int clientarea = CM_LeafArea (CM_PointLeafnum (org));
+	int clientarea = CM_FindLeaf(org)->area;
 
 	// calculate the visible areas
 	frame->areabytes = CM_WriteAreaBits (frame->areabits, clientarea);

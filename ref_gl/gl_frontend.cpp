@@ -1648,7 +1648,7 @@ static void DrawParticles ()
 
 	for (particle_t *p = vp.particles; p; p = p->next)
 	{
-		leaf = &map.nodes[p->leafNum + map.numNodes];
+		leaf = &map.nodes[p->leaf->num + map.numNodes];	//!!! cmodel_leaf->num->gl_leaf
 		if (leaf->frame == drawFrame)
 		{
 			p->drawNext = leaf->drawParticle;

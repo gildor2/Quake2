@@ -310,7 +310,8 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 	Loading Quake2 BSP file
 -----------------------------------------------------------------------------*/
 
-static void LoadLeafsNodes2 (const dBsp2Node_t *nodes, int numNodes, const dBsp2Leaf_t *leafs, int numLeafs)
+//!! change !!!!!
+static void LoadLeafsNodes (const CBspNode *nodes, int numNodes, const CBspLeaf *leafs, int numLeafs)
 {
 	node_t	*out;
 	int		i, j;
@@ -323,40 +324,28 @@ static void LoadLeafsNodes2 (const dBsp2Node_t *nodes, int numNodes, const dBsp2
 	for (i = 0; i < numNodes; i++, nodes++, out++)
 	{
 		out->isNode = true;
-		out->plane  = bspfile.planes + nodes->planeNum;
+		out->plane  = nodes->plane;
 		// setup children[]
 		for (j = 0; j < 2; j++)
 		{
-			int p = nodes->children[j];
-			if (p >= 0)
-				out->children[j] = map.nodes + p;
+			CBspBaseNode *p = nodes->children[j];
+			if (!p->isLeaf)
+				out->children[j] = map.nodes + p->num;
 			else
-				out->children[j] = map.nodes + map.numNodes + (-1 - p);
+				out->children[j] = map.nodes + map.numNodes + p->num;
 		}
-		// copy/convert mins/maxs
-		for (j = 0; j < 3; j++)
-		{
-			out->bounds.mins[j] = nodes->mins[j];	// make "float out->bounds = short nodes->bounds"
-			out->bounds.maxs[j] = nodes->maxs[j];
-		}
+		out->bounds = nodes->bounds;
 	}
 
 	// Load leafs
 	for (i = 0; i < numLeafs; i++, leafs++, out++)
 	{
-		out->isNode = false;
-
-		out->cluster = leafs->cluster;
-		out->area    = leafs->area;
-		// copy/convert mins/maxs
-		for (j = 0; j < 3; j++)
-		{
-			out->bounds.mins[j] = leafs->mins[j];	// make "float out->bounds = short leaf->bounds"
-			out->bounds.maxs[j] = leafs->maxs[j];
-		}
-		// setup leafFaces
-		out->leafFaces    = map.leafFaces + leafs->firstleafface;
-		out->numLeafFaces = leafs->numleaffaces;
+		out->isNode       = false;
+		out->cluster      = leafs->cluster;
+		out->area         = leafs->area;
+		out->bounds       = leafs->bounds;
+		out->leafFaces    = map.leafFaces + leafs->firstFace;
+		out->numLeafFaces = leafs->numFaces;
 	}
 
 	// Setup node/leaf parents
@@ -1256,7 +1245,7 @@ START_PROFILE(GenerateLightmaps2)
 	GenerateLightmaps2 (bspfile.lighting, bspfile.lightDataSize);
 END_PROFILE
 	// Load bsp (leafs and nodes)
-	LoadLeafsNodes2 (bspfile.nodes2, bspfile.numNodes, bspfile.leafs2, bspfile.numLeafs);
+	LoadLeafsNodes (bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);
 	LoadVisinfo (bspfile);
 	LoadInlineModels2 (bspfile.models, bspfile.numModels);
 
@@ -1291,64 +1280,6 @@ END_PROFILE
 /*-----------------------------------------------------------------------------
 	Loading Quake1/Half-Life BSP file
 -----------------------------------------------------------------------------*/
-
-// code is (almost) the same as for LoadLeafsNodes2(), but uses index "1" instead of "2"
-// + no area/cluster info
-//?? try to use template?
-static void LoadLeafsNodes1 (const dBsp1Node_t *nodes, int numNodes, const dBsp1Leaf_t *leafs, int numLeafs)
-{
-	node_t	*out;
-	int		i, j;
-
-	map.numNodes     = numNodes;
-	map.numLeafNodes = numLeafs + numNodes;
-	map.nodes = out = new (map.dataChain) node_t [numNodes + numLeafs];
-
-	// Load nodes
-	for (i = 0; i < numNodes; i++, nodes++, out++)
-	{
-		out->isNode = true;
-		out->plane  = bspfile.planes + nodes->planeNum;
-		// setup children[]
-		for (j = 0; j < 2; j++)
-		{
-			int p = nodes->children[j];
-			if (p >= 0)
-				out->children[j] = map.nodes + p;
-			else
-				out->children[j] = map.nodes + map.numNodes + (-1 - p);
-		}
-		// copy/convert mins/maxs
-		for (j = 0; j < 3; j++)
-		{
-			out->bounds.mins[j] = nodes->mins[j];	// make "float out->bounds = short nodes->bounds"
-			out->bounds.maxs[j] = nodes->maxs[j];
-		}
-	}
-
-	// Load leafs
-	for (i = 0; i < numLeafs; i++, leafs++, out++)
-	{
-		out->isNode = false;
-
-		out->cluster = i-1;							// leaf[0] have no stored visinfo
-		out->area    = 0;							// no areas in Q1/HL
-		// copy/convert mins/maxs
-		for (j = 0; j < 3; j++)
-		{
-			out->bounds.mins[j] = leafs->mins[j];	// make "float out->bounds = short leaf->bounds"
-			out->bounds.maxs[j] = leafs->maxs[j];
-		}
-		// setup leafFaces
-		out->leafFaces    = map.leafFaces + leafs->firstleafface;
-		out->numLeafFaces = leafs->numleaffaces;
-	}
-
-	// Setup node/leaf parents
-	SetNodeParent (map.nodes, NULL);
-	SetNodesAlpha ();
-}
-
 
 static void LoadSky1 ()
 {
@@ -1405,7 +1336,7 @@ START_PROFILE(GenerateLightmaps2)
 	GenerateLightmaps2 (bspfile.lighting, bspfile.lightDataSize);
 END_PROFILE
 	// Load bsp (leafs and nodes)
-	LoadLeafsNodes1 (bspfile.nodes1, bspfile.numNodes, bspfile.leafs1, bspfile.numLeafs);
+	LoadLeafsNodes (bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);
 	LoadVisinfo (bspfile);
 	LoadInlineModels2 (bspfile.models, bspfile.numModels);
 	LoadSky1 ();

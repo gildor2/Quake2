@@ -1,4 +1,5 @@
 #include "client.h"
+#include "cmodel.h"
 
 //!! NOTE: some particle effects are not synced to game time (not affected by timescale!)
 //!!   Example: CL_TrapParticles(), CL_TeleportParticles()
@@ -434,7 +435,7 @@ particle_t *CL_AllocParticle ()
 	p->accel[2] = -PARTICLE_GRAVITY;
 	p->type     = PT_DEFAULT;
 	p->isNew    = true;
-	p->leafNum  = -1;			// uninitialized
+	p->leaf     = NULL;								// uninitialized
 	return p;
 }
 
@@ -461,8 +462,8 @@ static void UpdateParticles ()
 
 		if (p->isNew)
 		{
-			p->isNew = false;	// particle is just created -- timeDelta == 0, nothing to update
-			p->leafNum = CM_PointLeafnum (p->org);
+			p->isNew = false;			// particle is just created -- timeDelta == 0, nothing to update
+			p->leaf  = CM_FindLeaf (p->org);
 		}
 		else if (timeDelta > 0)
 		{
@@ -475,14 +476,14 @@ static void UpdateParticles ()
 				// org += timeDelta * vel + timeDelta^2 * accel
 				VectorMA (p->org, timeDelta, p->vel);
 				VectorMA (p->org, time2, p->accel);
-				p->leafNum = CM_PointLeafnum (p->org);
+				p->leaf = CM_FindLeaf (p->org);
 			}
 			// update velocity: vel += timeDelta * accel
 			VectorMA (p->vel, timeDelta, p->accel);
 		}
 
 		// remove particle if it is faded out or out of world
-		if (p->alpha <= 0 || CM_LeafContents (p->leafNum) & MASK_SOLID)
+		if (p->alpha <= 0 || p->leaf->contents & MASK_SOLID)
 		{
 			if (prev)
 				prev->next = p->next;

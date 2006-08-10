@@ -185,7 +185,7 @@ public:
 struct node_t
 {
 	//---- common fields (taken directly from map) ----
-	int		isNode:1;			// true if this is a leaf
+	bool	isNode:1;			// true if this is a leaf
 	// tree structure
 	CPlane	*plane;				// *node
 	node_t	*parent;
@@ -197,7 +197,7 @@ struct node_t
 	//?? for rendering: surfaces
 
 	//------------ renderer fields --------------------
-	int		haveAlpha:1;		// true if leaf have surface(s) with translucent shader
+	bool	haveAlpha:1;		// true if leaf have surface(s) with translucent shader
 	byte	frustumMask;		// *leaf
 	int		visFrame, frame;	// PVS-cull frame, frustum-cull frame
 								//?? rename "frame" to "drawFrame" ?

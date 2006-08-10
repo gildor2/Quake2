@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // sv_main.cpp -- server main program
 
 #include "server.h"
+#include "cmodel.h"
 
 /*
 =============================================================================
@@ -119,7 +120,7 @@ void SV_Multicast (const CVec3 &origin, multicast_t to, bool oldclients)
 
 	int area1;
 	if (to != MULTICAST_ALL_R && to != MULTICAST_ALL)
-		area1 = CM_LeafArea (CM_PointLeafnum (origin));
+		area1 = CM_FindLeaf (origin)->area;
 	else
 		area1 = -1;
 
@@ -139,14 +140,14 @@ void SV_Multicast (const CVec3 &origin, multicast_t to, bool oldclients)
 	case MULTICAST_PHS_R:
 		reliable = true;	// fallthrough
 	case MULTICAST_PHS:
-//		mask = CM_ClusterPHS (CM_LeafCluster (CM_PointLeafnum (origin)));
+//		mask = CM_ClusterPHS (CM_FindLeaf (origin)->cluster);
 		// currently, == MULTICAST_ALL[_R]
 		break;
 
 	case MULTICAST_PVS_R:
 		reliable = true;	// fallthrough
 	case MULTICAST_PVS:
-		pvs = CM_ClusterPVS (CM_LeafCluster (CM_PointLeafnum (origin)));
+		pvs = CM_ClusterPVS (CM_FindLeaf (origin)->cluster);
 		break;
 
 	default:
@@ -172,9 +173,9 @@ void SV_Multicast (const CVec3 &origin, multicast_t to, bool oldclients)
 
 		if (area1 != -1)
 		{
-			int leafnum = CM_PointLeafnum (client->edict->s.origin);
-			int cluster = CM_LeafCluster (leafnum);
-			int area2   = CM_LeafArea (leafnum);
+			const CBspLeaf *leaf = CM_FindLeaf (client->edict->s.origin);
+			int cluster = leaf->cluster;
+			int area2   = leaf->area;
 			if (!CM_AreasConnected (area1, area2)) continue;
 			if (pvs)
 			{

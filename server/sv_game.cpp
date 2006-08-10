@@ -182,16 +182,15 @@ static void G_WriteDir (const CVec3 *dir)
 // Also checks portalareas so that doors block sight
 static qboolean G_inPVS (const CVec3 &p1, const CVec3 &p2)
 {
-	int leafnum1 = CM_PointLeafnum (p1);
-	int leafnum2 = CM_PointLeafnum (p2);
-	const byte *mask = CM_ClusterPVS (CM_LeafCluster (leafnum1));
-
-	int cluster  = CM_LeafCluster (leafnum2);
+	const CBspLeaf *leaf1 = CM_FindLeaf (p1);
+	const CBspLeaf *leaf2 = CM_FindLeaf (p2);
+	const byte *mask = CM_ClusterPVS (leaf1->cluster);
+	int cluster  = leaf2->cluster;
 
 	if (mask && (!(mask[cluster >> 3] & (1<<(cluster & 7)))))
 		return false;
 
-	if (!CM_AreasConnected (CM_LeafArea (leafnum1), CM_LeafArea (leafnum2)))
+	if (!CM_AreasConnected (leaf1->area, leaf2->area))
 		return false;		// a door blocks sight
 	return true;
 }
@@ -200,18 +199,10 @@ static qboolean G_inPVS (const CVec3 &p1, const CVec3 &p2)
 // Checks portalareas so that doors block sound
 static qboolean G_inPHS (const CVec3 &p1, const CVec3 &p2)
 {
-	int leafnum1 = CM_PointLeafnum (p1);
-	int leafnum2 = CM_PointLeafnum (p2);
-/* removed 17.04.2006
-	const byte *mask = CM_ClusterPHS (CM_LeafCluster (leafnum1));
+	const CBspLeaf *leaf1 = CM_FindLeaf (p1);
+	const CBspLeaf *leaf2 = CM_FindLeaf (p2);
 
-	int cluster  = CM_LeafCluster (leafnum2);
-
-	if (mask && (!(mask[cluster>>3] & (1<<(cluster&7)))))
-		return false;
-*/
-
-	if (!CM_AreasConnected (CM_LeafArea (leafnum1), CM_LeafArea (leafnum2)))
+	if (!CM_AreasConnected (leaf1->area, leaf2->area))
 		return false;		// a door blocks hearing
 
 	return true;

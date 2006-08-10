@@ -1451,6 +1451,8 @@ DEPENDS = \
 	client/rexp_intf.h \
 	client/sound.h \
 	client/vid.h \
+	qcommon/FileFormats.h \
+	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/qcommon.h
 
@@ -1894,6 +1896,12 @@ DEPENDS = \
 	server/game.h \
 	server/server.h
 
+Release/obj-win32/q2stat/sv_ents.obj : server/sv_ents.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_ents.obj" server/sv_ents.cpp
+
+Release/obj-win32/dedstat/sv_ents.obj : server/sv_ents.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_ents.obj" server/sv_ents.cpp
+
 Release/obj-win32/q2stat/sv_game.obj : server/sv_game.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_game.obj" server/sv_game.cpp
 
@@ -1905,6 +1913,12 @@ Release/obj-win32/q2stat/sv_init.obj : server/sv_init.cpp $(DEPENDS)
 
 Release/obj-win32/dedstat/sv_init.obj : server/sv_init.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_init.obj" server/sv_init.cpp
+
+Release/obj-win32/q2stat/sv_send.obj : server/sv_send.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_send.obj" server/sv_send.cpp
+
+Release/obj-win32/dedstat/sv_send.obj : server/sv_send.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_send.obj" server/sv_send.cpp
 
 Release/obj-win32/q2stat/sv_world.obj : server/sv_world.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_world.obj" server/sv_world.cpp
@@ -2042,18 +2056,6 @@ Release/obj-win32/q2stat/sv_anim.obj : server/sv_anim.cpp $(DEPENDS)
 
 Release/obj-win32/dedstat/sv_anim.obj : server/sv_anim.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_anim.obj" server/sv_anim.cpp
-
-Release/obj-win32/q2stat/sv_ents.obj : server/sv_ents.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_ents.obj" server/sv_ents.cpp
-
-Release/obj-win32/dedstat/sv_ents.obj : server/sv_ents.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_ents.obj" server/sv_ents.cpp
-
-Release/obj-win32/q2stat/sv_send.obj : server/sv_send.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_send.obj" server/sv_send.cpp
-
-Release/obj-win32/dedstat/sv_send.obj : server/sv_send.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/sv_send.obj" server/sv_send.cpp
 
 Release/obj-win32/q2stat/sv_user.obj : server/sv_user.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/sv_user.obj" server/sv_user.cpp

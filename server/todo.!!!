@@ -4,7 +4,7 @@ sv_world.cpp:
   BUT(!!): used area.prev!=0 for check world link
   SO: use "edict->area.prev" for link (0 == unlinked), "edict->area.next" - any use
 - SV_LinkEdict: check for requirement of RELINK: need to save edict->entity_state_t (can use edict.s.number as index
-  in server-side edict array) and relink only when needed (most longest operation is CM_BoxLeafnums)
+  in server-side edict array) and relink only when needed (most longest operation is CM_BoxLeafs())
 ? add areanode_t.parent (tree structure) and edict_num with counting child edicts; in AreaEdicts stop recursion when
   areanode have no edicts
 ? rename areanode_t to sector_t

@@ -1,3 +1,5 @@
+! used stack few times (count + array[] of any type) -- implement as template with push/pop methods (may be, replace
+  push/pop with some math operators -- ">>" or "<<" etc)
 - dedicated server: when launched few dedicated servers on the same machine, only one will use standard server port, all other
   will use 1st available port -- this will not allow to find other servers from network (check this!); to fix this:
   - create shared memory region (or special file?) and store process info (win32: window handle (or pid?), unix: pid)

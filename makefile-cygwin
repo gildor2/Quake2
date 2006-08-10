@@ -1396,6 +1396,8 @@ DEPENDS_31 = \
 	client/rexp_intf.h \
 	client/sound.h \
 	client/vid.h \
+	qcommon/FileFormats.h \
+	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/qcommon.h
 
@@ -1839,6 +1841,12 @@ DEPENDS_42 = \
 	server/game.h \
 	server/server.h
 
+Release/obj-cygwin/q2stat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_ents.o server/sv_ents.cpp
+
+Release/obj-cygwin/dedstat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_ents.o server/sv_ents.cpp
+
 Release/obj-cygwin/q2stat/sv_game.o : server/sv_game.cpp $(DEPENDS_42)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_game.o server/sv_game.cpp
 
@@ -1850,6 +1858,12 @@ Release/obj-cygwin/q2stat/sv_init.o : server/sv_init.cpp $(DEPENDS_42)
 
 Release/obj-cygwin/dedstat/sv_init.o : server/sv_init.cpp $(DEPENDS_42)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_init.o server/sv_init.cpp
+
+Release/obj-cygwin/q2stat/sv_send.o : server/sv_send.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_send.o server/sv_send.cpp
+
+Release/obj-cygwin/dedstat/sv_send.o : server/sv_send.cpp $(DEPENDS_42)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_send.o server/sv_send.cpp
 
 Release/obj-cygwin/q2stat/sv_world.o : server/sv_world.cpp $(DEPENDS_42)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_world.o server/sv_world.cpp
@@ -1987,18 +2001,6 @@ Release/obj-cygwin/q2stat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_46)
 
 Release/obj-cygwin/dedstat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_anim.o server/sv_anim.cpp
-
-Release/obj-cygwin/q2stat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_46)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_ents.o server/sv_ents.cpp
-
-Release/obj-cygwin/dedstat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_46)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_ents.o server/sv_ents.cpp
-
-Release/obj-cygwin/q2stat/sv_send.o : server/sv_send.cpp $(DEPENDS_46)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_send.o server/sv_send.cpp
-
-Release/obj-cygwin/dedstat/sv_send.o : server/sv_send.cpp $(DEPENDS_46)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-cygwin/dedstat/sv_send.o server/sv_send.cpp
 
 Release/obj-cygwin/q2stat/sv_user.o : server/sv_user.cpp $(DEPENDS_46)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/sv_user.o server/sv_user.cpp

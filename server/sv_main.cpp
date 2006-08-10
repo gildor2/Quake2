@@ -831,13 +831,13 @@ void SV_PostprocessFrame ()
 				}
 
 				// check for idle (camper) sounds
-				int leaf  = CM_PointLeafnum (pm_origin);
-				int clust = CM_LeafCluster (leaf);
+				const CBspLeaf *leaf  = CM_FindLeaf (pm_origin);
+				int clust = leaf->cluster;
 				int sfxstate = 2;
 				if (!clust)
 					continue;	// possibly map without visinfo - no cluster partition (cannot detect campers with this way)
 
-				if (clust != cl->lastcluster || cl->sfxstate != sfxstate || (CM_LeafContents (leaf) & MASK_WATER))
+				if (clust != cl->lastcluster || cl->sfxstate != sfxstate || (leaf->contents & MASK_WATER))
 				{	// changed cluster or state - not camping
 					cl->sfxstate    = sfxstate;
 					cl->lastcluster = clust;

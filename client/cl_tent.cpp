@@ -818,6 +818,8 @@ void CL_ParseTEnt ()
 	int type = MSG_ReadByte (&net_message);
 	sfx_t *sound = NULL;
 
+	guard(CL_ParseTEnt);
+
 	switch (type)
 	{
 	case TE_GUNSHOT:			// bullet hitting wall
@@ -1233,6 +1235,8 @@ void CL_ParseTEnt ()
 
 	if (sound)
 		S_StartSound (&pos, 0, 0, sound, 1, ATTN_NORM, 0);
+
+	unguardf(("t=%d", type));
 }
 
 

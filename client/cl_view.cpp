@@ -684,9 +684,9 @@ static void DrawOriginInfo ()
 	Euler2Vecs (cl.refdef.viewangles, &view, NULL, NULL);
 	RE_DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARG(view)), RGB(0.2,0.4,0.1));
 
-	int i = CM_PointLeafnum (cl.refdef.vieworg);
-	RE_DrawTextLeft (va("Leaf: %d, cluster: %d, area: %d", i, CM_LeafCluster (i), CM_LeafArea (i)), RGB(0.2,0.4,0.1));
-	DecodeContents (CM_LeafContents (i) | CM_PointModelContents (cl.refdef.vieworg));
+	const CBspLeaf *leaf = CM_FindLeaf (cl.refdef.vieworg);
+	RE_DrawTextLeft (va("Leaf: %d, cluster: %d, area: %d", leaf->num, leaf->cluster, leaf->area), RGB(0.2,0.4,0.1));
+	DecodeContents (leaf->contents | CM_PointModelContents (cl.refdef.vieworg));
 	RE_DrawTextLeft ("", RGB(0,0,0));	// empty line
 }
 

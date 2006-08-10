@@ -1451,6 +1451,8 @@ DEPENDS_33 = \
 	client/rexp_intf.h \
 	client/sound.h \
 	client/vid.h \
+	qcommon/FileFormats.h \
+	qcommon/cmodel.h \
 	qcommon/protocol.h \
 	qcommon/qcommon.h
 
@@ -1894,6 +1896,12 @@ DEPENDS_44 = \
 	server/game.h \
 	server/server.h
 
+Release/obj-win32/q2stat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_44)
+	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_ents.o server/sv_ents.cpp
+
+Release/obj-win32/dedstat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_44)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_ents.o server/sv_ents.cpp
+
 Release/obj-win32/q2stat/sv_game.o : server/sv_game.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_game.o server/sv_game.cpp
 
@@ -1905,6 +1913,12 @@ Release/obj-win32/q2stat/sv_init.o : server/sv_init.cpp $(DEPENDS_44)
 
 Release/obj-win32/dedstat/sv_init.o : server/sv_init.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_init.o server/sv_init.cpp
+
+Release/obj-win32/q2stat/sv_send.o : server/sv_send.cpp $(DEPENDS_44)
+	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_send.o server/sv_send.cpp
+
+Release/obj-win32/dedstat/sv_send.o : server/sv_send.cpp $(DEPENDS_44)
+	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_send.o server/sv_send.cpp
 
 Release/obj-win32/q2stat/sv_world.o : server/sv_world.cpp $(DEPENDS_44)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_world.o server/sv_world.cpp
@@ -2042,18 +2056,6 @@ Release/obj-win32/q2stat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_48)
 
 Release/obj-win32/dedstat/sv_anim.o : server/sv_anim.cpp $(DEPENDS_48)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_anim.o server/sv_anim.cpp
-
-Release/obj-win32/q2stat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_48)
-	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_ents.o server/sv_ents.cpp
-
-Release/obj-win32/dedstat/sv_ents.o : server/sv_ents.cpp $(DEPENDS_48)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_ents.o server/sv_ents.cpp
-
-Release/obj-win32/q2stat/sv_send.o : server/sv_send.cpp $(DEPENDS_48)
-	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_send.o server/sv_send.cpp
-
-Release/obj-win32/dedstat/sv_send.o : server/sv_send.cpp $(DEPENDS_48)
-	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/sv_send.o server/sv_send.cpp
 
 Release/obj-win32/q2stat/sv_user.o : server/sv_user.cpp $(DEPENDS_48)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/sv_user.o server/sv_user.cpp

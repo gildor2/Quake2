@@ -264,8 +264,8 @@ struct dBsp2Hdr_t
 		LUMP_BRUSHES,				// dBsp2Brush_t[]
 		LUMP_BRUSHSIDES,			// dBsp2Brushside_t[]
 		LUMP_POP,					// ?
-		LUMP_AREAS,					// darea_t[]
-		LUMP_AREAPORTALS,			// dareaportal_t[]
+		LUMP_AREAS,					// dArea_t[]
+		LUMP_AREAPORTALS,			// dAreaPortal_t[]
 
 		LUMP_COUNT					// should be last
 	};
@@ -384,16 +384,16 @@ struct dBsp2Vis_t
 // each area has a list of portals that lead into other areas
 // when portals are closed, other areas may not be visible or
 // hearable even if the vis info says that it should be
-struct dareaportal_t
+struct dAreaPortal_t
 {
-	int		portalnum;
-	int		otherarea;
+	int		portalNum;
+	int		otherArea;
 };
 
-struct darea_t
+struct dArea_t
 {
-	int		numareaportals;
-	int		firstareaportal;
+	int		numAreaPortals;
+	int		firstAreaPortal;
 };
 
 
