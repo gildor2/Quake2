@@ -55,7 +55,7 @@ static entField_t *originField;
 
 static entField_t *modelField;
 static int modelIdx;
-static cmodel_t *entModel;
+static CBspModel *entModel;
 
 
 static entField_t *FindField (const char *name)

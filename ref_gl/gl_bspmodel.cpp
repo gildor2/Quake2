@@ -17,15 +17,6 @@ bspModel_t map;
 	Common BSP loading code
 -----------------------------------------------------------------------------*/
 
-//?? can avoid copying
-inline void LoadVisinfo (const bspfile_t &f)
-{
-	map.visRowSize  = f.visRowSize;
-	map.visInfo     = f.visInfo;
-	map.numClusters = f.numClusters;
-}
-
-
 static void LoadFlares (lightFlare_t *data, int count)
 {
 	gl_flare_t *out;
@@ -33,7 +24,7 @@ static void LoadFlares (lightFlare_t *data, int count)
 	// get leafs/owner for already built flares (from SURF_AUTOFLARE)
 	for (out = map.flares; out; out = out->next)
 	{
-		out->leaf = PointInLeaf (out->origin);
+		out->leaf = CM_FindLeaf (out->origin);
 		if (out->surf) out->owner = out->surf->owner;
 	}
 
@@ -47,7 +38,7 @@ static void LoadFlares (lightFlare_t *data, int count)
 		out->color.rgba = data->color.rgba | RGBA(0,0,0,1);
 		SaturateColor4b (&out->color);
 		out->style  = data->style;
-		out->leaf   = PointInLeaf (data->origin);
+		out->leaf   = CM_FindLeaf (data->origin);
 		if (data->model)
 			out->owner = map.models + data->model;
 
@@ -236,34 +227,46 @@ static void BuildSurfLight (surfacePlanar_t *pl, const color_t *color, float are
 }
 
 
-static void SetNodeParent (node_t *node, node_t *parent)
-{
-	node->parent = parent;
-
-	if (node->isNode)
-	{
-		SetNodeParent (node->children[0], node);
-		SetNodeParent (node->children[1], node);
-	}
-}
-
-
 static void SetNodesAlpha ()
 {
-	node_t	*node, *p;
+	CBspLeaf *leaf;
+	CBspNode *node;
 	surfaceBase_t **psurf;
 	int		i, j;
 
 	// enumerate leafs
-	for (node = map.nodes + map.numNodes, i = 0; i < map.numLeafNodes - map.numNodes; node++, i++)
+	for (leaf = bspfile.leafs, i = 0; i < bspfile.numLeafs; leaf++, i++)
 		// check for alpha surfaces
-		for (psurf = node->leafFaces, j = 0; j < node->numLeafFaces; psurf++, j++)
+		for (psurf = leaf->ex->faces, j = 0; j < leaf->numFaces; psurf++, j++)
 			if ((*psurf)->shader->style & (SHADER_ALPHA|SHADER_TRANS33|SHADER_TRANS66))
 			{
 				// set "haveAlpha" for leaf and all parent nodes
-				for (p = node; p; p = p->parent) p->haveAlpha = true;
+				leaf->ex->haveAlpha = true;
+				for (node = leaf->parent; node; node = node->parent) node->ex->haveAlpha = true;
 				break;
 			}
+}
+
+
+static void LoadLeafsNodes (CBspNode *nodes, int numNodes, CBspLeaf *leafs, int numLeafs)
+{
+	int		i;
+
+	// Load nodes
+	CBspNodeExtra *nodeEx = new (map.dataChain) CBspNodeExtra [numNodes];
+	for (i = 0; i < numNodes; i++, nodes++, nodeEx++)
+		nodes->ex = nodeEx;
+
+	// Load leafs
+	CBspLeafExtra *leafEx = new (map.dataChain) CBspLeafExtra [numLeafs];
+	for (i = 0; i < numLeafs; i++, leafs++, leafEx++)
+	{
+		leafs->ex = leafEx;
+		leafEx->faces = map.leafFaces + leafs->firstFace;
+	}
+
+	// Setup node/leaf parents
+	SetNodesAlpha ();
 }
 
 
@@ -310,51 +313,7 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 	Loading Quake2 BSP file
 -----------------------------------------------------------------------------*/
 
-//!! change !!!!!
-static void LoadLeafsNodes (const CBspNode *nodes, int numNodes, const CBspLeaf *leafs, int numLeafs)
-{
-	node_t	*out;
-	int		i, j;
-
-	map.numNodes     = numNodes;
-	map.numLeafNodes = numLeafs + numNodes;
-	map.nodes = out = new (map.dataChain) node_t [numNodes + numLeafs];
-
-	// Load nodes
-	for (i = 0; i < numNodes; i++, nodes++, out++)
-	{
-		out->isNode = true;
-		out->plane  = nodes->plane;
-		// setup children[]
-		for (j = 0; j < 2; j++)
-		{
-			CBspBaseNode *p = nodes->children[j];
-			if (!p->isLeaf)
-				out->children[j] = map.nodes + p->num;
-			else
-				out->children[j] = map.nodes + map.numNodes + p->num;
-		}
-		out->bounds = nodes->bounds;
-	}
-
-	// Load leafs
-	for (i = 0; i < numLeafs; i++, leafs++, out++)
-	{
-		out->isNode       = false;
-		out->cluster      = leafs->cluster;
-		out->area         = leafs->area;
-		out->bounds       = leafs->bounds;
-		out->leafFaces    = map.leafFaces + leafs->firstFace;
-		out->numLeafFaces = leafs->numFaces;
-	}
-
-	// Setup node/leaf parents
-	SetNodeParent (map.nodes, NULL);
-	SetNodesAlpha ();
-}
-
-
-static void LoadInlineModels2 (cmodel_t *data, int count)
+static void LoadInlineModels2 (CBspModel *data, int count)
 {
 	inlineModel_t	*out;
 
@@ -368,7 +327,7 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 		out->size = -1;							// do not delete in FreeModels()
 		modelsArray[modelCount++] = out;
 
-		*(static_cast<cmodel_t*>(out)) = *data;
+		*(static_cast<CBspModel*>(out)) = *data;
 		// create surface list
 		out->numFaces = data->numfaces;
 		out->faces    = new (map.dataChain) surfaceBase_t* [out->numFaces];
@@ -690,7 +649,7 @@ static void InitSurfaceLightmap2 (const dBspFace_t *face, surfacePlanar_t *surf,
 
 
 static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *surfedges, const dEdge_t *edges,
-	CVec3 *verts, const dBsp2Texinfo_t *tex, const cmodel_t *models, int numModels)
+	CVec3 *verts, const dBsp2Texinfo_t *tex, const CBspModel *models, int numModels)
 {
 	int		j;
 
@@ -717,7 +676,7 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 		unsigned sflags = SurfFlagsToShaderFlags2 (stex->flags);
 
 		// find owner model
-		const cmodel_t *owner;
+		const CBspModel *owner;
 		for (j = 0, owner = models; j < numModels; j++, owner++)
 			if (i >= owner->firstface && i < owner->firstface + owner->numfaces)
 				break;
@@ -1246,7 +1205,6 @@ START_PROFILE(GenerateLightmaps2)
 END_PROFILE
 	// Load bsp (leafs and nodes)
 	LoadLeafsNodes (bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);
-	LoadVisinfo (bspfile);
 	LoadInlineModels2 (bspfile.models, bspfile.numModels);
 
 	switch (bspfile.fogMode)
@@ -1337,7 +1295,6 @@ START_PROFILE(GenerateLightmaps2)
 END_PROFILE
 	// Load bsp (leafs and nodes)
 	LoadLeafsNodes (bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);
-	LoadVisinfo (bspfile);
 	LoadInlineModels2 (bspfile.models, bspfile.numModels);
 	LoadSky1 ();
 
@@ -1403,23 +1360,6 @@ void LoadWorldMap (const char *name)
 	STAT(unclock(gl_ldStats.bspLoad));
 
 	unguard;
-}
-
-
-//?? can use cmodel.cpp function
-node_t *PointInLeaf (const CVec3 &p)
-{
-	if (!map.Name[0] || !map.numNodes)
-		Com_DropError ("R_PointInLeaf: bad model");
-
-	node_t *node = map.nodes;
-	while (true)
-	{
-		if (!node->isNode) return node;
-		node = node->children[IsNegative (node->plane->DistanceTo (p))];
-	}
-
-	return NULL;	// never
 }
 
 

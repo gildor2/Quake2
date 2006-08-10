@@ -152,7 +152,7 @@ struct client_state_t
 
 	// locally derived information from server state
 	CRenderModel *model_draw[MAX_MODELS];
-	cmodel_t	*model_clip[MAX_MODELS];
+	CBspModel	*model_clip[MAX_MODELS];
 
 	sfx_t		*sound_precache[MAX_SOUNDS];
 	CBasicImage	*image_precache[MAX_IMAGES];		//?? used for write only

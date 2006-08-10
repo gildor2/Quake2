@@ -12,11 +12,11 @@ static void SwapQ2BspFile (bspfile_t *f)
 {
 	int		i, j;
 
-	//!! ERROR HERE: should swap models before loading as cmodel_t!!
+	//!! ERROR HERE: should swap models before loading as CBspModel !!
 	// models
 	for (i = 0; i < f->numModels; i++)
 	{
-		cmodel_t &d = f->models[i];
+		CBspModel &d = f->models[i];
 		LTL(d.firstface);
 		LTL(d.numfaces);
 		LTL(d.headnode);
@@ -170,7 +170,7 @@ static void ProcessQ2BspFile (bspfile_t *f)
 	//?? this is to avoid precision errors ?
 	for (i = 0; i < f->numModels; i++)
 	{
-		cmodel_t &d = f->models[i];
+		CBspModel &d = f->models[i];
 
 		for (j = 0; j < 3; j++)
 		{
@@ -213,7 +213,7 @@ static void ProcessQ1BspFile (bspfile_t *f)
 	//?? this is to avoid precision errors ?
 	for (i = 0; i < f->numModels; i++)
 	{
-		cmodel_t &d = f->models[i];
+		CBspModel &d = f->models[i];
 
 		for (j = 0; j < 3; j++)
 		{
@@ -247,7 +247,7 @@ static void LoadQ2Submodels (bspfile_t *f, dBsp2Model_t *data)
 	if (f->numModels < 1)
 		Com_DropError ("Map with no models");
 
-	cmodel_t *out = f->models = new (f->extraChain) cmodel_t[f->numModels];
+	CBspModel *out = f->models = new (f->extraChain) CBspModel[f->numModels];
 	for (int i = 0; i < f->numModels; i++, data++, out++)
 	{
 		out->bounds     = data->bounds;
@@ -266,7 +266,7 @@ static void LoadQ1Submodels (bspfile_t *f, dBsp1Model_t *data)
 	if (f->numModels < 1)
 		Com_DropError ("Map with no models");
 
-	cmodel_t *out = f->models = new (f->extraChain) cmodel_t[f->numModels];
+	CBspModel *out = f->models = new (f->extraChain) CBspModel[f->numModels];
 	for (int i = 0; i < f->numModels; i++, data++, out++)
 	{
 		out->bounds     = data->bounds;

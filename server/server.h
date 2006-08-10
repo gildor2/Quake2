@@ -39,7 +39,7 @@ struct server_t
 	int			framenum;
 
 	char		name[MAX_QPATH];		// map name, or cinematic name
-	cmodel_t	*models[MAX_MODELS];
+	CBspModel	*models[MAX_MODELS];
 
 	char		configstrings[MAX_CONFIGSTRINGS][MAX_QPATH]; // some strings are longer, than MAX_QPATH ...
 	entityStateEx_t	baselines[MAX_EDICTS];

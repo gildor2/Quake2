@@ -10,18 +10,18 @@
 #include "FileFormats.h"
 
 
-// cmodel_t.flags
+// CBspModel.flags
 #define CMODEL_ALPHA		0x0001		// all model surfaces will have SURF_ALPHA flag (kingpin)
 #define CMODEL_MOVABLE		0x0002		// non-static inline model
 #define CMODEL_SHOW			0x0004		// will not be sent to game, should draw automatically (func_illusionary in q1/hl)
 #define CMODEL_WALL			0x0008		// will not be sent to game, static collision model
 #define CMODEL_NODRAW		0x0010		// do not draw model even when have visible surfaces
-#define CMODEL_CONTENTS		0x0020		// "cmodel_t.contents" contains real model contents
+#define CMODEL_CONTENTS		0x0020		// "CBspModel.contents" contains real model contents
 #define CMODEL_SCROLL		0x0040		// allow SURF_FLOWING on model surfaces (hl)
 
 #define CMODEL_LOCAL		(CMODEL_SHOW|CMODEL_WALL)	// flags of models, not sent to game (processed by engine)
 
-struct cmodel_t
+struct CBspModel
 {
 	CBox	bounds;
 	float	radius;
@@ -31,36 +31,43 @@ struct cmodel_t
 	unsigned contents;					// contents of all model brushes; used only with CMODEL_CONTENTS
 	color_t	color;						// set by Half-Life entities
 	CVec3	origin;
-	//!! + renderer info
 };
 
 
 struct cbrush_t;						//?? forward; change to CBrush?
+struct CBspNode;						// forward
 
 struct CBspBaseNode
 {
 	bool		isLeaf:1;
 	int			num:31;					// node or leaf number
-	CBspBaseNode *parent;				// parent node or NULL for root
+	CBspNode	*parent;				// parent node or NULL for root
 	CBox		bounds;					// for culling
 };
 
+// empty declarations (may be overrided with renderer)
+struct CBspNodeExtra;
+struct CBspLeafExtra;
+
+// NOTE: we placed field "ex" first in both leaf and node strucs, this allows us
+//   to use some common fields in CBspNodeExtra and CBspLeafExtra strucs without
+//   checking, whether struc is leaf or node
 struct CBspNode : public CBspBaseNode
 {
-	CBspBaseNode *children[2];
+	CBspNodeExtra *ex;					// first
+	CBspNode	*children[2];			// really, CBspBaseNode, but using CBspNode allows us to reduce text size
 	CPlane		*plane;
-	//!! + renderer info
 };
 
 struct CBspLeaf : public CBspBaseNode
 {
+	CBspLeafExtra *ex;					// first
 	unsigned	contents;
 	int			cluster;
 	int			area;
 	unsigned	firstFace, numFaces;
 	unsigned	numBrushes;
 	cbrush_t	**brushes;
-	//!! + renderer info
 };
 
 
@@ -151,7 +158,7 @@ struct bspfile_t
 	unsigned	*indexes3;
 
 	int			numModels;
-	cmodel_t	*models;
+	CBspModel	*models;
 
 	int			lightDataSize;
 	byte		*lighting;

@@ -794,7 +794,7 @@ void RenderFrame (refdef_t *fd)
 			"dlights: %d surfs: %d verts: %d\n"
 			"flares: %d test: %d cull: %d\n"
 			"lightgrid: %d/%d (%.1f%%)\n",		//?? add memory size too
-			S.visLeafs, S.frustLeafs, map.numLeafNodes - map.numNodes,
+			S.visLeafs, S.frustLeafs, bspfile.numLeafs,
 			S.parts, S.cullParts,
 			gl_numDlights, S.dlightSurfs, S.dlightVerts,
 			S.flares, S.testFlares, S.cullFlares,

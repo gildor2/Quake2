@@ -363,7 +363,7 @@ struct dBsp2Brush_t
 struct dBsp2Brushside_t
 {
 	unsigned short planenum;		// facing out of the leaf
-	short	texinfo;
+	short	texinfo;				// may be -1 (no texinfo)
 };
 
 // the visibility lump consists of a header with a count, then

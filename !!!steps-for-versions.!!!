@@ -3,5 +3,5 @@
     (?? may be not required: can simply allocate memory for leafs before LoadNodes())
    ! check renderer's bsp for q1 map: bsp for cmodel generated additional leafs for SOLID contents
    - should build tree structure (setup parents)
-2. use new tree system inside renderer
+*. use new tree system inside renderer
 3. implement Q3 map loading

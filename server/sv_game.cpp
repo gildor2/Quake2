@@ -124,7 +124,7 @@ static void G_setmodel (edict_t *ent, char *name)
 	// if it is an inline model, get the size information for it
 	if (name[0] == '*')
 	{
-		cmodel_t *mod = CM_InlineModel (name);
+		CBspModel *mod = CM_InlineModel (name);
 		ent->bounds = mod->bounds;
 		SV_LinkEdict (ent);
 	}

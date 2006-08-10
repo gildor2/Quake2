@@ -117,7 +117,7 @@ void CL_EntityTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const
 		trace_t	tr;
 		if (ent.solid == 31)
 		{
-			cmodel_t *cmodel = cl.model_clip[ent.modelindex];
+			CBspModel *cmodel = cl.model_clip[ent.modelindex];
 			if (!cmodel) continue;
 			CM_TransformedBoxTrace (tr, start, end, bounds, cmodel->headnode, contents, eOrigin, ent.axis);
 		}
@@ -185,7 +185,7 @@ int CL_PMpointcontents (const CVec3 &point)
 		clEntityState_t *ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
 		if (ent->solid != 31) continue;	// use pointcontents() only for inline models
 
-		cmodel_t *cmodel = cl.model_clip[ent->modelindex];
+		CBspModel *cmodel = cl.model_clip[ent->modelindex];
 		if (!cmodel) continue;
 
 		// compute lerped entity position

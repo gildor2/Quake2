@@ -229,7 +229,7 @@ void ShowLights ()
 
 void CPointLight::Init ()
 {
-	cluster = PointInLeaf (origin)->cluster;
+	cluster = CM_FindLeaf (origin)->cluster;
 }
 
 void CLightLinear::Init ()
@@ -471,7 +471,7 @@ void CSunLight::Init ()
 {
 	// light cluster
 	if ((origin[0] || origin[1] || origin[2]) && bspfile.sunCount != 1)
-		cluster = PointInLeaf (origin)->cluster;
+		cluster = CM_FindLeaf (origin)->cluster;
 	else
 		cluster = -1;						// do not use vis
 	// color
@@ -558,14 +558,14 @@ static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 		axis   = &ent->coord.axis;
 	}
 
-	node_t *leaf = PointInLeaf (*origin);
-	const byte *row = leaf->cluster < 0 || !map.visInfo ? NULL : map.visInfo + leaf->cluster * map.visRowSize;
+	const CBspLeaf *leaf = CM_FindLeaf (*origin);
+	const byte *row = leaf->cluster < 0 || !bspfile.visInfo ? NULL : bspfile.visInfo + leaf->cluster * bspfile.visRowSize;
 
 	float scale = vp.lightStyles[0].value * AMBIENT_SCALE / 128.0f;
 	for (i = 0; i < 6; i++)
 		VectorScale (map.ambientLight, scale, entityColorAxis[i]);
 
-	if (!row && map.visInfo)	//?? check correctness, when map w/o visinfo: how to detect out-of-world?
+	if (!row && bspfile.visInfo)	//?? check correctness, when map w/o visinfo: how to detect out-of-world?
 	{
 		if (pcell) *pcell = &outCell;
 		return false;		// point is outside the world
@@ -651,8 +651,8 @@ static void GatherWorldLight (refEntity_t *ent)
 		return;
 	}
 
-	i = PointInLeaf (ent->center)->cluster;
-	const byte *row = i < 0 || !map.visInfo ? NULL : map.visInfo + i * map.visRowSize;
+	i = CM_FindLeaf (ent->center)->cluster;
+	const byte *row = i < 0 || !bspfile.visInfo ? NULL : bspfile.visInfo + i * bspfile.visRowSize;
 
 	// prepare for grid enumeration
 	CVec3	pos, frac;
@@ -926,8 +926,8 @@ void InitLightGrid ()
 {
 	for (int i = 0; i < 3; i++)
 	{
-		map.gridMins[i] = appFloor (map.nodes[0].bounds.mins[i] / LIGHTGRID_STEP);
-		map.mapGrid[i]  = appCeil  (map.nodes[0].bounds.maxs[i] / LIGHTGRID_STEP) - map.gridMins[i];
+		map.gridMins[i] = appFloor (bspfile.nodes[0].bounds.mins[i] / LIGHTGRID_STEP);
+		map.mapGrid[i]  = appCeil  (bspfile.nodes[0].bounds.maxs[i] / LIGHTGRID_STEP) - map.gridMins[i];
 	}
 	map.lightGridChain = new CMemoryChain;
 	map.lightGrid      = new (map.lightGridChain) lightCell_t* [map.mapGrid[0] * map.mapGrid[1] * map.mapGrid[2]];
@@ -938,13 +938,13 @@ void InitLightGrid ()
 static void GetSurfLightCluster ()
 {
 	int i, j;
-	node_t	*n;
+	CBspLeaf *l;
 	// enumerate all leafs
-	for (i = 0, n = map.nodes + map.numNodes; i < map.numLeafNodes - map.numNodes; i++, n++)
+	for (i = 0, l = bspfile.leafs; i < bspfile.numLeafs; i++, l++)
 	{
-		int cl = n->cluster;
+		int cl = l->cluster;
 		surfaceBase_t **s;
-		for (j = 0, s = n->leafFaces; j < n->numLeafFaces; j++, s++)
+		for (j = 0, s = l->ex->faces; j < l->numFaces; j++, s++)
 			if ((*s)->type == SURFACE_PLANAR && !(*s)->owner)		//?? other types
 			{
 				surfacePlanar_t *pl = static_cast<surfacePlanar_t*>(*s);

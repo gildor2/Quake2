@@ -58,7 +58,7 @@ void CL_ParseDelta (clEntityState_t *from, clEntityState_t *to, int number, unsi
 		}
 		else
 		{
-			cmodel_t *m = cl.model_clip[to->modelindex];
+			CBspModel *m = cl.model_clip[to->modelindex];
 			if (m)
 			{
 				CVec3 v;
@@ -470,7 +470,7 @@ void CL_AddEntityBox (clEntityState_t *st, unsigned rgba)
 	CBox *box;
 	if (st->solid == 31)
 	{
-		cmodel_t *cmodel = cl.model_clip[st->modelindex];
+		CBspModel *cmodel = cl.model_clip[st->modelindex];
 		box = &cmodel->bounds;
 	}
 	else

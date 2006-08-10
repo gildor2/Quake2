@@ -202,7 +202,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	int modelIndex = 1;
 	for (i = 1; i < CM_NumInlineModels (); i++)
 	{
-		cmodel_t *model = CM_InlineModel (i);
+		CBspModel *model = CM_InlineModel (i);
 		if (!(model->flags & CMODEL_LOCAL))
 		{
 			appSprintf (sv.configstrings[CS_MODELS+1+modelIndex], sizeof(sv.configstrings[0]), "*%d", i);

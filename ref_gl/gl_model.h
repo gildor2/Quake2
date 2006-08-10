@@ -29,6 +29,28 @@
 #include "gl_frontend.h"
 #include "gl_light.h"
 
+// declaration of CBspNodeExtra and CBspLeafExtra (should be declared outside of renderer namespace)
+struct CBspNodeExtra
+{
+	bool	haveAlpha;			// true if leaf have surface(s) with translucent shader
+	int		visFrame, frame;	// PVS-cull frame, frustum-cull frame
+								//?? rename "frame" to "drawFrame" ?
+	// BSP draw sequence (dynamic)
+	int		drawOrder;			// 0 - first, 1 - next etc.
+};
+
+struct CBspLeafExtra : public CBspNodeExtra
+{
+	byte	frustumMask;
+	const CBspLeaf *drawNext;
+	// objects, inserted into leaf
+	OpenGLDrv::refEntity_t *drawEntity;
+	particle_t *drawParticle;
+	beam_t	*drawBeam;
+	// surfaces
+	OpenGLDrv::surfaceBase_t **faces;
+};
+
 
 namespace OpenGLDrv {
 
@@ -63,7 +85,7 @@ struct vertexPoly_t
 	color_t	c;
 };
 
-struct vertexMd3_t	//?? == dMd3XyzNormal_t (rename one of types? derive struc with no new fields?)
+struct vertexMd3_t				//?? == dMd3XyzNormal_t (rename one of types? derive struc with no new fields?)
 {
 	short	xyz[3];
 	short	normal;
@@ -72,7 +94,7 @@ struct vertexMd3_t	//?? == dMd3XyzNormal_t (rename one of types? derive struc wi
 enum surfaceType_t
 {
 	SURFACE_PLANAR,				// surfacePlanar_t
-	SURFACE_TRISURF,			// surfaceTrisurf_t (unused??)
+	SURFACE_TRISURF,			// surfaceTrisurf_t
 	SURFACE_MD3,				// surfaceMd3_t
 	SURFACE_POLY,				// surfacePoly_t
 	SURFACE_PARTICLE,			// particle_t
@@ -105,14 +127,13 @@ public:
 	int		numVerts, numIndexes;
 	vertex_t *verts;
 	int		*indexes;
-	// Q2/HL dynamic lightmap (NULL for Q3 ??)
+	// Q1/Q2 dynamic lightmap (NULL for Q3)
 	dynamicLightmap_t *lightmap;
 	CLight	*light;
 	surfDlight_t *dlights;
 	virtual void Tesselate (refEntity_t &ent);
 };
 
-//!! warning: if shader.fast -- use vertex_t instead of vertexNormal_t (normals are not required for fast shader)
 // Triangular surface: non-planar, every vertex have its own normal vector
 class surfaceTrisurf_t : public surfaceBase_t
 {
@@ -181,47 +202,13 @@ public:
 	BSP model (world)
 -----------------------------------------------------------------------------*/
 
-// fields, marked with "*leaf" for leafs only, "*node" for nodes only
-struct node_t
-{
-	//---- common fields (taken directly from map) ----
-	bool	isNode:1;			// true if this is a leaf
-	// tree structure
-	CPlane	*plane;				// *node
-	node_t	*parent;
-	node_t	*children[2];		// *node
-	CBox	bounds;				// used for culling
-	//?? also leaf may have:
-	//?? for collision: also have "contents" + "brushes"
-	//??   + q3: "patches" (taken from "surfaces")
-	//?? for rendering: surfaces
-
-	//------------ renderer fields --------------------
-	bool	haveAlpha:1;		// true if leaf have surface(s) with translucent shader
-	byte	frustumMask;		// *leaf
-	int		visFrame, frame;	// PVS-cull frame, frustum-cull frame
-								//?? rename "frame" to "drawFrame" ?
-	// BSP draw sequence (dynamic)
-	int		drawOrder;			// 0 - first, 1 - next etc.
-	node_t	*drawNext;
-	refEntity_t *drawEntity;	// *leaf
-	particle_t *drawParticle;	// *leaf
-	beam_t	*drawBeam;			// *leaf
-	// visibility params
-	int		cluster, area;		// *leaf
-	// surfaces
-	surfaceBase_t **leafFaces;	// *leaf
-	int		numLeafFaces;		// *leaf
-};
-
-
 struct gl_flare_t
 {
 	// position
 	CVec3	origin;
 	surfaceBase_t *surf;
 	inlineModel_t *owner;
-	node_t	*leaf;
+	const CBspLeaf *leaf;
 	// size
 	float	size;
 	float	radius;
@@ -238,10 +225,6 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 	TString<64> Name;			//?? used for verifying "is map loaded" only
 	CMemoryChain *dataChain;
 	//?? shaders, fog, lightGrid (Q3)
-	// bsp
-	node_t	*nodes;				// nodes[numNodes], leafs[numLeafsNodes-numNodes]
-	int		numNodes;
-	int		numLeafNodes;
 	// inline models
 	inlineModel_t *models;
 	int		numModels;
@@ -251,10 +234,6 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 	// leaf surfaces
 	surfaceBase_t **leafFaces;
 	int		numLeafFaces;
-	// visibility
-	int		numClusters;
-	int		visRowSize;
-	const byte *visInfo;
 	// lights
 	bool	monoLightmap;		// "true" for q1 maps
 	CMemoryChain *lightGridChain;
@@ -303,21 +282,21 @@ public:
 	virtual bool InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual void DrawLabel (refEntity_t *e);
-	virtual node_t *GetLeaf (refEntity_t *e);	// NULL when culled
+	virtual const CBspLeaf *GetLeaf (refEntity_t *e);	// NULL when culled
 };
 
 
-class inlineModel_t : public model_t, public cmodel_t
+class inlineModel_t : public model_t, public CBspModel
 {
 public:
-	//?? can add link to cmodel_t instead of copying most fields
+	//?? can add link to CBspModel instead of copying most fields
 	surfaceBase_t **faces;
 	int		numFaces;
 	inline inlineModel_t () { type = MODEL_INLINE; };
 	virtual bool InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual void DrawLabel (refEntity_t *e);
-	virtual node_t *GetLeaf (refEntity_t *e);
+	virtual const CBspLeaf *GetLeaf (refEntity_t *e);
 };
 
 
@@ -345,7 +324,7 @@ public:
 	virtual bool InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual void DrawLabel (refEntity_t *e);
-	virtual node_t *GetLeaf (refEntity_t *e);
+	virtual const CBspLeaf *GetLeaf (refEntity_t *e);
 	// funcs for scene manager
 	virtual bool LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
 };
@@ -367,7 +346,7 @@ public:
 	inline sprModel_t () { type = MODEL_SPR; };
 	virtual bool InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
-	virtual node_t *GetLeaf (refEntity_t *e);
+	virtual const CBspLeaf *GetLeaf (refEntity_t *e);
 };
 
 
@@ -386,7 +365,6 @@ model_t	*FindModel (const char *name);
 void	FreeModels ();
 
 // bsp model
-node_t *PointInLeaf (const CVec3 &p);
 void	LoadWorldMap (const char *name);	//?? rename
 
 // triangle models

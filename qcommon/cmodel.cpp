@@ -232,7 +232,7 @@ static void SetChild (CBspNode *node, int index, int nodeIndex)
 	if (nodeIndex >= 0)
 		node->children[index] = bspfile.nodes + nodeIndex;
 	else
-		node->children[index] = bspfile.leafs + (-nodeIndex-1);
+		node->children[index] = (CBspNode*)(bspfile.leafs + (-nodeIndex-1));
 	// setup parent for child node/leaf
 	assert(!node->children[index]->parent);
 	node->children[index]->parent = node;
@@ -838,11 +838,11 @@ static void BuildBrushes1 (int numLeafsOrig)
 			BRUSH_STAT(unclock(brushSplitTime));
 			if (!backBrush) Com_DropError ("NULL backBrush");
 			// remember back side ...
-			stack[sptr]  = (CBspNode*)node->children[1];
+			stack[sptr]  = node->children[1];
 			stack2[sptr] = backBrush;
 			sptr++;
 			// and continue with front side
-			node = (CBspNode*)node->children[0];
+			node = node->children[0];
 		}
 	}
 
@@ -921,8 +921,8 @@ static void SetNodeContents (CBspNode *node, unsigned contents)
 		}
 		else
 		{
-			SetNodeContents ((CBspNode*)node->children[0], contents);
-			node = (CBspNode*)node->children[1];
+			SetNodeContents (node->children[0], contents);
+			node = node->children[1];
 		}
 	}
 }
@@ -930,7 +930,7 @@ static void SetNodeContents (CBspNode *node, unsigned contents)
 
 static void ProcessModels1 ()
 {
-	cmodel_t *m = bspfile.models;
+	CBspModel *m = bspfile.models;
 	for (int i = 0; i < bspfile.numModels; i++, m++)
 	{
 		if (!(m->flags & CMODEL_CONTENTS)) continue;
@@ -1102,7 +1102,7 @@ static void LoadQ3Map (bspfile_t *bsp)
 -----------------------------------------------------------------------------*/
 
 // Loads in the map and all submodels
-cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
+CBspModel *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 {
 	guard(CM_LoadMap);
 
@@ -1214,13 +1214,13 @@ CBrush *CM_BuildBrush (int brushNum, CMemoryChain *mem)
 
 //=============================================================================
 
-cmodel_t *CM_InlineModel (const char *name)
+CBspModel *CM_InlineModel (const char *name)
 {
 	if (!name || name[0] != '*') Com_DropError ("CM_InlineModel: bad name");
 	return CM_InlineModel (atoi (name+1));
 }
 
-cmodel_t *CM_InlineModel (int index)
+CBspModel *CM_InlineModel (int index)
 {
 	if (index < 1 || index >= bspfile.numModels) Com_DropError ("CM_InlineModel: bad number");
 	return &bspfile.models[index];
@@ -1283,11 +1283,11 @@ static void InitBoxHull ()
 		// nodes
 		CBspNode *c = &bspfile.nodes[boxHeadnode+i];
 		c->plane = boxPlanes + i*2;
-		c->children[side] = &emptyLeaf;					// one child -> empty leaf
+		c->children[side] = (CBspNode*)&emptyLeaf;		// one child -> empty leaf
 		if (i != 5)
 			c->children[side^1] = c + 1;				// another child -> next node
 		else
-			c->children[side^1] = &boxLeaf;				// ... or -> boxLeaf
+			c->children[side^1] = (CBspNode*)&boxLeaf;	// ... or -> boxLeaf
 
 		// planes
 		CPlane *p = &boxPlanes[i*2];
@@ -1346,10 +1346,11 @@ const CBspLeaf *CM_FindLeaf (const CVec3 &p, int headnode)
 	static CBspLeaf dummyLeaf;
 	if (!isMapLoaded) return &dummyLeaf;		// map is not yet loaded; should not use NULL as result?
 
-	for (const CBspNode *n = GetHeadnode (headnode); !n->isLeaf; )
+	const CBspNode *n;
+	for (n = GetHeadnode (headnode); !n->isLeaf; )
 	{
 		float d = n->plane->DistanceTo (p);
-		n = (CBspNode*)n->children[IsNegative(d)];
+		n = n->children[IsNegative(d)];
 	}
 
 	c_pointcontents++;							// stats
@@ -1454,17 +1455,17 @@ int CM_BoxLeafs (const CBox &bounds, CBspLeaf **list, int listsize, int *topnode
 		switch (BOX_ON_PLANE_SIDE(bounds, *n->plane))
 		{
 		case 1:
-			n = (CBspNode*)n->children[0];
+			n = n->children[0];
 			break;
 		case 2:
-			n = (CBspNode*)n->children[1];
+			n = n->children[1];
 			break;
 		default:
 			// go down both
 			if (_topnode == -1)
 				_topnode = n->num;				// remember top node, which subdivides box
-			stack[sptr++] = (CBspNode*)n->children[1];
-			n = (CBspNode*)n->children[0];
+			stack[sptr++] = n->children[1];
+			n = n->children[0];
 		}
 	}
 
@@ -1850,12 +1851,12 @@ static void RecursiveHullCheck (const CBspNode *node, float p1f, float p2f, cons
 		// see which sides we need to consider
 		if (d1 >= offset && d2 >= offset)
 		{
-			node = (CBspNode*)node->children[0];
+			node = node->children[0];
 			continue;
 		}
 		if (d1 < -offset && d2 < -offset)
 		{
-			node = (CBspNode*)node->children[1];
+			node = node->children[1];
 			continue;
 		}
 
@@ -1904,18 +1905,18 @@ static void RecursiveHullCheck (const CBspNode *node, float p1f, float p2f, cons
 		// visit near-side node (recurse)
 		midf = Lerp (p1f, p2f, frac1);
 		Lerp (p1, p2, frac1, mid);
-		RecursiveHullCheck ((CBspNode*)node->children[side], p1f, midf, p1, mid);
+		RecursiveHullCheck (node->children[side], p1f, midf, p1, mid);
 
 		// visit far-side node (loop)
 		midf = Lerp (p1f, p2f, frac2);
 #if 0
 		Lerp (p1, p2, frac2, mid);
-		RecursiveHullCheck ((CBspNode*)node->children[side^1], midf, p2f, mid, p2);
+		RecursiveHullCheck (node->children[side^1], midf, p2f, mid, p2);
 #else
 		Lerp (p1, p2, frac2, p1);
 		// do "RecursiveHullCheck (node.children[side^1], midf, p2f, mid, p2);"
 		p1f = midf;
-		node = (CBspNode*)node->children[side^1];
+		node = node->children[side^1];
 #endif
 	}
 }
@@ -2143,7 +2144,7 @@ void CM_ClipTraceToModels (trace_t &trace, const CVec3 &start, const CVec3 &end,
 		}
 	}
 
-	cmodel_t *model;
+	CBspModel *model;
 	for (i = 0, model = bspfile.models; i < bspfile.numModels; i++, model++)
 	{
 		if (!(model->flags & CMODEL_WALL)) continue;
@@ -2165,7 +2166,7 @@ int CM_PointModelContents (const CVec3 &p)
 	int contents = 0;
 
 	int i;
-	cmodel_t *model;
+	CBspModel *model;
 	for (i = 0, model = bspfile.models; i < bspfile.numModels; i++, model++)
 	{
 		if (!(model->flags & CMODEL_WALL)) continue;
@@ -2262,7 +2263,7 @@ static void RecursiveBrushTest (const CVec3 &point1, const CVec3 &point2, const 
 		s1 = IsNegative (d1); s2 = IsNegative (d2);
 		if (s1 == s2)
 		{
-			node = (CBspNode*)node->children[s1];	// d1 >= 0  => [0], < 0  => [1]
+			node = node->children[s1];		// d1 >= 0  => [0], < 0  => [1]
 			continue;
 		}
 
@@ -2298,13 +2299,13 @@ static void RecursiveBrushTest (const CVec3 &point1, const CVec3 &point2, const 
 		// move up to the node
 		Lerp (p1, p2, frac1, mid);
 
-		RecursiveBrushTest (p1, mid, (CBspNode*)node->children[side]);
+		RecursiveBrushTest (p1, mid, node->children[side]);
 
 		// go past the node
 		Lerp (p1, p2, frac2, p1);
 
 		// do "RecursiveBrushTest (start, end, node.children[side^1]);"
-		node = (CBspNode*)node->children[side^1];
+		node = node->children[side^1];
 	}
 }
 
@@ -2522,8 +2523,8 @@ bool CM_HeadnodeVisible (int nodenum, const byte *visbits)
 			return true;					// found any visible cluster under headnode
 		}
 
-		stack[sptr++] = (CBspNode*)node->children[0];
-		node = (CBspNode*)node->children[1];
+		stack[sptr++] = node->children[0];
+		node = node->children[1];
 	}
 
 	unguard;

@@ -40,6 +40,7 @@ struct bspfile_t;
 // cmodel interface
 struct CBspNode;
 struct CBspLeaf;
+struct CBspModel;
 
 // game interface/communication strucs
 struct entity_state_t;
@@ -746,8 +747,6 @@ void	Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, const char *form
 	cmodel.cpp
 -----------------------------------------------------------------------------*/
 
-struct cmodel_t;		// full declaration in cmodel.h
-
 #if TRACE_DEBUG
 extern bool cm_showTrace;
 #endif
@@ -755,9 +754,9 @@ extern bool cm_showTrace;
 extern char map_name[];
 extern bool map_clientLoaded;
 
-cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum);
-cmodel_t *CM_InlineModel (const char *name);	// *1, *2, etc
-cmodel_t *CM_InlineModel (int index);
+CBspModel *CM_LoadMap (const char *name, bool clientload, unsigned *checksum);
+CBspModel *CM_InlineModel (const char *name);	// *1, *2, etc
+CBspModel *CM_InlineModel (int index);
 
 int		CM_NumClusters ();
 int		CM_NumInlineModels ();

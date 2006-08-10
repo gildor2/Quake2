@@ -457,18 +457,19 @@ static bool CutCylinder (CVec3 &v1, CVec3 &v2, float radius)
 */
 
 // Find nearest to sphere center visible leaf, occupied by entity bounding sphere
-static node_t *SphereLeaf (const CVec3 &origin, float radius)
+static CBspLeaf *SphereLeaf (const CVec3 &origin, float radius)
 {
 	int		sptr = 0;
-	node_t	*stack[MAX_TREE_DEPTH];
+	CBspNode *stack[MAX_TREE_DEPTH];
 
-	node_t *node = map.nodes;
+	CBspNode *node = bspfile.nodes;
 	while (true)
 	{
-		if (!node->isNode)
-		{	// leaf found
-			if (node->frame == drawFrame)
-				return node;			// visible => mision complete
+		if (node->isLeaf)
+		{
+			CBspLeaf *leaf = (CBspLeaf*)node;
+			if (leaf->ex->frame == drawFrame)
+				return leaf;			// visible => mision complete
 
 			if (!sptr)
 				return NULL;	// whole tree visited, but not leaf found (may happens when !gl_frustumCull & ent outside frustum)
@@ -477,7 +478,7 @@ static node_t *SphereLeaf (const CVec3 &origin, float radius)
 			continue;
 		}
 
-		if (node->visFrame != visFrame)
+		if (node->ex->visFrame != visFrame)
 		{
 			if (!sptr) return NULL;
 			node = stack[--sptr];
@@ -510,40 +511,41 @@ static node_t *SphereLeaf (const CVec3 &origin, float radius)
 
 // Find nearest (by draw order) visible leaf, occupied by entity sphere,
 // or nearest to a sphere center leaf with alpha surfaces (if one)
-static node_t *AlphaSphereLeaf (const CVec3 &origin, float radius)
+static CBspLeaf *AlphaSphereLeaf (const CVec3 &origin, float radius)
 {
 	int sptr = 0;
-	node_t	*stack[MAX_TREE_DEPTH];
+	CBspNode *stack[MAX_TREE_DEPTH];
 
-	node_t *node = map.nodes;
+	CBspNode *node = bspfile.nodes;
 	int drawOrder = 0;
-	node_t *drawNode = NULL;
+	CBspLeaf *drawLeaf = NULL;
 	while (true)
 	{
-		if (!node->isNode)
-		{	// leaf found
-			if (node->frame == drawFrame)
+		if (node->isLeaf)
+		{
+			CBspLeaf *leaf = (CBspLeaf*)node;
+			if (leaf->ex->frame == drawFrame)
 			{
-				if (node->haveAlpha)
-					return node;		// visible & alpha => mision complete
-				else if (node->drawOrder > drawOrder)
+				if (leaf->ex->haveAlpha)
+					return leaf;		// visible & alpha => mision complete
+				else if (leaf->ex->drawOrder > drawOrder)
 				{
-					drawOrder = node->drawOrder;
-					drawNode = node;
+					drawOrder = leaf->ex->drawOrder;
+					drawLeaf  = leaf;
 				}
 			}
 
 			if (!sptr)
-				return drawNode;		// whole tree visited, but no leafs with alpha found
+				return drawLeaf;		// whole tree visited, but no leafs with alpha found
 
 			node = stack[--sptr];
 			continue;
 		}
 
 		// process node
-		if (node->visFrame != visFrame || (!node->haveAlpha && node->drawOrder < drawOrder))
+		if (node->ex->visFrame != visFrame || (!node->ex->haveAlpha && node->ex->drawOrder < drawOrder))
 		{
-			if (!sptr) return drawNode;
+			if (!sptr) return drawLeaf;
 			node = stack[--sptr];
 			continue;
 		}
@@ -573,17 +575,17 @@ static node_t *AlphaSphereLeaf (const CVec3 &origin, float radius)
 
 
 // Find nearest (by draw order) visible leaf, occupied by beam
-static node_t *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
+static CBspLeaf *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
 {
 	int sptr = 0;
 	struct {
-		node_t	*node;
+		CBspNode *node;
 		CVec3	v1, v2;
 	} stack[MAX_TREE_DEPTH], *st;
 
-	node_t *node = map.nodes;
+	CBspNode *node = bspfile.nodes;
 	int drawOrder = 0;
-	node_t *drawNode = NULL;
+	CBspLeaf *drawLeaf = NULL;
 	CVec3 v1a = v1;
 	CVec3 v2a = v2;
 
@@ -606,24 +608,24 @@ static node_t *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
 
 	while (node)
 	{
-		if (node->visFrame != visFrame)
+		if (node->ex->visFrame != visFrame)
 		{
 			POP_NODE();
 			continue;
 		}
-		if (!node->isNode)
+		if (node->isLeaf)
 		{
-			// leaf found
-			if (node->frame != drawFrame)
+			CBspLeaf *leaf = (CBspLeaf*)node;
+			if (leaf->ex->frame != drawFrame)
 			{
 				POP_NODE();
 				continue;
 			}
 
-			if (node->drawOrder > drawOrder)
+			if (leaf->ex->drawOrder > drawOrder)
 			{
-				drawOrder = node->drawOrder;
-				drawNode = node;
+				drawOrder = leaf->ex->drawOrder;
+				drawLeaf  = leaf;
 			}
 			POP_NODE();
 			continue;
@@ -655,7 +657,7 @@ static node_t *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
 #undef PUSH_NODE
 #undef POP_NODE
 
-	return drawNode;
+	return drawLeaf;
 }
 
 
@@ -824,9 +826,9 @@ void model_t::AddSurfaces (refEntity_t *e)
 }
 
 
-node_t *model_t::GetLeaf (refEntity_t *e)
+const CBspLeaf *model_t::GetLeaf (refEntity_t *e)
 {
-	return PointInLeaf (e->coord.origin);
+	return CM_FindLeaf (e->coord.origin);
 }
 
 
@@ -887,7 +889,7 @@ void inlineModel_t::AddSurfaces (refEntity_t *e)
 }
 
 
-node_t *inlineModel_t::GetLeaf (refEntity_t *e)
+const CBspLeaf *inlineModel_t::GetLeaf (refEntity_t *e)
 {
 	e->frustumMask = 0xFF;		// for updating
 	int ret = SphereCull (e->center, e->radius, &e->frustumMask);
@@ -1013,7 +1015,7 @@ void md3Model_t::AddSurfaces (refEntity_t *e)
 }
 
 
-node_t *md3Model_t::GetLeaf (refEntity_t *e)
+const CBspLeaf *md3Model_t::GetLeaf (refEntity_t *e)
 {
 	if (SphereCull (e->center, e->radius, NULL) == FRUSTUM_OUTSIDE)
 		return NULL;
@@ -1073,7 +1075,7 @@ void sprModel_t::AddSurfaces (refEntity_t *e)
 }
 
 
-node_t *sprModel_t::GetLeaf (refEntity_t *e)
+const CBspLeaf *sprModel_t::GetLeaf (refEntity_t *e)
 {
 	return AlphaSphereLeaf (e->coord.origin, e->radius);
 }
@@ -1331,21 +1333,22 @@ static void AddStarBeam (const beam_t *b)
 /*------------------ Drawing world -------------------*/
 
 
-static node_t *WalkBspTree ()
+static const CBspLeaf *WalkBspTree ()
 {
+	guard(WalkBspTree);
+
 	int sptr = 0;
 	struct {
-		node_t	*node;
+		CBspNode *node;
 		int		frustumMask;
 		unsigned dlightMask;
 	} stack[MAX_TREE_DEPTH], *st;
 
-	node_t *node = map.nodes;
+	CBspNode *node = bspfile.nodes;
 	int frustumMask = MAX_FRUSTUM_MASK;	// check all frustum planes
 	unsigned dlightMask = vp.numDlights >= 32 ? 0xFFFFFFFF : (1 << vp.numDlights) - 1;
-	node_t *firstLeaf = NULL;
+	const CBspLeaf *firstLeaf = NULL, *lastLeaf = NULL;
 	int drawOrder = 0;
-	node_t *lastLeaf = node;			// just in case
 
 #define PUSH_NODE(n,dl)		\
 	st = &stack[sptr++];	\
@@ -1367,7 +1370,7 @@ static node_t *WalkBspTree ()
 
 	while (node)			// when whole tree visited - node = NULL
 	{
-		if (node->visFrame != visFrame)
+		if (node->ex->visFrame != visFrame)
 		{	// discard node/leaf using visinfo
 			POP_NODE();
 			continue;
@@ -1456,8 +1459,8 @@ static node_t *WalkBspTree ()
 		}
 #endif
 
-		node->drawOrder = drawOrder++;
-		if (node->isNode)
+		node->ex->drawOrder = drawOrder++;
+		if (!node->isLeaf)
 		{
 			unsigned dlight0, dlight1;
 
@@ -1503,27 +1506,28 @@ static node_t *WalkBspTree ()
 		// What we can do:
 		// a) split all leafs #0 -> new leafs (as cmodel.cpp do)
 		// b) remove links leaf #0 from BSP (require tree modification)
-		if (node->frame != drawFrame)
+		const CBspLeaf *leaf = (CBspLeaf*)node;
+		if (leaf->ex->frame != drawFrame)
 		{
 			if (!firstLeaf)
-				firstLeaf = node;
+				firstLeaf = leaf;
 			else
-				lastLeaf->drawNext = node;
-			lastLeaf = node;
+				lastLeaf->ex->drawNext = leaf;
+			lastLeaf = leaf;
 			STAT(gl_stats.frustLeafs++);
 
-			node->frame        = drawFrame;
-			node->frustumMask  = frustumMask;
-			node->drawEntity   = NULL;
-			node->drawParticle = NULL;
-			node->drawBeam     = NULL;
+			leaf->ex->frame        = drawFrame;
+			leaf->ex->frustumMask  = frustumMask;
+			leaf->ex->drawEntity   = NULL;
+			leaf->ex->drawParticle = NULL;
+			leaf->ex->drawBeam     = NULL;
 			// mark dlights on leaf surfaces
 			if (dlightMask)
 			{
 				int		i;
 				surfaceBase_t **psurf, *surf;
 
-				for (i = 0, psurf = node->leafFaces; i < node->numLeafFaces; i++, psurf++)
+				for (i = 0, psurf = leaf->ex->faces; i < leaf->numFaces; i++, psurf++)
 				{
 					surf = *psurf;
 					if (surf->dlightFrame == drawFrame)
@@ -1541,11 +1545,14 @@ static node_t *WalkBspTree ()
 	}
 
 	// mark end of draw sequence
-	lastLeaf->drawNext = NULL;
+	if (lastLeaf)
+		lastLeaf->ex->drawNext = NULL;
 
 #undef PUSH_NODE
 #undef POP_NODE
 	return firstLeaf;
+
+	unguard;
 }
 
 
@@ -1578,7 +1585,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 		if (!r_drawentities->integer) continue;		// do not draw entities with model in this mode
 
-		node_t *leaf = e->model->GetLeaf (e);
+		const CBspLeaf *leaf = e->model->GetLeaf (e);
 		if (!leaf)
 		{
 			// entity do not occupy any visible leafs
@@ -1611,16 +1618,16 @@ static void DrawEntities (int firstEntity, int numEntities)
 		e->visible = true;
 
 		// add entity to leaf's entity list
-		if (leaf->drawEntity)
+		if (leaf->ex->drawEntity)
 		{
 			refEntity_t *prev, *e1;
 
-			for (e1 = leaf->drawEntity, prev = NULL; e1; prev = e1, e1 = e1->drawNext)
+			for (e1 = leaf->ex->drawEntity, prev = NULL; e1; prev = e1, e1 = e1->drawNext)
 				if (dist2 > e1->dist2)
 				{
 					e->drawNext = e1;
 					if (prev)	prev->drawNext = e;
-					else     	leaf->drawEntity = e;	// insert first
+					else     	leaf->ex->drawEntity = e;	// insert first
 					break;
 				}
 			if (!e1)	// insert last
@@ -1631,7 +1638,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 		}
 		else
 		{	// first entity for this leaf
-			leaf->drawEntity = e;
+			leaf->ex->drawEntity = e;
 			e->drawNext = NULL;
 		}
 
@@ -1644,15 +1651,15 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 static void DrawParticles ()
 {
-	node_t	*leaf;
+	const CBspLeaf *leaf;
 
 	for (particle_t *p = vp.particles; p; p = p->next)
 	{
-		leaf = &map.nodes[p->leaf->num + map.numNodes];	//!!! cmodel_leaf->num->gl_leaf
-		if (leaf->frame == drawFrame)
+		leaf = p->leaf;
+		if (leaf->ex->frame == drawFrame)
 		{
-			p->drawNext = leaf->drawParticle;
-			leaf->drawParticle = p;
+			p->drawNext = leaf->ex->drawParticle;
+			leaf->ex->drawParticle = p;
 		}
 		else
 			STAT(gl_stats.cullParts++);
@@ -1672,7 +1679,6 @@ static void DrawParticles ()
 		else
 		{
 			CVec3	center;
-
 			VectorAdd (b->drawStart, b->drawEnd, center);
 			center.Scale (0.5f);
 			leaf = BeamLeaf (b->drawStart, b->drawEnd);
@@ -1680,8 +1686,8 @@ static void DrawParticles ()
 
 		if (leaf)
 		{
-			b->drawNext = leaf->drawBeam;
-			leaf->drawBeam = b;
+			b->drawNext = leaf->ex->drawBeam;
+			leaf->ex->drawBeam = b;
 		}
 		else
 			STAT(gl_stats.cullParts++);
@@ -1744,7 +1750,7 @@ static void DrawFlares ()
 			}
 			// perform PVS cull for flares with radius 0 (if flare have radius > 0
 			// it (mostly) will be placed inside invisible (solid) leaf)
-			if (f->radius == 0 && !im && f->leaf->frame != drawFrame) cull = true;
+			if (f->radius == 0 && !im && f->leaf->ex->frame != drawFrame) cull = true;
 		}
 		else
 		{
@@ -1757,7 +1763,7 @@ static void DrawFlares ()
 
 		// should perform frustum culling even if flare not in PVS:
 		// can be occluded / outside frustum -- fade / hide
-		if (PointCull (flarePos, (f->owner || cull || f->radius < 0) ? MAX_FRUSTUM_MASK : f->leaf->frustumMask) == FRUSTUM_OUTSIDE)
+		if (PointCull (flarePos, (f->owner || cull || f->radius < 0) ? MAX_FRUSTUM_MASK : f->leaf->ex->frustumMask) == FRUSTUM_OUTSIDE)
 		{
 			STAT(gl_stats.cullFlares++);				// outside frustum - do not fade
 			continue;
@@ -1876,21 +1882,21 @@ static void DrawFlares ()
 }
 
 
-static void DrawBspSequence (node_t *leaf)
+static void DrawBspSequence (const CBspLeaf *leaf)
 {
 	guard(DrawBspSequence);
 
-	for ( ; leaf; leaf = leaf->drawNext)
+	for ( ; leaf; leaf = leaf->ex->drawNext)
 	{
 		// update world bounding box
 		vp.bounds.Expand (leaf->bounds);
 		// add leafFaces to draw list
 		currentEntity = ENTITYNUM_WORLD;
-		AddBspSurfaces (leaf->leafFaces, leaf->numLeafFaces, leaf->frustumMask, &gl_entities[ENTITYNUM_WORLD]);
+		AddBspSurfaces (leaf->ex->faces, leaf->numFaces, leaf->ex->frustumMask, &gl_entities[ENTITYNUM_WORLD]);
 
 		/*---------- draw leaf entities -----------*/
 
-		for (refEntity_t *e = leaf->drawEntity; e; e = e->drawNext)
+		for (refEntity_t *e = leaf->ex->drawEntity; e; e = e->drawNext)
 		{
 			currentEntity = e - gl_entities;
 			if (e->model) e->model->AddSurfaces (e);
@@ -1898,18 +1904,18 @@ static void DrawBspSequence (node_t *leaf)
 
 		/*------------ draw particles -------------*/
 
-		if (leaf->drawParticle)
+		if (leaf->ex->drawParticle)
 		{
 			surfaceParticle_t *surf = (surfaceParticle_t*) AllocDynamicMemory (sizeof(surfaceParticle_t));
 			if (surf)
 			{
 				CALL_CONSTRUCTOR(surf);
-				surf->part = leaf->drawParticle;
+				surf->part = leaf->ex->drawParticle;
 				AddSurfaceToPortal (surf, gl_particleShader, ENTITYNUM_WORLD);
 			}
 		}
 
-		for (beam_t *b = leaf->drawBeam; b; b = b->drawNext)
+		for (beam_t *b = leaf->ex->drawBeam; b; b = b->drawNext)
 		{
 			switch (b->type)
 			{
@@ -1935,37 +1941,43 @@ static void DrawBspSequence (node_t *leaf)
 static void MarkLeaves ()
 {
 	int		i;
-	node_t	*n;
+	CBspNode *n;
+	CBspLeaf *l;
 
 	// determine the vieworg cluster
-	int cluster = PointInLeaf (vp.view.origin)->cluster;
+	int cluster = CM_FindLeaf (vp.view.origin)->cluster;
 	// if cluster or areamask changed -- re-mark visible leaves
 	if (viewCluster == cluster && !forceVisMap) return;
 
 	viewCluster = cluster;
 	forceVisMap = false;
 	visFrame++;
-	if (r_novis->integer || cluster < 0 || !map.visInfo || cluster >= map.numClusters || map.numClusters <= 1)
+	if (r_novis->integer || cluster < 0 || !bspfile.visInfo || cluster >= bspfile.numClusters || bspfile.numClusters <= 1)
 	{
-		// mark ALL nodes
-		for (i = 0, n = map.nodes; i < map.numLeafNodes; i++, n++)
-			n->visFrame = visFrame;
-		STAT(gl_stats.visLeafs = map.numLeafNodes - map.numNodes);
+		// mark all nodes and all leafs
+		for (i = 0, n = bspfile.nodes; i < bspfile.numNodes; i++, n++)
+			n->ex->visFrame = visFrame;
+		for (i = 0, l = bspfile.leafs; i < bspfile.numLeafs; i++, l++)
+			l->ex->visFrame = visFrame;
+		STAT(gl_stats.visLeafs = bspfile.numLeafs);
 		return;
 	}
 
 	// use visinfo to mark nodes
 	STAT(gl_stats.visLeafs = 0);
-	const byte *row = map.visInfo + cluster * map.visRowSize;
-	for (i = map.numNodes, n = map.nodes + map.numNodes; i < map.numLeafNodes; i++, n++)
+	const byte *row = CM_ClusterPVS (cluster);
+	for (i = 0, l = bspfile.leafs; i < bspfile.numLeafs; i++, l++)
 	{
-		int cl = n->cluster;
-		int ar = n->area;
+		int cl = l->cluster;
+		int ar = l->area;
 #define TEST_BIT(arr,bit)	((arr[bit>>3] >> (bit&7)) & 1)
 		if (TEST_BIT(row,cl) && TEST_BIT(areaMask,ar))
 		{
-			for (node_t *p = n; p && p->visFrame != visFrame; p = p->parent)
-				p->visFrame = visFrame;
+			// mark leaf
+			l->ex->visFrame = visFrame;
+			// mark nodes
+			for (CBspNode *p = l->parent; p && p->ex->visFrame != visFrame; p = p->parent)
+				p->ex->visFrame = visFrame;
 			STAT(gl_stats.visLeafs++);
 		}
 	}
@@ -2113,7 +2125,7 @@ void DrawPortal ()
 		ClearSky ();
 		MarkLeaves ();
 		vp.bounds.Clear ();
-		node_t *firstLeaf = WalkBspTree ();
+		const CBspLeaf *firstLeaf = WalkBspTree ();
 		DrawEntities (vp.firstEntity, vp.numEntities);
 		DrawParticles ();
 

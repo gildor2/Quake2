@@ -67,7 +67,7 @@ struct entityHull_t
 {
 	areanode_t *area;
 	edict_t	*owner;
-	cmodel_t *model;
+	CBspModel *model;
 	CVec3	center;
 	float	radius;
 	CAxis	axis;

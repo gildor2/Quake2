@@ -1,3 +1,7 @@
+? cmodel_t/CBspModel:
+  - add "void *faces"   - filled/used by renderer (and clean R_LoadSubmodels)
+  - add "CVec3 center" - who will fill/update this ? ((mod->mins+mod->maxs)/2+ent->origin)
+
 FAST TODO:
 ~~~~~~~~~~
 1) 2x for vertex lighting (optimized lightmaps)
@@ -191,10 +195,6 @@ COLORS (SATURATE/OVERBRIGHT):
   - saturate lightmap textures with tables (see gl_image.c::LightScaleTexture()) - separate TableSaturate() (name?) function in
     gl_images.c (may be, move to gl_math.c)
 
-? cmodel_t:
-  - add "void *faces"   - filled/used by renderer (and clean R_LoadSubmodels)
-  - add "CVec3 center" - who will fill/update this ? ((mod->mins+mod->maxs)/2+ent->origin)
-
 - reflections:
   - small bugs when one can see througs another (for example, lift on map "japan"; "ground3") - unstable draw order
     (or not enough vertex buffer size -- in this case, multitexturing for envmaps will help)
@@ -374,7 +374,7 @@ FOR GAME:
 - fast vid_restart: can reload all (necessary!?) textures/lightmaps (+ update vertex colors); problems:
   - some changes requires vid_restart (GL_Register/GL_Init etc.) -- extensions, overbright etc. -- just check all cvars in gl_main.c
   - should restart shaders: remove unnecessary shaders
-?! make refEntity_t (rename it!), particle_t, beam_t to be derived from a single structure: { strucType, next, drawNext }, node_t (leaf)
+?! make refEntity_t (rename it!), particle_t, beam_t to be derived from a single structure (template?): { strucType, next, drawNext }; CBspLeafExtra
   should have a single pointer to this list, not separate pointers to entities, particles, beams (sprites too ??)
 ? GL_Cull() --(insert)-> GL_State()
 ? RGBGEN_SPECULAR (rgb depends on viewer direction and light positions) -- for windows/water
