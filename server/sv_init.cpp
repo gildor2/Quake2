@@ -200,7 +200,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	SV_ClearWorld ();
 	// add inline models (skip some models, not needed by game)
 	int modelIndex = 1;
-	for (i = 1; i < CM_NumInlineModels (); i++)
+	for (i = 1; i < bspfile.numModels; i++)
 	{
 		CBspModel *model = CM_InlineModel (i);
 		if (!(model->flags & CMODEL_LOCAL))

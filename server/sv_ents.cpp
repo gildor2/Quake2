@@ -48,9 +48,8 @@ static void SV_FatPVS (const CVec3 &org)
 	int count = CM_BoxLeafs (bounds, ARRAY_ARG(leafs));
 	if (count < 1)
 		appError ("SV_FatPVS: count < 1");
-	int numDwords = (CM_NumClusters()+31) / 32;
 
-	memcpy (fatpvs, CM_ClusterPVS (leafs[0]->cluster), numDwords * 4);
+	memcpy (fatpvs, CM_ClusterPVS (leafs[0]->cluster), bspfile.visRowSize);
 	// or in all the other leaf bits
 	for (i = 1; i < count; i++)
 	{
@@ -59,8 +58,8 @@ static void SV_FatPVS (const CVec3 &org)
 		if (j != i) continue;		// already have the cluster we want
 
 		const byte *src = CM_ClusterPVS (leafs[i]->cluster);
-		for (j = 0; j < numDwords; j++)
-			((long *)fatpvs)[j] |= ((long *)src)[j];
+		for (j = 0; j < bspfile.visRowSize; j++)
+			fatpvs[j] |= src[j];
 	}
 }
 

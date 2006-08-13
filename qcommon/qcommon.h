@@ -758,9 +758,6 @@ CBspModel *CM_LoadMap (const char *name, bool clientload, unsigned *checksum);
 CBspModel *CM_InlineModel (const char *name);	// *1, *2, etc
 CBspModel *CM_InlineModel (int index);
 
-int		CM_NumClusters ();
-int		CM_NumInlineModels ();
-
 // creates a clipping hull for an arbitrary box
 int		CM_HeadnodeForBox (const CBox &box);
 

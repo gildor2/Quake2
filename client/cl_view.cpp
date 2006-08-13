@@ -335,14 +335,9 @@ void V_InitRenderer ()
 		{
 			const char *mdl = cl.configstrings[CS_MODELS + i];
 			const char *ext = strrchr (name, '.');
-			if (!ext || stricmp (ext, ".bsp"))
-				cl.model_draw[i] = RE_RegisterModel (mdl);
-			else
-				cl.model_draw[i] = NULL;	// do not reload BSP file
-			if (name[0] == '*')
-				cl.model_clip[i] = CM_InlineModel (mdl);
-			else
-				cl.model_clip[i] = NULL;
+			// load model, but do not reload BSP file:
+			cl.model_draw[i] = (!ext || stricmp (ext, ".bsp")) ? RE_RegisterModel (mdl) : NULL;
+			cl.model_clip[i] = (name[0] == '*') ? CM_InlineModel (mdl) : NULL;
 		}
 	}
 
