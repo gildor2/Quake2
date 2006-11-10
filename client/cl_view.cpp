@@ -55,7 +55,7 @@ char cl_weaponmodels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
 int num_cl_weaponmodels;
 
 
-static void V_ClearScene ()
+static void V_ClearScene()
 {
 	r_numdlights  = 0;
 	r_numentities = 0;
@@ -68,17 +68,17 @@ static CBasicImage *disguiseShader, *irShader, *shellShader;
 CBasicImage *railSpiralShader, *railRingsShader, *railBeamShader;
 
 
-void V_AddEntity (entity_t *ent)
+void V_AddEntity(entity_t *ent)
 {
 	if (r_numentities >= MAX_ENTITIES)
 		return;
 	entity_t &e = r_entities[r_numentities++];
 	e = *ent;
-	e.pos.axis.FromEuler (e.angles);
+	e.pos.axis.FromEuler(e.angles);
 }
 
 // same as V_AddEntity(), but without axis computation
-void V_AddEntity2 (entity_t *ent)
+void V_AddEntity2(entity_t *ent)
 {
 	if (r_numentities >= MAX_ENTITIES)
 		return;
@@ -86,7 +86,7 @@ void V_AddEntity2 (entity_t *ent)
 	e = *ent;
 }
 
-void AddEntityWithEffects2 (entity_t *ent, unsigned fx)
+void AddEntityWithEffects2(entity_t *ent, unsigned fx)
 {
 #if 0
 	// disguise: in rogue; alyays available (can be activated with console cmd "disguise");
@@ -116,7 +116,7 @@ void AddEntityWithEffects2 (entity_t *ent, unsigned fx)
 		ent->flags &= ~RF_GLOW;		// no glow for IR-visible
 	}
 
-	V_AddEntity2 (ent);
+	V_AddEntity2(ent);
 
 	// color shells generate a seperate entity for the main model
 	// check for COLOR_SHELL
@@ -136,45 +136,45 @@ void AddEntityWithEffects2 (entity_t *ent, unsigned fx)
 		if (fx & RF_SHELL_BLUE)
 			ent->color.c[2] = 255;
 		ent->color.c[3] = 255;
-		V_AddEntity2 (ent);
+		V_AddEntity2(ent);
 	}
 }
 
-void AddEntityWithEffects (entity_t *ent, unsigned fx)
+void AddEntityWithEffects(entity_t *ent, unsigned fx)
 {
-	ent->pos.axis.FromEuler (ent->angles);
-	AddEntityWithEffects2 (ent, fx);
+	ent->pos.axis.FromEuler(ent->angles);
+	AddEntityWithEffects2(ent, fx);
 }
 
 
-static void RegisterShaders ()
+static void RegisterShaders()
 {
-	disguiseShader   = RE_RegisterSkin ("fx/disguiseShell");
-	irShader         = RE_RegisterSkin ("fx/irModel");
-	shellShader      = RE_RegisterSkin ("fx/colorShell");
-	railBeamShader   = RE_RegisterSkin ("fx/railBeam");
-	railSpiralShader = RE_RegisterSkin ("fx/railSpiral");
-	railRingsShader  = RE_RegisterSkin ("fx/railRings");
+	disguiseShader   = RE_RegisterSkin("fx/disguiseShell");
+	irShader         = RE_RegisterSkin("fx/irModel");
+	shellShader      = RE_RegisterSkin("fx/colorShell");
+	railBeamShader   = RE_RegisterSkin("fx/railBeam");
+	railSpiralShader = RE_RegisterSkin("fx/railSpiral");
+	railRingsShader  = RE_RegisterSkin("fx/railRings");
 }
 
 
-void V_AddLight (const CVec3 &org, float intensity, float r, float g, float b)
+void V_AddLight(const CVec3 &org, float intensity, float r, float g, float b)
 {
 	if (r_numdlights >= MAX_DLIGHTS) return;
 	dlight_t &dl = r_dlights[r_numdlights++];
 	dl.origin    = org;
 	dl.intensity = intensity;
-	dl.color.Set (r, g, b);
+	dl.color.Set(r, g, b);
 }
 
 
 // If cl_testentities is set, create 32 player models
 #if !NO_DEBUG
 
-void V_TestEntities ()
+void V_TestEntities()
 {
 	r_numentities = 32;
-	memset (r_entities, 0, sizeof(r_entities));
+	memset(r_entities, 0, sizeof(r_entities));
 
 	for (int i = 0; i < r_numentities; i++)
 	{
@@ -182,7 +182,7 @@ void V_TestEntities ()
 
 		float r = 64 * (i % 4) - (1*64+32);
 		float f = 64 * (i / 4) - (3*64+32);
-		VectorMA (cl.refdef.vieworg, 192, cl.v_forward, ent.pos.origin);
+		VectorMA(cl.refdef.vieworg, 192, cl.v_forward, ent.pos.origin);
 		ent.pos.origin[0] += r;
 		ent.pos.origin[1] += f;
 		ent.pos.axis = identAxis;
@@ -201,7 +201,7 @@ void V_TestEntities ()
 		ent.backlerp = 1.0f - (cl.time % 100) / 100.0f;
 		if (ent.backlerp == 1)
 			ent.backlerp = 0;
-		ent.model = RE_RegisterModel ("players/male/tris.md2");
+		ent.model = RE_RegisterModel("players/male/tris.md2");
 		ent.skin = NULL;	//??
 	}
 #undef FIRST_FRAME
@@ -210,13 +210,13 @@ void V_TestEntities ()
 
 
 // If cl_testlights is set, create 32 lights models
-void V_TestLights ()
+void V_TestLights()
 {
 	int		i;
 	dlight_t *dl;
 
 	r_numdlights = MAX_DLIGHTS;
-	memset (r_dlights, 0, sizeof(r_dlights));
+	memset(r_dlights, 0, sizeof(r_dlights));
 
 	for (i = 0, dl = r_dlights; i < MAX_DLIGHTS; i++, dl++)
 	{
@@ -253,14 +253,14 @@ void V_TestLights ()
 #define W_SKY			1
 
 
-void V_InitRenderer ()
+void V_InitRenderer()
 {
 	guard(V_InitRenderer);
 
 	int		i;
 
 	if (!cl.configstrings[CS_MODELS+1][0]) return;			// no map loaded
-	SCR_SetLevelshot ();
+	SCR_SetLevelshot();
 
 	// wait a small time to let server complete initialization
 	// allow map to be changed before initializing renderer, when loading savegames,
@@ -284,12 +284,12 @@ void V_InitRenderer ()
 	if (cls.realtime < startTime + 300)
 		return;
 
-	CL_ClearEffects ();		// can use shaders ...
-	CL_ClearTEnts ();		// temp entities linked to models, which are invalid after vid_restart
+	CL_ClearEffects();		// can use shaders ...
+	CL_ClearTEnts();		// temp entities linked to models, which are invalid after vid_restart
 
 	// let the render dll load the map
 	char mapname[MAX_QPATH];
-	strcpy (mapname, cl.configstrings[CS_MODELS+1] + 5);	// skip "maps/"
+	strcpy(mapname, cl.configstrings[CS_MODELS+1] + 5);	// skip "maps/"
 	mapname[strlen(mapname)-4] = 0;		// cut off ".bsp"
 
 	// compute total loading weight
@@ -303,17 +303,17 @@ void V_InitRenderer ()
 
 	// register models, pics, and skins
 	float loadingFrac = 0;
-	SCR_LoadingNotify (va("map: %s", mapname), 0);
+	SCR_LoadingNotify(va("map: %s", mapname), 0);
 	loadingFrac += W_MAP / totalWeight;
-	RE_LoadNewWorld ();
+	RE_LoadNewWorld();
 
 	// precache status bar pics
-	SCR_TouchPics ();
+	SCR_TouchPics();
 
-	CL_RegisterTEntModels ();
-	RegisterShaders ();
+	CL_RegisterTEntModels();
+	RegisterShaders();
 
-	strcpy (cl_weaponmodels[0], "weapon.md2");	// default weapon model
+	strcpy(cl_weaponmodels[0], "weapon.md2");	// default weapon model
 	num_cl_weaponmodels = 1;
 
 	for (i = 1; i < MAX_MODELS && cl.configstrings[CS_MODELS+i][0]; i++)
@@ -321,64 +321,64 @@ void V_InitRenderer ()
 		const char *name = cl.configstrings[CS_MODELS+i];
 		if (name[0] != '*')
 		{
-			SCR_LoadingNotify (name, loadingFrac);
+			SCR_LoadingNotify(name, loadingFrac);
 			loadingFrac += W_MODEL / totalWeight;
 		}
 		if (name[0] == '#')
 		{
 			// special player weapon model
 			if (num_cl_weaponmodels < MAX_CLIENTWEAPONMODELS)
-				strncpy (cl_weaponmodels[num_cl_weaponmodels++], cl.configstrings[CS_MODELS+i]+1,
+				strncpy(cl_weaponmodels[num_cl_weaponmodels++], cl.configstrings[CS_MODELS+i]+1,
 					sizeof(cl_weaponmodels[0])-1);
 		}
 		else
 		{
 			const char *mdl = cl.configstrings[CS_MODELS + i];
-			const char *ext = strrchr (name, '.');
+			const char *ext = strrchr(name, '.');
 			// load model, but do not reload BSP file:
-			cl.model_draw[i] = (!ext || stricmp (ext, ".bsp")) ? RE_RegisterModel (mdl) : NULL;
-			cl.model_clip[i] = (name[0] == '*') ? CM_InlineModel (mdl) : NULL;
+			cl.model_draw[i] = (!ext || stricmp(ext, ".bsp")) ? RE_RegisterModel(mdl) : NULL;
+			cl.model_clip[i] = (name[0] == '*') ? CM_InlineModel(mdl) : NULL;
 		}
 	}
 
-	SCR_LoadingNotify ("textures", loadingFrac);
+	SCR_LoadingNotify("textures", loadingFrac);
 	loadingFrac += W_TEXTURES / totalWeight;
 	for (i = 1; i < MAX_IMAGES && cl.configstrings[CS_IMAGES+i][0]; i++)
-		cl.image_precache[i] = RE_RegisterPic (va("pics/%s", cl.configstrings[CS_IMAGES+i]));
+		cl.image_precache[i] = RE_RegisterPic(va("pics/%s", cl.configstrings[CS_IMAGES+i]));
 
 	for (i = 0; i < MAX_CLIENTS; i++)
 	{
 		if (!cl.configstrings[CS_PLAYERSKINS+i][0])
 			continue;
-		SCR_LoadingNotify (va("client %d: %s", i, cl.configstrings[CS_PLAYERSKINS+i]), loadingFrac);
+		SCR_LoadingNotify(va("client %d: %s", i, cl.configstrings[CS_PLAYERSKINS+i]), loadingFrac);
 		loadingFrac += W_CLIENT / totalWeight;
-		CL_ParseClientinfo (i);
+		CL_ParseClientinfo(i);
 	}
 	if (!cl.configstrings[CS_PLAYERSKINS+cl.playernum][0])
 	{
 		// in a singleplayer mode, server will not send clientinfo - generate it by
 		// ourself for correct third-person view
 //		Com_DPrintf("Fixing CI[playernum]\n");
-		CL_UpdatePlayerClientInfo ();
+		CL_UpdatePlayerClientInfo();
 	}
 
 	// setup sky
-	SCR_LoadingNotify ("sky", loadingFrac);
-	float rotate = atof (cl.configstrings[CS_SKYROTATE]);
+	SCR_LoadingNotify("sky", loadingFrac);
+	float rotate = atof(cl.configstrings[CS_SKYROTATE]);
 	CVec3 axis;
-	sscanf (cl.configstrings[CS_SKYAXIS], "%f %f %f", &axis[0], &axis[1], &axis[2]);
-	RE_SetSky (cl.configstrings[CS_SKY], rotate, axis);
+	sscanf(cl.configstrings[CS_SKYAXIS], "%f %f %f", &axis[0], &axis[1], &axis[2]);
+	RE_SetSky(cl.configstrings[CS_SKY], rotate, axis);
 
 	// the renderer can now free unneeded stuff
-	RE_FinishLoadingWorld ();
+	RE_FinishLoadingWorld();
 
-	Con_ClearNotify ();
-	SCR_EndLoadingPlaque (true);
+	Con_ClearNotify();
+	SCR_EndLoadingPlaque(true);
 	cl.rendererReady  = true;
 	cl.forceViewFrame = true;
 
 	// start the cd track
-	CDAudio_Play (atoi(cl.configstrings[CS_CDTRACK]), true);
+	CDAudio_Play(atoi(cl.configstrings[CS_CDTRACK]), true);
 
 	unguard;
 }
@@ -394,12 +394,12 @@ static struct
 } scr_vrect;					// position of render window (changed when scr_viewsize cvar modified)
 //?? rename to v_vrect ?
 
-static void CalcVrect ()
+static void CalcVrect()
 {
-	float frac = scr_viewsize->Clamp (40, 100) / 100.0f;
+	float frac = scr_viewsize->Clamp(40, 100) / 100.0f;
 
-	scr_vrect.width = appRound (viddef.width * frac);
-	scr_vrect.height = appRound (viddef.height * frac);
+	scr_vrect.width = appRound(viddef.width * frac);
+	scr_vrect.height = appRound(viddef.height * frac);
 
 	scr_vrect.width &= ~7;		// align(8)
 	scr_vrect.height &= ~7;		// align(8)
@@ -409,31 +409,31 @@ static void CalcVrect ()
 }
 
 
-static void TileClear ()
+static void TileClear()
 {
 	const char *tileName = "pics/backtile";	//?? try "*detail" with a different color
 	if (con_height == viddef.height || scr_viewsize->integer == 100) return;
 
 	int y1 = scr_vrect.y;
 	int y2 = y1 + scr_vrect.height;
-	RE_TileClear (0, 0, viddef.width, y1, tileName);
-	RE_TileClear (0, y2, viddef.width, viddef.height - y2, tileName);
+	RE_TileClear(0, 0, viddef.width, y1, tileName);
+	RE_TileClear(0, y2, viddef.width, viddef.height - y2, tileName);
 	int x1 = scr_vrect.x;
 	int x2 = x1 + scr_vrect.width;
-	RE_TileClear (0, y1, x1, scr_vrect.height, tileName);
-	RE_TileClear (x2, y1, viddef.width - x2, scr_vrect.height, tileName);
+	RE_TileClear(0, y1, x1, scr_vrect.height, tileName);
+	RE_TileClear(x2, y1, viddef.width - x2, scr_vrect.height, tileName);
 
 	return;
 }
 
 
-float CalcFov (float fov_x, float width, float height)
+float CalcFov(float fov_x, float width, float height)
 {
 	if (fov_x < 1 || fov_x > 179)
-		Com_DropError ("Bad fov: %g", fov_x);
+		Com_DropError("Bad fov: %g", fov_x);
 
-	float aspect = width / tan (fov_x / 360 * M_PI);
-	return atan (height / aspect) * 360 / M_PI;
+	float aspect = width / tan(fov_x / 360 * M_PI);
+	return atan(height / aspect) * 360 / M_PI;
 }
 
 //============================================================================
@@ -441,48 +441,48 @@ float CalcFov (float fov_x, float width, float height)
 #if GUN_DEBUG
 
 // gun frame debugging functions
-void V_Gun_Next_f ()
+void V_Gun_Next_f()
 {
 	gun_frame++;
-	appPrintf ("frame %i\n", gun_frame);
+	appPrintf("frame %i\n", gun_frame);
 }
 
-void V_Gun_Prev_f ()
+void V_Gun_Prev_f()
 {
 	gun_frame--;
 	if (gun_frame < 0)
 		gun_frame = 0;
-	appPrintf ("frame %i\n", gun_frame);
+	appPrintf("frame %i\n", gun_frame);
 }
 
-void V_Gun_Model_f (int argc, char **argv)
+void V_Gun_Model_f(int argc, char **argv)
 {
 	if (argc != 2)
 	{
 		gun_model = NULL;
 		return;
 	}
-	gun_model = RE_RegisterModel (va("models/%s/tris.md2", argv[1]));
+	gun_model = RE_RegisterModel(va("models/%s/tris.md2", argv[1]));
 }
 
 #endif
 
 
 // Set a specific sky and rotation speed
-static void Sky_f (bool usage, int argc, char **argv)
+static void Sky_f(bool usage, int argc, char **argv)
 {
 	if (argc < 2 || usage)
 	{
-		appPrintf ("Usage: sky <basename> <rotate> <axis x y z>\n");
+		appPrintf("Usage: sky <basename> <rotate> <axis x y z>\n");
 		return;
 	}
-	float rotate = (argc > 2) ? atof (argv[2]) : 0;
+	float rotate = (argc > 2) ? atof(argv[2]) : 0;
 	CVec3 axis;
 	if (argc == 6)
 	{
-		axis[0] = atof (argv[3]);
-		axis[1] = atof (argv[4]);
-		axis[2] = atof (argv[5]);
+		axis[0] = atof(argv[3]);
+		axis[1] = atof(argv[4]);
+		axis[2] = atof(argv[5]);
 	}
 	else
 	{
@@ -491,7 +491,7 @@ static void Sky_f (bool usage, int argc, char **argv)
 		axis[2] = 1;
 	}
 
-	RE_SetSky (argv[1], rotate, axis);
+	RE_SetSky(argv[1], rotate, axis);
 }
 
 //============================================================================
@@ -502,14 +502,14 @@ struct flagInfo_t
 	const char *name;
 };
 
-static void DrawFlag (int flag, const flagInfo_t *info, int numFlags, const char *prefix)
+static void DrawFlag(int flag, const flagInfo_t *info, int numFlags, const char *prefix)
 {
 #if 0
 	int		i;
 
 	for (i = 0; i < numFlags; i++, info++)
 		if (flag & info->code)
-			RE_DrawTextLeft (va("%s%s", prefix, info->name), RGB(0.3, 0.6, 0.4));
+			RE_DrawTextLeft(va("%s%s", prefix, info->name), RGB(0.3, 0.6, 0.4));
 #else
 	TString<256> Buf;
 	Buf[0] = 0;
@@ -517,22 +517,22 @@ static void DrawFlag (int flag, const flagInfo_t *info, int numFlags, const char
 		if (flag & info->code)
 		{
 			Buf += va(Buf[0] ? " %s%s" : "%s%s", prefix, info->name);
-			if (Buf.len () > 40)
+			if (Buf.len() > 40)
 			{
-				RE_DrawTextLeft (Buf, RGB(0.3, 0.6, 0.4));
+				RE_DrawTextLeft(Buf, RGB(0.3, 0.6, 0.4));
 				Buf[0] = 0;
 			}
 			flag &= ~info->code;
 		}
 	if (Buf[0])
-		RE_DrawTextLeft (Buf, RGB(0.3, 0.6, 0.4));
+		RE_DrawTextLeft(Buf, RGB(0.3, 0.6, 0.4));
 	if (flag)
-		RE_DrawTextLeft (va("%sUNK_%X", prefix, flag), RGB(0.6, 0.3, 0.4));
+		RE_DrawTextLeft(va("%sUNK_%X", prefix, flag), RGB(0.6, 0.3, 0.4));
 #endif
 }
 
 
-static void DecodeContents (int i)
+static void DecodeContents(int i)
 {
 	static const flagInfo_t contentsNames[] = {
 #define T(name)		{CONTENTS_##name, #name}
@@ -544,16 +544,16 @@ static void DecodeContents (int i)
 #undef T
 	};
 
-//	RE_DrawTextLeft ("Contents:", RGB(0.4, 0.4, 0.6));
-//	RE_DrawTextLeft ("---------", RGB(0.4, 0.4, 0.6));
+//	RE_DrawTextLeft("Contents:", RGB(0.4, 0.4, 0.6));
+//	RE_DrawTextLeft("---------", RGB(0.4, 0.4, 0.6));
 	if (!i)
-		RE_DrawTextLeft ("CONTENTS_EMPTY", RGB(0.3, 0.6, 0.4));
+		RE_DrawTextLeft("CONTENTS_EMPTY", RGB(0.3, 0.6, 0.4));
 	else
-		DrawFlag (i, ARRAY_ARG(contentsNames), "CONTENTS_");
+		DrawFlag(i, ARRAY_ARG(contentsNames), "CONTENTS_");
 }
 
 
-static char *ModelName (int modelIndex)
+static char *ModelName(int modelIndex)
 {
 	if (!modelIndex) return NULL;
 	if (modelIndex < 255)
@@ -568,7 +568,7 @@ static char *ModelName (int modelIndex)
 static CMemoryChain *debugMem;
 
 
-static void DrawSurfInfo ()
+static void DrawSurfInfo()
 {
 	static const flagInfo_t surfNames[] = {
 #define T(name)		{SURF_##name, #name}
@@ -599,9 +599,9 @@ static void DrawSurfInfo ()
 
 	CVec3 start, end;
 	start = cl.refdef.vieworg;
-	Euler2Vecs (cl.refdef.viewangles, &end, NULL, NULL);
-	end.Scale (500);
-	end.Add (start);
+	Euler2Vecs(cl.refdef.viewangles, &end, NULL, NULL);
+	end.Scale(500);
+	end.Add(start);
 
 	unsigned cont = r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER;
 	trace_t	trace;
@@ -611,106 +611,106 @@ static void DrawSurfInfo ()
 //static CBox nullBox = {{-2,-2,-2},{2,2,2}};
 //static CBox nullBox = {{-10,-10,-10},{10,10,10}};
 //static CBox nullBox = {{-20,-20,-20},{20,20,20}};
-	CM_BoxTrace (trace, start, end, nullBox, 0, cont);
-	CM_ClipTraceToModels (trace, start, end, nullBox, cont);
+	CM_BoxTrace(trace, start, end, nullBox, 0, cont);
+	CM_ClipTraceToModels(trace, start, end, nullBox, cont);
 #if TRACE_DEBUG
 	cm_showTrace = false;
 #endif
 	if (!(r_surfinfo->integer & 2))
-		CL_EntityTrace (trace, start, end, nullBox, cont);
-	V_AddLight (trace.endpos, 5, 0.3, 0.6, 0.3);	//?? keep or remove? intens > trace bounds!
+		CL_EntityTrace(trace, start, end, nullBox, cont);
+	V_AddLight(trace.endpos, 5, 0.3, 0.6, 0.3);	//?? keep or remove? intens > trace bounds!
 
 	if (trace.fraction < 1.0)
 	{
 		if (trace.brushNum >= 0)
 		{
 			// brush
-			RE_DrawTextLeft (va("BrushNum: %d", trace.brushNum), RGB(0.2,0.4,0.1));
+			RE_DrawTextLeft(va("BrushNum: %d", trace.brushNum), RGB(0.2,0.4,0.1));
 			if (r_surfinfo->integer & 8)
 			{
 				// visualize brush
 				if (!debugMem) debugMem = new CMemoryChain;
-				CBrush *brush = CM_BuildBrush (trace.brushNum, debugMem);
+				CBrush *brush = CM_BuildBrush(trace.brushNum, debugMem);
 				if (brush)
-					RE_DrawBrush (brush, "brush", trace.brushNum);
+					RE_DrawBrush(brush, "brush", trace.brushNum);
 				else
-					RE_DrawTextLeft (va("brush %d: error", trace.brushNum), RGB(1,0,0));
+					RE_DrawTextLeft(va("brush %d: error", trace.brushNum), RGB(1,0,0));
 			}
 		}
-		RE_DrawTextLeft ("Surface info:\n-------------", RGB(0.4,0.4,0.6));
-		RE_DrawTextLeft (va("Point: %g  %g  %g", VECTOR_ARG(trace.endpos)), RGB(0.2,0.4,0.1));
+		RE_DrawTextLeft("Surface info:\n-------------", RGB(0.4,0.4,0.6));
+		RE_DrawTextLeft(va("Point: %g  %g  %g", VECTOR_ARG(trace.endpos)), RGB(0.2,0.4,0.1));
 		csurface_t *surf = trace.surface;
-		RE_DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARG(trace.plane.normal)), RGB(0.2,0.4,0.1));
+		RE_DrawTextLeft(va("Normal: %g  %g  %g", VECTOR_ARG(trace.plane.normal)), RGB(0.2,0.4,0.1));
 		if (surf->fullName[0])		// non-null surface
 		{
-			RE_DrawTextLeft (va("Texture: %s", surf->fullName), RGB(0.2,0.4,0.1));
+			RE_DrawTextLeft(va("Texture: %s", surf->fullName), RGB(0.2,0.4,0.1));
 			if (surf->value)
-				RE_DrawTextLeft (va("Value: %d", surf->value), RGB(0.2,0.4,0.1));
-			DrawFlag (surf->flags, ARRAY_ARG(surfNames), "SURF_");
+				RE_DrawTextLeft(va("Value: %d", surf->value), RGB(0.2,0.4,0.1));
+			DrawFlag(surf->flags, ARRAY_ARG(surfNames), "SURF_");
 			// material
 			const char *s = (surf->material > 0 && surf->material < MATERIAL_COUNT) ?
 				materialNames[surf->material] : "?? bad ??";
-			RE_DrawTextLeft (va("Material: %s", s), RGB(0.3,0.6,0.4));
+			RE_DrawTextLeft(va("Material: %s", s), RGB(0.3,0.6,0.4));
 		}
-		DecodeContents (trace.contents);
+		DecodeContents(trace.contents);
 		if (trace.ent)
 		{
 			clEntityState_t *ent = (clEntityState_t*)trace.ent;
-			RE_DrawTextLeft ("\nEntity:\n-------", RGB(0.4,0.4,0.6));
-			RE_DrawTextLeft (va("Origin: %g %g %g", VECTOR_ARG(ent->origin)), RGB(0.2,0.4,0.1));
-			RE_DrawTextLeft (va("fx: %X  rfx: %X", ent->effects, ent->renderfx), RGB(0.2,0.4,0.1));
-			if (ent->modelindex)	RE_DrawTextLeft (va("model: %s", ModelName (ent->modelindex)), RGB(0.2,0.4,0.1));
-			if (ent->modelindex2)	RE_DrawTextLeft (va("model2: %s", ModelName (ent->modelindex2)), RGB(0.2,0.4,0.1));
-			if (ent->modelindex3)	RE_DrawTextLeft (va("model3: %s", ModelName (ent->modelindex3)), RGB(0.2,0.4,0.1));
-			if (ent->modelindex4)	RE_DrawTextLeft (va("model4: %s", ModelName (ent->modelindex4)), RGB(0.2,0.4,0.1));
+			RE_DrawTextLeft("\nEntity:\n-------", RGB(0.4,0.4,0.6));
+			RE_DrawTextLeft(va("Origin: %g %g %g", VECTOR_ARG(ent->origin)), RGB(0.2,0.4,0.1));
+			RE_DrawTextLeft(va("fx: %X  rfx: %X", ent->effects, ent->renderfx), RGB(0.2,0.4,0.1));
+			if (ent->modelindex)	RE_DrawTextLeft(va("model: %s", ModelName(ent->modelindex)), RGB(0.2,0.4,0.1));
+			if (ent->modelindex2)	RE_DrawTextLeft(va("model2: %s", ModelName(ent->modelindex2)), RGB(0.2,0.4,0.1));
+			if (ent->modelindex3)	RE_DrawTextLeft(va("model3: %s", ModelName(ent->modelindex3)), RGB(0.2,0.4,0.1));
+			if (ent->modelindex4)	RE_DrawTextLeft(va("model4: %s", ModelName(ent->modelindex4)), RGB(0.2,0.4,0.1));
 
-			CL_AddEntityBox (ent, RGB(1,0.1,0.1));
+			CL_AddEntityBox(ent, RGB(1,0.1,0.1));
 		}
-		RE_DrawTextLeft ("", RGB(0,0,0));	// empty line
+		RE_DrawTextLeft("", RGB(0,0,0));	// empty line
 	}
 }
 
-static void DrawOriginInfo ()
+static void DrawOriginInfo()
 {
-	RE_DrawTextLeft ("Player position:\n----------------", RGB(0.4,0.4,0.6));
-	RE_DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), RGB(0.2,0.4,0.1));
+	RE_DrawTextLeft("Player position:\n----------------", RGB(0.4,0.4,0.6));
+	RE_DrawTextLeft(va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), RGB(0.2,0.4,0.1));
 
 	CVec3 view;
-	Euler2Vecs (cl.refdef.viewangles, &view, NULL, NULL);
-	RE_DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARG(view)), RGB(0.2,0.4,0.1));
+	Euler2Vecs(cl.refdef.viewangles, &view, NULL, NULL);
+	RE_DrawTextLeft(va("View direction: %g  %g  %g", VECTOR_ARG(view)), RGB(0.2,0.4,0.1));
 
-	const CBspLeaf *leaf = CM_FindLeaf (cl.refdef.vieworg);
-	RE_DrawTextLeft (va("Leaf: %d, cluster: %d, area: %d", leaf->num, leaf->cluster, leaf->area), RGB(0.2,0.4,0.1));
-	DecodeContents (leaf->contents | CM_PointModelContents (cl.refdef.vieworg));
-	RE_DrawTextLeft ("", RGB(0,0,0));	// empty line
+	const CBspLeaf *leaf = CM_FindLeaf(cl.refdef.vieworg);
+	RE_DrawTextLeft(va("Leaf: %d, cluster: %d, area: %d", leaf->num, leaf->cluster, leaf->area), RGB(0.2,0.4,0.1));
+	DecodeContents(leaf->contents | CM_PointModelContents(cl.refdef.vieworg));
+	RE_DrawTextLeft("", RGB(0,0,0));	// empty line
 }
 
-static void DrawBrush ()
+static void DrawBrush()
 {
 	int brushNum = r_showBrush->integer;
 	if (brushNum < 0) return;
 
 	if (!debugMem) debugMem = new CMemoryChain;
-	CBrush *brush = CM_BuildBrush (brushNum, debugMem);
+	CBrush *brush = CM_BuildBrush(brushNum, debugMem);
 	if (brush)
-		RE_DrawBrush (brush, "brush", brushNum);
+		RE_DrawBrush(brush, "brush", brushNum);
 	else
-		RE_DrawTextLeft (va("DrawBrush %d: error", brushNum), RGB(1,0,0));
+		RE_DrawTextLeft(va("DrawBrush %d: error", brushNum), RGB(1,0,0));
 }
 
 #endif // NO_DEBUG
 
 //#define FILTER_FPS_COUNTER		1
 
-static void DrawFpsInfo ()
+static void DrawFpsInfo()
 {
 	static float avgFps, minFps, maxFps;
 	static int frames;
 	static int64 startSecTime, lastFrameTime;
 
-	int64 time = appCycles64 ();
+	int64 time = appCycles64();
 
-	double timeDelta = appCyclesToMsecf (time - lastFrameTime);
+	double timeDelta = appCyclesToMsecf(time - lastFrameTime);
 	if (cls.key_dest != key_game || (timeDelta > 2000))
 	{	// reinitialize counters
 		startSecTime = lastFrameTime = time;
@@ -756,7 +756,7 @@ static void DrawFpsInfo ()
 	lastFrameTime = time;
 
 	// update avg stats
-	timeDelta = appCyclesToMsecf (time - startSecTime);
+	timeDelta = appCyclesToMsecf(time - startSecTime);
 	frames++;
 	if (timeDelta >= 500)			// update 2 times per second
 	{
@@ -771,19 +771,19 @@ static void DrawFpsInfo ()
 	else if (avgFps < 30) color = RGB(1,0,1);
 	else if (avgFps < 60) color = RGB(1,1,0);
 	else color = RGB(0,1,0);
-	RE_DrawTextRight (va("FPS: %.2f  min: %.2f  max: %.2f", avgFps, minFps, maxFps), color);
+	RE_DrawTextRight(va("FPS: %.2f  min: %.2f  max: %.2f", avgFps, minFps, maxFps), color);
 }
 
 
 #define MIN_WATER_DISTANCE	4.5
 
-static void FixWaterVis ()
+static void FixWaterVis()
 {
 	CVec3	p;			// point
 	bool	w, w1;		// "in water" flag
 
 	if (cl.refdef.rdflags & RDF_THIRD_PERSON)
-		w1 = (CM_PointContents (cl.refdef.vieworg, 0) & MASK_WATER) != 0;	// need to recompute UNDERWATER flag
+		w1 = (CM_PointContents(cl.refdef.vieworg, 0) & MASK_WATER) != 0;	// need to recompute UNDERWATER flag
 	else
 		w1 = (cl.refdef.rdflags & RDF_UNDERWATER) != 0;
 	p[0] = cl.refdef.vieworg[0];
@@ -791,14 +791,14 @@ static void FixWaterVis ()
 
 	// check point below
 	p[2] = cl.refdef.vieworg[2] - MIN_WATER_DISTANCE;
-	unsigned cont = CM_PointContents (p, 0);
+	unsigned cont = CM_PointContents(p, 0);
 	w = (cont & MASK_WATER) != 0;
 
 	if (w1 == w || cont & MASK_SOLID)
 	{
 		// check point above
 		p[2] += 2 * MIN_WATER_DISTANCE;
-		cont = CM_PointContents (p, 0);
+		cont = CM_PointContents(p, 0);
 		w = (cont & MASK_WATER) != 0;
 	}
 
@@ -811,12 +811,12 @@ static void FixWaterVis ()
 	// trace from air to water
 	trace_t trace;
 	if (!w1)
-		CM_BoxTrace (trace, cl.refdef.vieworg, p, nullBox, 0, MASK_WATER);
+		CM_BoxTrace(trace, cl.refdef.vieworg, p, nullBox, 0, MASK_WATER);
 	else
-		CM_BoxTrace (trace, p, cl.refdef.vieworg, nullBox, 0, MASK_WATER);
+		CM_BoxTrace(trace, p, cl.refdef.vieworg, nullBox, 0, MASK_WATER);
 	if (trace.fraction < 1.0f && !(trace.surface->flags & (SURF_TRANS33|SURF_TRANS66)))
 	{
-//		RE_DrawTextLeft ("WATER FIX!", 1, 1, 1);
+//		RE_DrawTextLeft("WATER FIX!", 1, 1, 1);
 		if (cl.refdef.vieworg[2] < trace.endpos[2])
 			cl.refdef.vieworg[2] = trace.endpos[2] - MIN_WATER_DISTANCE;
 		else
@@ -825,7 +825,7 @@ static void FixWaterVis ()
 }
 
 
-bool V_RenderView ()
+bool V_RenderView()
 {
 	guard(V_RenderView);
 
@@ -840,7 +840,7 @@ bool V_RenderView ()
 	{
 		static unsigned lastTime = 0;
 
-		unsigned time = appMilliseconds ();
+		unsigned time = appMilliseconds();
 		if (!cl.timedemoStart)
 		{
 			cl.timedemoStart        = time;
@@ -863,22 +863,22 @@ bool V_RenderView ()
 	{
 		cl.forceViewFrame = false;
 
-		CalcVrect ();
-		TileClear ();
-		V_ClearScene ();
+		CalcVrect();
+		TileClear();
+		V_ClearScene();
 
 		cl.refdef.rdflags = cl.frame.playerstate.rdflags;
 
 		// build a renderer entity list and calc cl.sim*
 		// this also calls CL_CalcViewValues which loads
 		// v_forward, etc.
-		CL_AddEntities ();
-		CL_AddEffects ();
-		CL_AddTEnts ();
+		CL_AddEntities();
+		CL_AddEffects();
+		CL_AddTEnts();
 
 #if !NO_DEBUG
-		if (cl_testentities->integer)	V_TestEntities ();
-		if (cl_testlights->integer)		V_TestLights ();
+		if (cl_testentities->integer)	V_TestEntities();
+		if (cl_testlights->integer)		V_TestLights();
 		if (cl_testblend->integer)
 		{
 			r_blend[0] = 1;
@@ -894,9 +894,9 @@ bool V_RenderView ()
 			delete debugMem;
 			debugMem = NULL;
 		}
-		if (r_playerpos->integer)	DrawOriginInfo ();
-		if (r_surfinfo->integer)	DrawSurfInfo ();
-		DrawBrush ();
+		if (r_playerpos->integer)	DrawOriginInfo();
+		if (r_surfinfo->integer)	DrawSurfInfo();
+		DrawBrush();
 #endif // NO_DEBUG
 
 #if 0
@@ -912,7 +912,7 @@ bool V_RenderView ()
 		cl.refdef.y = scr_vrect.y;
 		cl.refdef.width = scr_vrect.width;
 		cl.refdef.height = scr_vrect.height;
-		cl.refdef.fov_y = CalcFov (cl.refdef.fov_x, cl.refdef.width, cl.refdef.height);
+		cl.refdef.fov_y = CalcFov(cl.refdef.fov_x, cl.refdef.width, cl.refdef.height);
 		cl.refdef.time = cl.ftime;
 
 		cl.refdef.areabits = cl.frame.areabits;
@@ -933,29 +933,29 @@ bool V_RenderView ()
 		// underwater fov warp (taken from Q3 game source)
 		if (cl.refdef.rdflags & RDF_UNDERWATER)
 		{
-			float v = sin (cl.ftime * 0.4f * M_PI * 2);
+			float v = sin(cl.ftime * 0.4f * M_PI * 2);
 			cl.refdef.fov_x += v;
 			cl.refdef.fov_y -= v;
 		}
-		FixWaterVis ();
+		FixWaterVis();
 	}
 	// render scene
-	RE_RenderFrame (&cl.refdef);
+	RE_RenderFrame(&cl.refdef);
 	// add full-screen blend
 	if (r_blend[3])
-		RE_Fill (cl.refdef.x, cl.refdef.y, cl.refdef.width, cl.refdef.height,
+		RE_Fill(cl.refdef.x, cl.refdef.y, cl.refdef.width, cl.refdef.height,
 			RGBAS(r_blend[0], r_blend[1], r_blend[2], r_blend[3]));
 
 	// stats
 	if (r_drawfps->integer)
-		DrawFpsInfo ();
+		DrawFpsInfo();
 
 	return true;
 	unguard;
 }
 
 
-void V_Init ()
+void V_Init()
 {
 CVAR_BEGIN(vars)
 #if !NO_DEBUG
@@ -972,12 +972,12 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(scr_viewsize, 100, CVAR_ARCHIVE)	//?? should rename: not scr var
 CVAR_END
 
-	Cvar_GetVars (ARRAY_ARG(vars));
+	Cvar_GetVars(ARRAY_ARG(vars));
 
 #if GUN_DEBUG
-	RegisterCommand ("gun_next",  V_Gun_Next_f);
-	RegisterCommand ("gun_prev",  V_Gun_Prev_f);
-	RegisterCommand ("gun_model", V_Gun_Model_f);
+	RegisterCommand("gun_next",  V_Gun_Next_f);
+	RegisterCommand("gun_prev",  V_Gun_Prev_f);
+	RegisterCommand("gun_model", V_Gun_Model_f);
 #endif
-	RegisterCommand ("sky", Sky_f);
+	RegisterCommand("sky", Sky_f);
 }

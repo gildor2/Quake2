@@ -1,5 +1,5 @@
 #include "qcommon.h"
-#include "../client/ref.h"	// using RE_DrawTextXxx () for com_speeds
+#include "../client/ref.h"	// using RE_DrawTextXxx() for com_speeds
 #include "OutputDeviceFile.h"
 
 
@@ -40,20 +40,20 @@ When developer is set to 2, logging the message.
 When developer is set to 256, do not colorize message.
 ================
 */
-void Com_DPrintf (const char *fmt, ...)
+void Com_DPrintf(const char *fmt, ...)
 {
 	if (!DEVELOPER) return;
 
 	va_list	argptr;
 	char	msg[4096];
-	va_start (argptr,fmt);
-	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
-	va_end (argptr);
-	appPrintf (S_BLUE"%s", msg);
+	va_start(argptr,fmt);
+	vsnprintf(ARRAY_ARG(msg),fmt,argptr);
+	va_end(argptr);
+	appPrintf(S_BLUE"%s", msg);
 	if (developer->integer == 2)
 	{
-		appUncolorizeString (msg, msg);
-		DebugPrintf ("%s", msg);
+		appUncolorizeString(msg, msg);
+		DebugPrintf("%s", msg);
 	}
 }
 #endif
@@ -61,25 +61,25 @@ void Com_DPrintf (const char *fmt, ...)
 
 COutputDevice *debugLog;	// can initialize with GNull (COutputDeviceNull) ?
 
-void DebugPrintf (const char *fmt, ...)
+void DebugPrintf(const char *fmt, ...)
 {
 	va_list	argptr;
 	char	msg[4096];
-	va_start (argptr,fmt);
-	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
-	va_end (argptr);
+	va_start(argptr,fmt);
+	vsnprintf(ARRAY_ARG(msg),fmt,argptr);
+	va_end(argptr);
 
 	if (!debugLog)
 	{
-		debugLog = new COutputDeviceFile ("debug.log");
-		debugLog->Printf ("\n\n----- %s debug log, %s -----\n", appPackage (), appTimestamp ());
+		debugLog = new COutputDeviceFile("debug.log");
+		debugLog->Printf("\n\n----- %s debug log, %s -----\n", appPackage(), appTimestamp());
 	}
-	debugLog->Write (msg);
-	debugLog->Flush ();
+	debugLog->Write(msg);
+	debugLog->Flush();
 }
 
 
-static unsigned GetInt (const char **str)
+static unsigned GetInt(const char **str)
 {
 	unsigned r = 0;
 	const char *s = *str;
@@ -94,7 +94,7 @@ static unsigned GetInt (const char **str)
 	return r;
 }
 
-bool IPWildcard (netadr_t *a, const char *mask)
+bool IPWildcard(netadr_t *a, const char *mask)
 {
 	if (a->type != NA_IP) return false;
 	const char *m = mask;
@@ -105,7 +105,7 @@ bool IPWildcard (netadr_t *a, const char *mask)
 			m++;			// skip '*'
 		else if (m[0] >= '0' && m[0] <= '9')
 		{
-			int n = GetInt (&m);
+			int n = GetInt(&m);
 			if (m[0] == '.' || m[0] == 0)
 			{
 				if (a->ip[i] != n) return false;
@@ -114,23 +114,23 @@ bool IPWildcard (netadr_t *a, const char *mask)
 			{
 				if (a->ip[i] < n) return false;
 				m++;
-				n = GetInt (&m);
+				n = GetInt(&m);
 				if (a->ip[i] > n) return false;
 			}
 			else
 			{
-				Com_DPrintf ("IPWildcard: bad char in \"%s\"\n", mask);
+				Com_DPrintf("IPWildcard: bad char in \"%s\"\n", mask);
 				return false;
 			}
 		}
 		else
 		{
-			Com_DPrintf ("IPWildcard: bad char in \"%s\"\n", mask);
+			Com_DPrintf("IPWildcard: bad char in \"%s\"\n", mask);
 			return false;
 		}
 		if (m[0] == 0 && i < 3)
 		{
-			Com_DPrintf ("IPWildcard: short mask \"%s\"\n", mask);
+			Com_DPrintf("IPWildcard: short mask \"%s\"\n", mask);
 			return true;
 		}
 		m++;
@@ -139,12 +139,12 @@ bool IPWildcard (netadr_t *a, const char *mask)
 }
 
 
-server_state_t Com_ServerState ()
+server_state_t Com_ServerState()
 {
 	return server_state;
 }
 
-void Com_SetServerState (server_state_t state)
+void Com_SetServerState(server_state_t state)
 {
 	server_state = state;
 }
@@ -152,7 +152,7 @@ void Com_SetServerState (server_state_t state)
 
 #if 1
 // -1 to 1
-float crand ()
+float crand()
 {
 	return rand() * (2.0f/RAND_MAX) - 1;
 }
@@ -175,7 +175,7 @@ Searches the string for the given
 key and returns the associated value, or an empty string.
 ===============
 */
-const char *Info_ValueForKey (const char *s, const char *key)
+const char *Info_ValueForKey(const char *s, const char *key)
 {
 	char	pkey[512];
 	char	value[512];
@@ -197,7 +197,7 @@ const char *Info_ValueForKey (const char *s, const char *key)
 			*o++ = *s++;
 		*o = 0;
 
-		if (!strcmp (key, pkey))
+		if (!strcmp(key, pkey))
 			return va("%s", value);
 
 		if (!*s) return "";
@@ -205,7 +205,7 @@ const char *Info_ValueForKey (const char *s, const char *key)
 	}
 }
 
-static void Info_RemoveKey (char *s, const char *key)
+static void Info_RemoveKey(char *s, const char *key)
 {
 	char	pkey[512];
 	char	value[512];
@@ -228,9 +228,9 @@ static void Info_RemoveKey (char *s, const char *key)
 			*o++ = *s++;
 		*o = 0;
 
-		if (!strcmp (key, pkey))
+		if (!strcmp(key, pkey))
 		{
-			strcpy (start, s);	// remove this part
+			strcpy(start, s);	// remove this part
 			return;
 		}
 
@@ -241,41 +241,41 @@ static void Info_RemoveKey (char *s, const char *key)
 }
 
 
-void Info_SetValueForKey (char *s, const char *key, const char *value)
+void Info_SetValueForKey(char *s, const char *key, const char *value)
 {
-	if (strchr (key, '\\') || strchr (value, '\\'))
+	if (strchr(key, '\\') || strchr(value, '\\'))
 	{
-		appWPrintf ("Info_Set(\"%s\",\"%s\"): can't use keys or values with a '\\'\n", key, value);
+		appWPrintf("Info_Set(\"%s\",\"%s\"): can't use keys or values with a '\\'\n", key, value);
 		return;
 	}
 
 #if 0
-	if (strchr (key, '\"') || strchr (value, '\"'))
+	if (strchr(key, '\"') || strchr(value, '\"'))
 	{
-		appWPrintf ("Can't use keys or values with a '\"'\n");
+		appWPrintf("Can't use keys or values with a '\"'\n");
 		return;
 	}
 
-	if (strchr (key, ';'))
+	if (strchr(key, ';'))
 	{
-		appWPrintf ("Can't use keys or values with a semicolon\n");
+		appWPrintf("Can't use keys or values with a semicolon\n");
 		return;
 	}
 #endif
 
-	Info_RemoveKey (s, key);
+	Info_RemoveKey(s, key);
 	if (!value || !value[0]) return;	// will not add variable with empty value, for example, when game=""
 
 	char newi[MAX_INFO_STRING];
-	int size = appSprintf (ARRAY_ARG(newi), "\\%s\\%s", key, value);
-	if (strlen (s) + size >= MAX_INFO_STRING)
+	int size = appSprintf(ARRAY_ARG(newi), "\\%s\\%s", key, value);
+	if (strlen(s) + size >= MAX_INFO_STRING)
 	{
-		appWPrintf ("Info string length exceeded\n");
+		appWPrintf("Info string length exceeded\n");
 		return;
 	}
 
 	// only copy ASCII values
-	s += strlen (s);
+	s += strlen(s);
 	char *v = newi;
 	while (*v)
 	{
@@ -286,7 +286,7 @@ void Info_SetValueForKey (char *s, const char *key, const char *value)
 }
 
 
-void Info_Print (const char *s)
+void Info_Print(const char *s)
 {
 	char	key[512];
 	char	value[512];
@@ -298,11 +298,11 @@ void Info_Print (const char *s)
 		while (*s && *s != '\\')
 			*o++ = *s++;
 		*o = 0;
-		appPrintf (S_GREEN"%-22s", key);
+		appPrintf(S_GREEN"%-22s", key);
 
 		if (!*s)
 		{
-			appWPrintf ("missing value\n");
+			appWPrintf("missing value\n");
 			return;
 		}
 
@@ -311,7 +311,7 @@ void Info_Print (const char *s)
 		while (*s && *s != '\\')
 			*o++ = *s++;
 		*o = 0;
-		appPrintf ("%s\n", value);
+		appPrintf("%s\n", value);
 
 		if (!*s) return;
 		s++;
@@ -324,22 +324,22 @@ void Info_Print (const char *s)
 -----------------------------------------------------------------------------*/
 
 //!! incorrect in most cases (should be slerp); used by cl_ents.cpp only
-float LerpAngle (float a1, float a2, float frac)
+float LerpAngle(float a1, float a2, float frac)
 {
 	if (a2 - a1 > 180)
 		a2 -= 360;
 	if (a2 - a1 < -180)
 		a2 += 360;
-	return Lerp (a1, a2, frac);
+	return Lerp(a1, a2, frac);
 }
 
-float ReduceAngle (float a)
+float ReduceAngle(float a)
 {
-	a = (360.0f/65536) * (appRound (a*(65536.0f/360)) & 65535);
+	a = (360.0f/65536) * (appRound(a*(65536.0f/360)) & 65535);
 	return a;
 }
 
-float AngleSubtract (float a1, float a2)
+float AngleSubtract(float a1, float a2)
 {
 	float a = a1 - a2;
 	while (a > 180)
@@ -349,11 +349,11 @@ float AngleSubtract (float a1, float a2)
 	return a;
 }
 
-void AnglesSubtract (const CVec3 &v1, const CVec3 &v2, CVec3 &v3)
+void AnglesSubtract(const CVec3 &v1, const CVec3 &v2, CVec3 &v3)
 {
-	v3[0] = AngleSubtract (v1[0], v2[0]);
-	v3[1] = AngleSubtract (v1[1], v2[1]);
-	v3[2] = AngleSubtract (v1[2], v2[2]);
+	v3[0] = AngleSubtract(v1[0], v2[0]);
+	v3[1] = AngleSubtract(v1[1], v2[1]);
+	v3[2] = AngleSubtract(v1[2], v2[2]);
 }
 
 
@@ -368,7 +368,7 @@ void AnglesSubtract (const CVec3 &v1, const CVec3 &v2, CVec3 &v3)
 static char com_token[MAX_STRING_CHARS];
 static int	com_lines;
 
-static const char *SkipWhitespace (const char *data, bool *hasNewLines)
+static const char *SkipWhitespace(const char *data, bool *hasNewLines)
 {
 	char	c;
 	while ((c = *data) <= ' ')
@@ -385,7 +385,7 @@ static const char *SkipWhitespace (const char *data, bool *hasNewLines)
 	return data;
 }
 
-char *COM_Parse (const char *&data_p, bool allowLineBreaks)
+char *COM_Parse(const char *&data_p, bool allowLineBreaks)
 {
 	const char *data = data_p;
 	com_token[0] = 0;
@@ -400,7 +400,7 @@ char *COM_Parse (const char *&data_p, bool allowLineBreaks)
 	while (true)
 	{
 		// skip whitespace
-		data = SkipWhitespace (data, &hasNewLines);
+		data = SkipWhitespace(data, &hasNewLines);
 		if (!data)
 		{
 			data_p = NULL;
@@ -477,7 +477,7 @@ char *COM_Parse (const char *&data_p, bool allowLineBreaks)
 
 	if (len == sizeof(com_token))
 	{
-//		appWPrintf ("Token exceeded %d chars, discarded.\n", sizeof(com_token));
+//		appWPrintf("Token exceeded %d chars, discarded.\n", sizeof(com_token));
 		len = 0;
 	}
 	com_token[len] = 0;
@@ -487,7 +487,7 @@ char *COM_Parse (const char *&data_p, bool allowLineBreaks)
 }
 
 //?? its my own function - move, rename ...
-const char *COM_QuoteString (const char *str, bool alwaysQuote)
+const char *COM_QuoteString(const char *str, bool alwaysQuote)
 {
 	char	*dst, c;
 
@@ -525,7 +525,7 @@ const char *COM_QuoteString (const char *str, bool alwaysQuote)
 static char *cmdlineParts[MAX_CMDLINE_PARTS];
 static int cmdlineNumParts;
 
-static void ParseCmdline (const char *cmdline)
+static void ParseCmdline(const char *cmdline)
 {
 	guard(ParseCmdline);
 
@@ -542,20 +542,20 @@ static void ParseCmdline (const char *cmdline)
 		if (c != '-')
 		{
 			// bad argument
-			appPrintf ("ParseCmdline: bad argument \"");
+			appPrintf("ParseCmdline: bad argument \"");
 			do
 			{
-				appPrintf ("%c", c);
+				appPrintf("%c", c);
 				c = *++cmdline;
 			} while (c != ' ' && c != 0);
-			appPrintf ("\"\n");
+			appPrintf("\"\n");
 			continue;				// try next argument
 		}
 
 		// cmdline points to start of possible command
 		if (cmdlineNumParts == MAX_CMDLINE_PARTS)
 		{
-			appWPrintf ("ParseCmdline: overflow\n");
+			appWPrintf("ParseCmdline: overflow\n");
 			break;
 		}
 		cmdlineParts[cmdlineNumParts++] = dst;
@@ -582,15 +582,15 @@ static void ParseCmdline (const char *cmdline)
 	for (int i = 0; i < cmdlineNumParts; i++)
 	{
 		const char *cmd = cmdlineParts[i];
-		const char *s1 = strchr (cmd, '=');
-		const char *s2 = strchr (cmd, '\"');
+		const char *s1 = strchr(cmd, '=');
+		const char *s2 = strchr(cmd, '\"');
 		if (s1 && (!s2 || s2 > s1))		// a=b, but '=' not inside quotes
 		{
 			char	varName[64], varValue[256];
 			// convert to "set a b"
-			appStrncpyz (varName, cmd, s1 - cmd + 1);	// copy "a"
-			appStrncpyz (varValue, s1 + 1, sizeof(varValue));
-			int len = strlen (varValue);
+			appStrncpyz(varName, cmd, s1 - cmd + 1);	// copy "a"
+			appStrncpyz(varValue, s1 + 1, sizeof(varValue));
+			int len = strlen(varValue);
 			const char *value;
 			if (varValue[0] == '\"' && varValue[len-1] == '\"')
 			{
@@ -600,11 +600,11 @@ static void ParseCmdline (const char *cmdline)
 			}
 			else
 				value = varValue;
-			cvar_t *var = Cvar_Set (varName, value);
+			cvar_t *var = Cvar_Set(varName, value);
 			if (var)
 				var->flags |= CVAR_CMDLINE;
 			else
-				appWPrintf ("ParseCmdline: unable to set \"%s\"\n", varName);
+				appWPrintf("ParseCmdline: unable to set \"%s\"\n", varName);
 
 			cmdlineParts[i] = NULL;		// remove command
 		}
@@ -614,13 +614,13 @@ static void ParseCmdline (const char *cmdline)
 }
 
 
-bool Com_CheckCmdlineVar (const char *name)
+bool Com_CheckCmdlineVar(const char *name)
 {
 	for (int i = 0; i < cmdlineNumParts; i++)
 	{
 		const char *cmd = cmdlineParts[i];
-		if (!cmd || strchr (cmd, ' ')) continue;	// already removed or contains arguments
-		if (!stricmp (name, cmd))
+		if (!cmd || strchr(cmd, ' ')) continue;	// already removed or contains arguments
+		if (!stricmp(name, cmd))
 		{
 			cmdlineParts[i] = NULL;
 			return true;
@@ -630,13 +630,13 @@ bool Com_CheckCmdlineVar (const char *name)
 }
 
 
-static void PushCmdline ()
+static void PushCmdline()
 {
 	for (int i = 0; i < cmdlineNumParts; i++)
 	{
 		const char *cmd = cmdlineParts[i];
 		if (!cmd) continue;				// already removed
-		Cbuf_AddText (va("%s\n", cmd));
+		Cbuf_AddText(va("%s\n", cmd));
 		cmdlineParts[i] = NULL;			// just in case
 	}
 }
@@ -646,7 +646,7 @@ static void PushCmdline ()
 	Initialization
 -----------------------------------------------------------------------------*/
 
-void Com_Init (const char *cmdline)
+void Com_Init(const char *cmdline)
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(com_speeds, 0, 0),
@@ -669,17 +669,17 @@ CVAR_END
 
 	guard(Com_Init);
 
-	ParseCmdline (cmdline);			// should be executed before any cvar creation
-	Cvar_GetVars (ARRAY_ARG(vars));
-	Cvar_Get ("version", VERSION_STR, CVAR_SERVERINFO|CVAR_NOSET);
+	ParseCmdline(cmdline);			// should be executed before any cvar creation
+	Cvar_GetVars(ARRAY_ARG(vars));
+	Cvar_Get("version", VERSION_STR, CVAR_SERVERINFO|CVAR_NOSET);
 
-	Key_Init ();
+	Key_Init();
 
-	InitByteDirs ();
+	InitByteDirs();
 
-	InitFileSystem ();
+	InitFileSystem();
 
-	Cbuf_Execute ();
+	Cbuf_Execute();
 	cvar_t::initialized = 1;		// config executed -- allow cmdline cvars to be modified
 
 	if (DEDICATED)
@@ -689,34 +689,34 @@ CVAR_END
 		GScreenWidth = 80;
 	}
 
-	NET_Init ();
-	Netchan_Init ();
+	NET_Init();
+	Netchan_Init();
 
-	SV_Init ();
-	if (!DEDICATED) CL_Init ();
+	SV_Init();
+	if (!DEDICATED) CL_Init();
 
 	// initialize rand() functions
-	srand (appMilliseconds ());
+	srand(appMilliseconds());
 
 	if (nointro->integer == 0)
 	{	// if the user didn't give any commands, run default action
 		if (!DEDICATED)
 		{
-			Cbuf_AddText ("d1\n");
-			Cbuf_Execute ();
-			if (!Com_ServerState ())		// this alias not exists or not starts demo
-				Cvar_ForceSet ("nointro", "1");
+			Cbuf_AddText("d1\n");
+			Cbuf_Execute();
+			if (!Com_ServerState())		// this alias not exists or not starts demo
+				Cvar_ForceSet("nointro", "1");
 		}
 		else
 		{
-			Cbuf_AddText ("dedicated_start\n");
-			Cbuf_Execute ();
+			Cbuf_AddText("dedicated_start\n");
+			Cbuf_Execute();
 		}
 	}
 
 	cvar_t::initialized = 2;
-	PushCmdline ();
-	appPrintf (S_GREEN"\n====== " APPNAME " Initialized ======\n\n");
+	PushCmdline();
+	appPrintf(S_GREEN"\n====== " APPNAME " Initialized ======\n\n");
 
 	unguard;
 }
@@ -729,7 +729,7 @@ extern	int	c_traces, c_pointcontents;
 
 bool com_isClient, com_isServer;
 
-void Com_Frame (float msec)
+void Com_Frame(float msec)
 {
 	unsigned time_before, time_between, time_after;
 
@@ -745,8 +745,8 @@ void Com_Frame (float msec)
 		{
 			if (!FileLog)
 			{
-				FileLog = new COutputDeviceFile (APPNAME".log", true);
-				FileLog->Register ();
+				FileLog = new COutputDeviceFile(APPNAME".log", true);
+				FileLog->Register();
 			}
 			FileLog->FlushEveryTime = logfile_active->integer > 1;
 		}
@@ -754,7 +754,7 @@ void Com_Frame (float msec)
 		{
 			if (FileLog)
 			{
-				FileLog->Unregister ();
+				FileLog->Unregister();
 				delete FileLog;
 				FileLog = NULL;
 			}
@@ -776,35 +776,35 @@ void Com_Frame (float msec)
 	{
 		while (true)
 		{
-			const char *s = Sys_ConsoleInput ();
+			const char *s = Sys_ConsoleInput();
 			if (!s) break;
-			Cbuf_AddText (va("%s\n",s));
+			Cbuf_AddText(va("%s\n",s));
 		}
 	}
-	Cbuf_Execute ();
-	FS_Tick ();
+	Cbuf_Execute();
+	FS_Tick();
 
 	if (com_speeds->integer)
 	{
-		time_before = appCycles ();
+		time_before = appCycles();
 		time_before_game = 0;				// for detection of frames with game frame
 	}
 
 //if (!Cvar_VariableInt("sv_block"))
 	com_isServer = true;
-	SV_Frame (smsec);
+	SV_Frame(smsec);
 	com_isServer = false;
 
 	if (!DEDICATED)
 	{
 		if (com_speeds->integer)
 		{
-			time_between = appCycles ();
+			time_between = appCycles();
 			time_before_ref = 0;			// for detection of frames with renderer frame (may be dropped with cl_maxfps)
 		}
 
 		com_isClient = true;
-		CL_Frame (smsec, msec);
+		CL_Frame(smsec, msec);
 		com_isClient = false;
 
 		if (com_speeds->integer)
@@ -812,13 +812,13 @@ void Com_Frame (float msec)
 			static float old_gm;
 			static int old_tr, old_pc;
 
-			time_after = appCycles ();
+			time_after = appCycles();
 
-			float rf  = (time_before_ref) ? appCyclesToMsecf (time_after_ref - time_before_ref) : 0;
-			float gm  = (time_before_game) ? appCyclesToMsecf (time_after_game - time_before_game) : 0;
-			float sv  = appCyclesToMsecf (time_between - time_before) - gm;
-			float cl  = appCyclesToMsecf (time_after - time_between) - rf;
-			float all = appCyclesToMsecf (time_after - time_before);
+			float rf  = (time_before_ref) ? appCyclesToMsecf(time_after_ref - time_before_ref) : 0;
+			float gm  = (time_before_game) ? appCyclesToMsecf(time_after_game - time_before_game) : 0;
+			float sv  = appCyclesToMsecf(time_between - time_before) - gm;
+			float cl  = appCyclesToMsecf(time_after - time_between) - rf;
+			float all = appCyclesToMsecf(time_after - time_before);
 			if (time_before_game)			// have a valid game frame
 			{
 				old_gm = gm;
@@ -826,7 +826,7 @@ void Com_Frame (float msec)
 				old_pc = c_pointcontents;
 			}
 			if (time_before_ref)
-				RE_DrawTextRight (va("sv:%.2f gm:%.2f (%.2f) cl:%.2f rf:%.2f all:%.2f\n"
+				RE_DrawTextRight(va("sv:%.2f gm:%.2f (%.2f) cl:%.2f rf:%.2f all:%.2f\n"
 									 "tr: %4d (%4d) pt: %4d (%4d)",
 									sv, gm, old_gm, cl, rf, all,
 									c_traces, old_tr, c_pointcontents, old_pc),
@@ -845,7 +845,7 @@ void Com_Frame (float msec)
 				for (int i = 0; i < ARRAY_COUNT(names); i++)
 				{
 					if (time_before_ref)
-						RE_DrawTextLeft (va("%11s: %3d %.3f", names[i], counts[i], appCyclesToMsecf (times[i])), RGB(1, 0.8, 0.3));
+						RE_DrawTextLeft(va("%11s: %3d %.3f", names[i], counts[i], appCyclesToMsecf(times[i])), RGB(1, 0.8, 0.3));
 					if (time_before_game)
 					{
 						counts[i] = prof_counts[i];

@@ -20,20 +20,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 struct sfx_t;
 
-void S_Init (void);
-void S_Shutdown (void);
+void S_Init(void);
+void S_Shutdown(void);
 
 // if origin is NULL, the sound will be dynamically sourced from the entity
-void S_StartSound (const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, float fvol,  float attenuation, float timeofs);
-void S_StartLocalSound (const char *s);
+void S_StartSound(const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, float fvol,  float attenuation, float timeofs);
+void S_StartLocalSound(const char *s);
 
-void S_RawSamples (int samples, int rate, int width, int channels, byte *data);
+void S_RawSamples(int samples, int rate, int width, int channels, byte *data);
 
-void S_StopAllSounds_f (void);
-void S_Update (const CVec3 &origin, const CVec3 &v_right);
+void S_StopAllSounds_f(void);
+void S_Update(const CVec3 &origin, const CVec3 &v_right);
 
-void S_Activate (bool active);
+void S_Activate(bool active);
 
-void S_BeginRegistration (void);
-sfx_t *S_RegisterSound (const char *sample);
-void S_EndRegistration (void);
+void S_BeginRegistration(void);
+sfx_t *S_RegisterSound(const char *sample);
+void S_EndRegistration(void);

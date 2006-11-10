@@ -34,7 +34,7 @@ static bool refActive = false;
 
 HWND	cl_hwnd;						// main window handle
 
-static void DisableAltTab (bool value)
+static void DisableAltTab(bool value)
 {
 	static bool disabled = false;
 	if (disabled == value) return;
@@ -43,24 +43,24 @@ static void DisableAltTab (bool value)
 	if (!GIsWinNT)
 	{
 		BOOL old;
-		SystemParametersInfo (SPI_SCREENSAVERRUNNING, value, &old, 0);
+		SystemParametersInfo(SPI_SCREENSAVERRUNNING, value, &old, 0);
 	}
 	else
 	{
 		// this code does not works with WinNT 4.0 +
 		if (value)
 		{
-			RegisterHotKey (0, 0, 1/*MOD_ALT*/, VK_TAB);	// MOD_ALT is redefined, so use winuser.h const directly
+			RegisterHotKey(0, 0, 1/*MOD_ALT*/, VK_TAB);	// MOD_ALT is redefined, so use winuser.h const directly
 			// really, should disable <Win>, <Ctrl+Esc>, <Alt+Esc> key combinations too; see Q226359 in MSDN
 		}
 		else
-			UnregisterHotKey (0, 0);
+			UnregisterHotKey(0, 0);
 	}
 }
 
-static void SetHighPriority (bool enable)
+static void SetHighPriority(bool enable)
 {
-	SetPriorityClass (GetCurrentProcess (), enable ? HIGH_PRIORITY_CLASS : NORMAL_PRIORITY_CLASS);
+	SetPriorityClass(GetCurrentProcess(), enable ? HIGH_PRIORITY_CLASS : NORMAL_PRIORITY_CLASS);
 }
 
 
@@ -106,7 +106,7 @@ static const byte vkToKey[256] = {
 };
 
 
-static int MapKey (int vkCode, bool extended)
+static int MapKey(int vkCode, bool extended)
 {
 	if (!extended)
 	{
@@ -140,7 +140,7 @@ static int MapKey (int vkCode, bool extended)
 }
 
 
-static void AppActivate (bool active, bool minimized)
+static void AppActivate(bool active, bool minimized)
 {
 //	appPrintf("act:%d min:%d\n", active, minimized);//!!
 	MinimizedApp = minimized;
@@ -148,15 +148,15 @@ static void AppActivate (bool active, bool minimized)
 	{
 		ActiveApp = active;
 
-		Key_ClearStates ();
+		Key_ClearStates();
 		//!! should be callbacks (or system.virtualMethod())
-		IN_Activate (active);
-		CDAudio_Activate (active);
-		S_Activate (active);
-		if (refActive) RE_AppActivate (active);
+		IN_Activate(active);
+		CDAudio_Activate(active);
+		S_Activate(active);
+		if (refActive) RE_AppActivate(active);
 
-		if (win_noalttab->integer)		DisableAltTab (active);
-		if (win_priorityBoost->integer)	SetHighPriority (active);
+		if (win_noalttab->integer)		DisableAltTab(active);
+		if (win_priorityBoost->integer)	SetHighPriority(active);
 	}
 }
 
@@ -167,7 +167,7 @@ static void AppActivate (bool active, bool minimized)
 
 static MSGHOOK_FUNC hooks[8];
 
-void AddMsgHook (MSGHOOK_FUNC func)
+void AddMsgHook(MSGHOOK_FUNC func)
 {
 	int idx = -1;
 	for (int i = 0; i < ARRAY_COUNT(hooks); i++)
@@ -175,11 +175,11 @@ void AddMsgHook (MSGHOOK_FUNC func)
 		if (hooks[i] == func) return;	// already hooked
 		if (!hooks[i] && idx < 0) idx = i;
 	}
-	if (idx < 0) appError ("max msg hooks");
+	if (idx < 0) appError("max msg hooks");
 	hooks[idx] = func;
 }
 
-void RemoveMsgHook (MSGHOOK_FUNC func)
+void RemoveMsgHook(MSGHOOK_FUNC func)
 {
 	for (int i = 0; i < ARRAY_COUNT(hooks); i++)
 	{
@@ -189,11 +189,11 @@ void RemoveMsgHook (MSGHOOK_FUNC func)
 			return;
 		}
 	}
-	Com_DPrintf ("RemoveMsgHook: hook is not installed\n");
+	Com_DPrintf("RemoveMsgHook: hook is not installed\n");
 }
 
 
-static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+static LONG WINAPI MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	guard(MainWndProc);
 
@@ -224,25 +224,25 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 //			appPrintf("WM_SIZE: %d (act=%d min=%d)\n",wParam, ActiveApp, MinimizedApp);//!!
 			if (wParam == SIZE_MINIMIZED && !desktopMode)
 			{
-				Com_DPrintf ("Setting desktop resolution\n");
+				Com_DPrintf("Setting desktop resolution\n");
 				// save screen parameters
-				HDC dc = GetDC (NULL);
+				HDC dc = GetDC(NULL);
 				dm.dmSize       = sizeof(dm);
 				dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL;
 				//!! can get HORZRES/VERTRES/BITSPIXEL from our SetDisplayMode() - no GetDeviceCaps() needed!
-				dm.dmPelsWidth  = GetDeviceCaps (dc, HORZRES);
-				dm.dmPelsHeight = GetDeviceCaps (dc, VERTRES);
-				dm.dmBitsPerPel = GetDeviceCaps (dc, BITSPIXEL);
+				dm.dmPelsWidth  = GetDeviceCaps(dc, HORZRES);
+				dm.dmPelsHeight = GetDeviceCaps(dc, VERTRES);
+				dm.dmBitsPerPel = GetDeviceCaps(dc, BITSPIXEL);
 				// restore mode
-				ChangeDisplaySettings (NULL, 0);
+				ChangeDisplaySettings(NULL, 0);
 				desktopMode = true;
 			}
 			else if (wParam == SIZE_RESTORED && MinimizedApp && desktopMode)
 			{
-				Com_DPrintf ("Setting game resolution\n");
-				ChangeDisplaySettings (&dm, CDS_FULLSCREEN);
-				SetWindowPos (hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE);
-				SetForegroundWindow (hWnd);
+				Com_DPrintf("Setting game resolution\n");
+				ChangeDisplaySettings(&dm, CDS_FULLSCREEN);
+				SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE);
+				SetForegroundWindow(hWnd);
 				desktopMode = false;
 			}
 		}
@@ -253,7 +253,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			bool active    = LOWORD(wParam) != WA_INACTIVE;
 			bool minimized = HIWORD(wParam) != 0;
 //			appPrintf("WM_ACTIVATE: a=%d m=%d (act=%d min=%d)\n",active, minimized, ActiveApp, MinimizedApp);//!!
-			AppActivate (active, minimized);
+			AppActivate(active, minimized);
 		}
 		break;
 
@@ -269,13 +269,13 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			r.top    = 0;
 			r.right  = 1;
 			r.bottom = 1;
-			AdjustWindowRect (&r, GetWindowLong (hWnd, GWL_STYLE), FALSE);
+			AdjustWindowRect(&r, GetWindowLong(hWnd, GWL_STYLE), FALSE);
 			// update cvars
-			Cvar_SetInteger ("vid_xpos", xPos + r.left);
-			Cvar_SetInteger ("vid_ypos", yPos + r.top);
+			Cvar_SetInteger("vid_xpos", xPos + r.left);
+			Cvar_SetInteger("vid_ypos", yPos + r.top);
 			vid_xpos->modified = false;
 			vid_ypos->modified = false;
-			if (ActiveApp) IN_Activate (true);
+			if (ActiveApp) IN_Activate(true);
 		}
 		break;
 
@@ -292,28 +292,28 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	case WM_SYSKEYDOWN:
 		if (wParam == VK_RETURN)	// Alt+Enter
 		{
-			Cvar_SetInteger ("r_fullscreen", !FullscreenApp);
+			Cvar_SetInteger("r_fullscreen", !FullscreenApp);
 			return 0;
 		}
 		// fall through
 	case WM_KEYDOWN:
 		{
-			int k = MapKey (wParam, (lParam >> 24) & 1);
-			if (k) Key_Event (k, true);
+			int k = MapKey(wParam, (lParam >> 24) & 1);
+			if (k) Key_Event(k, true);
 		}
 		return 0;
 
 	case WM_SYSKEYUP:
 	case WM_KEYUP:
 		{
-			int k = MapKey (wParam, (lParam >> 24) & 1);
-			if (k) Key_Event (k, false);
+			int k = MapKey(wParam, (lParam >> 24) & 1);
+			if (k) Key_Event(k, false);
 		}
 		return 0;
 
 	case WM_POWERBROADCAST:
 		if (wParam == PBT_APMSUSPEND)	// will minimize window when in fullscreen mode
-			RE_AppActivate (false);
+			RE_AppActivate(false);
 		//?? can also disconnect all remote (not local) clients from server (if one)
 		break;
 
@@ -325,7 +325,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		return 1;
 	}
 
-	return DefWindowProc (hWnd, uMsg, wParam, lParam);
+	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 
 	unguardf(("msg=%X", uMsg));
 }
@@ -335,7 +335,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	Window creation/destroying
 -----------------------------------------------------------------------------*/
 
-void *Vid_CreateWindow (int width, int height, bool fullscreen)
+void *Vid_CreateWindow(int width, int height, bool fullscreen)
 {
 	guard(Vid_CreateWindow);
 
@@ -362,7 +362,7 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 		r.top    = 0;
 		r.right  = width;
 		r.bottom = height;
-		AdjustWindowRect (&r, stylebits, FALSE);
+		AdjustWindowRect(&r, stylebits, FALSE);
 		x = vid_xpos->integer;
 		y = vid_ypos->integer;
 		w = r.right - r.left;
@@ -375,29 +375,29 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 
 	if (cl_hwnd)
 	{
-		SetWindowLong (cl_hwnd, GWL_STYLE, stylebits);
+		SetWindowLong(cl_hwnd, GWL_STYLE, stylebits);
 		// NOTE: SetWindowLong(wnd, GWL_EXSTYLE, WS_EX_TOPMOST) works bad, SetWindowPos() have a better effect
-		ShowWindow (cl_hwnd, SW_SHOW);
-		SetWindowPos (cl_hwnd, fullscreen ? HWND_TOPMOST : HWND_NOTOPMOST, x, y, w, h, 0);
+		ShowWindow(cl_hwnd, SW_SHOW);
+		SetWindowPos(cl_hwnd, fullscreen ? HWND_TOPMOST : HWND_NOTOPMOST, x, y, w, h, 0);
 	}
 	else
 	{
-		const char *app = appPackage ();
+		const char *app = appPackage();
 		// Register the window class
 		WNDCLASS wc;
-		memset (&wc, 0, sizeof(WNDCLASS));
+		memset(&wc, 0, sizeof(WNDCLASS));
 		wc.lpfnWndProc   = MainWndProc;
 		wc.hInstance     = hInstance;
-		wc.hIcon         = LoadIcon (hInstance, MAKEINTRESOURCE(IDI_ICON1));
-		wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
+		wc.hIcon         = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+		wc.hCursor       = LoadCursor(NULL,IDC_ARROW);
 //		wc.hbrBackground = (HBRUSH) COLOR_GRAYTEXT;
 		wc.lpszClassName = app;
-		if (!RegisterClass (&wc)) appError ("Cannot register window class");
+		if (!RegisterClass(&wc)) appError("Cannot register window class");
 
-		cl_hwnd = CreateWindowEx (exstyle, app, app, stylebits, x, y, w, h, NULL, NULL, hInstance, NULL);
-		if (!cl_hwnd) appError ("Cannot create window");
+		cl_hwnd = CreateWindowEx(exstyle, app, app, stylebits, x, y, w, h, NULL, NULL, hInstance, NULL);
+		if (!cl_hwnd) appError("Cannot create window");
 
-		if (width || height) ShowWindow (cl_hwnd, SW_SHOW);
+		if (width || height) ShowWindow(cl_hwnd, SW_SHOW);
 		// let the sound and input subsystems know about the new window
 		cl.forceViewFrame = true;
 		in_needRestart = true;
@@ -406,9 +406,9 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 	viddef.width  = width;
 	viddef.height = height;
 
-	UpdateWindow (cl_hwnd);
-	SetForegroundWindow (cl_hwnd);
-	SetFocus (cl_hwnd);		//?? capture keyboard; is it really necessary ?
+	UpdateWindow(cl_hwnd);
+	SetForegroundWindow(cl_hwnd);
+	SetFocus(cl_hwnd);		//?? capture keyboard; is it really necessary ?
 
 	return cl_hwnd;
 
@@ -416,24 +416,24 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 }
 
 
-void Vid_DestroyWindow (bool force)
+void Vid_DestroyWindow(bool force)
 {
 //force = true; //???
 	if (!force)	//?? add cvar "win_singleWindow"
 	{
-//		ShowWindow (cl_hwnd, SW_HIDE);
+//		ShowWindow(cl_hwnd, SW_HIDE);
 		return;
 	}
 
-	Com_DPrintf ("...destroying window\n");
+	Com_DPrintf("...destroying window\n");
 	if (cl_hwnd)
 	{
-//		ShowWindow (cl_hwnd, SW_HIDE);	-- this will force to CDS(0,0) when vid_restart, because Activate(0)->Minimize()->WM_SIZE
-		DestroyWindow (cl_hwnd);
+//		ShowWindow(cl_hwnd, SW_HIDE);	-- this will force to CDS(0,0) when vid_restart, because Activate(0)->Minimize()->WM_SIZE
+		DestroyWindow(cl_hwnd);
 		cl_hwnd = 0;
 	}
 
-	UnregisterClass (appPackage (), hInstance);
+	UnregisterClass(appPackage(), hInstance);
 }
 
 
@@ -441,10 +441,10 @@ void Vid_DestroyWindow (bool force)
 
 static bool needRestart;
 
-void Vid_Restart ()
+void Vid_Restart()
 {
 	needRestart = true;
-	M_ForceMenuOff ();		// required: menu graphics may be required to reload
+	M_ForceMenuOff();		// required: menu graphics may be required to reload
 }
 
 
@@ -465,7 +465,7 @@ static const struct {
 };
 
 
-bool Vid_GetModeInfo (int *width, int *height, int mode)
+bool Vid_GetModeInfo(int *width, int *height, int mode)
 {
 	if (mode < 0 || mode >= ARRAY_COUNT(vid_modes))
 		return false;
@@ -477,18 +477,18 @@ bool Vid_GetModeInfo (int *width, int *height, int mode)
 }
 
 
-static void Vid_UpdateWindowPosAndSize (int x, int y)
+static void Vid_UpdateWindowPosAndSize(int x, int y)
 {
 	RECT r;
 	r.left   = 0;
 	r.top    = 0;
 	r.right  = viddef.width;
 	r.bottom = viddef.height;
-	AdjustWindowRect (&r, GetWindowLong (cl_hwnd, GWL_STYLE), FALSE);
+	AdjustWindowRect(&r, GetWindowLong(cl_hwnd, GWL_STYLE), FALSE);
 
 	int w = r.right - r.left;
 	int h = r.bottom - r.top;
-	MoveWindow (cl_hwnd, vid_xpos->integer, vid_ypos->integer, w, h, TRUE);
+	MoveWindow(cl_hwnd, vid_xpos->integer, vid_ypos->integer, w, h, TRUE);
 }
 
 
@@ -497,12 +497,12 @@ static void Vid_UpdateWindowPosAndSize (int x, int y)
 //?? Really, renderer system should be redesigned (split backend--frontend, frontend will load/init backend ...
 //?? so, this code will be removed at all.
 
-static void FreeRenderer ()
+static void FreeRenderer()
 {
 	refActive = false;
 #if !SINGLE_RENDERER
-	refLibrary.Free ();		// if statically linked, handle = NULL ...
-	memset (&re, 0, sizeof(re));
+	refLibrary.Free();		// if statically linked, handle = NULL ...
+	memset(&re, 0, sizeof(re));
 #endif
 }
 
@@ -515,62 +515,62 @@ namespace OpenGLDrv {
 #endif
 
 #if !SINGLE_RENDERER
-static bool LoadRenderer (const char *name)
+static bool LoadRenderer(const char *name)
 #else
-static bool LoadRenderer ()
+static bool LoadRenderer()
 #endif
 {
 	guard(LoadRenderer);
 
 	if (refActive)
 	{
-		RE_Shutdown ();
-		FreeRenderer ();
+		RE_Shutdown();
+		FreeRenderer();
 	}
 
 #if !SINGLE_RENDERER
 
-	appPrintf ("Loading %s\n", name);
+	appPrintf("Loading %s\n", name);
 
 #if STATIC_BUILD
-	if (!strcmp (name, "gl"))
+	if (!strcmp(name, "gl"))
 		re = OpenGLDrv::re;
 	else
 #endif
 	{
 		TString<256> DllName;
-		DllName.sprintf ("ref_%s" DLLEXT, name);
-		if (!(refLibrary.Load (DllName)))
+		DllName.sprintf("ref_%s" DLLEXT, name);
+		if (!(refLibrary.Load(DllName)))
 		{
-			appWPrintf ("Load(\"%s\") failed\n", *DllName);
+			appWPrintf("Load(\"%s\") failed\n", *DllName);
 			return false;
 		}
 		CreateDynRenderer_t pCreateRenderer;
-		if (!refLibrary.GetProc ("CreateRenderer", &pCreateRenderer))
+		if (!refLibrary.GetProc("CreateRenderer", &pCreateRenderer))
 		{
-			appWPrintf ("GetProc() failed on %s\n", *DllName);
-			FreeRenderer ();
+			appWPrintf("GetProc() failed on %s\n", *DllName);
+			FreeRenderer();
 			return false;
 		}
 
 		re.struc_size = sizeof(refExport_t);
-		if (!pCreateRenderer (&ri, &re))
+		if (!pCreateRenderer(&ri, &re))
 		{
-			appWPrintf ("%s has incompatible renderer\n", *DllName);
-			FreeRenderer ();
+			appWPrintf("%s has incompatible renderer\n", *DllName);
+			FreeRenderer();
 			return false;
 		}
 	}
 #endif // SINGLE_RENDERER
 
-	if (!RE_Init ())
+	if (!RE_Init())
 	{
-		RE_Shutdown ();
-		FreeRenderer ();
+		RE_Shutdown();
+		FreeRenderer();
 		return false;
 	}
 
-	appPrintf ("------------------------------------\n");
+	appPrintf("------------------------------------\n");
 	refActive = true;
 
 	return true;
@@ -579,17 +579,17 @@ static bool LoadRenderer ()
 }
 
 
-void Vid_Tick ()
+void Vid_Tick()
 {
 	if (win_noalttab->modified)
 	{
-		DisableAltTab (win_noalttab->integer != 0);
+		DisableAltTab(win_noalttab->integer != 0);
 		win_noalttab->modified = false;
 	}
 
 	if (win_priorityBoost->modified)
 	{
-		SetHighPriority (win_priorityBoost->integer != 0);
+		SetHighPriority(win_priorityBoost->integer != 0);
 		win_priorityBoost->modified = false;
 	}
 
@@ -605,26 +605,26 @@ void Vid_Tick ()
 	{
 		// renderer has changed
 		cl.forceViewFrame = true;
-		S_StopAllSounds_f ();
+		S_StopAllSounds_f();
 		cl.rendererReady = false;
 
 #if !SINGLE_RENDERER
 		static char lastRenderer[MAX_QPATH];
 
-		bool loaded = LoadRenderer (vid_ref->string);
+		bool loaded = LoadRenderer(vid_ref->string);
 		if (!loaded && lastRenderer[0])
 		{
-			if (LoadRenderer (lastRenderer))
+			if (LoadRenderer(lastRenderer))
 			{
-				Cvar_Set ("vid_ref", lastRenderer);
+				Cvar_Set("vid_ref", lastRenderer);
 				vid_ref->modified = false;
 				loaded = true;
 			}
 		}
-		if (!loaded) appError ("Cannot load renderer");
-		strcpy (lastRenderer, vid_ref->string);
+		if (!loaded) appError("Cannot load renderer");
+		strcpy(lastRenderer, vid_ref->string);
 #else
-		if (!LoadRenderer ()) appError ("Cannot load renderer");
+		if (!LoadRenderer()) appError("Cannot load renderer");
 #endif
 		needRestart = false;
 	}
@@ -633,7 +633,7 @@ void Vid_Tick ()
 	if (vid_xpos->modified || vid_ypos->modified)
 	{
 		if (!FullscreenApp)
-			Vid_UpdateWindowPosAndSize (vid_xpos->integer, vid_ypos->integer);
+			Vid_UpdateWindowPosAndSize(vid_xpos->integer, vid_ypos->integer);
 
 		vid_xpos->modified = false;
 		vid_ypos->modified = false;
@@ -641,7 +641,7 @@ void Vid_Tick ()
 }
 
 
-void Vid_Init ()
+void Vid_Init()
 {
 CVAR_BEGIN(vars)
 #if !SINGLE_RENDERER
@@ -655,33 +655,33 @@ CVAR_END
 
 	guard(Vid_Init);
 
-	Cvar_GetVars (ARRAY_ARG(vars));
-	InitRendererVars ();
+	Cvar_GetVars(ARRAY_ARG(vars));
+	InitRendererVars();
 
 	// add some console commands that we want to handle
-	RegisterCommand ("vid_restart", Vid_Restart);
+	RegisterCommand("vid_restart", Vid_Restart);
 
 	if (!GIsWin2K)			// for WinNT3.51 and Win95 only
-		MSH_MOUSEWHEEL = RegisterWindowMessage ("MSWHEEL_ROLLMSG");
+		MSH_MOUSEWHEEL = RegisterWindowMessage("MSWHEEL_ROLLMSG");
 
 	// create invisible (fake) window to capture Win32 focus
-	Vid_CreateWindow (0, 0, false);
+	Vid_CreateWindow(0, 0, false);
 
 	// load renderer
 	needRestart = true;		// should init renderer on startup
-	Vid_Tick ();
+	Vid_Tick();
 
 	unguard;
 }
 
 
-void Vid_Shutdown ()
+void Vid_Shutdown()
 {
 	if (refActive)
 	{
 		// perform shutdown
-		RE_Shutdown (true);
-		Vid_DestroyWindow (true);
-		FreeRenderer ();
+		RE_Shutdown(true);
+		Vid_DestroyWindow(true);
+		FreeRenderer();
 	}
 }

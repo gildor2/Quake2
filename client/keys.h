@@ -75,21 +75,21 @@ enum {
 extern bool		keydown[NUM_KEYS];			// exported for [CTRL|ALT|SHIFT]_PRESSED only
 extern int		keysDown;					// number of holded keys
 
-const char *Key_KeynumToString (int keynum);
+const char *Key_KeynumToString(int keynum);
 
-void Key_SetBinding (int keynum, const char *binding);
-int Key_FindBinding (const char *str, int *keys, int maxKeys);
-void Key_WriteBindings (COutputDevice *Out);
+void Key_SetBinding(int keynum, const char *binding);
+int Key_FindBinding(const char *str, int *keys, int maxKeys);
+void Key_WriteBindings(COutputDevice *Out);
 
-//void Key_Init (); -- declared in qcommon.h (init from Com_Init())
-void Key_Event (int key, bool down);
-void Key_ClearStates (void);
+//void Key_Init(); -- declared in qcommon.h (init from Com_Init())
+void Key_Event(int key, bool down);
+void Key_ClearStates(void);
 
 #define		MAXCMDLINE	256
 extern char		editLine[MAXCMDLINE];
 extern int		editPos;
 
-void CompleteCommand (void);
+void CompleteCommand();
 
 
 #endif

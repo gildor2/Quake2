@@ -130,7 +130,7 @@ struct CBrush;
 #define DEVELOPER		developer->integer
 #else
 #define DEVELOPER		0
-inline void Com_DPrintf (const char*, ...) {}
+inline void Com_DPrintf(const char*, ...) {}
 #endif
 
 
@@ -173,47 +173,47 @@ public:
 	int		readcount;						// reading cursor
 
 	// Functions
-	void Init (void *data, int length);		// setup buffer
-	inline void Clear ()					// clear writting
+	void Init(void *data, int length);		// setup buffer
+	inline void Clear()						// clear writting
 	{
 		cursize = 0;
 		overflowed = false;
 	}
-	void Write (const void *data, int length);
-	inline void Write (sizebuf_t &from)
+	void Write(const void *data, int length);
+	inline void Write(sizebuf_t &from)
 	{
-		Write (from.data, from.cursize);
+		Write(from.data, from.cursize);
 	}
-	inline void BeginReading ()
+	inline void BeginReading()
 	{
 		readcount = 0;
 	}
 };
 
-void	MSG_WriteChar (sizebuf_t *sb, int c);
-void	MSG_WriteByte (sizebuf_t *sb, int c);
-void	MSG_WriteShort (sizebuf_t *sb, int c);
-void	MSG_WriteLong (sizebuf_t *sb, int c);
-void	MSG_WriteFloat (sizebuf_t *sb, float f);
-void	MSG_WriteString (sizebuf_t *sb, const char *s);
-void	MSG_WritePos (sizebuf_t *sb, const CVec3 &pos);
-void	MSG_WriteAngle (sizebuf_t *sb, float f);
-void	MSG_WriteAngle16 (sizebuf_t *sb, float f);
-void	MSG_WriteDir (sizebuf_t *sb, const CVec3 &vector);
+void	MSG_WriteChar(sizebuf_t *sb, int c);
+void	MSG_WriteByte(sizebuf_t *sb, int c);
+void	MSG_WriteShort(sizebuf_t *sb, int c);
+void	MSG_WriteLong(sizebuf_t *sb, int c);
+void	MSG_WriteFloat(sizebuf_t *sb, float f);
+void	MSG_WriteString(sizebuf_t *sb, const char *s);
+void	MSG_WritePos(sizebuf_t *sb, const CVec3 &pos);
+void	MSG_WriteAngle(sizebuf_t *sb, float f);
+void	MSG_WriteAngle16(sizebuf_t *sb, float f);
+void	MSG_WriteDir(sizebuf_t *sb, const CVec3 &vector);
 
 
-int		MSG_ReadChar (sizebuf_t *sb);
-int		MSG_ReadByte (sizebuf_t *sb);
-int		MSG_ReadShort (sizebuf_t *sb);
-int		MSG_ReadLong (sizebuf_t *sb);
-float	MSG_ReadFloat (sizebuf_t *sb);
-char	*MSG_ReadString (sizebuf_t *sb);
-void	MSG_ReadPos (sizebuf_t *sb, CVec3 &pos);
-float	MSG_ReadAngle (sizebuf_t *sb);
-float	MSG_ReadAngle16 (sizebuf_t *sb);
-void	MSG_ReadDir (sizebuf_t *sb, CVec3 &vector);
+int		MSG_ReadChar(sizebuf_t *sb);
+int		MSG_ReadByte(sizebuf_t *sb);
+int		MSG_ReadShort(sizebuf_t *sb);
+int		MSG_ReadLong(sizebuf_t *sb);
+float	MSG_ReadFloat(sizebuf_t *sb);
+char	*MSG_ReadString(sizebuf_t *sb);
+void	MSG_ReadPos(sizebuf_t *sb, CVec3 &pos);
+float	MSG_ReadAngle(sizebuf_t *sb);
+float	MSG_ReadAngle16(sizebuf_t *sb);
+void	MSG_ReadDir(sizebuf_t *sb, CVec3 &vector);
 
-void	MSG_ReadData (sizebuf_t *sb, void *buffer, int size);
+void	MSG_ReadData(sizebuf_t *sb, void *buffer, int size);
 
 /*-----------------------------------------------------------------------------
 	Delta compression for quake2 protocol (entdelta.cpp)
@@ -221,17 +221,17 @@ void	MSG_ReadData (sizebuf_t *sb, void *buffer, int size);
 
 // entity_state_t communication
 
-void	MSG_WriteDeltaEntity (sizebuf_t *msg, const entityStateEx_t *from, entityStateEx_t *to, bool force, bool newentity, bool isExt);
-void	MSG_WriteRemoveEntity (sizebuf_t *msg, int num);
+void	MSG_WriteDeltaEntity(sizebuf_t *msg, const entityStateEx_t *from, entityStateEx_t *to, bool force, bool newentity, bool isExt);
+void	MSG_WriteRemoveEntity(sizebuf_t *msg, int num);
 
-int		MSG_ReadEntityBits (sizebuf_t *msg, unsigned *bits, bool *remove);
-void	MSG_ReadDeltaEntity (sizebuf_t *msg, const entityStateEx_t *from, entityStateEx_t *to, unsigned bits);
+int		MSG_ReadEntityBits(sizebuf_t *msg, unsigned *bits, bool *remove);
+void	MSG_ReadDeltaEntity(sizebuf_t *msg, const entityStateEx_t *from, entityStateEx_t *to, unsigned bits);
 
-void	MSG_ReadDeltaUsercmd (sizebuf_t *smg, const usercmd_t *from, usercmd_t *to);
-void	MSG_WriteDeltaUsercmd (sizebuf_t *msg, const usercmd_t *from, usercmd_t *to);
+void	MSG_ReadDeltaUsercmd(sizebuf_t *smg, const usercmd_t *from, usercmd_t *to);
+void	MSG_WriteDeltaUsercmd(sizebuf_t *msg, const usercmd_t *from, usercmd_t *to);
 
-void	MSG_ReadDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, player_state_t *newState);
-void	MSG_WriteDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, player_state_t *newState);
+void	MSG_ReadDeltaPlayerstate(sizebuf_t *msg, const player_state_t *oldState, player_state_t *newState);
+void	MSG_WriteDeltaPlayerstate(sizebuf_t *msg, const player_state_t *oldState, player_state_t *newState);
 
 
 /*-----------------------------------------------------------------------------
@@ -244,7 +244,7 @@ void	MSG_WriteDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, 
 // 2. cl_fx.cpp:  CL_FlyParticles(), CL_BfgParticles()
 extern	/*const*/ CVec3 bytedirs[NUMVERTEXNORMALS];
 
-void	InitByteDirs ();
+void	InitByteDirs();
 
 
 /*-----------------------------------------------------------------------------
@@ -255,10 +255,10 @@ void	InitByteDirs ();
 #define	MAX_INFO_VALUE		64
 #define	MAX_INFO_STRING		512
 
-const char * Info_ValueForKey (const char *s, const char *key);
+const char * Info_ValueForKey(const char *s, const char *key);
 //?? Info_SetValueForKey: used for Cvar_BitInfo() and 1 place for value("ip")=ip only!
-void	Info_SetValueForKey (char *s, const char *key, const char *value);
-void	Info_Print (const char *s);
+void	Info_SetValueForKey(char *s, const char *key, const char *value);
+void	Info_Print(const char *s);
 
 
 /*-----------------------------------------------------------------------------
@@ -266,8 +266,8 @@ void	Info_Print (const char *s);
 -----------------------------------------------------------------------------*/
 
 // data is an in/out parm, returns a parsed out token
-char *COM_Parse (const char * &data_p, bool allowLineBreaks = true);
-const char *COM_QuoteString (const char *str, bool alwaysQuote);
+char *COM_Parse(const char * &data_p, bool allowLineBreaks = true);
+const char *COM_QuoteString(const char *str, bool alwaysQuote);
 
 
 /*-----------------------------------------------------------------------------
@@ -277,10 +277,10 @@ const char *COM_QuoteString (const char *str, bool alwaysQuote);
 // macro version for any types (used 2 times)
 #define VectorSubtract2(a,b,c)	(c[0]=a[0]-b[0],c[1]=a[1]-b[1],c[2]=a[2]-b[2])
 
-float ReduceAngle (float a);
-float LerpAngle (float a1, float a2, float frac);
-float AngleSubtract (float a1, float a2);
-void AnglesSubtract (const CVec3 &v1, const CVec3 &v2, CVec3 &v3);
+float ReduceAngle(float a);
+float LerpAngle(float a1, float a2, float frac);
+float AngleSubtract(float a1, float a2);
+void AnglesSubtract(const CVec3 &v1, const CVec3 &v2, CVec3 &v3);
 
 
 /*-----------------------------------------------------------------------------
@@ -288,7 +288,7 @@ void AnglesSubtract (const CVec3 &v1, const CVec3 &v2, CVec3 &v3);
 -----------------------------------------------------------------------------*/
 
 
-byte	Com_BlockSequenceCRCByte (byte *base, int length, int sequence);
+byte	Com_BlockSequenceCRCByte(byte *base, int length, int sequence);
 
 
 /*-----------------------------------------------------------------------------
@@ -386,7 +386,7 @@ enum server_state_t
  */
 
 
-// player_state_t->rdflags (refdef flags)
+// player_state_t->rdflags(refdef flags)
 #define	RDF_UNDERWATER		1		// warp the screen as apropriate
 #define RDF_NOWORLDMODEL	2		// used for player configuration screen
 //ROGUE
@@ -396,7 +396,7 @@ enum server_state_t
 #define RDF_THIRD_PERSON	0x10
 
 
-#define	ANGLE2SHORT(x)	(appRound ((x)*65535.0f/360) & 65535)
+#define	ANGLE2SHORT(x)	(appRound((x)*65535.0f/360) & 65535)
 #define	SHORT2ANGLE(x)	((x)*(360.0f/65536))
 
 
@@ -471,18 +471,18 @@ The + command line options are also added to the command buffer.
 */
 
 
-void	Cbuf_AddText (const char *text);
+void	Cbuf_AddText(const char *text);
 // as new commands are generated from the console or keybindings,
 // the text is added to the end of the command buffer.
 
-void	Cbuf_Execute ();
+void	Cbuf_Execute();
 // Pulls off \n terminated lines of text from the command buffer and sends
 // them through Cmd_ExecuteString.  Stops when the buffer is empty.
 // Normally called once per frame, but may be explicitly invoked.
 // Do not call inside a command function!
 
-void	Cbuf_CopyToDefer ();
-void	Cbuf_InsertFromDefer ();
+void	Cbuf_CopyToDefer();
+void	Cbuf_InsertFromDefer();
 // These two functions are used to defer any pending commands while a map
 // is being loaded (NOTE: cannot simply disable Cbuf_Execute(): while map is loading,
 // there can be executed different commands)
@@ -509,9 +509,9 @@ extern TList<CCommand> CmdList;
 // things like godmode, noclip, etc, are commands directed to the server,
 // so when they are typed in at the console, they will need to be forwarded.
 // NOTE: implemented in client
-void	Cmd_ForwardToServer (int argc, char **argv);
+void	Cmd_ForwardToServer(int argc, char **argv);
 
-void	Cmd_WriteAliases (COutputDevice *Out);
+void	Cmd_WriteAliases(COutputDevice *Out);
 
 
 /*-----------------------------------------------------------------------------
@@ -551,26 +551,26 @@ struct cvar_t
 	// added since 4.00
 	char	*resetString;			// default cvar value (unset for user-created vars)
 	int		integer;				// atoi(string)
-	int		stringLength;			// size of buffer, allocated for holding var->string (or 0 if var->buf used)
+	int		stringLength;			// size of buffer, allocated for holding var->string(or 0 if var->buf used)
 	char	buf[CVAR_BUFFER_SIZE];
 	cvar_t	*hashNext;
 	// functions
-	inline bool IsDefault ()
+	inline bool IsDefault()
 	{
-		return resetString && strcmp (string, resetString) == 0;
+		return resetString && strcmp(string, resetString) == 0;
 	}
-	inline void Reset ()
+	inline void Reset()
 	{
 		//!! not optimal - should use cvar_t struc instead of "name"
-		Cvar_Set (name, resetString);
+		Cvar_Set(name, resetString);
 	}
-	inline float Clamp (float low, float high)
+	inline float Clamp(float low, float high)
 	{
-		return Cvar_Clamp (this, low, high);
+		return Cvar_Clamp(this, low, high);
 	}
-//	inline void FullSet (const char *value, unsigned flags)
+//	inline void FullSet(const char *value, unsigned flags)
 //	{
-//		Cvar_FullSet (this, value, flags);
+//		Cvar_FullSet(this, value, flags);
 //	}
 	// statics
 	static cvar_t	*vars;
@@ -602,41 +602,41 @@ struct cvarInfo_t
 #define CVAR_END						};
 
 
-//--cvar_t *Cvar_Get (char *var_name, char *value, int flags);
+//--cvar_t *Cvar_Get(char *var_name, char *value, int flags);
 // creates the variable if it doesn't exist, or returns the existing one
 // if it exists, the value will not be changed, but flags will be ORed in
 // that allows variables to be unarchived without needing bitflags
 
 // used for CVAR_SERVERINFO|(CVAR_LATCH/CVAR_NOSET)
 // and inside cvar.cpp for "set[s|u|a]" commands
-cvar_t	*Cvar_FullSet (const char *var_name, const char *value, unsigned flags);
+cvar_t	*Cvar_FullSet(const char *var_name, const char *value, unsigned flags);
 
-//--cvar_t	*Cvar_SetValue (char *var_name, float value);
-//--cvar_t	*Cvar_SetInteger (char *var_name, int value);
-//--cvar_t 	*Cvar_Set (char *var_name, char *value);				// will create the variable if it doesn't exist
-cvar_t	*Cvar_ForceSet (const char *var_name, const char *value);	// will set the variable even if NOSET or LATCH
+//--cvar_t	*Cvar_SetValue(char *var_name, float value);
+//--cvar_t	*Cvar_SetInteger(char *var_name, int value);
+//--cvar_t 	*Cvar_Set(char *var_name, char *value);				// will create the variable if it doesn't exist
+cvar_t	*Cvar_ForceSet(const char *var_name, const char *value);	// will set the variable even if NOSET or LATCH
 
 // expands value to a string and calls Cvar_Set
-//--float	Cvar_Clamp (cvar_t *cvar, float low, float high);
+//--float	Cvar_Clamp(cvar_t *cvar, float low, float high);
 
-//--float	Cvar_VariableValue (char *var_name);
-//--int		Cvar_VariableInt (char *var_name);
+//--float	Cvar_VariableValue(char *var_name);
+//--int		Cvar_VariableInt(char *var_name);
 // returns 0 if not defined or non numeric
 
-//--const char	*Cvar_VariableString (char *var_name);
+//--const char	*Cvar_VariableString(char *var_name);
 // returns an empty string if not defined
 
-bool	Cvar_Command (int argc, char **argv);
+bool	Cvar_Command(int argc, char **argv);
 // called by Cmd_ExecuteString when Cmd_Argv(0) doesn't match a known
 // command.  Returns true if the command was a variable reference that
 // was handled. (print or change)
 
-void	Cvar_WriteVariables (COutputDevice *Out, int includeMask, int excludeMask, const char *header);
+void	Cvar_WriteVariables(COutputDevice *Out, int includeMask, int excludeMask, const char *header);
 // appends lines containing "set variable value" for all variables with the archive flag set.
 
-void	Cvar_Cheats (bool enable);
+void	Cvar_Cheats(bool enable);
 
-const char *Cvar_BitInfo (unsigned bit);
+const char *Cvar_BitInfo(unsigned bit);
 
 
 /*-----------------------------------------------------------------------------
@@ -666,21 +666,21 @@ struct netadr_t
 	};
 };
 
-bool	IPWildcard (netadr_t *a, const char *mask);
+bool	IPWildcard(netadr_t *a, const char *mask);
 
-void	NET_Init ();
-void	NET_Shutdown ();
+void	NET_Init();
+void	NET_Shutdown();
 
-void	NET_Config (bool multiplayer);
+void	NET_Config(bool multiplayer);
 
-bool	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg);
-void	NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to);
+bool	NET_GetPacket(netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg);
+void	NET_SendPacket(netsrc_t sock, int length, void *data, netadr_t to);
 
-bool	NET_CompareAdr (netadr_t *a, netadr_t *b);
-bool	NET_CompareBaseAdr (netadr_t *a, netadr_t *b);
-bool	NET_IsLocalAddress (netadr_t *adr);
-const char *NET_AdrToString (netadr_t *a);
-bool	NET_StringToAdr (const char *s, netadr_t *a, short defPort = 0);
+bool	NET_CompareAdr(netadr_t *a, netadr_t *b);
+bool	NET_CompareBaseAdr(netadr_t *a, netadr_t *b);
+bool	NET_IsLocalAddress(netadr_t *adr);
+const char *NET_AdrToString(netadr_t *a);
+bool	NET_StringToAdr(const char *s, netadr_t *a, short defPort = 0);
 
 
 class netchan_t
@@ -720,27 +720,27 @@ public:
 
 	// methods
 
-	void Setup (netsrc_t sock, netadr_t adr, int qport);
+	void Setup(netsrc_t sock, netadr_t adr, int qport);
 	// returns true if the last reliable message has acked; UNUSED??
-	inline bool CanReliable ()
+	inline bool CanReliable()
 	{
 		return (reliable_length == 0);	// if != 0 -- waiting for ack
 	}
 	// returns true, when have reliable data to (re)transmit
-	bool NeedReliable ();
+	bool NeedReliable();
 	// combine reliable+unreliable data, send; retransmit reliable, when needed
 	// reliable data taken from "message"+"reliable_buf", unreliable - "data"+"length"
-	void Transmit (void *data, int length);
+	void Transmit(void *data, int length);
 	// process/skip incoming message header
-	bool Process (sizebuf_t *msg);
+	bool Process(sizebuf_t *msg);
 };
 
 extern netadr_t	net_from;
 extern sizebuf_t net_message;
 
 
-void	Netchan_Init ();
-void	Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, const char *format, ...);
+void	Netchan_Init();
+void	Netchan_OutOfBandPrint(netsrc_t net_socket, netadr_t adr, const char *format, ...);
 
 
 /*-----------------------------------------------------------------------------
@@ -751,30 +751,30 @@ void	Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, const char *form
 extern bool cm_showTrace;
 #endif
 
-CBspModel *CM_LoadMap (const char *name, bool clientload, unsigned *checksum = NULL);
-CBspModel *CM_InlineModel (const char *name);	// *1, *2, etc
-CBspModel *CM_InlineModel (int index);
+CBspModel *CM_LoadMap(const char *name, bool clientload, unsigned *checksum = NULL);
+CBspModel *CM_InlineModel(const char *name);	// *1, *2, etc
+CBspModel *CM_InlineModel(int index);
 
 // creates a clipping hull for an arbitrary box
-int		CM_HeadnodeForBox (const CBox &box);
+int		CM_HeadnodeForBox(const CBox &box);
 
 // returns an OR'ed contents mask
-int		CM_PointContents (const CVec3 &p, int headnode);
-int		CM_TransformedPointContents (const CVec3 &p, int headnode, const CVec3 &origin, const CVec3 &angles);
-int		CM_TransformedPointContents (const CVec3 &p, int headnode, const CVec3 &origin, const CAxis &axis);
-int		CM_PointModelContents (const CVec3 &p);
-bool	CM_CombineTrace (trace_t &trace1, const trace_t &trace2);
+int		CM_PointContents(const CVec3 &p, int headnode);
+int		CM_TransformedPointContents(const CVec3 &p, int headnode, const CVec3 &origin, const CVec3 &angles);
+int		CM_TransformedPointContents(const CVec3 &p, int headnode, const CVec3 &origin, const CAxis &axis);
+int		CM_PointModelContents(const CVec3 &p);
+bool	CM_CombineTrace(trace_t &trace1, const trace_t &trace2);
 
-const byte *CM_ClusterPVS (int cluster);
+const byte *CM_ClusterPVS(int cluster);
 
-void	CM_SetAreaPortalState (int portalnum, bool open);
-bool	CM_AreasConnected (int area1, int area2);
+void	CM_SetAreaPortalState(int portalnum, bool open);
+bool	CM_AreasConnected(int area1, int area2);
 
-int		CM_WriteAreaBits (byte *buffer, int area);
-bool	CM_HeadnodeVisible (int headnode, const byte *visbits);
+int		CM_WriteAreaBits(byte *buffer, int area);
+bool	CM_HeadnodeVisible(int headnode, const byte *visbits);
 
-void	CM_WritePortalState (FILE *f);
-void	CM_ReadPortalState (FILE *f);
+void	CM_WritePortalState(FILE *f);
+void	CM_ReadPortalState(FILE *f);
 
 /*-----------------------------------------------------------------------------
 	Player movement code (pmove.cpp)
@@ -782,32 +782,32 @@ void	CM_ReadPortalState (FILE *f);
 -----------------------------------------------------------------------------*/
 
 extern float pm_airaccelerate;
-void	Pmove (pmove_t *pmove);
+void	Pmove(pmove_t *pmove);
 
 
 /*-----------------------------------------------------------------------------
 	File system (files.cpp)
 -----------------------------------------------------------------------------*/
 
-void	InitFileSystem ();
-void	FS_Tick ();
+void	InitFileSystem();
+void	FS_Tick();
 
-const char *FS_NextPath (const char *prevpath);
+const char *FS_NextPath(const char *prevpath);
 
 
 /*------------- Miscellaneous -----------------*/
 
 // debugging
-void DebugPrintf (const char *fmt, ...) PRINTF(1,2);
+void DebugPrintf(const char *fmt, ...) PRINTF(1,2);
 
-server_state_t Com_ServerState ();		// this should have just been a cvar...
-void	Com_SetServerState (server_state_t state);
+server_state_t Com_ServerState();		// this should have just been a cvar...
+void	Com_SetServerState(server_state_t state);
 
 // md4.cpp
-unsigned Com_BlockChecksum (void *buffer, int length);
+unsigned Com_BlockChecksum(void *buffer, int length);
 
 // 0 to 1
-inline float frand ()
+inline float frand()
 {
 	return rand() * (1.0f/RAND_MAX);
 }
@@ -817,16 +817,16 @@ inline float frand ()
 // BUT: require this for dynamic renderer (or move to "engine.h" or to Core)
 // Most frequent use:
 //	CVec3 dir;
-//	dir.Set (crand(), crand(), crand());
-//	dir.NormalizeFast ();
+//	dir.Set(crand(), crand(), crand());
+//	dir.NormalizeFast();
 
 // -1 to 1
-inline float crand ()
+inline float crand()
 {
 	return rand() * (2.0f/RAND_MAX) - 1;
 }
 #else
-float crand ();
+float crand();
 #endif
 
 
@@ -840,40 +840,40 @@ extern cvar_t	*sv_cheats;
 // com_speeds times
 extern unsigned time_before_game, time_after_game, time_before_ref, time_after_ref;
 
-bool	Com_CheckCmdlineVar (const char *name);
+bool	Com_CheckCmdlineVar(const char *name);
 
-void	Com_Init (const char *cmdline);
-void	Com_Frame (float msec);
+void	Com_Init(const char *cmdline);
+void	Com_Frame(float msec);
 
 extern bool com_isClient, com_isServer;
 
 // this is in the client code, but can be used for debugging from server
-void	SCR_DebugGraph (float value, int color);
+void	SCR_DebugGraph(float value, int color);
 
 
 /*-----------------------------------------------------------------------------
 	Non-portable system services (sys_*.cpp)
 -----------------------------------------------------------------------------*/
 
-char	*Sys_ConsoleInput ();
-void	Sys_ProcessMessages ();
+char	*Sys_ConsoleInput();
+void	Sys_ProcessMessages();
 
 
 /*-----------------------------------------------------------------------------
 	Client / server systems
 -----------------------------------------------------------------------------*/
 
-void	CL_Init ();
-void	CL_Drop (bool fromError = false);
-void	CL_Shutdown ();
-void	CL_Frame (float msec, float realMsec);
+void	CL_Init();
+void	CL_Drop(bool fromError = false);
+void	CL_Shutdown();
+void	CL_Frame(float msec, float realMsec);
 
-void	Key_Init ();
-void	SCR_BeginLoadingPlaque (bool server = false);
+void	Key_Init();
+void	SCR_BeginLoadingPlaque(bool server = false);
 
-void	SV_Init ();
-void	SV_Shutdown (const char *finalmsg, bool reconnect = false);
-void	SV_Frame (float msec);
+void	SV_Init();
+void	SV_Shutdown(const char *finalmsg, bool reconnect = false);
+void	SV_Frame(float msec);
 
 
 /*-----------------------------------------------------------------------------

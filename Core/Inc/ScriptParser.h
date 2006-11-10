@@ -13,26 +13,26 @@ private:
 	const char *textPtr;
 	unsigned parseFlags;
 public:
-	//?? add InitFromBuf (text, textLen, flags)
-	inline void InitFromBuf (const char *buf, unsigned flags = PARSER_CPP_COMMENTS)
+	//?? add InitFromBuf(text, textLen, flags)
+	inline void InitFromBuf(const char *buf, unsigned flags = PARSER_CPP_COMMENTS)
 	{
 		textPtr = buf;
 		parseFlags = flags;
 	}
-	inline const char *GetPos ()
+	inline const char *GetPos()
 	{
 		return textPtr;
 	}
-	const char *GetLine ();
+	const char *GetLine();
 	// assume one "{" entered; return NULL when no matching "}" (unexpected end of buffer),
 	// or pointer to a line with matched "}"
 	// NOTE: textPtr will point to line AFTER matched "}"
-	const char *SkipBraces ();
+	const char *SkipBraces();
 };
 
 
-CORE_API char* appSkipQuotedString (char *str);
+CORE_API char* appSkipQuotedString(char *str);
 // return false when not enough dstSize
-CORE_API bool appQuoteString (char *dst, int dstSize, const char *src);
+CORE_API bool appQuoteString(char *dst, int dstSize, const char *src);
 // return false when not enough dstSize or when no closing quote
-CORE_API bool appUnquoteString (char *dst, int dstSize, const char *src);
+CORE_API bool appUnquoteString(char *dst, int dstSize, const char *src);

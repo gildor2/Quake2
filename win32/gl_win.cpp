@@ -25,7 +25,7 @@ static WORD gammaRamp[3*256], newGamma[3*256];
 extern cvar_t *r_ignorehwgamma;
 
 
-bool GLimp_HasGamma ()
+bool GLimp_HasGamma()
 {
 	if (r_ignorehwgamma->integer) return false;
 	return gammaStored;
@@ -33,47 +33,47 @@ bool GLimp_HasGamma ()
 
 
 // Called from GLimp_Init()
-static void ReadGamma ()
+static void ReadGamma()
 {
 	if (r_ignorehwgamma->integer)
 	{
 		gammaStored = false;
 		return;
 	}
-	HWND hwnd = GetDesktopWindow ();
-	HDC hdc = GetDC (hwnd);
-	gammaStored = GetDeviceGammaRamp (hdc, gammaRamp) != 0;
-	ReleaseDC (hwnd, hdc);
+	HWND hwnd = GetDesktopWindow();
+	HDC hdc = GetDC(hwnd);
+	gammaStored = GetDeviceGammaRamp(hdc, gammaRamp) != 0;
+	ReleaseDC(hwnd, hdc);
 }
 
 
 // Called from GLimp_Shutdown() and AppActivate()
-static void RestoreGamma ()
+static void RestoreGamma()
 {
 	if (!gammaStored) return;
-	HWND hwnd = GetDesktopWindow ();
-	HDC hdc = GetDC (hwnd);
+	HWND hwnd = GetDesktopWindow();
+	HDC hdc = GetDC(hwnd);
 #if 0
 	DebugPrintf("restore gamma\n");
-	if (!SetDeviceGammaRamp (hdc, gammaRamp))
-		DebugPrintf ("Cannot restore gamma!\n");
+	if (!SetDeviceGammaRamp(hdc, gammaRamp))
+		DebugPrintf("Cannot restore gamma!\n");
 #else
-	SetDeviceGammaRamp (hdc, gammaRamp);
+	SetDeviceGammaRamp(hdc, gammaRamp);
 #endif
-	ReleaseDC (hwnd, hdc);
+	ReleaseDC(hwnd, hdc);
 }
 
 
 // Called from GLimp_SetGamma() and AppActivate()
-static void UpdateGamma ()
+static void UpdateGamma()
 {
 	if (!gammaValid) return;
 #if 0
 	DebugPrintf("updata gamma\n");
-	if (!SetDeviceGammaRamp (gl_hDC, newGamma))
-		DebugPrintf ("Cannot update gamma!\n");
+	if (!SetDeviceGammaRamp(gl_hDC, newGamma))
+		DebugPrintf("Cannot update gamma!\n");
 #else
-	SetDeviceGammaRamp (gl_hDC, newGamma);
+	SetDeviceGammaRamp(gl_hDC, newGamma);
 #endif
 }
 
@@ -81,7 +81,7 @@ static void UpdateGamma ()
 //#define FIND_GAMMA	1		// define for replace GAMMA_ANGLE and GAMMA_OFFSET with 'a' and 'b' cvars
 //#define FIND_GAMMA2	1
 
-void GLimp_SetGamma (float gamma)
+void GLimp_SetGamma(float gamma)
 {
 #if FIND_GAMMA
 	EXEC_ONCE(appWPrintf("Find gamma mode!\n"));
@@ -107,13 +107,13 @@ void GLimp_SetGamma (float gamma)
 #if 0
 		float tmp = (i / 255.0f * overbright - 0.5f) * contr + 0.5f;
 		if (tmp < 0) tmp = 0;					// without this, can get semi-negative picture when r_gamma=0.5 (invGamma=2, sqr func)
-		int v = appRound (65535.0f * (pow (tmp, invGamma) + bright - 1));
+		int v = appRound(65535.0f * (pow(tmp, invGamma) + bright - 1));
 #else
 		// taken from UT2003
 		// note: ut_br = br-0.5, ut_contr = contr-0.5 (replace later: norm. bright=0.5, contr=0.5) !!
-		float tmp = pow (i * overbright / 255.0f, invGamma) * contr * 65535;
+		float tmp = pow(i * overbright / 255.0f, invGamma) * contr * 65535;
 		tmp = tmp + (bright - 1) * 32768 - (contr - 0.5) * 32768 + 16384;
-		int v = appRound (tmp);
+		int v = appRound(tmp);
 #endif
 
 		if (GIsWin2K)
@@ -131,10 +131,10 @@ void GLimp_SetGamma (float gamma)
 			if (v < m) v = m;
 #else // FIND_GAMMA
 #	if !FIND_GAMMA2
-			int m = appRound (i * a * 256 + b * 65535);
+			int m = appRound(i * a * 256 + b * 65535);
 			if (v > m) v = m;
 #	else
-			int m = appRound (i * a * 256 + b * 65535);
+			int m = appRound(i * a * 256 + b * 65535);
 			if (v < m) v = m;
 #	endif
 #endif // FIND_GAMMA
@@ -144,7 +144,7 @@ void GLimp_SetGamma (float gamma)
 	}
 
 	gammaValid = true;
-	UpdateGamma ();
+	UpdateGamma();
 }
 
 
@@ -156,46 +156,46 @@ void GLimp_SetGamma (float gamma)
 static HGLRC	contextHandle;
 static bool		contextActive;
 
-static void ErrFail (const char *what)
+static void ErrFail(const char *what)
 {
-	int err = GetLastError ();
-	appWPrintf ("...%s failed\nError %d  %s\n", what, err, appGetSystemErrorMessage (err));
+	int err = GetLastError();
+	appWPrintf("...%s failed\nError %d  %s\n", what, err, appGetSystemErrorMessage(err));
 }
 
-static bool CreateGLcontext ()
+static bool CreateGLcontext()
 {
 	contextActive = false;
-	if (!(contextHandle = wglCreateContext (gl_hDC)))
+	if (!(contextHandle = wglCreateContext(gl_hDC)))
 	{
-		ErrFail ("CreateGLcontext()");
+		ErrFail("CreateGLcontext()");
 		return false;
 	}
 	return true;
 }
 
 
-static bool ActivateGLcontext ()
+static bool ActivateGLcontext()
 {
 	if (contextActive) return true;
 	// 1st - activate context, 2nd - enable rendering
-	if (!wglMakeCurrent (gl_hDC, contextHandle))
+	if (!wglMakeCurrent(gl_hDC, contextHandle))
 	{
-		ErrFail ("ActivateGLcontext()");
+		ErrFail("ActivateGLcontext()");
 		return false;
 	}
 	contextActive = true;
-	GL_EnableRendering (true);
+	GL_EnableRendering(true);
 	return true;
 }
 
 
-static bool DeactivateGLcontext ()
+static bool DeactivateGLcontext()
 {
 	if (!contextActive) return true;
-	GL_EnableRendering (false);
-	if (!wglMakeCurrent (gl_hDC, NULL))
+	GL_EnableRendering(false);
+	if (!wglMakeCurrent(gl_hDC, NULL))
 	{
-		ErrFail ("DeactivateGLcontext()");
+		ErrFail("DeactivateGLcontext()");
 		return false;
 	}
 	contextActive = false;
@@ -203,13 +203,13 @@ static bool DeactivateGLcontext ()
 }
 
 
-static bool DestoryGLcontext ()
+static bool DestoryGLcontext()
 {
 	if (!contextHandle) return true;
-	if (!DeactivateGLcontext ()) return false;
-	if (!wglDeleteContext (contextHandle))
+	if (!DeactivateGLcontext()) return false;
+	if (!wglDeleteContext(contextHandle))
 	{
-		ErrFail ("DestoryGLcontext()");
+		ErrFail("DestoryGLcontext()");
 		return false;
 	}
 	contextHandle = NULL;
@@ -221,7 +221,7 @@ static bool DestoryGLcontext ()
 	Initialization/shutdown
 -----------------------------------------------------------------------------*/
 
-static bool GLimp_SetPixelFormat ()
+static bool GLimp_SetPixelFormat()
 {
 	static const PIXELFORMATDESCRIPTOR pfdBase =
 	{
@@ -243,49 +243,49 @@ static bool GLimp_SetPixelFormat ()
 		0, 0, 0							// layer masks ignored
 	};
 	int pixelformat;
-	if ((pixelformat = wglChoosePixelFormat (gl_hDC, &pfdBase)) == 0)
+	if ((pixelformat = wglChoosePixelFormat(gl_hDC, &pfdBase)) == 0)
 	{
-		ErrFail ("(wgl)ChoosePixelFormat()");
+		ErrFail("(wgl)ChoosePixelFormat()");
 		return false;
 	}
-	if (wglSetPixelFormat (gl_hDC, pixelformat, &pfdBase) == FALSE)
+	if (wglSetPixelFormat(gl_hDC, pixelformat, &pfdBase) == FALSE)
 	{
-		ErrFail ("(wgl)SetPixelFormat()");
+		ErrFail("(wgl)SetPixelFormat()");
 		return false;
 	}
 	PIXELFORMATDESCRIPTOR pfd;
-	wglDescribePixelFormat (gl_hDC, pixelformat, sizeof(pfd), &pfd);
+	wglDescribePixelFormat(gl_hDC, pixelformat, sizeof(pfd), &pfd);
 
 	// startup the OpenGL subsystem by creating a context and making it current
-	if (!CreateGLcontext ()) return false;
-	if (!ActivateGLcontext ()) return false;
+	if (!CreateGLcontext()) return false;
+	if (!ActivateGLcontext()) return false;
 
 	if (!(pfd.dwFlags & PFD_GENERIC_ACCELERATED) && (pfd.dwFlags & PFD_GENERIC_FORMAT))
 	{
-		appWPrintf ("...no hardware acceleration detected\n");
+		appWPrintf("...no hardware acceleration detected\n");
 		return false;
 	}
 
 	// print PFD info
-	appPrintf ("Pixelformat %d: color:%d depth:%d\n", pixelformat, pfd.cColorBits, pfd.cDepthBits);
+	appPrintf("Pixelformat %d: color:%d depth:%d\n", pixelformat, pfd.cColorBits, pfd.cDepthBits);
 	return true;
 }
 
 
-static bool GLimp_InitGL ()
+static bool GLimp_InitGL()
 {
 	// get a DC for the specified window
-	if ((gl_hDC = GetDC (gl_hWnd)) == NULL)
+	if ((gl_hDC = GetDC(gl_hWnd)) == NULL)
 	{
-		ErrFail ("GetDC()");
+		ErrFail("GetDC()");
 		return false;
 	}
 
 	// set pixel format and create GL context
-	if (!GLimp_SetPixelFormat ())
+	if (!GLimp_SetPixelFormat())
 	{
-		DestoryGLcontext ();
-		ReleaseDC (gl_hWnd, gl_hDC);
+		DestoryGLcontext();
+		ReleaseDC(gl_hWnd, gl_hDC);
 		gl_hDC = NULL;
 		return false;
 	}
@@ -294,21 +294,21 @@ static bool GLimp_InitGL ()
 }
 
 
-bool GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscreen)
+bool GLimp_SetMode(unsigned *pwidth, unsigned *pheight, int mode, bool fullscreen)
 {
 	int		width, height, colorBits;
 
-	if (!Vid_GetModeInfo (&width, &height, mode))
+	if (!Vid_GetModeInfo(&width, &height, mode))
 	{
-		appWPrintf ("Invalid mode: %d\n", mode);
+		appWPrintf("Invalid mode: %d\n", mode);
 		return false;
 	}
 
-	appPrintf ("Mode %d: %dx%d (%s)\n", mode, width, height, fullscreen ? "fullscreen" : "windowed");
+	appPrintf("Mode %d: %dx%d (%s)\n", mode, width, height, fullscreen ? "fullscreen" : "windowed");
 
 	// destroy the existing window
 	if (gl_hWnd)
-		GLimp_Shutdown (false);
+		GLimp_Shutdown(false);
 
 	colorBits = gl_bitdepth->integer;
 	gl_bitdepth->modified = false;
@@ -317,7 +317,7 @@ bool GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscre
 	if (fullscreen)
 	{
 		DEVMODE dm;
-		memset (&dm, 0, sizeof(dm));
+		memset(&dm, 0, sizeof(dm));
 		dm.dmSize       = sizeof(dm);
 		dm.dmPelsWidth  = width;
 		dm.dmPelsHeight = height;
@@ -327,69 +327,69 @@ bool GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscre
 		{
 			dm.dmBitsPerPel = colorBits;
 			dm.dmFields |= DM_BITSPERPEL;
-			appPrintf ("...using color depth of %d\n", colorBits);
+			appPrintf("...using color depth of %d\n", colorBits);
 		}
 		else
 		{
-			HDC hdc = GetDC (NULL);
-			int bitspixel = GetDeviceCaps (hdc, BITSPIXEL);
-			ReleaseDC (0, hdc);
-			appPrintf ("...using desktop color depth of %d\n", bitspixel);
+			HDC hdc = GetDC(NULL);
+			int bitspixel = GetDeviceCaps(hdc, BITSPIXEL);
+			ReleaseDC(0, hdc);
+			appPrintf("...using desktop color depth of %d\n", bitspixel);
 		}
 
-		if (ChangeDisplaySettings (&dm, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL)
+		if (ChangeDisplaySettings(&dm, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL)
 		{
-			appWPrintf ("...fullscreen unavailable in this mode\n");
-			appPrintf ("...setting windowed mode\n");
+			appWPrintf("...fullscreen unavailable in this mode\n");
+			appPrintf("...setting windowed mode\n");
 			fullscreen = false;
 
-			ChangeDisplaySettings (NULL, 0);
+			ChangeDisplaySettings(NULL, 0);
 		}
 	}
 	else	// not fullscreen
 	{
-		appPrintf ("...setting windowed mode\n");
-		ChangeDisplaySettings (NULL, 0);
+		appPrintf("...setting windowed mode\n");
+		ChangeDisplaySettings(NULL, 0);
 	}
 
 	*pwidth  = width;
 	*pheight = height;
 	gl_config.fullscreen = fullscreen;
 
-	gl_hWnd = (HWND) Vid_CreateWindow (width, height, fullscreen);
+	gl_hWnd = (HWND) Vid_CreateWindow(width, height, fullscreen);
 	if (!gl_hWnd) return false;
-	if (!GLimp_InitGL ()) return false;	//?? may try to DestroyWindow(force) + CreateWindow() again
+	if (!GLimp_InitGL()) return false;	//?? may try to DestroyWindow(force) + CreateWindow() again
 
 	// init gamma
-	ReadGamma ();
-	appPrintf ("Gamma: %s\n", gammaStored ? "hardware" : "software");
+	ReadGamma();
+	appPrintf("Gamma: %s\n", gammaStored ? "hardware" : "software");
 
 	return true;
 }
 
 
-void GLimp_Shutdown (bool complete)
+void GLimp_Shutdown(bool complete)
 {
-	RestoreGamma ();
+	RestoreGamma();
 
-	appPrintf ("Performing GL shutdown\n");
-	DestoryGLcontext ();
+	appPrintf("Performing GL shutdown\n");
+	DestoryGLcontext();
 	if (gl_hDC)
 	{
-		if (!ReleaseDC (gl_hWnd, gl_hDC))
-			ErrFail ("ReleaseDC()");
+		if (!ReleaseDC(gl_hWnd, gl_hDC))
+			ErrFail("ReleaseDC()");
 		gl_hDC = NULL;
 	}
 
-	Vid_DestroyWindow (true); //?? (gl_bitdepth->modified);
+	Vid_DestroyWindow(true); //?? (gl_bitdepth->modified);
 	gl_hWnd = NULL;
 
 	if (gl_config.fullscreen)
 	{
 		if (complete)
 		{
-			Com_DPrintf ("...restore display mode\n");
-			ChangeDisplaySettings (NULL, 0);
+			Com_DPrintf("...restore display mode\n");
+			ChangeDisplaySettings(NULL, 0);
 		}
 		gl_config.fullscreen = false;
 	}
@@ -400,20 +400,20 @@ void GLimp_Shutdown (bool complete)
 	Activation/deactivation of application
 -----------------------------------------------------------------------------*/
 
-void AppActivate (bool active)
+void AppActivate(bool active)
 {
 	if (active)
 	{
-		SetForegroundWindow (gl_hWnd);
-		ShowWindow (gl_hWnd, SW_RESTORE);
+		SetForegroundWindow(gl_hWnd);
+		ShowWindow(gl_hWnd, SW_RESTORE);
 		if (FullscreenApp)
 		{
-			ActivateGLcontext ();
-			SetWindowPos (gl_hWnd, 0, 0, 0, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
+			ActivateGLcontext();
+			SetWindowPos(gl_hWnd, 0, 0, 0, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
 		}
 		// update gamma
 #if 0
-		UpdateGamma ();				// immediately --> bugs with ATI
+		UpdateGamma();				// immediately --> bugs with ATI
 #else
 		r_gamma->modified = true;	// later
 #endif
@@ -422,10 +422,10 @@ void AppActivate (bool active)
 	{
 		if (FullscreenApp)
 		{
-			ShowWindow (gl_hWnd, SW_MINIMIZE);
-			DeactivateGLcontext ();
+			ShowWindow(gl_hWnd, SW_MINIMIZE);
+			DeactivateGLcontext();
 		}
-		RestoreGamma ();
+		RestoreGamma();
 	}
 }
 

@@ -29,11 +29,11 @@ extern float atanTable[], atanTable2[];
 
 // WARNING: these functions are not periodic and not clamped; input value should be exactly in [-1..1] range
 // Used (TABLE_SIZE-0.1f) to avoid [TABLE_SIZE*2] index for 1.0f value, should be [TABLE_SIZE*2-1] (OR: use index clamping ??)
-#define ASIN_FUNC(val)					asinTable[appFloor ((val) * (TABLE_SIZE-0.1f)) + TABLE_SIZE]
-#define ACOS_FUNC(val)					acosTable[appFloor ((val) * (TABLE_SIZE-0.1f)) + TABLE_SIZE]
+#define ASIN_FUNC(val)					asinTable[appFloor((val) * (TABLE_SIZE-0.1f)) + TABLE_SIZE]
+#define ACOS_FUNC(val)					acosTable[appFloor((val) * (TABLE_SIZE-0.1f)) + TABLE_SIZE]
 
 
-inline float ATAN2_FUNC (float y, float x)
+inline float ATAN2_FUNC(float y, float x)
 {
 #if 0
 	if (x == 0) return y > 0 ? M_PI / 2 : - M_PI / 2;
@@ -56,9 +56,9 @@ inline float ATAN2_FUNC (float y, float x)
 	float m = 1 - s * 2;		// s=0 -> m=1; s=1 -> m=-1
 #endif
 	if (val <= 1.0f)
-		val = atanTable[appFloor (val * (TABLE_SIZE - 0.1f))];
+		val = atanTable[appFloor(val * (TABLE_SIZE - 0.1f))];
 	else
-		val = atanTable2[appFloor (1.0f / val * (TABLE_SIZE - 0.1f))];
+		val = atanTable2[appFloor(1.0f / val * (TABLE_SIZE - 0.1f))];
 	val *= m;
 #if 0
 	if (IsNegative(x))
@@ -87,14 +87,14 @@ extern int   noiseTablei[];
 extern float noiseTablef[];
 
 
-void InitFuncTables ();	//?? InitMath()
-void BuildRotationAxis (CAxis &r, const CVec3 &axis, float angle);
-bool GetBoxRect (const refEntity_t *ent, const CVec3 &size2, float mins2[2], float maxs2[2], bool clamp = true);
-bool ProjectToScreen (const CVec3 &pos, int scr[2]);
+void InitFuncTables();	//?? InitMath()
+void BuildRotationAxis(CAxis &r, const CVec3 &axis, float angle);
+bool GetBoxRect(const refEntity_t *ent, const CVec3 &size2, float mins2[2], float maxs2[2], bool clamp = true);
+bool ProjectToScreen(const CVec3 &pos, int scr[2]);
 
 
-void SaturateColor3f (CVec3 &color);
-void SaturateColor4b (color_t *c);
+void SaturateColor3f(CVec3 &color);
+void SaturateColor4b(color_t *c);
 
 
 } // namespace

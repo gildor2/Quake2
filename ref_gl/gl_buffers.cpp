@@ -19,12 +19,12 @@ static void *lastDynamicPtr;
 static int	lastDynamicSize;
 
 
-void *AllocDynamicMemory (int size)
+void *AllocDynamicMemory(int size)
 {
 	if (dynamicBufferSize + size > MAX_DYNAMIC_BUFFER)
 	{
 		//?? make this message developer-only
-		DrawTextLeft (va("R_AllocDynamicMemory(%d) failed\n", size), RGB(1, 0, 0));
+		DrawTextLeft(va("R_AllocDynamicMemory(%d) failed\n", size), RGB(1, 0, 0));
 		lastDynamicPtr = NULL;
 		return NULL;
 	}
@@ -33,20 +33,20 @@ void *AllocDynamicMemory (int size)
 	lastDynamicSize = dynamicBufferSize;
 	lastDynamicPtr  = ptr;
 	dynamicBufferSize += size;
-	memset (ptr, 0, size);
+	memset(ptr, 0, size);
 
 	return ptr;
 }
 
 
 // This function should be called only for REDUCING size of allocated block
-void ResizeDynamicMemory (void *ptr, int newSize)
+void ResizeDynamicMemory(void *ptr, int newSize)
 {
 	if (!ptr || ptr != lastDynamicPtr)
-		appError ("R_ResizeDynamicMemory: bad pointer");
+		appError("R_ResizeDynamicMemory: bad pointer");
 	int n = lastDynamicSize + newSize;
 	if (n > MAX_DYNAMIC_BUFFER)
-		appError ("R_ResizeDynamicMemory: out of memory in %d bytes", n - MAX_DYNAMIC_BUFFER);
+		appError("R_ResizeDynamicMemory: out of memory in %d bytes", n - MAX_DYNAMIC_BUFFER);
 	dynamicBufferSize = n;
 }
 
@@ -61,7 +61,7 @@ static int numSurfacesTotal;
 
 
 // Add surface to a current scene (to a "vp" structure)
-void AddSurfaceToPortal (surfaceBase_t *surf, shader_t *shader, int entityNum, int numDlights)
+void AddSurfaceToPortal(surfaceBase_t *surf, shader_t *shader, int entityNum, int numDlights)
 {
 //	LOG_STRING(va("add surf %s ent=%X n_dl=%d\n", *shader->Name, entityNum, numDlights));
 	if (shader->noDraw) return;						// invisible surface
@@ -78,7 +78,7 @@ void AddSurfaceToPortal (surfaceBase_t *surf, shader_t *shader, int entityNum, i
 }
 
 
-void InsertShaderIndex (int index)
+void InsertShaderIndex(int index)
 {
 	int		i;
 	surfaceInfo_t *si;
@@ -93,7 +93,7 @@ void InsertShaderIndex (int index)
 //			n++;
 		}
 	}
-//	Com_DPrintf ("R_InsertShaderIndex(%d): changed %d indexes\n", index, n);
+//	Com_DPrintf("R_InsertShaderIndex(%d): changed %d indexes\n", index, n);
 }
 
 
@@ -101,7 +101,7 @@ void InsertShaderIndex (int index)
 	Work with "vp"
 -----------------------------------------------------------------------------*/
 
-void ClearPortal ()
+void ClearPortal()
 {
 	vp.surfaces    = &surfaceBuffer[numSurfacesTotal];
 	vp.numSurfaces = 0;
@@ -116,7 +116,7 @@ void ClearPortal ()
 #define SORT_SIZE	(1 << SORT_BITS)
 #define SORT_MASK	(SORT_SIZE - 1)
 
-void SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
+void SortSurfaces(viewPortal_t *port, surfaceInfo_t **destination)
 {
 	int		i, k;
 	surfaceInfo_t *s;
@@ -150,7 +150,7 @@ void SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 	/* Sort by least significant SORT_BITS. Get source directly from
 	 * surfaces array and put it to sortFirst
 	 */
-	memset (sortFirst, 0, sizeof(sortFirst));
+	memset(sortFirst, 0, sizeof(sortFirst));
 	for (i = 0, s = port->surfaces; i < port->numSurfaces; i++, s++)
 	{
 		int		b;
@@ -176,7 +176,7 @@ void SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 		surfaceInfo_t **dst = dst1;
 		src1 = dst1; dst1 = src;				// swap src1 and dst1 (for next loop)
 
-		memset (dst, 0, sizeof(sortFirst));		// clear dst heads
+		memset(dst, 0, sizeof(sortFirst));		// clear dst heads
 		for (i = 0; i < SORT_SIZE; i++)
 		{
 			surfaceInfo_t *next;
@@ -209,7 +209,7 @@ void SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 /*-----------------------------------------*/
 
 // prepare buffers for new scene
-void ClearBuffers ()
+void ClearBuffers()
 {
 	numSurfacesTotal  = 0;
 	gl_numEntities    = 0;
@@ -222,13 +222,13 @@ void ClearBuffers ()
 	Initialization/finalization
 -----------------------------------------------------------------------------*/
 
-void CreateBuffers ()
+void CreateBuffers()
 {
 	dynamicBuffer = new byte [MAX_DYNAMIC_BUFFER];
 	surfaceBuffer = new surfaceInfo_t [MAX_SCENE_SURFACES];
 }
 
-void FreeBuffers ()
+void FreeBuffers()
 {
 	if (!dynamicBuffer) return;
 	delete dynamicBuffer;

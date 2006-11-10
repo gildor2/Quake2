@@ -16,15 +16,15 @@ extern	cvar_t *allow_download_models;
 extern	cvar_t *allow_download_sounds;
 extern	cvar_t *allow_download_maps;
 
-static void RequestNextDownload ();
+static void RequestNextDownload();
 
 
-static void DownloadFileName (char *dest, int destlen, const char *filename)
+static void DownloadFileName(char *dest, int destlen, const char *filename)
 {
-	if (memcmp (filename, "players", 7) == 0)	//?? players - downloaded to baseq2 only
-		appSprintf (dest, destlen, "./%s/%s", BASEDIRNAME, filename);
+	if (memcmp(filename, "players", 7) == 0)	//?? players - downloaded to baseq2 only
+		appSprintf(dest, destlen, "./%s/%s", BASEDIRNAME, filename);
 	else
-		appSprintf (dest, destlen, "./%s/%s", FS_Gamedir(), filename);
+		appSprintf(dest, destlen, "./%s/%s", FS_Gamedir(), filename);
 }
 
 
@@ -36,29 +36,29 @@ static int numCheckedNames, nextCheckCachePos;
 
 // Returns true if the file exists, otherwise it attempts
 // to start a download from the server.
-static bool CheckOrDownloadFile (const char *fmt, ...)
+static bool CheckOrDownloadFile(const char *fmt, ...)
 {
 	guard(CheckOrDownloadFile);
 
 	TString<MAX_OSPATH> Name;
 	va_list	argptr;
-	va_start (argptr, fmt);
-	vsnprintf (ARRAY_ARG(Name), fmt, argptr);
-	va_end (argptr);
+	va_start(argptr, fmt);
+	vsnprintf(ARRAY_ARG(Name), fmt, argptr);
+	va_end(argptr);
 
-	Name.filename (Name);							// in-place
-	if (!memcmp (Name, "../", 3))					// if trying to leave quake root dir, "../" will be at start
+	Name.filename(Name);							// in-place
+	if (!memcmp(Name, "../", 3))					// if trying to leave quake root dir, "../" will be at start
 	{
-		appPrintf ("Refusing to download a path with ..\n");
+		appPrintf("Refusing to download a path with ..\n");
 		return true;
 	}
 
 	TString<MAX_OSPATH> Name2;
 	Name2 = Name;
-	char *ext = Name2.rchr ('.');
+	char *ext = Name2.rchr('.');
 
 	// checking map - this should be a first precache request, so - clear name cache
-	if (ext && !strcmp (ext, ".bsp"))
+	if (ext && !strcmp(ext, ".bsp"))
 		numCheckedNames = nextCheckCachePos = 0;
 	// prevent from checking the same file twice
 	for (int i = 0; i < numCheckedNames; i++)
@@ -67,24 +67,24 @@ static bool CheckOrDownloadFile (const char *fmt, ...)
 	// register new name
 	if (numCheckedNames < MAX_CHECK_NAMES)
 	{
-		int len = Name.len ();
+		int len = Name.len();
 		if (len + nextCheckCachePos + 1 < MAX_CHECK_CACHE)
 		{
 			char *s = checkedNames[numCheckedNames++] = &checkNameCache[nextCheckCachePos];
-			strcpy (s, Name);
+			strcpy(s, Name);
 			nextCheckCachePos += len + 1;
 		}
 	}
 
 	// check all image format for .PCX and .WAL extension
-	if (ext && (!strcmp (ext, ".pcx") || !strcmp (ext, ".wal")))
+	if (ext && (!strcmp(ext, ".pcx") || !strcmp(ext, ".wal")))
 	{
 		*ext = 0; // strip extension
-		if (ImageExists (Name2, IMAGE_ANY))
+		if (ImageExists(Name2, IMAGE_ANY))
 			return true;
 	}
 
-	if (GFileSystem->FileExists (Name))	// it exists, no need to download
+	if (GFileSystem->FileExists(Name))	// it exists, no need to download
 		return true;
 
 	cls.DownloadName = Name;
@@ -92,29 +92,29 @@ static bool CheckOrDownloadFile (const char *fmt, ...)
 	// download to a temp name, and only rename
 	// to the real name when done, so if interrupted
 	// a runt file wont be left
-	cls.DownloadTempName.sprintf ("%s.tmp", *Name);
+	cls.DownloadTempName.sprintf("%s.tmp", *Name);
 
 	// check to see if we already have a tmp for this file, if so, try to resume
 	// open the file if not opened yet
-	DownloadFileName (ARRAY_ARG(Name), cls.DownloadTempName);
+	DownloadFileName(ARRAY_ARG(Name), cls.DownloadTempName);
 
-	FILE *fp = fopen (Name, "r+b");
+	FILE *fp = fopen(Name, "r+b");
 	if (fp)
 	{
-		fseek (fp, 0, SEEK_END);
-		int len = ftell (fp);
+		fseek(fp, 0, SEEK_END);
+		int len = ftell(fp);
 		cls.download = fp;
 
 		// give the server an offset to start the download
-		appPrintf ("Resuming %s\n", *cls.DownloadName);
-		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString (&cls.netchan.message, va("download %s %d", *cls.DownloadName, len));
+		appPrintf("Resuming %s\n", *cls.DownloadName);
+		MSG_WriteByte(&cls.netchan.message, clc_stringcmd);
+		MSG_WriteString(&cls.netchan.message, va("download %s %d", *cls.DownloadName, len));
 	}
 	else
 	{
-		appPrintf ("Downloading %s\n", *cls.DownloadName);
-		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString (&cls.netchan.message, va("download %s", *cls.DownloadName));
+		appPrintf("Downloading %s\n", *cls.DownloadName);
+		MSG_WriteByte(&cls.netchan.message, clc_stringcmd);
+		MSG_WriteString(&cls.netchan.message, va("download %s", *cls.DownloadName));
 	}
 
 	return false;
@@ -123,7 +123,7 @@ static bool CheckOrDownloadFile (const char *fmt, ...)
 
 
 // Request a download from the server
-void CL_Download_f (bool usage, int argc, char **argv)
+void CL_Download_f(bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
@@ -133,39 +133,39 @@ void CL_Download_f (bool usage, int argc, char **argv)
 
 	if (cls.state != ca_connected && cls.state != ca_active)
 	{
-		appWPrintf ("Not connected\n");
+		appWPrintf("Not connected\n");
 		return;
 	}
 
 	TString<MAX_OSPATH> FileName;
-	FileName.filename (argv[1]);
+	FileName.filename(argv[1]);
 
-	if (GFileSystem->FileExists (FileName))
+	if (GFileSystem->FileExists(FileName))
 	{	// it exists, no need to download
-		appPrintf ("File already exists.\n");
+		appPrintf("File already exists.\n");
 		return;
 	}
 
-	CheckOrDownloadFile (FileName);
+	CheckOrDownloadFile(FileName);
 }
 
 
 // A download message has been received from the server
-void CL_ParseDownload ()
+void CL_ParseDownload()
 {
 	// read the data
-	int size    = MSG_ReadShort (&net_message);
-	int percent = MSG_ReadByte (&net_message);
+	int size    = MSG_ReadShort(&net_message);
+	int percent = MSG_ReadByte(&net_message);
 	if (size == -1)
 	{
-		appWPrintf ("Server does not have this file.\n");
+		appWPrintf("Server does not have this file.\n");
 		if (cls.download)
 		{
 			// if here, we tried to resume a file but the server said no
-			fclose (cls.download);
+			fclose(cls.download);
 			cls.download = NULL;
 		}
-		RequestNextDownload ();
+		RequestNextDownload();
 		return;
 	}
 
@@ -173,20 +173,20 @@ void CL_ParseDownload ()
 	if (!cls.download)
 	{
 		TString<MAX_OSPATH> Name;
-		DownloadFileName (ARRAY_ARG(Name), cls.DownloadTempName);
+		DownloadFileName(ARRAY_ARG(Name), cls.DownloadTempName);
 
-		appMakeDirectoryForFile (Name);
-		cls.download = fopen (Name, "wb");
+		appMakeDirectoryForFile(Name);
+		cls.download = fopen(Name, "wb");
 		if (!cls.download)
 		{
 			net_message.readcount += size;
-			appWPrintf ("Failed to open %s\n", *cls.DownloadTempName);
-			RequestNextDownload ();
+			appWPrintf("Failed to open %s\n", *cls.DownloadTempName);
+			RequestNextDownload();
 			return;
 		}
 	}
 
-	fwrite (net_message.data + net_message.readcount, 1, size, cls.download);
+	fwrite(net_message.data + net_message.readcount, 1, size, cls.download);
 	net_message.readcount += size;
 
 	if (percent < 100)
@@ -194,26 +194,26 @@ void CL_ParseDownload ()
 		// request next block
 		cls.downloadPercent = percent;
 
-		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString (&cls.netchan.message, "nextdl");
+		MSG_WriteByte(&cls.netchan.message, clc_stringcmd);
+		MSG_WriteString(&cls.netchan.message, "nextdl");
 	}
 	else
 	{
-		fclose (cls.download);
+		fclose(cls.download);
 
 		// rename the temp file to it's final name
 		TString<MAX_OSPATH> Oldn, Newn;
-		DownloadFileName (ARRAY_ARG(Oldn), cls.DownloadTempName);
-		DownloadFileName (ARRAY_ARG(Newn), cls.DownloadName);
-		if (rename (Oldn, Newn))
-			appWPrintf ("failed to rename \"%s\" to \"%s\"\n", *Oldn, *Newn);
+		DownloadFileName(ARRAY_ARG(Oldn), cls.DownloadTempName);
+		DownloadFileName(ARRAY_ARG(Newn), cls.DownloadName);
+		if (rename(Oldn, Newn))
+			appWPrintf("failed to rename \"%s\" to \"%s\"\n", *Oldn, *Newn);
 
 		cls.download = NULL;
 		cls.downloadPercent = 0;
 
 		// get another file if needed
 		//?? Is it ALWAYS needed ? Downloading may be initiated with "download" console command
-		RequestNextDownload ();
+		RequestNextDownload();
 	}
 }
 
@@ -243,7 +243,7 @@ static byte *precache_model;				// used for skin checking in alias models
 //!!	   not display error when file absent on server (but texture: error when no image at all).
 //!!	   Make this as flag for CheckOrDownloadFile()
 
-static void RequestNextDownload ()
+static void RequestNextDownload()
 {
 	guard(RequestNextDownload);
 
@@ -252,7 +252,7 @@ static void RequestNextDownload ()
 
 	if (cls.netchan.remote_address.type == NA_LOOPBACK)
 	{
-		CM_LoadMap (cl.configstrings[CS_MODELS+1], true);
+		CM_LoadMap(cl.configstrings[CS_MODELS+1], true);
 		precache_check = DCS_SKIP_ALL;		// local server: download is nonsense (skip this phase)
 	}
 
@@ -264,26 +264,26 @@ static void RequestNextDownload ()
 	if (precache_check == DCS_START) {
 		// levelshot
 		precache_check++;
-		char *s = strrchr (cl.configstrings[CS_MODELS+1], '/');
+		char *s = strrchr(cl.configstrings[CS_MODELS+1], '/');
 		if (s) {
 			char mapname[MAX_QPATH];
-			strcpy (mapname, s+1);
-			if (s = strrchr (mapname, '.')) *s = 0;
-			if (!CheckOrDownloadFile ("levelshots/%s.jpg", mapname))	//??? should download any image (not JPG only) !!
+			strcpy(mapname, s+1);
+			if (s = strrchr(mapname, '.')) *s = 0;
+			if (!CheckOrDownloadFile("levelshots/%s.jpg", mapname))	//??? should download any image (not JPG only) !!
 				return;
 		}
 	}
 	if (precache_check == DCS_START + 1) {
 		// map patch
 		precache_check = CS_MODELS + 1;		// models[0] is not used
-		if (!CheckOrDownloadFile ("%s.add", cl.configstrings[CS_MODELS+1]))
+		if (!CheckOrDownloadFile("%s.add", cl.configstrings[CS_MODELS+1]))
 			return;
 	}
 
 	if (precache_check == CS_MODELS + 1) {
 		// map itself
 		precache_check = CS_MODELS + 2;
-		SCR_SetLevelshot ();
+		SCR_SetLevelshot();
 		if (allow_download_maps->integer)
 			if (!CheckOrDownloadFile(cl.configstrings[CS_MODELS+1]))
 				return; // started a download
@@ -308,7 +308,7 @@ static void RequestNextDownload ()
 
 				// checking for skins in the model
 				if (!precache_model) {
-					if (!(precache_model = (byte*) GFileSystem->LoadFile (cl.configstrings[precache_check]))) {
+					if (!(precache_model = (byte*) GFileSystem->LoadFile(cl.configstrings[precache_check]))) {
 						precache_model_skin = 0;
 						precache_check++;
 						continue; // couldn't load it
@@ -385,18 +385,18 @@ static void RequestNextDownload ()
 					continue;
 				}
 
-				char *p = strchr (cl.configstrings[CS_PLAYERSKINS+i], '\\');
+				char *p = strchr(cl.configstrings[CS_PLAYERSKINS+i], '\\');
 				if (p)
 					p++;
 				else
 					p = cl.configstrings[CS_PLAYERSKINS+i];
 
 				char model[MAX_QPATH];
-				strcpy (model, p);		// format: model/skin
+				strcpy(model, p);		// format: model/skin
 				const char *skin = "";
-				p = strchr (model, '/');
+				p = strchr(model, '/');
 				if (!p)
-					p = strchr (model, '\\');
+					p = strchr(model, '\\');
 				if (p)
 				{
 					*p = 0;				// "model" will contain "modelName<0>skinName"
@@ -442,10 +442,10 @@ static void RequestNextDownload ()
 		unsigned map_checksum;		// for detecting cheater maps
 
 		precache_check++;			// DCS_SKY
-		CM_LoadMap (cl.configstrings[CS_MODELS+1], true, &map_checksum);
+		CM_LoadMap(cl.configstrings[CS_MODELS+1], true, &map_checksum);
 		// verify map checksum
 		if (map_checksum != atoi(cl.configstrings[CS_MAPCHECKSUM]))
-			Com_DropError ("Local map version differs from server: %d != \"%s\"",
+			Com_DropError("Local map version differs from server: %d != \"%s\"",
 				map_checksum, cl.configstrings[CS_MAPCHECKSUM]);
 	}
 
@@ -481,33 +481,33 @@ static void RequestNextDownload ()
 		precache_check = DCS_SKIP_ALL;
 	}
 
-	CL_RegisterSounds ();
-	V_InitRenderer ();
+	CL_RegisterSounds();
+	V_InitRenderer();
 
-	MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-	MSG_WriteString (&cls.netchan.message, va("begin %d\n", precache_spawncount));
+	MSG_WriteByte(&cls.netchan.message, clc_stringcmd);
+	MSG_WriteString(&cls.netchan.message, va("begin %d\n", precache_spawncount));
 
 	unguardf(("idx=%d", precache_check));
 }
 
 
 // The server will send this command right before allowing the client into the server
-void CL_Precache_f (int argc, char **argv)
+void CL_Precache_f(int argc, char **argv)
 {
-	SCR_SetLevelshot ();
+	SCR_SetLevelshot();
 	// Yet another hack to let old demos work; the old precache sequence
 	if (argc < 2)
 	{
-		CM_LoadMap (cl.configstrings[CS_MODELS+1], true);
-		CL_RegisterSounds ();
-		V_InitRenderer ();
+		CM_LoadMap(cl.configstrings[CS_MODELS+1], true);
+		CL_RegisterSounds();
+		V_InitRenderer();
 		return;
 	}
 
 	precache_check      = DCS_START;
-	precache_spawncount = atoi (argv[1]);
+	precache_spawncount = atoi(argv[1]);
 	precache_model      = NULL;
 	precache_model_skin = 0;
 
-	RequestNextDownload ();
+	RequestNextDownload();
 }

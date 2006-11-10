@@ -135,9 +135,9 @@ extern refEntity_t	gl_entities[];
 extern int			gl_numEntities;
 
 
-void	DrawPortal ();
-void	AddEntity (entity_t *ent);
-void	AddDlight (dlight_t *dl);
+void	DrawPortal();
+void	AddEntity(entity_t *ent);
+void	AddDlight(dlight_t *dl);
 
 
 } // namespace

@@ -52,25 +52,25 @@ extern	image_t		*gl_reflImage2;		// NULL if not found
 extern int 	screenshotFlags;
 extern char	*screenshotName;
 
-void	GL_TextureMode (const char *name);
+void	GL_TextureMode(const char *name);
 
-void	PerformScreenshot ();
+void	PerformScreenshot();
 
 // setup
-void	SetupGamma ();
-void	InitImages ();
-void	ShutdownImages ();
-void	LoadDelayedImages ();
+void	SetupGamma();
+void	InitImages();
+void	ShutdownImages();
+void	LoadDelayedImages();
 
 // creating images
-image_t *CreateImage (const char *name, void *pic, int width, int height, unsigned flags);
-image_t *CreateImage8 (const char *name, void *pic, int width, int height, unsigned flags, unsigned *palette);
-image_t *FindImage (const char *name, unsigned flags);
+image_t *CreateImage(const char *name, void *pic, int width, int height, unsigned flags);
+image_t *CreateImage8(const char *name, void *pic, int width, int height, unsigned flags, unsigned *palette);
+image_t *FindImage(const char *name, unsigned flags);
 
 // video support
-//void	DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette); -- interface
+//void	DrawStretchRaw8(int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette); -- interface
 
-void	ShowImages ();
+void	ShowImages();
 
 
 } // namespace

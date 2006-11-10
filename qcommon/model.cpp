@@ -8,7 +8,7 @@ static lump_t *lumps;
 
 //?? move swappers to FileFormats.h as methods for structures
 #if !LITTLE_ENDIAN
-static void SwapQ2BspFile (bspfile_t *f)
+static void SwapQ2BspFile(bspfile_t *f)
 {
 	int		i, j;
 
@@ -146,13 +146,13 @@ static void SwapQ2BspFile (bspfile_t *f)
 	}
 }
 
-static void SwapQ1BspFile (bspfile_t *f)
+static void SwapQ1BspFile(bspfile_t *f)
 {
 	//!! implement this
 	assert(0);
 }
 
-static void SwapQ3BspFile (bspfile_t *f)
+static void SwapQ3BspFile(bspfile_t *f)
 {
 	//!! implement this
 	// NOTE: most work may be done with SwapDwordBlock() function (except shaders/fogs: have name[] fields) -
@@ -163,7 +163,7 @@ static void SwapQ3BspFile (bspfile_t *f)
 #endif // LITTLE_ENDIAN
 
 
-static void ProcessQ2BspFile (bspfile_t *f)
+static void ProcessQ2BspFile(bspfile_t *f)
 {
 	int i, j;
 
@@ -186,12 +186,12 @@ static void ProcessQ2BspFile (bspfile_t *f)
 		dBsp2Texinfo_t &d = f->texinfo2[i];
 		char *s = d.texture;
 		for (j = 0; j < sizeof(d.texture); j++, s++)
-			*s = toLower (*s);
+			*s = toLower(*s);
 		s = d.texture;
 		if (s[0] == '.') s++;
 		if (s[0] == '/') s++;
 		if (s != d.texture)
-			strcpy (d.texture, s);
+			strcpy(d.texture, s);
 	}
 
 	// silly check for correct lightmaps
@@ -206,7 +206,7 @@ static void ProcessQ2BspFile (bspfile_t *f)
 			f->numClusters = f->leafs2[i].cluster + 1;
 }
 
-static void ProcessQ1BspFile (bspfile_t *f)
+static void ProcessQ1BspFile(bspfile_t *f)
 {
 	int i, j;
 
@@ -231,7 +231,7 @@ static void ProcessQ1BspFile (bspfile_t *f)
 	}
 }
 
-static void ProcessQ3BspFile (bspfile_t *f)
+static void ProcessQ3BspFile(bspfile_t *f)
 {
 	int i;
 	// get numClusters (have in dBsp3Vis_t, but Q3 recomputes this ...)
@@ -243,16 +243,16 @@ static void ProcessQ3BspFile (bspfile_t *f)
 
 
 //?? should move LoadQxSubmodels() to cmodel.cpp, but this work will be used for entstring processing
-static void LoadQ2Submodels (bspfile_t *f, dBsp2Model_t *data)
+static void LoadQ2Submodels(bspfile_t *f, dBsp2Model_t *data)
 {
 	if (f->numModels < 1)
-		Com_DropError ("Map with no models");
+		Com_DropError("Map with no models");
 
 	CBspModel *out = f->models = new (f->extraChain) CBspModel[f->numModels];
 	for (int i = 0; i < f->numModels; i++, data++, out++)
 	{
 		out->bounds     = data->bounds;
-		out->radius     = VectorDistance (out->bounds.mins, out->bounds.maxs) / 2;
+		out->radius     = VectorDistance(out->bounds.mins, out->bounds.maxs) / 2;
 		out->headnode   = data->headnode;
 		out->flags      = 0;
 		out->firstFace  = data->firstface;
@@ -262,16 +262,16 @@ static void LoadQ2Submodels (bspfile_t *f, dBsp2Model_t *data)
 	}
 }
 
-static void LoadQ1Submodels (bspfile_t *f, dBsp1Model_t *data)
+static void LoadQ1Submodels(bspfile_t *f, dBsp1Model_t *data)
 {
 	if (f->numModels < 1)
-		Com_DropError ("Map with no models");
+		Com_DropError("Map with no models");
 
 	CBspModel *out = f->models = new (f->extraChain) CBspModel[f->numModels];
 	for (int i = 0; i < f->numModels; i++, data++, out++)
 	{
 		out->bounds     = data->bounds;
-		out->radius     = VectorDistance (out->bounds.mins, out->bounds.maxs) / 2;
+		out->radius     = VectorDistance(out->bounds.mins, out->bounds.maxs) / 2;
 		out->headnode   = data->headnode[0];
 		out->flags      = 0;
 		out->firstFace  = data->firstface;
@@ -281,17 +281,17 @@ static void LoadQ1Submodels (bspfile_t *f, dBsp1Model_t *data)
 	}
 }
 
-static void LoadQ3Submodels (bspfile_t *f, dBsp3Model_t *data)
+static void LoadQ3Submodels(bspfile_t *f, dBsp3Model_t *data)
 {
 	//!! implement
 }
 
 
-static void DecompressVis (byte *dst, void *vis, int pos, int rowSize)
+static void DecompressVis(byte *dst, void *vis, int pos, int rowSize)
 {
 	if (pos == -1)
 	{
-		memset (dst, 0xFF, rowSize);	// all visible
+		memset(dst, 0xFF, rowSize);	// all visible
 		dst += rowSize;
 		return;
 	}
@@ -317,7 +317,7 @@ static void DecompressVis (byte *dst, void *vis, int pos, int rowSize)
 	}
 }
 
-static void LoadQ2Vis (bspfile_t *f, dBsp2Vis_t *vis, int size)
+static void LoadQ2Vis(bspfile_t *f, dBsp2Vis_t *vis, int size)
 {
 #if !LITTLE_ENDIAN
 	if (size)		// should process this only when map have visibility data
@@ -334,11 +334,11 @@ static void LoadQ2Vis (bspfile_t *f, dBsp2Vis_t *vis, int size)
 
 	if (!size)
 	{
-		Com_DPrintf ("No visinfo in map\n");
+		Com_DPrintf("No visinfo in map\n");
 		if (f->numClusters > 1)
 		{
 			if (developer->integer)
-				appWPrintf ("WARNING: map with cluster info but without visinfo\n");
+				appWPrintf("WARNING: map with cluster info but without visinfo\n");
 		}
 		f->numClusters = 1;				// required
 		f->visInfo     = NULL;
@@ -353,15 +353,15 @@ static void LoadQ2Vis (bspfile_t *f, dBsp2Vis_t *vis, int size)
 	byte *dst = new (f->extraChain) byte [rowSize * f->numClusters];
 	f->visInfo = dst;
 	for (int i = 0; i < f->numClusters; i++, dst += rowSize)
-		DecompressVis (dst, vis, vis->bitOfs[i][dBsp2Vis_t::PVS], rowSize);
-	Com_DPrintf ("Decompressed vis: %d -> %d bytes\n", size, rowSize * f->numClusters);
+		DecompressVis(dst, vis, vis->bitOfs[i][dBsp2Vis_t::PVS], rowSize);
+	Com_DPrintf("Decompressed vis: %d -> %d bytes\n", size, rowSize * f->numClusters);
 }
 
-static void LoadQ1Vis (bspfile_t *f, byte *vis, int size)
+static void LoadQ1Vis(bspfile_t *f, byte *vis, int size)
 {
 	if (!size)
 	{
-		Com_DPrintf ("No visinfo in map\n");
+		Com_DPrintf("No visinfo in map\n");
 		f->numClusters = 1;				// required
 		f->visInfo     = NULL;
 		return;
@@ -378,19 +378,19 @@ static void LoadQ1Vis (bspfile_t *f, byte *vis, int size)
 
 	// start from leaf #1 (leaf 0 is CONTENTS_SOLID and have no stored visinfo)
 	for (int i = 1; i < f->numLeafs; i++, dst += rowSize)
-		DecompressVis (dst, vis, f->leafs1[i].visofs, rowSize);
-	Com_DPrintf ("Decompressed vis: %d -> %d bytes\n", size, rowSize * f->numClusters);
+		DecompressVis(dst, vis, f->leafs1[i].visofs, rowSize);
+	Com_DPrintf("Decompressed vis: %d -> %d bytes\n", size, rowSize * f->numClusters);
 }
 
-static void LoadQ3Vis (bspfile_t *f, dBsp3Vis_t* vis, int size)
+static void LoadQ3Vis(bspfile_t *f, dBsp3Vis_t* vis, int size)
 {
 	if (!size)
 	{
-		Com_DPrintf ("No visinfo in map\n");
+		Com_DPrintf("No visinfo in map\n");
 		if (f->numClusters > 1)
 		{
 			if (developer->integer)
-				appWPrintf ("WARNING: map with cluster info but without visinfo\n");
+				appWPrintf("WARNING: map with cluster info but without visinfo\n");
 		}
 		f->numClusters = 1;				// required
 		f->visInfo     = NULL;
@@ -399,20 +399,20 @@ static void LoadQ3Vis (bspfile_t *f, dBsp3Vis_t* vis, int size)
 	// NOTE: 'size' is ignored later
 
 	int rowSize = (f->numClusters + 7) >> 3;
-	if (rowSize != vis->rowSize) Com_DPrintf ("LoadQ3Vis: vis.rowSize=%d != computed=%d\n", vis->rowSize, rowSize);
+	if (rowSize != vis->rowSize) Com_DPrintf("LoadQ3Vis: vis.rowSize=%d != computed=%d\n", vis->rowSize, rowSize);
 
 	f->visInfo = (byte*)vis + sizeof(dBsp3Vis_t);
 	f->visRowSize = vis->rowSize;
 }
 
 
-static int CheckLump (int lump, void **ptr, int size)
+static int CheckLump(int lump, void **ptr, int size)
 {
 	int length = lumps[lump].filelen;
 	int ofs    = lumps[lump].fileofs;
 
 	if (length % size)
-		Com_DropError ("LoadBSPFile: incorrect lump size");
+		Com_DropError("LoadBSPFile: incorrect lump size");
 
 	*ptr = bspfile.file + ofs;
 
@@ -420,7 +420,7 @@ static int CheckLump (int lump, void **ptr, int size)
 }
 
 
-void LoadQ2BspFile ()
+void LoadQ2BspFile()
 {
 	guard(LoadQ2BspFile);
 
@@ -430,11 +430,11 @@ void LoadQ2BspFile ()
 #if !LITTLE_ENDIAN
 	// swap the header
 	for (int i = 0; i < sizeof(dBsp2Hdr_t) / 4; i++)
-		((int *)bspfile.file)[i] = LittleLong (((int *)bspfile.file)[i]);
+		((int *)bspfile.file)[i] = LittleLong(((int *)bspfile.file)[i]);
 #endif
 
 	bspfile.type = map_q2;
-	Com_DPrintf ("Loading Q2 bsp %s\n", *bspfile.Name);
+	Com_DPrintf("Loading Q2 bsp %s\n", *bspfile.Name);
 
 #define C(num,field,count,type) \
 	bspfile.count = CheckLump(dBsp2Hdr_t::LUMP_##num, (void**)&bspfile.field, sizeof(type))
@@ -455,37 +455,37 @@ void LoadQ2BspFile ()
 	C(AREAPORTALS, areaportals, numAreaportals, dAreaPortal_t);
 
 	dBsp2Model_t *models;
-	bspfile.numModels = CheckLump (dBsp2Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp2Model_t));	// not in bspfile_t struc
-	LoadQ2Submodels (&bspfile, models);
+	bspfile.numModels = CheckLump(dBsp2Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp2Model_t));	// not in bspfile_t struc
+	LoadQ2Submodels(&bspfile, models);
 
 #if !LITTLE_ENDIAN
 	// swap everything
-	SwapQ2BspFile (&bspfile);
+	SwapQ2BspFile(&bspfile);
 #endif
-	ProcessQ2BspFile (&bspfile);
+	ProcessQ2BspFile(&bspfile);
 
 	// load visinfo
 	dBsp2Vis_t *vis;
-	int visDataSize = CheckLump (dBsp2Hdr_t::LUMP_VISIBILITY, (void**)&vis, 1);
-	LoadQ2Vis (&bspfile, vis, visDataSize);
+	int visDataSize = CheckLump(dBsp2Hdr_t::LUMP_VISIBILITY, (void**)&vis, 1);
+	LoadQ2Vis(&bspfile, vis, visDataSize);
 	// load entstring after all: we may require to change something
 	char *entString = (char*)header + header->lumps[dBsp2Hdr_t::LUMP_ENTITIES].fileofs;
 	// detect kingpin map entities
-	if (strstr (entString, "\"classname\" \"junior\"") ||
-		strstr (entString, "\"classname\" \"lightflare\"") ||
-		strstr (entString, "\"fogdensity2\""))
+	if (strstr(entString, "\"classname\" \"junior\"") ||
+		strstr(entString, "\"classname\" \"lightflare\"") ||
+		strstr(entString, "\"fogdensity2\""))
 	{
 		bspfile.type = map_kp;
-		Com_DPrintf ("Kingpin map detected\n");
+		Com_DPrintf("Kingpin map detected\n");
 	}
-	bspfile.entStr = ProcessEntstring (entString);
+	bspfile.entStr = ProcessEntstring(entString);
 
 #undef C
 	unguard;
 }
 
 
-void LoadQ1BspFile ()
+void LoadQ1BspFile()
 {
 	guard(LoadQ1BspFile);
 
@@ -495,14 +495,14 @@ void LoadQ1BspFile ()
 #if !LITTLE_ENDIAN
 	// swap the header
 	for (int i = 0; i < sizeof(dBsp1Hdr_t) / 4; i++)
-		((int *)bspfile.file)[i] = LittleLong (((int *)bspfile.file)[i]);
+		((int *)bspfile.file)[i] = LittleLong(((int *)bspfile.file)[i]);
 #endif
 
 	if (header->version == BSP1_VERSION)
 		bspfile.type = map_q1;
 	else
 		bspfile.type = map_hl;
-	Com_DPrintf ("Loading %s bsp %s\n", bspfile.type == map_q1 ? "Q1" : "HL", *bspfile.Name);
+	Com_DPrintf("Loading %s bsp %s\n", bspfile.type == map_q1 ? "Q1" : "HL", *bspfile.Name);
 
 #define C(num,field,count,type) \
 	bspfile.count = CheckLump(dBsp1Hdr_t::LUMP_##num, (void**)&bspfile.field, sizeof(type))
@@ -523,29 +523,29 @@ void LoadQ1BspFile ()
 #endif
 
 	dBsp1Model_t *models;
-	bspfile.numModels = CheckLump (dBsp1Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp1Model_t));	// not in bspfile_t struc
-	LoadQ1Submodels (&bspfile, models);
+	bspfile.numModels = CheckLump(dBsp1Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp1Model_t));	// not in bspfile_t struc
+	LoadQ1Submodels(&bspfile, models);
 
 #if !LITTLE_ENDIAN
 	// swap everything
-	SwapQ1BspFile (&bspfile);
+	SwapQ1BspFile(&bspfile);
 #endif
-	ProcessQ1BspFile (&bspfile);
+	ProcessQ1BspFile(&bspfile);
 
 	// load visinfo
 	byte *vis;
-	int visDataSize = CheckLump (dBsp1Hdr_t::LUMP_VISIBILITY, (void**)&vis, 1);
-	LoadQ1Vis (&bspfile, vis, visDataSize);
+	int visDataSize = CheckLump(dBsp1Hdr_t::LUMP_VISIBILITY, (void**)&vis, 1);
+	LoadQ1Vis(&bspfile, vis, visDataSize);
 	// load entstring after all: we may require to change something
 	char *entString = (char*)header + header->lumps[dBsp1Hdr_t::LUMP_ENTITIES].fileofs;
-	bspfile.entStr = ProcessEntstring (entString);
+	bspfile.entStr = ProcessEntstring(entString);
 
 #undef C
 	unguard;
 }
 
 
-void LoadQ3BspFile ()
+void LoadQ3BspFile()
 {
 	guard(LoadQ3BspFile);
 
@@ -555,11 +555,11 @@ void LoadQ3BspFile ()
 #if !LITTLE_ENDIAN
 	// swap the header
 	for (int i = 0; i < sizeof(dBsp3Hdr_t) / 4; i++)
-		((int *)bspfile.file)[i] = LittleLong (((int *)bspfile.file)[i]);
+		((int *)bspfile.file)[i] = LittleLong(((int *)bspfile.file)[i]);
 #endif
 
 	bspfile.type = map_q3;
-	Com_DPrintf ("Loading Q3 bsp %s\n", *bspfile.Name);
+	Com_DPrintf("Loading Q3 bsp %s\n", *bspfile.Name);
 
 #define C(num,field,count,type) \
 	bspfile.count = CheckLump(dBsp3Hdr_t::LUMP_##num, (void**)&bspfile.field, sizeof(type))
@@ -578,33 +578,33 @@ void LoadQ3BspFile ()
 	//!! C(FOGS, ...);
 
 	dBsp3Model_t *models;
-	bspfile.numModels = CheckLump (dBsp3Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp3Model_t));	// not in bspfile_t struc
-	LoadQ3Submodels (&bspfile, models);		//!!! empty
+	bspfile.numModels = CheckLump(dBsp3Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp3Model_t));	// not in bspfile_t struc
+	LoadQ3Submodels(&bspfile, models);		//!!! empty
 
 #if !LITTLE_ENDIAN
 	// swap everything
-	SwapQ3BspFile (&bspfile);
+	SwapQ3BspFile(&bspfile);
 #endif
-	ProcessQ3BspFile (&bspfile);
+	ProcessQ3BspFile(&bspfile);
 
 	// load visinfo
 	dBsp3Vis_t *vis;
-	int visDataSize = CheckLump (dBsp3Hdr_t::LUMP_VISIBILITY, (void**)&vis, 1);
-	LoadQ3Vis (&bspfile, vis, visDataSize);
+	int visDataSize = CheckLump(dBsp3Hdr_t::LUMP_VISIBILITY, (void**)&vis, 1);
+	LoadQ3Vis(&bspfile, vis, visDataSize);
 	// load entstring after all: we may require to change something
 	char *entString = (char*)header + header->lumps[dBsp3Hdr_t::LUMP_ENTITIES].fileofs;
-	bspfile.entStr = ProcessEntstring (entString);
+	bspfile.entStr = ProcessEntstring(entString);
 
 #undef C
 	unguard;
 }
 
 
-bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksum)
+bspfile_t *LoadBspFile(const char *filename, bool clientload, unsigned *checksum)
 {
 	guard(LoadBspFile);
 
-	if (!stricmp (filename, bspfile.Name) && (clientload || !Cvar_VariableInt ("flushmap")))
+	if (!stricmp(filename, bspfile.Name) && (clientload || !Cvar_VariableInt("flushmap")))
 	{
 		if (checksum)
 			*checksum = bspfile.checksum;
@@ -612,23 +612,23 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 		return &bspfile;
 	}
 
-	server_state_t ss = Com_ServerState ();
-	if (clientload && (ss == ss_loading || ss == ss_game) && stricmp (filename, bspfile.Name) && bspfile.Name[0])
-		Com_DropError ("client trying to load map \"%s\" while server running \"%s\"", filename, *bspfile.Name);
+	server_state_t ss = Com_ServerState();
+	if (clientload && (ss == ss_loading || ss == ss_game) && stricmp(filename, bspfile.Name) && bspfile.Name[0])
+		Com_DropError("client trying to load map \"%s\" while server running \"%s\"", filename, *bspfile.Name);
 
 	if (bspfile.Name[0] && bspfile.file)
 		delete bspfile.file;
 	if (bspfile.extraChain)
 		delete bspfile.extraChain;
 
-	memset (&bspfile, 0, sizeof(bspfile));
-	strcpy (bspfile.Name, filename);
-	if (!(bspfile.file = (byte*) GFileSystem->LoadFile (filename, &bspfile.length)))
+	memset(&bspfile, 0, sizeof(bspfile));
+	strcpy(bspfile.Name, filename);
+	if (!(bspfile.file = (byte*) GFileSystem->LoadFile(filename, &bspfile.length)))
 	{
 		bspfile.Name[0] = 0;
-		Com_DropError ("Couldn't load %s", filename);
+		Com_DropError("Couldn't load %s", filename);
 	}
-	bspfile.checksum = LittleLong (Com_BlockChecksum (bspfile.file, bspfile.length));
+	bspfile.checksum = LittleLong(Com_BlockChecksum(bspfile.file, bspfile.length));
 	if (checksum) *checksum = bspfile.checksum;
 	bspfile.extraChain = new CMemoryChain;
 
@@ -642,24 +642,24 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 		switch (id2)
 		{
 		case BSP2_VERSION:
-			LoadQ2BspFile ();
+			LoadQ2BspFile();
 			return &bspfile;
 		case BSP3_VERSION:
-			LoadQ3BspFile ();
+			LoadQ3BspFile();
 			return &bspfile;
 		default:
-			appPrintf (S_RED"Unknown bsp version %d\n", id2);
+			appPrintf(S_RED"Unknown bsp version %d\n", id2);
 		};
 		break;
 	case BSP1_VERSION:
 	case BSPHL_VERSION:
-		LoadQ1BspFile ();
+		LoadQ1BspFile();
 		return &bspfile;
 	}
 	// error
 	delete bspfile.file;
-	memset (&bspfile, 0, sizeof(bspfile));
-	Com_DropError ("%s has a wrong BSP header", filename);
+	memset(&bspfile, 0, sizeof(bspfile));
+	Com_DropError("%s has a wrong BSP header", filename);
 	return NULL;		// make compiler happy
 
 	unguard;

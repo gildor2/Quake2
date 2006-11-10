@@ -38,7 +38,7 @@ static const struct {
 #if !_WIN32
 // unix have no alternative to win32's IsBadReadPtr()
 // this function inspired on Wine's implementation
-static bool IsBadReadPtr (const void *data, int count)
+static bool IsBadReadPtr(const void *data, int count)
 {
 	// NULL is always bad
 	if (data == NULL) return true;
@@ -49,7 +49,7 @@ static bool IsBadReadPtr (const void *data, int count)
 		a += b[0] + b[count-1];
 		// get OS page size
 		static int pageSize = 0;
-		if (!pageSize) pageSize = getpagesize ();
+		if (!pageSize) pageSize = getpagesize();
 		while (count > 0)
 		{
 			a += *b;
@@ -65,55 +65,55 @@ static bool IsBadReadPtr (const void *data, int count)
 #endif
 
 
-static void DumpReg4 (COutputDevice *Out, const char *name, unsigned value)
+static void DumpReg4(COutputDevice *Out, const char *name, unsigned value)
 {
 	const char *data = (char*) value;
-	Out->Printf ("  %s: %08X  ", name, value);
-	if (IsBadReadPtr (data, 16))
-		Out->Printf (" <N/A>");
+	Out->Printf("  %s: %08X  ", name, value);
+	if (IsBadReadPtr(data, 16))
+		Out->Printf(" <N/A>");
 	else
 	{
 		int		i;
 		for (i = 0; i < 16; i++)
-			Out->Printf (" %02X", data[i] & 0xFF);
+			Out->Printf(" %02X", data[i] & 0xFF);
 
-		Out->Printf ("  ");
+		Out->Printf("  ");
 
 		for (i = 0; i < 16; i++)
 		{
 			char c = data[i];
 			if (c < ' ') c = '.';		// signed char, allowed 32..127
-			Out->Printf ("%c", c);
+			Out->Printf("%c", c);
 		}
 	}
-	Out->Printf ("\n");
+	Out->Printf("\n");
 }
 
 
-static void DumpReg2 (COutputDevice *Out, const char *name, unsigned value)
+static void DumpReg2(COutputDevice *Out, const char *name, unsigned value)
 {
-	Out->Printf ("  %s: %04X", name, value);
+	Out->Printf("  %s: %04X", name, value);
 }
 
 
-void DumpRegs (COutputDevice *Out, CONTEXT *ctx)
+void DumpRegs(COutputDevice *Out, CONTEXT *ctx)
 {
-	Out->Write ("Registers:\n");
+	Out->Write("Registers:\n");
 	int j;
 	for (j = 0; j < ARRAY_COUNT(regData); j++)
-		DumpReg4 (Out, regData[j].name, OFS2FIELD(ctx, regData[j].ofs, unsigned));
+		DumpReg4(Out, regData[j].name, OFS2FIELD(ctx, regData[j].ofs, unsigned));
 	for (j = 0; j < ARRAY_COUNT(regData2); j++)
-		DumpReg2 (Out, regData2[j].name, OFS2FIELD(ctx, regData2[j].ofs, unsigned));
+		DumpReg2(Out, regData2[j].name, OFS2FIELD(ctx, regData2[j].ofs, unsigned));
 }
 
 
 #if LOG_STRINGS
 
-static bool IsString (const char *str)
+static bool IsString(const char *str)
 {
 	for (int i = 0; i < MAX_STRING_WIDTH; i++, str++)
 	{
-		if (IsBadReadPtr (str, 1)) return false;
+		if (IsBadReadPtr(str, 1)) return false;
 
 		char c = *str;
 		if (c == 0) return i >= MIN_STRING_WIDTH;
@@ -123,25 +123,25 @@ static bool IsString (const char *str)
 }
 
 
-static bool DumpString (COutputDevice *Out, const char *str)
+static bool DumpString(COutputDevice *Out, const char *str)
 {
-	Out->Printf (" = \"");
+	Out->Printf(" = \"");
 	//?? can use appQuoteString()
 	for (int i = 0; i < MAX_STRING_WIDTH && *str; i++, str++)
 	{
 		if (*str == '\n')
-			Out->Printf ("\\n");
+			Out->Printf("\\n");
 		else
-			Out->Printf ("%c", *str);
+			Out->Printf("%c", *str);
 	}
-	Out->Printf ("%s\"", *str ? "..." : "");
+	Out->Printf("%s\"", *str ? "..." : "");
 	return true;
 }
 
 #endif
 
 
-void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
+void DumpMem(COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 {
 	//!! should try to use address as a symbol
 #define STAT_SPACES		"     "
@@ -149,9 +149,9 @@ void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 	int n = 0;
 	for (int i = 0; i < STACK_UNWIND_DEPTH; i++, data++)
 	{
-		if (IsBadReadPtr (data, 4))
+		if (IsBadReadPtr(data, 4))
 		{
-			Out->Printf ("  <N/A>\n");
+			Out->Printf("  <N/A>\n");
 			return;
 		}
 
@@ -160,24 +160,24 @@ void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 			if (OFS2FIELD(ctx, regData[j].ofs, unsigned*) == data)
 			{
 				if (n) WRAP;
-				Out->Printf ("%s->", regData[j].name);
+				Out->Printf("%s->", regData[j].name);
 				spaces = "";
 				break;
 			}
 
 		char symbol[256];
-		if (appSymbolName (*data, ARRAY_ARG(symbol)))
+		if (appSymbolName(*data, ARRAY_ARG(symbol)))
 #if LOG_FUNCS_ONLY
-			if (strchr (symbol, '('))
+			if (strchr(symbol, '('))
 #endif
 			{
 				// log as symbol
-				Out->Printf ("%s%s%08X = %s",
+				Out->Printf("%s%s%08X = %s",
 					n > 0 ? "\n" : "", spaces,
 					*data, symbol);
 #if !LOG_FUNCS_ONLY && LOG_STRINGS
-				if (!strchr (symbol, '(') && IsString ((char*)*data))	// do not test funcs()
-					DumpString (Out, (char*)*data);
+				if (!strchr(symbol, '(') && IsString((char*)*data))	// do not test funcs()
+					DumpString(Out, (char*)*data);
 #endif
 				WRAP;
 				continue;
@@ -185,43 +185,43 @@ void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 
 #if LOG_STRINGS
 		// try to log as string
-		if (IsString ((char*)*data))
+		if (IsString((char*)*data))
 		{
-			Out->Printf ("%s%08X", n > 0 ? "\n" STAT_SPACES : spaces, *data);
-			DumpString (Out, (char*)*data);
+			Out->Printf("%s%08X", n > 0 ? "\n" STAT_SPACES : spaces, *data);
+			DumpString(Out, (char*)*data);
 			WRAP;
 			continue;
 		}
 #endif
 
 		// log as simple number
-		Out->Printf ("%s%08X", n > 0 ? "  " : spaces, *data);
+		Out->Printf("%s%08X", n > 0 ? "  " : spaces, *data);
 		if (++n >= 8) WRAP;
 	}
-	Out->Printf ("\n");
+	Out->Printf("\n");
 	return;
 #undef STAT_SPACES
 #undef WRAP
 }
 
 #if UNWIND_EBP_FRAMES
-void UnwindEbpFrame (COutputDevice *Out, const unsigned *data)
+void UnwindEbpFrame(COutputDevice *Out, const unsigned *data)
 {
-	Out->Printf ("  ");
+	Out->Printf("  ");
 	while (true)
 	{
-		if (IsBadReadPtr (data, 8))
+		if (IsBadReadPtr(data, 8))
 		{
-			Out->Printf ("<N/A>");
+			Out->Printf("<N/A>");
 			break;
 		}
 		char symbol[256];
-		if (appSymbolName (data[1], ARRAY_ARG(symbol)))
+		if (appSymbolName(data[1], ARRAY_ARG(symbol)))
 		{
-			Out->Printf ("%s <- ", symbol);
+			Out->Printf("%s <- ", symbol);
 			if (data[0] <= (unsigned)data)	// possible loop
 			{
-				Out->Printf ("(loop)");
+				Out->Printf("(loop)");
 				break;
 			}
 			data = (unsigned*)data[0];
@@ -229,10 +229,10 @@ void UnwindEbpFrame (COutputDevice *Out, const unsigned *data)
 		}
 		else
 		{
-			Out->Printf ("(wrong frame)");
+			Out->Printf("(wrong frame)");
 			break;
 		}
 	}
-	Out->Printf ("\n\n");
+	Out->Printf("\n\n");
 }
 #endif

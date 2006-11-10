@@ -3,7 +3,7 @@
 //?? color: (CColor3f : CVec3), (CColor4f : CColor3f + float alpha)
 
 
-float appRsqrt (float number)
+float appRsqrt(float number)
 {
 	float x2 = number * 0.5f;
 	uint_cast(number) = 0x5F3759DF - (uint_cast(number) >> 1);
@@ -17,7 +17,7 @@ float appRsqrt (float number)
 	Color functions
 -----------------------------------------------------------------------------*/
 
-float NormalizeColor (const CVec3 &in, CVec3 &out)
+float NormalizeColor(const CVec3 &in, CVec3 &out)
 {
 	float	m;
 
@@ -36,7 +36,7 @@ float NormalizeColor (const CVec3 &in, CVec3 &out)
 	return m;
 }
 
-float NormalizeColor255 (const CVec3 &in, CVec3 &out)
+float NormalizeColor255(const CVec3 &in, CVec3 &out)
 {
 	float	m;
 
@@ -55,7 +55,7 @@ float NormalizeColor255 (const CVec3 &in, CVec3 &out)
 	return m;
 }
 
-float ClampColor255 (const CVec3 &in, CVec3 &out)
+float ClampColor255(const CVec3 &in, CVec3 &out)
 {
 	float	m;
 

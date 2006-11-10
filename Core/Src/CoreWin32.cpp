@@ -17,17 +17,17 @@ HINSTANCE hInstance;
 	Timing
 -----------------------------------------------------------------------------*/
 
-unsigned appMilliseconds ()
+unsigned appMilliseconds()
 {
 	// use exact value from timeGetTime() to be in sync with other win32
 	// time values, comes with win32 messages
-	return timeGetTime ();
+	return timeGetTime();
 }
 
 
-void appSleep (unsigned msec)
+void appSleep(unsigned msec)
 {
-	Sleep (msec);
+	Sleep(msec);
 }
 
 
@@ -35,7 +35,7 @@ void appSleep (unsigned msec)
 	Detecting Windows version
 -----------------------------------------------------------------------------*/
 
-static void DetectOs ()
+static void DetectOs()
 {
 	struct osInfo_t {
 		byte	vMaj, vMin, vPlatf;
@@ -58,10 +58,10 @@ static void DetectOs ()
 	};
 	OSVERSIONINFO ver;
 	ver.dwOSVersionInfoSize = sizeof(ver);
-	if (!GetVersionEx (&ver))
+	if (!GetVersionEx(&ver))
 	{
-		int err = GetLastError ();
-		appPrintf ("Windows version detection failed:\nError: %d  %s\n", err, appGetSystemErrorMessage (err));
+		int err = GetLastError();
+		appPrintf("Windows version detection failed:\nError: %d  %s\n", err, appGetSystemErrorMessage(err));
 		return;
 	}
 	GIsWinNT = (ver.dwPlatformId == VER_PLATFORM_WIN32_NT);
@@ -75,8 +75,8 @@ static void DetectOs ()
 			v.vMaj == ver.dwMajorVersion &&
 			v.vMin == ver.dwMinorVersion)
 		{
-			appSprintf (ARRAY_ARG(GMachineOS), "Windows %s (Build: %d)", v.name, ver.dwBuildNumber);
-			appPrintf ("Detected OS: %s\n", GMachineOS);
+			appSprintf(ARRAY_ARG(GMachineOS), "Windows %s (Build: %d)", v.name, ver.dwBuildNumber);
+			appPrintf("Detected OS: %s\n", GMachineOS);
 			return;
 		}
 	}
@@ -85,8 +85,8 @@ static void DetectOs ()
 		platf = "9X";
 	else if (ver.dwPlatformId == VER_PLATFORM_WIN32_NT)
 		platf = "NT";
-	appSprintf (ARRAY_ARG(GMachineOS), "Windows %s %d.%d (Build: %d)", platf, ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber);
-	appPrintf ("Detected OS: %s\n", GMachineOS);
+	appSprintf(ARRAY_ARG(GMachineOS), "Windows %s %d.%d (Build: %d)", platf, ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber);
+	appPrintf("Detected OS: %s\n", GMachineOS);
 }
 
 
@@ -94,31 +94,31 @@ static void DetectOs ()
 	Miscellaneous
 -----------------------------------------------------------------------------*/
 
-const char *appPackage ()
+const char *appPackage()
 {
 	static TString<256> Filename;
 	if (Filename[0]) return Filename;	// already computed
 	// get executable filename
-	GetModuleFileName (NULL, ARRAY_ARG(Filename));
-	char *s = Filename.rchr ('\\');
+	GetModuleFileName(NULL, ARRAY_ARG(Filename));
+	char *s = Filename.rchr('\\');
 	if (s) Filename = s+1;
-	s = Filename.rchr ('.');
+	s = Filename.rchr('.');
 	if (s) *s = 0;
 	return Filename;
 }
 
 
-static void SetDefaultDirectory ()
+static void SetDefaultDirectory()
 {
 	TString<256> Filename;
-	GetModuleFileName (NULL, ARRAY_ARG(Filename));
-	char *s = Filename.rchr ('\\');
+	GetModuleFileName(NULL, ARRAY_ARG(Filename));
+	char *s = Filename.rchr('\\');
 	if (s) *s = 0;
-	SetCurrentDirectory (Filename);
+	SetCurrentDirectory(Filename);
 }
 
 
-const char *appGetSystemErrorMessage (unsigned code)
+const char *appGetSystemErrorMessage(unsigned code)
 {
 	char buffer[1024];
 	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, code,
@@ -126,7 +126,7 @@ const char *appGetSystemErrorMessage (unsigned code)
 		ARRAY_ARG(buffer), NULL))
 	{
 		// cut CR/LF
-		char *s = strchr (buffer, '\r');
+		char *s = strchr(buffer, '\r');
 		if (s) s[0] = 0;
 		return va("%s", buffer);
 	}
@@ -134,13 +134,13 @@ const char *appGetSystemErrorMessage (unsigned code)
 }
 
 
-void appDisplayError ()
+void appDisplayError()
 {
 	// avoid 2 va() calls (may overflow one buffer when filling another)
 	TString<256> Title;
-	Title.sprintf ("%s: fatal error", appPackage ());
+	Title.sprintf("%s: fatal error", appPackage());
 	// display error
-	MessageBox (NULL,
+	MessageBox(NULL,
 #if DO_GUARD
 		va("%s\n\nHistory: %s", *GErr.Message, *GErr.History),
 #else
@@ -155,34 +155,34 @@ void appDisplayError ()
 -----------------------------------------------------------------------------*/
 
 #if __MINGW32__
-long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info);
+long WINAPI win32ExceptFilter(struct _EXCEPTION_POINTERS *info);
 
-long WINAPI mingw32ExceptFilter (struct _EXCEPTION_POINTERS *info)
+long WINAPI mingw32ExceptFilter(struct _EXCEPTION_POINTERS *info)
 {
-	win32ExceptFilter (info);
+	win32ExceptFilter(info);
 	THROW;							// OS exception -> C++ exception
 }
 #endif
 
-void appInitPlatform ()
+void appInitPlatform()
 {
 #if __MINGW32__
-	SetUnhandledExceptionFilter (mingw32ExceptFilter);
+	SetUnhandledExceptionFilter(mingw32ExceptFilter);
 #endif
-	hInstance = GetModuleHandle (NULL);
+	hInstance = GetModuleHandle(NULL);
 	// NOTE: under WinXP (Win2k too?) without timeBeginPeriod(1) Sleep() (and some another time-related
 	//	functions too) will work in bad resolution; so, we should use timeBeginPeriod(1) even if don't
 	//	use timeGetTime()
-	timeBeginPeriod (1);
+	timeBeginPeriod(1);
 	// gather system information
-	appDetectCPU ();				// timeBeginPeriod(1) should be called before this function!
-	DetectOs ();
+	appDetectCPU();				// timeBeginPeriod(1) should be called before this function!
+	DetectOs();
 	// setup current directory
-	SetDefaultDirectory ();
+	SetDefaultDirectory();
 }
 
 
-void appShutdownPlatform ()
+void appShutdownPlatform()
 {
-	timeEndPeriod (1);
+	timeEndPeriod(1);
 }

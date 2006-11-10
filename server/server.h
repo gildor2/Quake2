@@ -206,93 +206,93 @@ extern	edict_t		*sv_player;
 //
 // sv_main.c
 //
-void SV_DropClient (client_t *drop, char *info);
+void SV_DropClient(client_t *drop, char *info);
 
-void SV_WriteClientdataToMessage (client_t *client, sizebuf_t *msg);
+void SV_WriteClientdataToMessage(client_t *client, sizebuf_t *msg);
 
-void SV_InitCommands ();
-void SV_InitVars ();
+void SV_InitCommands();
+void SV_InitVars();
 
-void SV_SendServerinfo (client_t *client);
-void SV_UserinfoChanged (client_t *cl);
+void SV_SendServerinfo(client_t *client);
+void SV_UserinfoChanged(client_t *cl);
 
-sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext);
-void SV_TraceHook (trace0_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask);
+sizebuf_t *SV_MulticastHook(sizebuf_t *original, sizebuf_t *ext);
+void SV_TraceHook(trace0_t &trace, const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask);
 
 
 //
 // sv_init.c
 //
-int SV_ModelIndex (const char *name);
-int SV_SoundIndex (const char *name);
-int SV_ImageIndex (const char *name);
+int SV_ModelIndex(const char *name);
+int SV_SoundIndex(const char *name);
+int SV_ImageIndex(const char *name);
 
-void SV_InitGame (void);
-void SV_Map (bool attractloop, const char *levelstring, bool loadgame);
+void SV_InitGame(void);
+void SV_Map(bool attractloop, const char *levelstring, bool loadgame);
 
 
 //
 // sv_send.c
 //
-void SV_DemoCompleted (void);
-void SV_SendClientMessages (void);
+void SV_DemoCompleted(void);
+void SV_SendClientMessages(void);
 
-void SV_Multicast (const CVec3 &origin, multicast_t to, bool oldclients);
+void SV_Multicast(const CVec3 &origin, multicast_t to, bool oldclients);
 // send message to all clients
-inline void SV_MulticastOld (const CVec3 &origin, multicast_t to)
+inline void SV_MulticastOld(const CVec3 &origin, multicast_t to)
 {
-	SV_Multicast (origin, to, true);	// send to old and new clients
+	SV_Multicast(origin, to, true);	// send to old and new clients
 }
 // send message only to clients with a new protocol
-inline void SV_MulticastNew (const CVec3 &origin, multicast_t to)
+inline void SV_MulticastNew(const CVec3 &origin, multicast_t to)
 {
-	SV_Multicast (origin, to, false);	// send to new clients only
+	SV_Multicast(origin, to, false);	// send to new clients only
 }
 
-void SV_StartSound (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs, bool oldclients);
-inline void SV_StartSoundOld (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs)
+void SV_StartSound(const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs, bool oldclients);
+inline void SV_StartSoundOld(const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs)
 {
-	SV_StartSound (origin, entity, channel, soundindex, volume, attenuation, timeofs, true);
+	SV_StartSound(origin, entity, channel, soundindex, volume, attenuation, timeofs, true);
 }
-inline void SV_StartSoundNew (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs)
+inline void SV_StartSoundNew(const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs)
 {
-	SV_StartSound (origin, entity, channel, soundindex, volume, attenuation, timeofs, false);
+	SV_StartSound(origin, entity, channel, soundindex, volume, attenuation, timeofs, false);
 }
 
 
-void SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...) PRINTF(3,4);
-void SV_BroadcastPrintf (int level, const char *fmt, ...) PRINTF(2,3);
-void SV_BroadcastCommand (const char *fmt, ...) PRINTF(1,2);
+void SV_ClientPrintf(client_t *cl, int level, const char *fmt, ...) PRINTF(3,4);
+void SV_BroadcastPrintf(int level, const char *fmt, ...) PRINTF(2,3);
+void SV_BroadcastCommand(const char *fmt, ...) PRINTF(1,2);
 
 //
 // sv_user.c
 //
-void SV_Nextserver (void);
-void SV_ExecuteClientMessage (client_t *cl);
+void SV_Nextserver(void);
+void SV_ExecuteClientMessage(client_t *cl);
 
 //
 // sv_ccmds.c
 //
-bool SV_AddressBanned (netadr_t *a);
-void SV_ReadLevelFile (void);
+bool SV_AddressBanned(netadr_t *a);
+void SV_ReadLevelFile(void);
 
 //
 // sv_ents.c
 //
-void SV_WriteFrameToClient (client_t *client, sizebuf_t *msg);
-void SV_RecordDemoMessage (void);
+void SV_WriteFrameToClient(client_t *client, sizebuf_t *msg);
+void SV_RecordDemoMessage(void);
 
 
-void SV_Error (char *error, ...);
+void SV_Error(char *error, ...);
 
 //
 // sv_game.c
 //
 extern	game_export_t	*ge;
 
-void SV_InitGameLibrary (bool dummy);
-void SV_ShutdownGameLibrary ();
-void SV_InitEdict (edict_t *e);
+void SV_InitGameLibrary(bool dummy);
+void SV_ShutdownGameLibrary();
+void SV_InitEdict(edict_t *e);
 
 
 
@@ -306,21 +306,21 @@ void SV_InitEdict (edict_t *e);
 // high level object sorting to reduce interaction tests
 //
 
-void SV_ClearWorld (void);
+void SV_ClearWorld(void);
 // called after the world model has been loaded, before linking any entities
 
-void SV_UnlinkEdict (edict_t *ent);
+void SV_UnlinkEdict(edict_t *ent);
 // call before removing an entity, and before trying to move one,
 // so it doesn't clip against itself
 
-void SV_LinkEdict (edict_t *ent);
+void SV_LinkEdict(edict_t *ent);
 // Needs to be called any time an entity changes origin, mins, maxs,
 // or solid.  Automatically unlinks if needed.
 // sets ent->v.absmin and ent->v.absmax
 // sets ent->leafnums[] for pvs determination even if the entity
 // is not solid
 
-int SV_AreaEdicts (const CVec3 &mins, const CVec3 &maxs, edict_t **list, int maxcount, int areatype);
+int SV_AreaEdicts(const CVec3 &mins, const CVec3 &maxs, edict_t **list, int maxcount, int areatype);
 // fills in a table of edict pointers with edicts that have bounding boxes
 // that intersect the given area.  It is possible for a non-axial bmodel
 // to be returned that doesn't actually intersect the area on an exact
@@ -333,12 +333,12 @@ int SV_AreaEdicts (const CVec3 &mins, const CVec3 &maxs, edict_t **list, int max
 //
 // functions that interact with everything apropriate
 //
-int SV_PointContents (const CVec3 &p);
+int SV_PointContents(const CVec3 &p);
 // returns the CONTENTS_* value from the world at the given point.
 // Also check entities, to allow moving liquids
 
 
-void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, edict_t *passedict, int contentmask);
+void SV_Trace(trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, edict_t *passedict, int contentmask);
 // bounds are relative
 
 // if the entire move stays in a solid volume, trace.allsolid will be set,
@@ -354,24 +354,24 @@ void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bo
 //
 // sv_tokenize.cpp
 //
-void	SV_TokenizeString (const char *text);
-int		SV_Argc (void);
-char *	SV_Argv (int arg);
-char *	SV_Args (void);
+void	SV_TokenizeString(const char *text);
+int		SV_Argc(void);
+char *	SV_Argv(int arg);
+char *	SV_Args(void);
 
 //
 // sv_text.cpp
 //
-void SV_ClearTexts ();
-void SV_DrawTexts ();
-void SV_DrawTextLeft (const char *text, unsigned rgba = 0xFFFFFFFF);
-void SV_DrawTextRight (const char *text, unsigned rgba = 0xFFFFFFFF);
-void SV_DrawText3D (const CVec3 &pos, const char *text, unsigned rgba = 0xFFFFFFFF);
+void SV_ClearTexts();
+void SV_DrawTexts();
+void SV_DrawTextLeft(const char *text, unsigned rgba = 0xFFFFFFFF);
+void SV_DrawTextRight(const char *text, unsigned rgba = 0xFFFFFFFF);
+void SV_DrawText3D(const CVec3 &pos, const char *text, unsigned rgba = 0xFFFFFFFF);
 
 //
 // sv_anim.cpp
 //
-void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateEx_t *oldent, edict_t *edict);
+void SV_ComputeAnimation(player_state_t *ps, entityStateEx_t &ent, entityStateEx_t *oldent, edict_t *edict);
 
 
 //------------- Constants for new protocol ---------------------

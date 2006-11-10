@@ -1,23 +1,23 @@
 #define TBL_IGNORE(name)	{ STR(name), NULL }
 
-#define IS(n,str)	(!stricmp (argv[n], str))
+#define IS(n,str)	(!stricmp(argv[n], str))
 
 // parser helpers
 
-static unsigned GetColor (int argc, char **argv, int pos)
+static unsigned GetColor(int argc, char **argv, int pos)
 {
 	if (pos + 3 > argc)
 	{
 		shaderError = "invalid rgbGen const";
 		return RGB(1,1,1);
 	}
-	float r = atof (argv[pos]);
-	float g = atof (argv[pos+1]);
-	float b = atof (argv[pos+2]);
+	float r = atof(argv[pos]);
+	float g = atof(argv[pos+1]);
+	float b = atof(argv[pos+2]);
 	return RGBS(r, g, b);
 }
 
-static void GetWave0 (int argc, char **argv, int pos, waveParams_t &wave)
+static void GetWave0(int argc, char **argv, int pos, waveParams_t &wave)
 {
 	if (pos + 4 > argc)
 		ERROR_IN_SHADER("invalid wave arguments");
@@ -27,7 +27,7 @@ static void GetWave0 (int argc, char **argv, int pos, waveParams_t &wave)
 	wave.freq  = atof(argv[pos+3]);
 }
 
-static void GetWave (int argc, char **argv, int pos, waveParams_t &wave)
+static void GetWave(int argc, char **argv, int pos, waveParams_t &wave)
 {
 	if (pos + 5 > argc)
 		ERROR_IN_SHADER("invalid wave arguments");
@@ -36,17 +36,17 @@ static void GetWave (int argc, char **argv, int pos, waveParams_t &wave)
 	};
 	bool inv = false;
 	const char *func = argv[pos];
-	if (!strnicmp (func, "inverse", 7))
+	if (!strnicmp(func, "inverse", 7))
 	{
 		inv = true;
 		func += 7;		// skip "inverse"
 	}
 	int i;
 	for (i = 0; i < ARRAY_COUNT(waveNames); i++)
-		if (!stricmp (func, waveNames[i])) break;
+		if (!stricmp(func, waveNames[i])) break;
 	if (i == ARRAY_COUNT(waveNames)) ERROR_IN_SHADER(va("bad wave func: %s", argv[pos]));
 	wave.type  = (waveFunc_t) i;
-	GetWave0 (argc, argv, pos+1, wave);
+	GetWave0(argc, argv, pos+1, wave);
 	// undocumented: any "inverse" function
 	if (inv)
 	{
@@ -66,15 +66,15 @@ static void GetWave (int argc, char **argv, int pos, waveParams_t &wave)
 	}
 }
 
-static void GetVec (int argc, char **argv, int pos, CVec3 &dst)
+static void GetVec(int argc, char **argv, int pos, CVec3 &dst)
 {
 	if (pos + 5 > argc ||
 		argv[pos][0] != '(' || argv[pos][1] != 0 ||
 		argv[pos+4][0] != ')' || argv[pos+4][1] != 0)
 		ERROR_IN_SHADER("invalid vector param");
-	dst[0] = atof (argv[pos+1]);
-	dst[1] = atof (argv[pos+2]);
-	dst[2] = atof (argv[pos+3]);
+	dst[0] = atof(argv[pos+1]);
+	dst[1] = atof(argv[pos+2]);
+	dst[2] = atof(argv[pos+3]);
 }
 
 
@@ -82,7 +82,7 @@ static void GetVec (int argc, char **argv, int pos, CVec3 &dst)
 	Shader-level functions
 -----------------------------------------------------------------------------*/
 
-#define FUNC(name)			static void Shader_##name (int argc, char **argv)
+#define FUNC(name)			static void Shader_##name(int argc, char **argv)
 #define TBL(name)			{ STR(name), Shader_##name }
 #define TBL2(name, alias)	{ alias, Shader_##name }
 
@@ -150,7 +150,7 @@ FUNC(sort)
 			break;
 		}
 	if (sort == SORT_BAD)
-		sort = atoi (argv[1]);
+		sort = atoi(argv[1]);
 	sh.sortParam = sort;
 }
 
@@ -187,23 +187,23 @@ FUNC(deformVertexes)
 	switch (type)
 	{
 	case DEFORM_WAVE:
-		deform.waveDiv = atof (argv[2]);
+		deform.waveDiv = atof(argv[2]);
 		if (deform.waveDiv == 0)
 			ERROR_IN_SHADER("bad deform wave div")
 		else
 			deform.waveDiv = 1.0f / deform.waveDiv;
-		GetWave (argc, argv, 3, deform.wave);
+		GetWave(argc, argv, 3, deform.wave);
 		break;
 	case DEFORM_MOVE:
-		deform.move[0] = atof (argv[2]);
-		deform.move[1] = atof (argv[3]);
-		deform.move[2] = atof (argv[4]);
-		GetWave (argc, argv, 5, deform.moveWave);
+		deform.move[0] = atof(argv[2]);
+		deform.move[1] = atof(argv[3]);
+		deform.move[2] = atof(argv[4]);
+		GetWave(argc, argv, 5, deform.moveWave);
 		break;
 	case DEFORM_BULGE:
-		deform.bulgeWidth  = atof (argv[2]);
-		deform.bulgeHeight = atof (argv[3]);
-		deform.bulgeSpeed  = atof (argv[4]);
+		deform.bulgeWidth  = atof(argv[2]);
+		deform.bulgeHeight = atof(argv[3]);
+		deform.bulgeSpeed  = atof(argv[4]);
 		break;
 	}
 }
@@ -219,7 +219,7 @@ FUNC(surfaceparm)
 
 FUNC(tessSize)
 {
-	sh.tessSize = atof (argv[1]);
+	sh.tessSize = atof(argv[1]);
 }
 
 
@@ -232,10 +232,10 @@ FUNC(skyParms)
 	{
 		if (sh.numStages)
 			ERROR_IN_SHADER("skybox after stages");
-		SetShaderSkyBox (argv[1]);			// NOTE: here is no default skybox dir
+		SetShaderSkyBox(argv[1]);			// NOTE: here is no default skybox dir
 		sh.numStages = 1;
 	}
-	sh.cloudHeight = atof (argv[2]);
+	sh.cloudHeight = atof(argv[2]);
 	// argv[3] is innerbox, is is not supported in q3
 }
 
@@ -266,27 +266,27 @@ static CSimpleCommand shaderFuncs[] = {
 	Stage-level functions
 -----------------------------------------------------------------------------*/
 
-#define FUNC(name)			static void Stage_##name (int argc, char **argv)
+#define FUNC(name)			static void Stage_##name(int argc, char **argv)
 #define TBL(name)			{ STR(name), Stage_##name }
 #define TBL2(name, alias)	{ alias, Stage_##name }
 
 
 // texture mapping
 
-static image_t *ShaderImage (const char *name, unsigned addFlags = 0)
+static image_t *ShaderImage(const char *name, unsigned addFlags = 0)
 {
 	char buf[256];
 	// if image name starts with "./" -- replace with shader path
 	if (name[0] == '.' && name[1] == '/')
 	{
-		strcpy (buf, sh.Name);
-		char *s = strrchr (buf, '/');
+		strcpy(buf, sh.Name);
+		char *s = strrchr(buf, '/');
 		if (!s) s = buf;
 		else	s++;			// skip '/'
-		strcpy (s, name+2);
+		strcpy(s, name+2);
 		name = buf;
 	}
-	return FindImage (name, sh_imgFlags | addFlags);
+	return FindImage(name, sh_imgFlags | addFlags);
 }
 
 
@@ -298,7 +298,7 @@ FUNC(map)
 	{
 		if (sh.lightmapNumber >= 0)
 		{
-			img = GetLightmapImage (sh.lightmapNumber);
+			img = GetLightmapImage(sh.lightmapNumber);
 			s.isLightmap   = true;
 			s.glState      |= GLSTATE_DEPTHWRITE;
 			s.rgbGenType   = RGBGEN_IDENTITY;
@@ -311,7 +311,7 @@ FUNC(map)
 		img = NULL;
 	else
 	{
-		img = ShaderImage (IS(1,"$texture") ? sh.Name : argv[1]);
+		img = ShaderImage(IS(1,"$texture") ? sh.Name : argv[1]);
 		if (!img) ERROR_IN_SHADER(va("no texture: %s", argv[1]));
 		if (!sh.width && !sh.height)
 		{
@@ -319,16 +319,16 @@ FUNC(map)
 			sh.height = img->height;
 		}
 	}
-	SetShaderImage (img, sh.numStages);
+	SetShaderImage(img, sh.numStages);
 	s.numAnimTextures = 1;
 }
 
 
 FUNC(clampMap)
 {
-	image_t *img = ShaderImage (IS(1,"$texture") ? sh.Name : argv[1], IMAGE_CLAMP);
+	image_t *img = ShaderImage(IS(1,"$texture") ? sh.Name : argv[1], IMAGE_CLAMP);
 	if (!img) ERROR_IN_SHADER(va("no texture: %s", argv[1]));
-	SetShaderImage (img, sh.numStages);
+	SetShaderImage(img, sh.numStages);
 	if (!sh.width && !sh.height)
 	{
 		sh.width  = img->width;
@@ -338,22 +338,22 @@ FUNC(clampMap)
 }
 
 
-static void DoAnimMap (int argc, char **argv, unsigned imgFlags)
+static void DoAnimMap(int argc, char **argv, unsigned imgFlags)
 {
 	if (argc < 3) ERROR_IN_SHADER("not enough animmap args");
-	st[sh.numStages].animMapFreq = atof (argv[1]);
+	st[sh.numStages].animMapFreq = atof(argv[1]);
 	if (argc > MAX_STAGE_TEXTURES + 2) ERROR_IN_SHADER("too much animmap textures");
 
 	for (int i = 2; i < argc; i++)
 	{
-		image_t *img = ShaderImage (argv[i], imgFlags);
+		image_t *img = ShaderImage(argv[i], imgFlags);
 		if (!img) ERROR_IN_SHADER(va("no texture: %s", argv[i]));
 		if (!sh.width && !sh.height)
 		{
 			sh.width  = img->width;
 			sh.height = img->height;
 		}
-		SetShaderImage (img, sh.numStages, i-2);
+		SetShaderImage(img, sh.numStages, i-2);
 		st[sh.numStages].numAnimTextures++;
 	}
 }
@@ -361,12 +361,12 @@ static void DoAnimMap (int argc, char **argv, unsigned imgFlags)
 
 FUNC(animMap)
 {
-	DoAnimMap (argc, argv, sh_imgFlags);
+	DoAnimMap(argc, argv, sh_imgFlags);
 }
 
 FUNC(animClampMap)
 {
-	DoAnimMap (argc, argv, sh_imgFlags | IMAGE_CLAMP);
+	DoAnimMap(argc, argv, sh_imgFlags | IMAGE_CLAMP);
 }
 
 
@@ -494,7 +494,7 @@ FUNC(rgbGen)
 		if (IS(1, "colorWave"))
 		{
 			waveArg = 5;
-			rgbaConst = GetColor (argc, argv, 2);
+			rgbaConst = GetColor(argc, argv, 2);
 		}
 		else if (IS(1, "wave"))
 			waveArg = 2;
@@ -503,13 +503,13 @@ FUNC(rgbGen)
 	}
 
 	if (rgbGen == RGBGEN_CONST)
-		rgbaConst = GetColor (argc, argv, 2);
+		rgbaConst = GetColor(argc, argv, 2);
 
 	shaderStage_t &s = st[sh.numStages];
 	if (waveArg)
 	{
 		rgbGen = RGBGEN_WAVE;
-		GetWave (argc, argv, waveArg, s.rgbGenWave);
+		GetWave(argc, argv, waveArg, s.rgbGenWave);
 	}
 	s.rgbGenType = rgbGen;
 	byte alpha = s.rgbaConst.c[3];	// save alpha value
@@ -554,17 +554,17 @@ FUNC(alphaGen)
 	{
 	case ALPHAGEN_DOT:
 	case ALPHAGEN_ONE_MINUS_DOT:
-		s.alphaMin = atof (argv[2]);
-		s.alphaMax = atof (argv[3]);
+		s.alphaMin = atof(argv[2]);
+		s.alphaMax = atof(argv[3]);
 		break;
 	case ALPHAGEN_WAVE:
-		GetWave (argc, argv, 2, s.alphaGenWave);
+		GetWave(argc, argv, 2, s.alphaGenWave);
 		break;
 	case ALPHAGEN_CONST:
-		s.rgbaConst.c[3] = appRound (atof (argv[2]) * 255);
+		s.rgbaConst.c[3] = appRound(atof(argv[2]) * 255);
 		break;
 	case ALPHAGEN_PORTAL:
-		s.alphaPortalRange = atof (argv[2]);
+		s.alphaPortalRange = atof(argv[2]);
 		if (!s.alphaPortalRange)
 			s.alphaPortalRange = 256;
 		break;
@@ -601,9 +601,9 @@ FUNC(tcGen)
 
 	if (tcGen == TCGEN_VECTOR)
 	{
-		GetVec (argc, argv, 2, s.tcGenVec[0]);
+		GetVec(argc, argv, 2, s.tcGenVec[0]);
 		if (shaderError) return; // do not try 2nd vector
-		GetVec (argc, argv, 7, s.tcGenVec[1]);
+		GetVec(argc, argv, 7, s.tcGenVec[1]);
 	}
 }
 
@@ -637,18 +637,18 @@ FUNC(tcMod)
 		}
 	if (i == ARRAY_COUNT(tcModNames))
 		ERROR_IN_SHADER(va("unknown tcMod: %s", argv[1]));
-	tcModParms_t *tcMod = NewTcModStage (&st[sh.numStages]);
+	tcModParms_t *tcMod = NewTcModStage(&st[sh.numStages]);
 	if (!tcMod) return;
 
 	tcMod->type = tcModType;
 
-	float f1 = atof (argv[2]);
-	float f2 = atof (argv[3]);
+	float f1 = atof(argv[2]);
+	float f2 = atof(argv[3]);
 
 	switch (tcModType)
 	{
 	case TCMOD_TURB:
-		GetWave0 (argc, argv, 2, tcMod->wave);
+		GetWave0(argc, argv, 2, tcMod->wave);
 		break;
 	case TCMOD_SCALE:
 		tcMod->sScale = f1;
@@ -659,7 +659,7 @@ FUNC(tcMod)
 		tcMod->tSpeed = f2;
 		break;
 	case TCMOD_STRETCH:
-		GetWave (argc, argv, 2, tcMod->wave);
+		GetWave(argc, argv, 2, tcMod->wave);
 		break;
 	case TCMOD_ROTATE:
 		tcMod->rotateSpeed = f1;
@@ -671,10 +671,10 @@ FUNC(tcMod)
 	case TCMOD_TRANSFORM:
 		tcMod->m[0][0] = f1;
 		tcMod->m[0][1] = f2;
-		tcMod->m[1][0] = atof (argv[4]);
-		tcMod->m[1][1] = atof (argv[5]);
-		tcMod->t[0]    = atof (argv[6]);
-		tcMod->t[1]    = atof (argv[7]);
+		tcMod->m[1][0] = atof(argv[4]);
+		tcMod->m[1][1] = atof(argv[5]);
+		tcMod->t[0]    = atof(argv[6]);
+		tcMod->t[1]    = atof(argv[7]);
 		break;
 	}
 }

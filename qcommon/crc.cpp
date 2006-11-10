@@ -43,7 +43,7 @@ static const unsigned short crctable[256] =
 };
 
 
-static unsigned short CRC_Block (unsigned char *start, int count)
+static unsigned short CRC_Block(unsigned char *start, int count)
 {
 	unsigned short crc = CRC_INIT_VALUE;
 	while (count--)
@@ -123,21 +123,21 @@ static const byte chktbl[1024] =
 
 
 // For proxy protecting
-byte Com_BlockSequenceCRCByte (byte *base, int length, int sequence)
+byte Com_BlockSequenceCRCByte(byte *base, int length, int sequence)
 {
 	byte buffer[60 + 4];
 
 	if (sequence < 0)
-		appError ("BlockCRC: sequence < 0");
+		appError("BlockCRC: sequence < 0");
 
 	// copy up to 60 bytes to buffer
 	if (length > 60) length = 60;
-	memcpy (buffer, base, length);
+	memcpy(buffer, base, length);
 	// and append encoded "sequence"
-	memcpy (buffer+length, chktbl+(sequence % (sizeof(chktbl) - 4)), 4);
+	memcpy(buffer+length, chktbl+(sequence % (sizeof(chktbl) - 4)), 4);
 	length += 4;
 	// initial sum = CRC(buffer)
-	unsigned short crc = CRC_Block (buffer, length);
+	unsigned short crc = CRC_Block(buffer, length);
 	// add sum of all bytes
 	int x = 0;
 	for (int n = 0; n < length; n++)

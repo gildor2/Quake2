@@ -35,23 +35,23 @@ struct CBrush
 {
 	CBrushSide *sides;
 	unsigned contents;		//!! should be set outside
-	CBrush ()
+	CBrush()
 	{}
-	CBrush (const CBox &Bounds);
-	CBrush *Split (CPlane *plane);
-	void GetBounds (CBox &bounds);
-	void AddBevels (CPlane* (*GetPlane)(const CVec3&, float));
+	CBrush(const CBox &Bounds);
+	CBrush *Split(CPlane *plane);
+	void GetBounds(CBox &bounds);
+	void AddBevels(CPlane* (*GetPlane)(const CVec3&, float));
 	// memory pool for all split operations
 	static CMemoryChain *mem;
 #if 1
-	void Dump ()
+	void Dump()
 	{
 		for (CBrushSide *s = sides; s; s = s->next)
 		{
-			appPrintf ("plane: n={%g %g %g} d=%g%s\n", VECTOR_ARG(s->plane->normal),
+			appPrintf("plane: n={%g %g %g} d=%g%s\n", VECTOR_ARG(s->plane->normal),
 				s->plane->dist, s->back ? " (back)" : "");
 			for (CBrushVert *v = s->verts; v; v = v->next)
-				appPrintf ("  v={%g %g %g}\n", VECTOR_ARG((*v->v)));
+				appPrintf("  v={%g %g %g}\n", VECTOR_ARG((*v->v)));
 		}
 	}
 #endif

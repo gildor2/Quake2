@@ -29,7 +29,7 @@ static int	 	*snd_p, snd_linear_count, snd_vol;
 static short	*snd_out;
 
 
-void S_WriteLinearBlastStereo16 (void)
+void S_WriteLinearBlastStereo16(void)
 {
 	int		i;
 	int		val;
@@ -44,7 +44,7 @@ void S_WriteLinearBlastStereo16 (void)
 }
 
 
-void S_TransferStereo16 (unsigned long *pbuf, int endtime)
+void S_TransferStereo16(unsigned long *pbuf, int endtime)
 {
 	int		lpos;
 	int		lpaintedtime;
@@ -66,7 +66,7 @@ void S_TransferStereo16 (unsigned long *pbuf, int endtime)
 		snd_linear_count <<= 1;
 
 		// write a linear blast of samples
-		S_WriteLinearBlastStereo16 ();
+		S_WriteLinearBlastStereo16();
 
 		snd_p += snd_linear_count;
 		lpaintedtime += (snd_linear_count>>1);
@@ -74,7 +74,7 @@ void S_TransferStereo16 (unsigned long *pbuf, int endtime)
 }
 
 
-void S_TransferPaintBuffer (int endtime)
+void S_TransferPaintBuffer(int endtime)
 {
 	int 	out_idx;
 	int 	count;
@@ -94,13 +94,13 @@ void S_TransferPaintBuffer (int endtime)
 		// write a fixed sine wave
 		count = (endtime - paintedtime);
 		for (i = 0; i < count; i++)
-			paintbuffer[i].left = paintbuffer[i].right = appRound (sin((paintedtime+i)*0.1f)*20000*256);
+			paintbuffer[i].left = paintbuffer[i].right = appRound(sin((paintedtime+i)*0.1f)*20000*256);
 	}
 
 
 	if (dma.samplebits == 16 && dma.channels == 2)
 	{	// optimized case
-		S_TransferStereo16 (pbuf, endtime);
+		S_TransferStereo16(pbuf, endtime);
 	}
 	else
 	{	// general case
@@ -145,10 +145,10 @@ CHANNEL MIXING
 ===============================================================================
 */
 
-static void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int endtime, int offset);
-static void S_PaintChannelFrom16 (channel_t *ch, sfxcache_t *sc, int endtime, int offset);
+static void S_PaintChannelFrom8(channel_t *ch, sfxcache_t *sc, int endtime, int offset);
+static void S_PaintChannelFrom16(channel_t *ch, sfxcache_t *sc, int endtime, int offset);
 
-void S_PaintChannels (int endtime)
+void S_PaintChannels(int endtime)
 {
 	int 	i;
 	int 	end;
@@ -159,9 +159,9 @@ void S_PaintChannels (int endtime)
 
 	guard(S_PaintChannels);
 
-	snd_vol = appRound (s_volume->value * 255);
+	snd_vol = appRound(s_volume->value * 255);
 
-//	appPrintf ("%i to %i\n", paintedtime, endtime);
+//	appPrintf("%i to %i\n", paintedtime, endtime);
 	while (paintedtime < endtime)
 	{
 		// if paintbuffer is smaller than DMA buffer
@@ -178,7 +178,7 @@ void S_PaintChannels (int endtime)
 				break;	// no more pending sounds
 			if (ps->begin <= paintedtime)
 			{
-				S_IssuePlaysound (ps);
+				S_IssuePlaysound(ps);
 				continue;
 			}
 
@@ -190,7 +190,7 @@ void S_PaintChannels (int endtime)
 		// clear the paint buffer
 		if (s_rawend < paintedtime)
 		{
-//			appPrintf ("clear\n");
+//			appPrintf("clear\n");
 			memset(paintbuffer, 0, (end - paintedtime) * sizeof(portable_samplepair_t));
 		}
 		else
@@ -206,9 +206,9 @@ void S_PaintChannels (int endtime)
 				paintbuffer[i-paintedtime] = s_rawsamples[s];
 			}
 //			if (i != end)
-//				appPrintf ("partial stream\n");
+//				appPrintf("partial stream\n");
 //			else
-//				appPrintf ("full stream\n");
+//				appPrintf("full stream\n");
 			for ( ; i<end ; i++)
 			{
 				paintbuffer[i-paintedtime].left =
@@ -235,16 +235,16 @@ void S_PaintChannels (int endtime)
 				if (ch->end - ltime < count)
 					count = ch->end - ltime;
 
-				sc = S_LoadSound (ch->sfx);
+				sc = S_LoadSound(ch->sfx);
 				if (!sc) break;
 
 				if (count > 0 && ch->sfx)
 				{
 					guard(PaintChannel);
 					if (sc->width == 1)
-						S_PaintChannelFrom8 (ch, sc, count,  ltime - paintedtime);
+						S_PaintChannelFrom8(ch, sc, count,  ltime - paintedtime);
 					else
-						S_PaintChannelFrom16 (ch, sc, count, ltime - paintedtime);
+						S_PaintChannelFrom16(ch, sc, count, ltime - paintedtime);
 					unguardf(("snd=%s", *ch->sfx->Name));
 
 					ltime += count;
@@ -287,19 +287,19 @@ void S_PaintChannels (int endtime)
 
 
 // table: 5 valid bits, 3 lower bits are 0 (modulated by 8)
-void S_InitScaletable (void)
+void S_InitScaletable(void)
 {
 	s_volume->modified = false;
 	for (int i = 0; i < 32; i++)								// 5 valid bits
 	{
-		int scale = appRound (i * 8 * 256 * s_volume->value);	// *8 - modulation
+		int scale = appRound(i * 8 * 256 * s_volume->value);	// *8 - modulation
 		for (int j = 0; j < 256; j++)							// for each byte value
 			snd_scaletable[i][j] = ((signed char)j) * scale;
 	}
 }
 
 
-static void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int count, int offset)
+static void S_PaintChannelFrom8(channel_t *ch, sfxcache_t *sc, int count, int offset)
 {
 	if (ch->leftvol > 255)	ch->leftvol  = 255;
 	if (ch->rightvol > 255)	ch->rightvol = 255;
@@ -320,7 +320,7 @@ static void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int count, int o
 }
 
 
-static void S_PaintChannelFrom16 (channel_t *ch, sfxcache_t *sc, int count, int offset)
+static void S_PaintChannelFrom16(channel_t *ch, sfxcache_t *sc, int count, int offset)
 {
 	int leftvol = ch->leftvol * snd_vol;
 	int rightvol = ch->rightvol * snd_vol;

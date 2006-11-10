@@ -21,7 +21,7 @@
 	extern const char GPackage[]   = STR(PACKAGE);	\
 	extern const char PkgVersion[] = STR(PACKAGE) " version " STR(version) " build " STR(build) " (" date ")";\
 	HINSTANCE hInstance;							\
-	int __stdcall DllMain (HINSTANCE hInst, int Reason, void *Reserved)	\
+	int __stdcall DllMain(HINSTANCE hInst, int Reason, void *Reserved)	\
 	{ hInstance = hInst; return 1; }
 
 
@@ -42,9 +42,9 @@ extern HINSTANCE hInstance;
 // some declarations from kernel32.dll (to avoid use of <windows.h>)
 #ifndef WINAPI
 extern "C" {
-	DLL_IMPORT HINSTANCE __stdcall LoadLibraryA (const char *name);
-	DLL_IMPORT void*	 __stdcall GetProcAddress (HINSTANCE dllHandle, const char *name);
-	DLL_IMPORT int		 __stdcall FreeLibrary (HINSTANCE dllHandle);
+	DLL_IMPORT HINSTANCE __stdcall LoadLibraryA(const char *name);
+	DLL_IMPORT void*	 __stdcall GetProcAddress(HINSTANCE dllHandle, const char *name);
+	DLL_IMPORT int		 __stdcall FreeLibrary(HINSTANCE dllHandle);
 }
 #endif
 
@@ -54,23 +54,23 @@ class CDynamicLib
 private:
 	HINSTANCE hDll;
 public:
-	inline bool Load (const char *name)
+	inline bool Load(const char *name)
 	{
-		hDll = LoadLibraryA (name);
+		hDll = LoadLibraryA(name);
 		return hDll != NULL;
 	}
-	inline void Free ()
+	inline void Free()
 	{
 		if (!hDll) return;			// not loaded
-		FreeLibrary (hDll);
+		FreeLibrary(hDll);
 		hDll = NULL;
 	}
-	inline bool GetProc (const char *name, void *func)
+	inline bool GetProc(const char *name, void *func)
 	{
-		*(address_t*)func = (address_t) GetProcAddress (hDll, name);
+		*(address_t*)func = (address_t) GetProcAddress(hDll, name);
 		return (*(address_t*)func != (address_t)NULL);
 	}
-	inline operator bool ()
+	inline operator bool()
 	{
 		return hDll != NULL;
 	}

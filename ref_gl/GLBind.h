@@ -23,21 +23,21 @@ struct GL_t
 	void	(APIENTRY * DrawElements) (GLenum mode, GLsizei count, GLenum type, const GLvoid *indices);
 	void	(APIENTRY * Enable) (GLenum cap);
 	void	(APIENTRY * EnableClientState) (GLenum array);
-	void	(APIENTRY * End) (void);
-	void	(APIENTRY * Finish) (void);
+	void	(APIENTRY * End) ();
+	void	(APIENTRY * Finish) ();
 	void	(APIENTRY * Fogf) (GLenum pname, GLfloat param);
 	void	(APIENTRY * Fogfv) (GLenum pname, const GLfloat *params);
-	GLenum	(APIENTRY * GetError) (void);
+	GLenum	(APIENTRY * GetError) ();
 	void	(APIENTRY * GetIntegerv) (GLenum pname, GLint *params);
 	const GLubyte *	(APIENTRY * GetString) (GLenum name);
-	void	(APIENTRY * LoadIdentity) (void);
+	void	(APIENTRY * LoadIdentity) ();
 	void	(APIENTRY * LoadMatrixf) (const GLfloat *m);
 	void	(APIENTRY * MatrixMode) (GLenum mode);
 	void	(APIENTRY * Ortho) (GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar);
 	void	(APIENTRY * PolygonMode) (GLenum face, GLenum mode);
 	void	(APIENTRY * PolygonOffset) (GLfloat factor, GLfloat units);
-	void	(APIENTRY * PopMatrix) (void);
-	void	(APIENTRY * PushMatrix) (void);
+	void	(APIENTRY * PopMatrix) ();
+	void	(APIENTRY * PushMatrix) ();
 	void	(APIENTRY * ReadPixels) (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
 	void	(APIENTRY * Rotatef) (GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
 	void	(APIENTRY * Scissor) (GLint x, GLint y, GLsizei width, GLsizei height);
@@ -75,7 +75,7 @@ struct GL_t
 	void	(APIENTRY * ActiveTextureARB) (GLenum texture);
 	void	(APIENTRY * ClientActiveTextureARB) (GLenum texture);
 	void	(APIENTRY * LockArraysEXT) (GLint first, GLint count);
-	void	(APIENTRY * UnlockArraysEXT) (void);
+	void	(APIENTRY * UnlockArraysEXT) ();
 
 #if _WIN32
 

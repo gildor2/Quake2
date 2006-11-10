@@ -9,25 +9,25 @@ protected:
 	int		used;
 	int		size;
 public:
-	COutputDeviceMem (int bufSize = 4096)
+	COutputDeviceMem(int bufSize = 4096)
 	:	size(bufSize)
 	,	used(0)
 	{
 		buffer = new char [bufSize];
 //		buffer[0] = 0;
 	}
-	~COutputDeviceMem ()
+	~COutputDeviceMem()
 	{
-		Unregister ();
+		Unregister();
 		delete buffer;
 	}
-	inline const char *GetText () const
+	inline const char *GetText() const
 	{
 		return buffer;
 	}
-	void Write (const char *str)
+	void Write(const char *str)
 	{
-		int len = strlen (str);
+		int len = strlen(str);
 		//?? Move S_WHITE part to appPrintf(); add when string is colored only!
 		//?? Problem with this: when string not fits to buffer in 1 byte,
 		//?? COLOR_ESCAPE will be added, but C_WHITE - not
@@ -41,7 +41,7 @@ public:
 		}
 		if (len <= 0) return;
 		// add text to buffer
-		memcpy (buffer + used, str, len);
+		memcpy(buffer + used, str, len);
 		used += len;
 		// add S_WHITE to the end of string
 		if (!NoColors)

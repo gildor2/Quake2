@@ -113,7 +113,7 @@ static const keyname_t keynames[] =
 
 
 // NOTE: 'c' is lowercase digit
-static int HexDigit (char c)
+static int HexDigit(char c)
 {
 	if (c >= '0' && c <= '9') return c - '0';
 	else if (c >= 'a' && c <= 'f') return c - 'a' + 10;
@@ -121,7 +121,7 @@ static int HexDigit (char c)
 }
 
 
-static int Key_StringToKeynum (const char *str)
+static int Key_StringToKeynum(const char *str)
 {
 	int		i, mod;
 	const keyname_t *kn;
@@ -129,13 +129,13 @@ static int Key_StringToKeynum (const char *str)
 
 	if (!str || !str[0]) return -1;			// bad string
 
-	appStrncpylwr (name, str, sizeof(name));
-	if (!memcmp (name, "alt+", 4))
+	appStrncpylwr(name, str, sizeof(name));
+	if (!memcmp(name, "alt+", 4))
 	{
 		key = name + 4;
 		mod = MOD_ALT;
 	}
-	else if (!memcmp (name, "ctrl+", 5))
+	else if (!memcmp(name, "ctrl+", 5))
 	{
 		key = name + 5;
 		mod = MOD_CTRL;
@@ -151,23 +151,23 @@ static int Key_StringToKeynum (const char *str)
 	// check for 'UNKxx'
 	if (key[0] == 'u' && key[1] == 'n' && key[2] == 'k' && key[5] == 0)
 	{
-		int n1 = HexDigit (name[3]);
+		int n1 = HexDigit(name[3]);
 		if (n1 < 0) return -1;
-		int n2 = HexDigit (name[4]);
+		int n2 = HexDigit(name[4]);
 		if (n2 < 0) return -1;
 		return (n1 << 4) + n2 + 256 + mod;
 	}
 
 	for (i = 0, kn = keynames; i < ARRAY_COUNT(keynames); i++, kn++)
 	{
-		if (!stricmp (key, kn->name))		// names are mixed case
+		if (!stricmp(key, kn->name))		// names are mixed case
 			return kn->keynum + mod;
 	}
 	return -1;
 }
 
 
-const char *Key_KeynumToString (int keynum)
+const char *Key_KeynumToString(int keynum)
 {
 	if (keynum == -1)
 		return S_RED"<KEY NOT FOUND>";
@@ -224,15 +224,15 @@ static int completed_count, partial_len;
 static char completeVariants[MAX_COMPLETE_ITEMS][256];
 
 
-static void TryComplete (const char *full, int display, char mark)
+static void TryComplete(const char *full, int display, char mark)
 {
-	if (strnicmp (partial_name, full, partial_len)) return;
+	if (strnicmp(partial_name, full, partial_len)) return;
 
 	if (display)
-		appPrintf ("  "S_GREEN"%c"S_WHITE"  %s\n", mark, full);
+		appPrintf("  "S_GREEN"%c"S_WHITE"  %s\n", mark, full);
 
 	if (!completed_count)	// have not yet completed - just copy string
-		strcpy (completed_name, full);
+		strcpy(completed_name, full);
 	else					// already completed - refine string
 	{
 		char *s = completed_name;
@@ -242,12 +242,12 @@ static void TryComplete (const char *full, int display, char mark)
 	}
 
 	if (completed_count < MAX_COMPLETE_ITEMS)
-		strcpy (completeVariants[completed_count], full);
+		strcpy(completeVariants[completed_count], full);
 	completed_count++;
 }
 
 
-static char *Do_CompleteCommand (char *partial)
+static char *Do_CompleteCommand(char *partial)
 {
 	char	*arg1s, arg1[256], *arg2s;	// arg1s -> "arg1 arg2 ..."; arg2s -> "arg2 arg3 ..."
 
@@ -257,27 +257,27 @@ static char *Do_CompleteCommand (char *partial)
 
 	/*------ complete argument for variable/map/demomap -------*/
 
-	if (arg1s = strchr (partial, ' '))
+	if (arg1s = strchr(partial, ' '))
 	{
 		if (arg1s == partial)
 			return NULL;	// space is first line char!
 
 		int len = arg1s - partial;
-		strncpy (complete_command, partial, len);
+		strncpy(complete_command, partial, len);
 		complete_command[len] = 0;
 		arg1s++;							// skip ' '
 
-		if (arg2s = strchr (arg1s, ' '))
+		if (arg2s = strchr(arg1s, ' '))
 		{
 			len = arg2s - arg1s;
-			strncpy (arg1, arg1s, len);
+			strncpy(arg1, arg1s, len);
 			arg1[len] = 0;
 			arg2s++;
 		}
 		else
-			strcpy (arg1, arg1s);
+			strcpy(arg1, arg1s);
 
-//		appPrintf ("cmd: \"%s\"  arg1s: \"%s\"  arg2s: \"%s\"  arg1: \"%s\"\n",command, arg1s, arg2s, arg1);
+//		appPrintf("cmd: \"%s\"  arg1s: \"%s\"  arg2s: \"%s\"  arg1: \"%s\"\n",command, arg1s, arg2s, arg1);
 
 		if (arg2s)
 		{
@@ -286,73 +286,73 @@ static char *Do_CompleteCommand (char *partial)
 			// have "command arg1 " (space after arg1)
 
 			// complete "alias name "
-			if (!stricmp (complete_command, "alias"))
+			if (!stricmp(complete_command, "alias"))
 			{
 				for (TListIterator<CAlias> alias(AliasList); alias; ++alias)
-					if (!stricmp (alias->name, arg1))
+					if (!stricmp(alias->name, arg1))
 					{
-						strcpy (completed_name, va("alias %s %s", arg1, COM_QuoteString (alias->value, false)));
+						strcpy(completed_name, va("alias %s %s", arg1, COM_QuoteString(alias->value, false)));
 						return completed_name;
 					}
 				return NULL;
 			}
 			// complete "bind key "
-			else if (!stricmp (complete_command, "bind"))
+			else if (!stricmp(complete_command, "bind"))
 			{
-				int key = Key_StringToKeynum (arg1);
+				int key = Key_StringToKeynum(arg1);
 				if (key < 0 || !keybindings[key])
 					return NULL;
 
-				strcpy (completed_name, va("bind %s %s", arg1, COM_QuoteString (keybindings[key], false)));
+				strcpy(completed_name, va("bind %s %s", arg1, COM_QuoteString(keybindings[key], false)));
 				return completed_name;
 			}
 		}
 
-		if (!stricmp (complete_command, "alias"))
+		if (!stricmp(complete_command, "alias"))
 		{
 			// complete alias name
-			strcpy (complete_command, "alias");
+			strcpy(complete_command, "alias");
 			for (int display = 0; display < 2; display++)
 			{
 				partial_name = arg1s;
-				partial_len = strlen (arg1s);
+				partial_len = strlen(arg1s);
 				completed_count = 0;
 				for (TListIterator<CAlias> alias(AliasList); alias; ++alias)
-					TryComplete (alias->name, display, 'a');
+					TryComplete(alias->name, display, 'a');
 				if (!completed_count)
 					return NULL;
 
 				if (completed_count == 1)
 				{
-					strcat (completed_name, " ");
+					strcat(completed_name, " ");
 					break;
 				}
 				if (!display)
-					appPrintf ("]/%s\n", partial);
+					appPrintf("]/%s\n", partial);
 			}
 
-			strcpy (completed_name, va("%s %s", complete_command, completed_name));
+			strcpy(completed_name, va("%s %s", complete_command, completed_name));
 			return completed_name;
 		}
 
 		char comp_type;
 		int file_type;
 		const char *path, *ext;
-		if (!stricmp (complete_command, "map"))
+		if (!stricmp(complete_command, "map"))
 		{
 			path = "maps";
 			ext = ".bsp";
 			comp_type = 'm';
 			file_type = FS_FILE|FS_NOEXT;
 		}
-		else if (!stricmp (complete_command, "demomap"))
+		else if (!stricmp(complete_command, "demomap"))
 		{
 			path = "demos";
 			ext = ".dm2";
 			comp_type = 'd';
 			file_type = FS_FILE|FS_NOEXT;
 		}
-		else if (!stricmp (complete_command, "game"))
+		else if (!stricmp(complete_command, "game"))
 		{
 			path = "..";
 			ext = "";
@@ -365,20 +365,20 @@ static char *Do_CompleteCommand (char *partial)
 				return NULL;				// arg is not empty
 
 			for (cvar_t *cvar = cvar_t::vars; cvar; cvar = cvar->next)
-				if (!stricmp (cvar->name, complete_command))
+				if (!stricmp(cvar->name, complete_command))
 				{
-					strcpy (completed_name, partial); // "varname "
-					if (strchr (cvar->string, ' '))
-						strcat (completed_name, va("\"%s\"", cvar->string));
+					strcpy(completed_name, partial); // "varname "
+					if (strchr(cvar->string, ' '))
+						strcat(completed_name, va("\"%s\"", cvar->string));
 					else
-						strcat (completed_name, cvar->string);
+						strcat(completed_name, cvar->string);
 					return completed_name;
 				}
 			return NULL;
 		}
 
 		// complete "map" or "demomap" with mask/arg*
-		CFileList *filelist = GFileSystem->List (va("%s/*%s", path, ext), file_type);
+		CFileList *filelist = GFileSystem->List(va("%s/*%s", path, ext), file_type);
 		if (!*filelist)
 		{
 			delete filelist;
@@ -386,33 +386,33 @@ static char *Do_CompleteCommand (char *partial)
 		}
 
 		partial_name = arg1;
-		partial_len  = strlen (arg1);
+		partial_len  = strlen(arg1);
 		for (int display = 0; display < 2; display++)
 		{
 			completed_count = 0;
 			for (TListIterator<CFileItem> fileitem = *filelist; fileitem; ++fileitem)
-				TryComplete (fileitem->name, display, comp_type);
+				TryComplete(fileitem->name, display, comp_type);
 			if (!completed_count)
 				return NULL;			// not completed
 
 			if (completed_count == 1)
 			{
-				strcat (completed_name, " ");
+				strcat(completed_name, " ");
 				break;
 			}
 			if (!display)
 			{	// at this loop we just see, that we have many matches ...
-				appPrintf ("]/%s\n", partial);
+				appPrintf("]/%s\n", partial);
 			}
 		}
-		strcpy (completed_name, va("%s %s", complete_command, completed_name));
+		strcpy(completed_name, va("%s %s", complete_command, completed_name));
 		delete filelist;
 		return completed_name;
 	}
 
 	/*--------- complete command/variable/alias name ------------*/
 
-	partial_len = strlen (partial);
+	partial_len = strlen(partial);
 	if (!partial_len) return NULL;
 	partial_name = partial;
 
@@ -422,23 +422,23 @@ static char *Do_CompleteCommand (char *partial)
 
 		// check for partial match
 		for (TListIterator<CCommand> cmd = CmdList; cmd; ++cmd)
-			TryComplete (cmd->name, display, 'c');
+			TryComplete(cmd->name, display, 'c');
 		for (TListIterator<CAlias> a = AliasList; a; ++a)
-			TryComplete (a->name, display, 'a');
+			TryComplete(a->name, display, 'a');
 		for (cvar_t *var = cvar_t::vars; var; var = var->next)
-			TryComplete (var->name, display, 'v');
+			TryComplete(var->name, display, 'v');
 
 		if (!completed_count) return NULL; // not completed
 
 		if (completed_count == 1)
 		{	// only one match
-			strcat (completed_name, " ");
+			strcat(completed_name, " ");
 			return completed_name;
 		}
 		// many matches
 		if (!display)
 		{	// at this loop we just see, that we have many matches ...
-			appPrintf ("]/%s\n", partial);
+			appPrintf("]/%s\n", partial);
 		}
 	}
 	return completed_name;
@@ -455,15 +455,15 @@ struct completeMenu_t : menuFramework_t
 	menuAction_t completeItems[MAX_COMPLETE_ITEMS];
 	int		complMenu_x, complMenu_y, complMenu_w, complMenu_h;
 
-	void Draw ()
+	void Draw()
 	{
-		RE_Fill (complMenu_x, complMenu_y, complMenu_w, complMenu_h, RGBA(0.1,0.5,0.5,0.8));
-		menuFramework_t::Draw ();
+		RE_Fill(complMenu_x, complMenu_y, complMenu_w, complMenu_h, RGBA(0.1,0.5,0.5,0.8));
+		menuFramework_t::Draw();
 	}
 
-	const char *KeyDown (int key)
+	const char *KeyDown(int key)
 	{
-		const char *res = menuFramework_t::KeyDown (key);
+		const char *res = menuFramework_t::KeyDown(key);
 		if (m_current != this)
 		{
 			// "ESCAPE" (or any other menu-exit-key) pressed
@@ -473,24 +473,24 @@ struct completeMenu_t : menuFramework_t
 		return res;
 	}
 
-	static void CompleteMenuCallback (void *item)
+	static void CompleteMenuCallback(void *item)
 	{
 		char *s = completeVariants[((menuAction_t*) item)->localData];
-		m_current->Pop ();
+		m_current->Pop();
 
 		editLine[1] = '/';
 		if (complete_command[0])
-			strcpy (editLine + 2, va("%s %s ", complete_command, s));
+			strcpy(editLine + 2, va("%s %s ", complete_command, s));
 		else
-			strcpy (editLine + 2, va("%s ", s));
-		editPos = strlen (editLine);
+			strcpy(editLine + 2, va("%s ", s));
+		editPos = strlen(editLine);
 		editLine[editPos] = 0;
 
 		cls.key_dest = key_console;
 		cls.keep_console = false;
 	}
 
-	bool Init ()
+	bool Init()
 	{
 		nitems = 0;
 		cursor = 0;
@@ -501,8 +501,8 @@ struct completeMenu_t : menuFramework_t
 			MENU_ACTION(completeItems[i], y1, completeVariants[i], CompleteMenuCallback, NULL);
 			completeItems[i].flags     = QMF_LEFT_JUSTIFY;
 			completeItems[i].localData = i;
-			AddItem (&completeItems[i]);
-			int len = strlen (completeVariants[i]);
+			AddItem(&completeItems[i]);
+			int len = strlen(completeVariants[i]);
 			if (len > maxLen) maxLen = len;
 		}
 
@@ -524,7 +524,7 @@ struct completeMenu_t : menuFramework_t
 static completeMenu_t completeMenu;
 
 
-void CompleteCommand (void)
+void CompleteCommand(void)
 {
 	guard(CompleteCommand);
 
@@ -532,18 +532,18 @@ void CompleteCommand (void)
 	if (*s == '\\' || *s == '/')
 		s++;
 
-	if (!strcmp (completed_name, s) && completed_count > 1 && completed_count <= MAX_COMPLETE_ITEMS && !DEDICATED)
+	if (!strcmp(completed_name, s) && completed_count > 1 && completed_count <= MAX_COMPLETE_ITEMS && !DEDICATED)
 	{
-		completeMenu.Push ();
+		completeMenu.Push();
 		return;
 	}
 
-	char *cmd = Do_CompleteCommand (s);
+	char *cmd = Do_CompleteCommand(s);
 	if (cmd)
 	{
 		editLine[1] = '/';
-		strcpy (editLine + 2, cmd);
-		editPos = strlen (cmd) + 2;
+		strcpy(editLine + 2, cmd);
+		editPos = strlen(cmd) + 2;
 		editLine[editPos] = 0;
 	}
 
@@ -555,7 +555,7 @@ void CompleteCommand (void)
 	Key bindings
 -----------------------------------------------------------------------------*/
 
-void Key_SetBinding (int keynum, const char *binding)
+void Key_SetBinding(int keynum, const char *binding)
 {
 	if (keynum == -1)
 		return;
@@ -563,20 +563,20 @@ void Key_SetBinding (int keynum, const char *binding)
 	// free old bindings
 	if (keybindings[keynum])
 	{
-		appFree (keybindings[keynum]);
+		appFree(keybindings[keynum]);
 		keybindings[keynum] = NULL;
 	}
 
 	if (binding && binding[0])
-		keybindings[keynum] = appStrdup (binding);
+		keybindings[keynum] = appStrdup(binding);
 }
 
 
-int Key_FindBinding (const char *str, int *keys, int maxKeys)
+int Key_FindBinding(const char *str, int *keys, int maxKeys)
 {
 	int numKeys = 0;
 	for (int i = 0; i < NUM_BINDINGS; i++)
-		if (keybindings[i] && !stricmp (keybindings[i], str))
+		if (keybindings[i] && !stricmp(keybindings[i], str))
 		{
 			if (numKeys < maxKeys)
 				keys[numKeys] = i;		// return correct number of bound keys even when maxKeys is too small
@@ -586,11 +586,11 @@ int Key_FindBinding (const char *str, int *keys, int maxKeys)
 }
 
 
-static void Key_Unbind_f (bool usage, int argc, char **argv)
+static void Key_Unbind_f(bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		appPrintf ("Usage: unbind <key mask>\n");
+		appPrintf("Usage: unbind <key mask>\n");
 		return;
 	}
 	const char *mask = argv[1];
@@ -599,54 +599,54 @@ static void Key_Unbind_f (bool usage, int argc, char **argv)
 	bool found = false;
 	for (int i = 0; i < NUM_BINDINGS; i++)
 	{
-		const char *keyName = Key_KeynumToString (i);
-		if (appMatchWildcard (keyName, mask, true))
+		const char *keyName = Key_KeynumToString(i);
+		if (appMatchWildcard(keyName, mask, true))
 		{
 			found = true;
 			if (keybindings[i])
 			{
-				Com_DPrintf ("unbind %s\n", keyName);
-				Key_SetBinding (i, NULL);
+				Com_DPrintf("unbind %s\n", keyName);
+				Key_SetBinding(i, NULL);
 				n++;
 			}
 		}
 	}
 
 	if (found)
-		appPrintf ("%d key(s) unbound\n", n);
+		appPrintf("%d key(s) unbound\n", n);
 	else
-		appWPrintf ("\"%s\" isn't a valid key\n", mask);
+		appWPrintf("\"%s\" isn't a valid key\n", mask);
 }
 
 
-static void Key_Unbindall_f (void)
+static void Key_Unbindall_f(void)
 {
 	for (int i = 0; i < NUM_BINDINGS; i++)
 		if (keybindings[i])
-			Key_SetBinding (i, NULL);
+			Key_SetBinding(i, NULL);
 }
 
 
-static void Key_Bind_f (bool usage, int argc, char **argv)
+static void Key_Bind_f(bool usage, int argc, char **argv)
 {
 	if (argc < 2 || usage)
 	{
-		appPrintf ("Usage: bind <key> [command]\n");
+		appPrintf("Usage: bind <key> [command]\n");
 		return;
 	}
-	int b = Key_StringToKeynum (argv[1]);
+	int b = Key_StringToKeynum(argv[1]);
 	if (b == -1)
 	{
-		appWPrintf ("\"%s\" isn't a valid key\n", argv[1]);
+		appWPrintf("\"%s\" isn't a valid key\n", argv[1]);
 		return;
 	}
 
 	if (argc == 2)
 	{	// just print current binding
 		if (keybindings[b])
-			appPrintf ("\"%s\" = \"%s\"\n", argv[1], keybindings[b] );
+			appPrintf("\"%s\" = \"%s\"\n", argv[1], keybindings[b] );
 		else
-			appPrintf ("\"%s\" is not bound\n", argv[1] );
+			appPrintf("\"%s\" is not bound\n", argv[1] );
 		return;
 	}
 
@@ -655,42 +655,42 @@ static void Key_Bind_f (bool usage, int argc, char **argv)
 	cmd[0] = 0;		// start out with a null string
 	for (int i = 2; i < argc; i++)
 	{
-		strcat (cmd, argv[i]);
-		if (i != argc-1) strcat (cmd, " ");
+		strcat(cmd, argv[i]);
+		if (i != argc-1) strcat(cmd, " ");
 	}
 
-	Key_SetBinding (b, cmd);
+	Key_SetBinding(b, cmd);
 }
 
 
-static void Key_Bindlist_f (bool usage, int argc, char **argv)
+static void Key_Bindlist_f(bool usage, int argc, char **argv)
 {
 	if (argc > 2 || usage)
 	{
-		appPrintf ("Usage: bindlist [<action mask>]\n");
+		appPrintf("Usage: bindlist [<action mask>]\n");
 		return;
 	}
 
 	const char *mask = argc == 2 ? argv[1] : NULL;
 
 	int n = 0;
-	appPrintf ("---key----action---------\n");
+	appPrintf("---key----action---------\n");
 	for (int i = 0; i < NUM_BINDINGS; i++)
-		if (keybindings[i] && (!mask || appMatchWildcard (keybindings[i], mask, true)))
+		if (keybindings[i] && (!mask || appMatchWildcard(keybindings[i], mask, true)))
 		{
 			n++;
-			appPrintf (S_YELLOW"%-9s "S_WHITE"%s\n", Key_KeynumToString(i), keybindings[i]);
+			appPrintf(S_YELLOW"%-9s "S_WHITE"%s\n", Key_KeynumToString(i), keybindings[i]);
 		}
 	if (mask)
-		appPrintf ("    %d binds found\n", n);
+		appPrintf("    %d binds found\n", n);
 }
 
 
-void Key_WriteBindings (COutputDevice *Out)
+void Key_WriteBindings(COutputDevice *Out)
 {
 	for (int i = 0; i < NUM_BINDINGS; i++)
 		if (keybindings[i] && keybindings[i][0])
-			Out->Printf ("bind %s %s\n", Key_KeynumToString (i), COM_QuoteString (keybindings[i], true));
+			Out->Printf("bind %s %s\n", Key_KeynumToString(i), COM_QuoteString(keybindings[i], true));
 }
 
 
@@ -698,7 +698,7 @@ void Key_WriteBindings (COutputDevice *Out)
 	Miscellaneous
 -----------------------------------------------------------------------------*/
 
-void Key_Init ()
+void Key_Init()
 {
 	staticAssert(K_LASTKEY <= 256, LastKeyShouldBeLess256);
 
@@ -718,14 +718,14 @@ void Key_Init ()
 	for (i = 0; i < ARRAY_COUNT(keyShifts); i++)
 		keyshift[keyShifts[i].base] = keyShifts[i].shift;
 
-	RegisterCommand ("bind", Key_Bind_f);
-	RegisterCommand ("unbind", Key_Unbind_f);
-	RegisterCommand ("unbindall", Key_Unbindall_f);
-	RegisterCommand ("bindlist", Key_Bindlist_f);
+	RegisterCommand("bind", Key_Bind_f);
+	RegisterCommand("unbind", Key_Unbind_f);
+	RegisterCommand("unbindall", Key_Unbindall_f);
+	RegisterCommand("bindlist", Key_Bindlist_f);
 }
 
 
-void Key_Event (int key, bool down)
+void Key_Event(int key, bool down)
 {
 	static bool plusCmdFired[NUM_BINDINGS];		//?? make global, clear with Key_ClearStates(); rename
 	static int modKeyDown;						//?? global
@@ -740,7 +740,7 @@ void Key_Event (int key, bool down)
 	// '~' ('`') key is hardcoded
 	if (key == '`')
 	{
-		if (rep == 1) SCR_ToggleConsole ();
+		if (rep == 1) SCR_ToggleConsole();
 		return;
 	}
 
@@ -756,31 +756,31 @@ void Key_Event (int key, bool down)
 		if (!cl.attractloop && cls.key_dest == key_game && cl.frame.playerstate.stats[STAT_LAYOUTS])
 		{
 			// put away help computer / inventory (need another way ??)
-			Cbuf_AddText ("cmd putaway\n");
+			Cbuf_AddText("cmd putaway\n");
 			return;
 		}
 		if (/* cl.attractloop && */ cl.cinematicActive)
 		{
-			SCR_StopCinematic ();		// stop cinematic with ESC while playing game or with any key when playing demo
+			SCR_StopCinematic();		// stop cinematic with ESC while playing game or with any key when playing demo
 			return;
 		}
 		switch (cls.key_dest)
 		{
 		case key_message:
-			Key_Message (key);
+			Key_Message(key);
 			break;
 		case key_menu:
 		case key_bindingMenu:
-			M_Keydown (key);
+			M_Keydown(key);
 			break;
 		case key_game:
-			M_Menu_Main_f ();
+			M_Menu_Main_f();
 			break;
 		case key_console:
-			SCR_ShowConsole (false, false);
+			SCR_ShowConsole(false, false);
 			break;
 		default:
-			appError ("Bad cls.key_dest %d", cls.key_dest);
+			appError("Bad cls.key_dest %d", cls.key_dest);
 		}
 		return;
 	}
@@ -835,7 +835,7 @@ void Key_Event (int key, bool down)
 		if (key == K_CTRL || key == K_RCTRL || key == K_ALT || key == K_RALT)
 			needDown = false;
 		if (down == needDown)
-			M_Keydown (modKey);
+			M_Keydown(modKey);
 		skip = true;									// cls.key_dest was modified in M_Keydown() - so, store internal flag
 	}
 
@@ -844,7 +844,7 @@ void Key_Event (int key, bool down)
 	// to keep the character from continuing an action started before a console
 	// switch.  Button commands include the kenum as a parameter, so multiple
 	// downs can be matched with ups
-	unsigned time = appMilliseconds ();		//!! should be func argument (as in original q2)
+	unsigned time = appMilliseconds();		//!! should be func argument (as in original q2)
 
 	if (!down)
 	{
@@ -853,7 +853,7 @@ void Key_Event (int key, bool down)
 		plusCmdFired[bindKey] = false;
 
 		if (kb && kb[0] == '+')
-			Cbuf_AddText (va("-%s %d %d\n", kb+1, bindKey, time));
+			Cbuf_AddText(va("-%s %d %d\n", kb+1, bindKey, time));
 		return;
 	}
 
@@ -871,12 +871,12 @@ void Key_Event (int key, bool down)
 			if (kb[0] == '+')
 			{	// button commands add keynum and time as a parm
 				plusCmdFired[bindKey] = true;		// signal, that command "+cmd" started (for "-cmd" allowing)
-				Cbuf_AddText (va("%s %d %d\n", kb, bindKey, time));
+				Cbuf_AddText(va("%s %d %d\n", kb, bindKey, time));
 			}
 			else
 			{
-				Cbuf_AddText (kb);
-				Cbuf_AddText ("\n");
+				Cbuf_AddText(kb);
+				Cbuf_AddText("\n");
 			}
 		}
 		return;
@@ -888,28 +888,28 @@ void Key_Event (int key, bool down)
 	switch (cls.key_dest)
 	{
 	case key_message:
-		Key_Message (key);
+		Key_Message(key);
 		break;
 	case key_menu:
-		M_Keydown (key);
+		M_Keydown(key);
 		break;
 	case key_game:
 	case key_console:
-		Key_Console (key, modKey);
+		Key_Console(key, modKey);
 		break;
 	default:
-		appError ("Bad cls.key_dest %d", cls.key_dest);
+		appError("Bad cls.key_dest %d", cls.key_dest);
 	}
 }
 
 
-void Key_ClearStates (void)
+void Key_ClearStates(void)
 {
 	for (int key = 0; key < NUM_KEYS; key++)
 	{
 //		if (key == '`' || key == K_ESCAPE) continue;	// hardcoded keys - do not clear states
 		if (keydown[key])
-			Key_Event (key, false);
+			Key_Event(key, false);
 		key_repeats[key] = 0;
 	}
 	keysDown = 0;

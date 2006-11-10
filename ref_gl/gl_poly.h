@@ -9,12 +9,12 @@ namespace OpenGLDrv {
 
 extern int subdivNumVerts;
 
-int SubdividePlane (CVec3 **verts, int numVerts, float tessSize);
-void FreeSubdividedPlane ();
-void GetSubdivideIndexes (int *pindex);
+int SubdividePlane(CVec3 **verts, int numVerts, float tessSize);
+void FreeSubdividedPlane();
+void GetSubdivideIndexes(int *pindex);
 
-int RemoveCollinearPoints (CVec3 **pverts, int numVerts);
-float GetPolyArea (CVec3 **pverts, int numVerts);
+int RemoveCollinearPoints(CVec3 **pverts, int numVerts);
+float GetPolyArea(CVec3 **pverts, int numVerts);
 
 
 } // namespace

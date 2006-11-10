@@ -12,68 +12,68 @@ struct CORE_API CVec3
 {
 	float	v[3];
 	// access to data
-	inline float& operator[] (int index)
+	inline float& operator[](int index)
 	{
 		return v[index];
 	}
-	inline const float& operator[] (int index) const
+	inline const float& operator[](int index) const
 	{
 		return v[index];
 	}
 	// NOTE: for fnctions, which requires CVec3 -> float*, can easily do it using CVec3.v field
 	// trivial setup functions
-	inline void Zero ()
+	inline void Zero()
 	{
-		memset (this, 0, sizeof(CVec3));
+		memset(this, 0, sizeof(CVec3));
 	}
-	inline void Set (float x, float y, float z)
+	inline void Set(float x, float y, float z)
 	{
 		v[0] = x; v[1] = y; v[2] = z;
 	}
 	// simple math
-	inline void Negate ()
+	inline void Negate()
 	{
-		FNegate (v[0]);
-		FNegate (v[1]);
-		FNegate (v[2]);
+		FNegate(v[0]);
+		FNegate(v[1]);
+		FNegate(v[2]);
 	}
 	//!! +NegateTo(dst)
-	inline void Scale (float scale) //?? == "operator *= (float)"
+	inline void Scale(float scale) //?? == "operator *=(float)"
 	{
 		v[0] *= scale;
 		v[1] *= scale;
 		v[2] *= scale;
 	}
-	inline void Add (const CVec3 &a) //?? == "operator += (CVec3&)"
+	inline void Add(const CVec3 &a) //?? == "operator +=(CVec3&)"
 	{
 		v[0] += a.v[0];
 		v[1] += a.v[1];
 		v[2] += a.v[2];
 	}
-	inline void Sub (const CVec3 &a) //?? == "operator -= (CVec3&)"
+	inline void Sub(const CVec3 &a) //?? == "operator -=(CVec3&)"
 	{
 		v[0] -= a.v[0];
 		v[1] -= a.v[1];
 		v[2] -= a.v[2];
 	}
 	//!! +ScaleTo(dst)
-	float GetLength ();
-	float Normalize ();			// returns vector length
-	float NormalizeFast ();		//?? 2-arg version too?
-	void FindAxisVectors (CVec3 &right, CVec3 &up) const;
+	float GetLength();
+	float Normalize();			// returns vector length
+	float NormalizeFast();		//?? 2-arg version too?
+	void FindAxisVectors(CVec3 &right, CVec3 &up) const;
 };
 
-inline bool operator== (const CVec3 &v1, const CVec3 &v2)
+inline bool operator==(const CVec3 &v1, const CVec3 &v2)
 {
-	return memcmp (&v1, &v2, sizeof(CVec3)) == 0;
+	return memcmp(&v1, &v2, sizeof(CVec3)) == 0;
 }
 
-inline bool operator!= (const CVec3 &v1, const CVec3 &v2)
+inline bool operator!=(const CVec3 &v1, const CVec3 &v2)
 {
-	return memcmp (&v1, &v2, sizeof(CVec3)) != 0;
+	return memcmp(&v1, &v2, sizeof(CVec3)) != 0;
 }
 
-inline void Lerp (const CVec3 &A, const CVec3 &B, float Alpha, CVec3 &dst)
+inline void Lerp(const CVec3 &A, const CVec3 &B, float Alpha, CVec3 &dst)
 {
 	dst[0] = A.v[0] + Alpha * (B.v[0]-A.v[0]);
 	dst[1] = A.v[1] + Alpha * (B.v[1]-A.v[1]);
@@ -81,38 +81,38 @@ inline void Lerp (const CVec3 &A, const CVec3 &B, float Alpha, CVec3 &dst)
 }
 
 
-inline float dot (const CVec3 &a, const CVec3 &b)
+inline float dot(const CVec3 &a, const CVec3 &b)
 {
 //	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 	return a.v[0]*b.v[0] + a.v[1]*b.v[1] + a.v[2]*b.v[2];
 }
 
-CORE_API void cross (const CVec3 &v1, const CVec3 &v2, CVec3 &result);
+CORE_API void cross(const CVec3 &v1, const CVec3 &v2, CVec3 &result);
 
 //?? OLD-STYLE FUNCTIONS :
 
-inline void VectorSubtract (const CVec3 &a, const CVec3 &b, CVec3 &d)
+inline void VectorSubtract(const CVec3 &a, const CVec3 &b, CVec3 &d)
 {
 	d.v[0] = a.v[0] - b.v[0];
 	d.v[1] = a.v[1] - b.v[1];
 	d.v[2] = a.v[2] - b.v[2];
 }
 
-inline void VectorAdd (const CVec3 &a, const CVec3 &b, CVec3 &d)
+inline void VectorAdd(const CVec3 &a, const CVec3 &b, CVec3 &d)
 {
 	d.v[0] = a.v[0] + b.v[0];
 	d.v[1] = a.v[1] + b.v[1];
 	d.v[2] = a.v[2] + b.v[2];
 }
 
-inline void VectorNegate (const CVec3 &a, CVec3 &b)
+inline void VectorNegate(const CVec3 &a, CVec3 &b)
 {
-	FNegate (a.v[0], b.v[0]);
-	FNegate (a.v[1], b.v[1]);
-	FNegate (a.v[2], b.v[2]);
+	FNegate(a.v[0], b.v[0]);
+	FNegate(a.v[1], b.v[1]);
+	FNegate(a.v[2], b.v[2]);
 }
 
-inline void VectorScale (const CVec3 &a, float scale, CVec3 &b)
+inline void VectorScale(const CVec3 &a, float scale, CVec3 &b)
 {
 	b.v[0] = scale * a.v[0];
 	b.v[1] = scale * a.v[1];
@@ -120,7 +120,7 @@ inline void VectorScale (const CVec3 &a, float scale, CVec3 &b)
 }
 
 // d = a + scale * b
-inline void VectorMA (const CVec3 &a, float scale, const CVec3 &b, CVec3 &d)
+inline void VectorMA(const CVec3 &a, float scale, const CVec3 &b, CVec3 &d)
 {
 	d.v[0] = a.v[0] + scale * b.v[0];
 	d.v[1] = a.v[1] + scale * b.v[1];
@@ -128,16 +128,16 @@ inline void VectorMA (const CVec3 &a, float scale, const CVec3 &b, CVec3 &d)
 }
 
 // a += scale * b
-inline void VectorMA (CVec3 &a, float scale, const CVec3 &b)	//!! method, rename?
+inline void VectorMA(CVec3 &a, float scale, const CVec3 &b)	//!! method, rename?
 {
 	a.v[0] += scale * b.v[0];
 	a.v[1] += scale * b.v[1];
 	a.v[2] += scale * b.v[2];
 }
 
-CORE_API float VectorDistance (const CVec3 &vec1, const CVec3 &vec2);
+CORE_API float VectorDistance(const CVec3 &vec1, const CVec3 &vec2);
 //?? VectorDistanceFast()
-CORE_API float VectorNormalize (const CVec3 &v, CVec3 &out);
+CORE_API float VectorNormalize(const CVec3 &v, CVec3 &out);
 
 
 /*-----------------------------------------------------------------------------
@@ -165,9 +165,9 @@ struct CORE_API CPlane
 	byte	signbits;				// sign(x) + (sign(y)<<1) + (sign(z)<<2); used for speedup CBox::OnPlaneSide()
 	byte	pad[2];					// for dword alignment
 	// methods
-	void Setup ();					// setup signbits+type
+	void Setup();					// setup signbits+type
 	// distance is positive, when point placed on a normal-looking side
-	inline float DistanceTo (const CVec3 &vec) const
+	inline float DistanceTo(const CVec3 &vec) const
 	{
 		if (type <= PLANE_Z)
 			return vec[type] - dist;
@@ -188,19 +188,19 @@ struct CORE_API CBox
 	// fields
 	CVec3	mins, maxs;
 	// methods
-	void Clear ();							// set mins>maxs (negative volume)
-	void Expand (const CVec3 &p);			// expand mins/maxs by point p
-	void Expand (const CBox &b);			// include box b into volume
-	void GetCenter (CVec3 &p) const;		// compute center point
-	bool Contains (const CVec3 &p) const;	// true, when point is inside box volume
-	bool Intersects (const CBox &b) const;	// true, when boxes have common volume
+	void Clear();							// set mins>maxs (negative volume)
+	void Expand(const CVec3 &p);			// expand mins/maxs by point p
+	void Expand(const CBox &b);				// include box b into volume
+	void GetCenter(CVec3 &p) const;			// compute center point
+	bool Contains(const CVec3 &p) const;	// true, when point is inside box volume
+	bool Intersects(const CBox &b) const;	// true, when boxes have common volume
 	// returns 1 when box placed on a normal-looking side of plane, 2 when on opposite side,
 	// and 3 (1+2) when box intersects plane
-	int OnPlaneSide (const CPlane &plane) const;
+	int OnPlaneSide(const CPlane &plane) const;
 };
 
 // CBox::OnPlaneSide(), optimized for axis-aligned planes
-inline int BOX_ON_PLANE_SIDE (const CBox &box, const CPlane &plane)
+inline int BOX_ON_PLANE_SIDE(const CBox &box, const CPlane &plane)
 {
 	if (plane.type <= CPlane::PLANE_MZ)
 	{
@@ -220,7 +220,7 @@ inline int BOX_ON_PLANE_SIDE (const CBox &box, const CPlane &plane)
 		}
 		return 3;
 	}
-	return box.OnPlaneSide (plane);
+	return box.OnPlaneSide(plane);
 }
 
 
@@ -235,17 +235,17 @@ struct CORE_API CAxis
 	// initializing CAxis object with initializer list ( "= {n,n,n,n ...}" )
 	CVec3	v[3];
 	// methods
-	void FromEuler (const CVec3 &angles);
-	void TransformVector (const CVec3 &src, CVec3 &dst) const;
-	void UnTransformVector (const CVec3 &src, CVec3 &dst) const;
-	void TransformAxis (const CAxis &src, CAxis &dst) const;
-	void UnTransformAxis (const CAxis &src, CAxis &dst) const;
+	void FromEuler(const CVec3 &angles);
+	void TransformVector(const CVec3 &src, CVec3 &dst) const;
+	void UnTransformVector(const CVec3 &src, CVec3 &dst) const;
+	void TransformAxis(const CAxis &src, CAxis &dst) const;
+	void UnTransformAxis(const CAxis &src, CAxis &dst) const;
 	// indexed access
-	inline CVec3& operator[] (int index)
+	inline CVec3& operator[](int index)
 	{
 		return v[index];
 	}
-	inline const CVec3& operator[] (int index) const
+	inline const CVec3& operator[](int index) const
 	{
 		return v[index];
 	}
@@ -259,19 +259,19 @@ struct CORE_API CCoords
 	CVec3	origin;
 	CAxis	axis;
 	// methods
-	void TransformPoint (const CVec3 &src, CVec3 &dst) const;
-	void UnTransformPoint (const CVec3 &src, CVec3 &dst) const;
-	void TransformCoords (const CCoords &src, CCoords &dst) const;
-	void UnTransformCoords (const CCoords &src, CCoords &dst) const;
-	void TransformPlane (const CPlane &src, CPlane &dst) const;
+	void TransformPoint(const CVec3 &src, CVec3 &dst) const;
+	void UnTransformPoint(const CVec3 &src, CVec3 &dst) const;
+	void TransformCoords(const CCoords &src, CCoords &dst) const;
+	void UnTransformCoords(const CCoords &src, CCoords &dst) const;
+	void TransformPlane(const CPlane &src, CPlane &dst) const;
 };
 
 // Functions for work with coordinate systems, not combined into CCoords class
 
 // global coordinate system -> local coordinate system (src -> dst) by origin/axis coords
-CORE_API void TransformPoint (const CVec3 &origin, const CAxis &axis, const CVec3 &src, CVec3 &dst);
+CORE_API void TransformPoint(const CVec3 &origin, const CAxis &axis, const CVec3 &src, CVec3 &dst);
 // local coordinate system -> global coordinate system
-CORE_API void UnTransformPoint (const CVec3 &origin, const CAxis &axis, const CVec3 &src, CVec3 &dst);
+CORE_API void UnTransformPoint(const CVec3 &origin, const CAxis &axis, const CVec3 &src, CVec3 &dst);
 
 
 /*-----------------------------------------------------------------------------
@@ -286,9 +286,9 @@ enum
 	ROLL							// rotation about axis of screen, 0=Straight, +Clockwise, -CCW.
 };
 
-CORE_API void Euler2Vecs (const CVec3 &angles, CVec3 *forward, CVec3 *right, CVec3 *up);
-CORE_API void Vec2Euler (const CVec3 &vec, CVec3 &angles);
-CORE_API float Vec2Yaw (const CVec3 &vec);
+CORE_API void  Euler2Vecs(const CVec3 &angles, CVec3 *forward, CVec3 *right, CVec3 *up);
+CORE_API void  Vec2Euler(const CVec3 &vec, CVec3 &angles);
+CORE_API float Vec2Yaw(const CVec3 &vec);
 
 
 /*-----------------------------------------------------------------------------

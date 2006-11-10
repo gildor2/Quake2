@@ -47,7 +47,7 @@ struct vertexBuffer_t
 	bufVertex_t		verts[MAX_VERTEXES];
 	color_t			color[MAX_VERTEXES];
 	bufTexCoord_t	texCoord[1][MAX_VERTEXES];
-	static inline int getSize (int numTmu)
+	static inline int getSize(int numTmu)
 	{
 		return sizeof(vertexBuffer_t) + (numTmu-1) * sizeof(bufTexCoord_t) * MAX_VERTEXES;	// 1 texCoord already reserved
 	}
@@ -69,18 +69,18 @@ extern bufTexCoordSrc_t srcTexCoord[MAX_VERTEXES];
 
 /*-------------------- Functions -------------------------------*/
 
-void BK_Init ();
-void BK_Shutdown ();
+void BK_Init();
+void BK_Shutdown();
 
-void BK_BeginFrame ();
-void BK_EndFrame ();
+void BK_BeginFrame();
+void BK_EndFrame();
 
-void BK_DrawPic (shader_t *shader, int x, int y, int w, int h,
-				 float s1 = 0, float t1 = 0, float s2 = 1, float t2 = 1,
-				 unsigned color = RGB(1,1,1), byte flipMode = 0);
-void BK_DrawText (const char *text, int len, int x, int y, int w, int h, unsigned color);
-void BK_DrawScene ();
-void BK_FlushShader ();
+void BK_DrawPic(shader_t *shader, int x, int y, int w, int h,
+				float s1 = 0, float t1 = 0, float s2 = 1, float t2 = 1,
+				unsigned color = RGB(1,1,1), byte flipMode = 0);
+void BK_DrawText(const char *text, int len, int x, int y, int w, int h, unsigned color);
+void BK_DrawScene();
+void BK_FlushShader();
 
 
 /*----------- Surface info bits (for scene sorting) ------------*/

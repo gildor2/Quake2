@@ -79,7 +79,7 @@
 #undef guard
 #undef unguard
 #undef unguardf
-void DebugPrintf (const char *str, ...) PRINTF(1,2);
+void DebugPrintf(const char *str, ...) PRINTF(1,2);
 #define guard(func)				DebugPrintf("> %s : %s\n", __func__, #func);
 #define unguard					DebugPrintf("< %s\n", __func__);
 #define unguardf(msg)			DebugPrintf("< %s : %s\n", __func__, va msg);
@@ -105,7 +105,7 @@ extern float GGuardValue;
 // for this purpose.
 #if 0
 #define staticAssert(expr,name)		\
-	if (!(expr)) appError ("Assertion: %s (%s)", #expr, __FILE__);
+	if (!(expr)) appError("Assertion: %s (%s)", #expr, __FILE__);
 #endif
 
 // helper declararion
@@ -121,16 +121,16 @@ template<>    struct CompileTimeError<true> {};
 
 
 #if MAX_DEBUG
-#define assert(expr)			if (!(expr)) appError ("Assertion: %s (%s)", #expr, __FILE__);
+#define assert(expr)			if (!(expr)) appError("Assertion: %s (%s)", #expr, __FILE__);
 #else
 #define assert(expr)
 #endif
 
 // profiling
-inline void clock (unsigned &time)		{ time -= appCycles(); }
-inline void unclock (unsigned &time)	{ time += appCycles(); }
-inline void clock (int64 &time)			{ time -= appCycles64(); }
-inline void unclock (int64 &time)		{ time += appCycles64(); }
+inline void clock(unsigned &time)		{ time -= appCycles(); }
+inline void unclock(unsigned &time)		{ time += appCycles(); }
+inline void clock(int64 &time)			{ time -= appCycles64(); }
+inline void unclock(int64 &time)		{ time += appCycles64(); }
 
 
 #if STATS
@@ -220,8 +220,8 @@ struct CVec3;
 #define S_WHITE			"^7"
 
 
-CORE_API void appPrintf (const char *fmt, ...) PRINTF(1,2);
-CORE_API void appWPrintf (const char *fmt, ...) PRINTF(1,2);
+CORE_API void appPrintf(const char *fmt, ...) PRINTF(1,2);
+CORE_API void appWPrintf(const char *fmt, ...) PRINTF(1,2);
 
 
 // Output device
@@ -230,20 +230,20 @@ class CORE_API COutputDevice
 public:
 	bool	NoColors;			// when true, color codes will be removed from output
 	bool	FlushEveryTime;		// when true, Flush() will be called after every Write()
-	COutputDevice ()
+	COutputDevice()
 	:	NoColors(false)
 	,	FlushEveryTime(false)
 	{}
-	virtual ~COutputDevice ()
+	virtual ~COutputDevice()
 	{}
-	virtual void Write (const char *str) = 0;
-	virtual void Flush ()
+	virtual void Write(const char *str) = 0;
+	virtual void Flush()
 	{ /* empty */ }
-	virtual void Close ()		// may be used instead of destructor
+	virtual void Close()		// may be used instead of destructor
 	{ /* empty */ }
-	void Printf (const char *fmt, ...) PRINTF(2,3);
-	void Register ();
-	void Unregister ();
+	void Printf(const char *fmt, ...) PRINTF(2,3);
+	void Register();
+	void Unregister();
 };
 
 // macros for hook/unhook output
@@ -263,20 +263,20 @@ public:
 -----------------------------------------------------------------------------*/
 
 // Initialize core
-CORE_API void appInit (/*?? const char *_cmdLine, COutputDevice *_log, CErrorHandler *_err */);
-CORE_API void appExit ();
+CORE_API void appInit(/*?? const char *_cmdLine, COutputDevice *_log, CErrorHandler *_err */);
+CORE_API void appExit();
 
 // System information
-CORE_API const char *appPackage ();
+CORE_API const char *appPackage();
 
 
 /*-----------------------------------------------------------------------------
 	Timing functions
 -----------------------------------------------------------------------------*/
 
-CORE_API unsigned appMilliseconds ();
-CORE_API const char *appTimestamp ();
-CORE_API void appSleep (unsigned msec);
+CORE_API unsigned appMilliseconds();
+CORE_API const char *appTimestamp();
+CORE_API void appSleep(unsigned msec);
 
 
 /*-----------------------------------------------------------------------------
@@ -292,34 +292,34 @@ CORE_API void appSleep (unsigned msec);
 
 #else
 
-short	LittleShort (short l);
-int		LittleLong (int l);
-float	LittleFloat (float l);
+short	LittleShort(short l);
+int		LittleLong(int l);
+float	LittleFloat(float l);
 
 inline void LTL(short &v)
 {
-	v = LittleShort (v);
+	v = LittleShort(v);
 }
 inline void LTL(unsigned short &v)
 {
-	v = LittleShort (v);
+	v = LittleShort(v);
 }
 inline void LTL(int &v)
 {
-	v = LittleLong (v);
+	v = LittleLong(v);
 }
 inline void LTL(unsigned &v)
 {
-	v = LittleLong (v);
+	v = LittleLong(v);
 }
 inline void LTL(float &v)
 {
-	v = LittleFloat (v);
+	v = LittleFloat(v);
 }
 inline void LTL(CVec3 &v)
 {
 	for (int i = 0; i < 3; i++)
-		v[i] = LittleFloat (v[i]);
+		v[i] = LittleFloat(v[i]);
 }
 
 #endif

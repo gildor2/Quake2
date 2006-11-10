@@ -270,18 +270,18 @@ struct bspfile_t
 extern bspfile_t bspfile;
 
 
-//--bspfile_t *LoadBspFile (char *filename, bool clientload, unsigned *checksum);
+//--bspfile_t *LoadBspFile(char *filename, bool clientload, unsigned *checksum);
 
 #if !NO_DEBUG
-CBrush *CM_BuildBrush (int brushNum, CMemoryChain *mem);
+CBrush *CM_BuildBrush(int brushNum, CMemoryChain *mem);
 #endif
 
-const char *ProcessEntstring (const char *entString);
+const char *ProcessEntstring(const char *entString);
 
-const CBspLeaf *CM_FindLeaf (const CVec3 &p, int headnode = 0);
+const CBspLeaf *CM_FindLeaf(const CVec3 &p, int headnode = 0);
 // call with topnode set to the headnode, returns with topnode
 // set to the first node that splits the box
-int CM_BoxLeafs (const CBox &bounds, CBspLeaf **list, int listsize, int *topnode = NULL, int headnode = 0);
+int CM_BoxLeafs(const CBox &bounds, CBspLeaf **list, int listsize, int *topnode = NULL, int headnode = 0);
 
 
 #endif // CMODEL_H

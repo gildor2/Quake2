@@ -39,23 +39,23 @@ class CDynamicLib
 private:
 	void	*hDll;
 public:
-	inline bool Load (const char *name)
+	inline bool Load(const char *name)
 	{
-		hDll = dlopen (name, RTLD_LAZY|RTLD_GLOBAL);
+		hDll = dlopen(name, RTLD_LAZY|RTLD_GLOBAL);
 		return hDll != NULL;
 	}
-	inline void Free ()
+	inline void Free()
 	{
 		if (!hDll) return;			// not loaded
-		dlclose (hDll);
+		dlclose(hDll);
 		hDll = NULL;
 	}
-	inline bool GetProc (const char *name, void *func)
+	inline bool GetProc(const char *name, void *func)
 	{
-		func = dlsym (hDll, name);
+		func = dlsym(hDll, name);
 		return (*(address_t*)func != (address_t)NULL);
 	}
-	inline operator bool ()
+	inline operator bool()
 	{
 		return hDll != NULL;
 	}

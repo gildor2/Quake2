@@ -1,34 +1,34 @@
 #include "qcommon.h"
 
 
-void sizebuf_t::Init (void *data, int length)
+void sizebuf_t::Init(void *data, int length)
 {
-	memset (this, 0, sizeof(sizebuf_t));
+	memset(this, 0, sizeof(sizebuf_t));
 	this->data = (byte*)data;
 	this->maxsize = length;
 }
 
 
-void sizebuf_t::Write (const void *data, int length)
+void sizebuf_t::Write(const void *data, int length)
 {
 	int need = cursize + length;
 	if (need > maxsize)
 	{
 		if (!allowoverflow)
-			appError ("MSG_Write: overflow without allowoverflow (size is %d)", maxsize);
+			appError("MSG_Write: overflow without allowoverflow (size is %d)", maxsize);
 
 		if (length > maxsize)
-			appError ("MSG_Write: %d is > full buffer size", length);
+			appError("MSG_Write: %d is > full buffer size", length);
 
-		appPrintf ("MSG_Write: overflow (max=%d, need=%d)\n", maxsize, need);
-		Clear ();
+		appPrintf("MSG_Write: overflow (max=%d, need=%d)\n", maxsize, need);
+		Clear();
 		overflowed = true;
 	}
 
 	void *dst = this->data + cursize;
 	cursize = need;
 
-	memcpy (dst, data, length);
+	memcpy(dst, data, length);
 }
 
 
@@ -36,55 +36,55 @@ void sizebuf_t::Write (const void *data, int length)
 	Writing functions
 -----------------------------------------------------------------------------*/
 
-void MSG_WriteChar (sizebuf_t *sb, int c)
+void MSG_WriteChar(sizebuf_t *sb, int c)
 {
-	sb->Write (&c, 1);
+	sb->Write(&c, 1);
 }
 
-void MSG_WriteByte (sizebuf_t *sb, int c)
+void MSG_WriteByte(sizebuf_t *sb, int c)
 {
-	sb->Write (&c, 1);
+	sb->Write(&c, 1);
 }
 
-void MSG_WriteShort (sizebuf_t *sb, int c)
-{
-	LTL(c);
-	sb->Write (&c, 2);
-}
-
-void MSG_WriteLong (sizebuf_t *sb, int c)
+void MSG_WriteShort(sizebuf_t *sb, int c)
 {
 	LTL(c);
-	sb->Write (&c, 4);
+	sb->Write(&c, 2);
 }
 
-void MSG_WriteFloat (sizebuf_t *sb, float f)
+void MSG_WriteLong(sizebuf_t *sb, int c)
+{
+	LTL(c);
+	sb->Write(&c, 4);
+}
+
+void MSG_WriteFloat(sizebuf_t *sb, float f)
 {
 	LTL(f);
-	sb->Write (&f, 4);
+	sb->Write(&f, 4);
 }
 
-void MSG_WriteString (sizebuf_t *sb, const char *s)
+void MSG_WriteString(sizebuf_t *sb, const char *s)
 {
-	if (!s)	sb->Write ("", 1);
-	else	sb->Write (s, strlen(s)+1);
+	if (!s)	sb->Write("", 1);
+	else	sb->Write(s, strlen(s)+1);
 }
 
-void MSG_WritePos (sizebuf_t *sb, const CVec3 &pos)
+void MSG_WritePos(sizebuf_t *sb, const CVec3 &pos)
 {
-	MSG_WriteShort (sb, appRound (pos[0]*8));
-	MSG_WriteShort (sb, appRound (pos[1]*8));
-	MSG_WriteShort (sb, appRound (pos[2]*8));
+	MSG_WriteShort(sb, appRound(pos[0]*8));
+	MSG_WriteShort(sb, appRound(pos[1]*8));
+	MSG_WriteShort(sb, appRound(pos[2]*8));
 }
 
-void MSG_WriteAngle (sizebuf_t *sb, float f)
+void MSG_WriteAngle(sizebuf_t *sb, float f)
 {
-	MSG_WriteByte (sb, appRound (f*256.0f/360) & 255);
+	MSG_WriteByte(sb, appRound(f*256.0f/360) & 255);
 }
 
-void MSG_WriteAngle16 (sizebuf_t *sb, float f)
+void MSG_WriteAngle16(sizebuf_t *sb, float f)
 {
-	MSG_WriteShort (sb, ANGLE2SHORT(f));
+	MSG_WriteShort(sb, ANGLE2SHORT(f));
 }
 
 
@@ -94,15 +94,15 @@ static byte dirTable[3*8*8*8];		// value=0 -- uninitialized, else idx+1
 	// 3*8 - cube: 6 planes, each subdivided to 4 squares (x<0,x>0,y<0,y>0)
 	// 8*8 - coordinates inside square
 
-static int GetDirCell (CVec3 &dir)
+static int GetDirCell(CVec3 &dir)
 {
 	CVec3	adir;
 	float	m;
 	int		sign, base, base2;
 
-	adir[0] = fabs (dir[0]);
-	adir[1] = fabs (dir[1]);
-	adir[2] = fabs (dir[2]);
+	adir[0] = fabs(dir[0]);
+	adir[1] = fabs(dir[1]);
+	adir[2] = fabs(dir[2]);
 	sign = 0;
 	if (dir[0] < 0) sign |= 1;
 	if (dir[1] < 0) sign |= 2;
@@ -128,28 +128,28 @@ static int GetDirCell (CVec3 &dir)
 	switch (base)
 	{
 	case 0:
-		base2 = (appFloor (adir[1] * m) << 3) + appFloor (adir[2] * m);
+		base2 = (appFloor(adir[1] * m) << 3) + appFloor(adir[2] * m);
 		break;
 	case 1:
-		base2 = (appFloor (adir[0] * m) << 3) + appFloor (adir[2] * m);
+		base2 = (appFloor(adir[0] * m) << 3) + appFloor(adir[2] * m);
 		break;
 	case 2:
-		base2 = (appFloor (adir[0] * m) << 3) + appFloor (adir[1] * m);
+		base2 = (appFloor(adir[0] * m) << 3) + appFloor(adir[1] * m);
 		break;
 	}
 	return (base << 9) + (sign << 6) + base2;
 }
 
-void MSG_WriteDir (sizebuf_t *sb, const CVec3 &dir)
+void MSG_WriteDir(sizebuf_t *sb, const CVec3 &dir)
 {
 	int		cell, i, best;
 	float	d, bestd;
 
 	// find cache cell
-	cell = GetDirCell (dir);
+	cell = GetDirCell(dir);
 	if (dirTable[cell])	// already computed
 	{
-		MSG_WriteByte (sb, dirTable[cell] - 1);
+		MSG_WriteByte(sb, dirTable[cell] - 1);
 		appPrintf("*");
 		return;
 	}
@@ -157,7 +157,7 @@ void MSG_WriteDir (sizebuf_t *sb, const CVec3 &dir)
 	bestd = best = 0;
 	for (i = 0; i < NUMVERTEXNORMALS; i++)
 	{
-		d = dot (dir, bytedirs[i]);
+		d = dot(dir, bytedirs[i]);
 		if (d > bestd)
 		{
 			bestd = d;
@@ -167,18 +167,18 @@ void MSG_WriteDir (sizebuf_t *sb, const CVec3 &dir)
 	// cache index
 	dirTable[cell] = best+1;
 	// write
-	MSG_WriteByte (sb, best);
+	MSG_WriteByte(sb, best);
 }
 
 #else
 
-void MSG_WriteDir (sizebuf_t *sb, const CVec3 &dir)
+void MSG_WriteDir(sizebuf_t *sb, const CVec3 &dir)
 {
 	float bestd = 0;
 	int best = 0;
 	for (int i = 0; i < NUMVERTEXNORMALS; i++)
 	{
-		float d = dot (dir, bytedirs[i]);
+		float d = dot(dir, bytedirs[i]);
 		if (d >= 0.99f)
 		{
 			best = i;
@@ -191,17 +191,17 @@ void MSG_WriteDir (sizebuf_t *sb, const CVec3 &dir)
 			best = i;
 		}
 	}
-	MSG_WriteByte (sb, best);
+	MSG_WriteByte(sb, best);
 }
 
 #endif
 
 
-void MSG_ReadDir (sizebuf_t *sb, CVec3 &dir)
+void MSG_ReadDir(sizebuf_t *sb, CVec3 &dir)
 {
-	int b = MSG_ReadByte (sb);
+	int b = MSG_ReadByte(sb);
 	if (b >= NUMVERTEXNORMALS)
-		Com_DropError ("MSG_ReadDir: out of range");
+		Com_DropError("MSG_ReadDir: out of range");
 	dir = bytedirs[b];
 }
 
@@ -211,7 +211,7 @@ void MSG_ReadDir (sizebuf_t *sb, CVec3 &dir)
 -----------------------------------------------------------------------------*/
 
 // returns -1 if no more characters are available
-int MSG_ReadChar (sizebuf_t *msg_read)
+int MSG_ReadChar(sizebuf_t *msg_read)
 {
 	int	c;
 
@@ -224,7 +224,7 @@ int MSG_ReadChar (sizebuf_t *msg_read)
 	return c;
 }
 
-int MSG_ReadByte (sizebuf_t *msg_read)
+int MSG_ReadByte(sizebuf_t *msg_read)
 {
 	if (msg_read->readcount+1 > msg_read->cursize)
 	{
@@ -239,7 +239,7 @@ int MSG_ReadByte (sizebuf_t *msg_read)
 	}
 }
 
-int MSG_ReadShort (sizebuf_t *msg_read)
+int MSG_ReadShort(sizebuf_t *msg_read)
 {
 	if (msg_read->readcount+2 > msg_read->cursize)
 	{
@@ -255,7 +255,7 @@ int MSG_ReadShort (sizebuf_t *msg_read)
 	}
 }
 
-int MSG_ReadLong (sizebuf_t *msg_read)
+int MSG_ReadLong(sizebuf_t *msg_read)
 {
 	if (msg_read->readcount+4 > msg_read->cursize)
 	{
@@ -271,7 +271,7 @@ int MSG_ReadLong (sizebuf_t *msg_read)
 	}
 }
 
-float MSG_ReadFloat (sizebuf_t *msg_read)
+float MSG_ReadFloat(sizebuf_t *msg_read)
 {
 	if (msg_read->readcount+4 > msg_read->cursize)
 	{
@@ -287,14 +287,14 @@ float MSG_ReadFloat (sizebuf_t *msg_read)
 	}
 }
 
-char *MSG_ReadString (sizebuf_t *msg_read)
+char *MSG_ReadString(sizebuf_t *msg_read)
 {
 	static char	string[2048];		//?? make non-static
 
 	int l = 0;
 	do
 	{
-		int c = MSG_ReadChar (msg_read);
+		int c = MSG_ReadChar(msg_read);
 		if (c == -1 || c == 0)
 			break;
 		string[l++] = c;
@@ -304,25 +304,25 @@ char *MSG_ReadString (sizebuf_t *msg_read)
 	return string;
 }
 
-void MSG_ReadPos (sizebuf_t *msg_read, CVec3 &pos)
+void MSG_ReadPos(sizebuf_t *msg_read, CVec3 &pos)
 {
 	pos[0] = MSG_ReadShort(msg_read) * (1.0f/8);
 	pos[1] = MSG_ReadShort(msg_read) * (1.0f/8);
 	pos[2] = MSG_ReadShort(msg_read) * (1.0f/8);
 }
 
-float MSG_ReadAngle (sizebuf_t *msg_read)
+float MSG_ReadAngle(sizebuf_t *msg_read)
 {
 	return MSG_ReadChar(msg_read) * (360.0f/256);
 }
 
-float MSG_ReadAngle16 (sizebuf_t *msg_read)
+float MSG_ReadAngle16(sizebuf_t *msg_read)
 {
 	return SHORT2ANGLE(MSG_ReadShort(msg_read));
 }
 
-void MSG_ReadData (sizebuf_t *msg_read, void *data, int len)
+void MSG_ReadData(sizebuf_t *msg_read, void *data, int len)
 {
 	for (int i = 0; i < len; i++)
-		((byte *)data)[i] = MSG_ReadByte (msg_read);
+		((byte *)data)[i] = MSG_ReadByte(msg_read);
 }

@@ -5,7 +5,7 @@
 #include "ExceptDumpers.h"
 
 
-long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
+long WINAPI win32ExceptFilter(struct _EXCEPTION_POINTERS *info)
 {
 	if (GErr.swError) return EXCEPTION_EXECUTE_HANDLER;		// no interest to thread context when software-generated errors
 
@@ -32,7 +32,7 @@ long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 		case EXCEPTION_FLT_UNDERFLOW:
 		case EXCEPTION_FLT_DENORMAL_OPERAND:
 			// if FPU exception occured, _clearfp() is required (otherwise, exception will be re-raised again)
-			_clearfp ();
+			_clearfp();
 			excName = "FPU exception";
 			break;
 		case EXCEPTION_INT_DIVIDE_BY_ZERO:
@@ -52,19 +52,19 @@ long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 		// log error
 		CONTEXT* ctx = info->ContextRecord;
 		TString<1024> Message;
-		Message.sprintf ("%s in \"%s\"", excName, appSymbolName (ctx->Eip));
+		Message.sprintf("%s in \"%s\"", excName, appSymbolName(ctx->Eip));
 		// initiate error + start log
-		COutputDevice *Out = appBeginError (Message);
+		COutputDevice *Out = appBeginError(Message);
 
-		Out->Printf ("Exception code: %08X\n\n", info->ExceptionRecord->ExceptionCode);
-		DumpRegs (Out, ctx);
-		Out->Printf ("  EFLAGS: %08X\n", ctx->EFlags);
-		Out->Printf ("\nStack:\n");
-		DumpMem (Out, (unsigned*) ctx->Esp, ctx);
-		Out->Printf ("\n");
+		Out->Printf("Exception code: %08X\n\n", info->ExceptionRecord->ExceptionCode);
+		DumpRegs(Out, ctx);
+		Out->Printf("  EFLAGS: %08X\n", ctx->EFlags);
+		Out->Printf("\nStack:\n");
+		DumpMem(Out, (unsigned*) ctx->Esp, ctx);
+		Out->Printf("\n");
 #if UNWIND_EBP_FRAMES
-		Out->Printf ("\nCall stack trace:\n");
-		UnwindEbpFrame (Out, (unsigned*) ctx->Ebp);
+		Out->Printf("\nCall stack trace:\n");
+		UnwindEbpFrame(Out, (unsigned*) ctx->Ebp);
 #endif
 	} CATCH {
 		// do nothing
@@ -75,7 +75,7 @@ long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 
 
 #if _MSC_VER
-__declspec(naked) unsigned win32ExceptFilter2 ()
+__declspec(naked) unsigned win32ExceptFilter2()
 {
 	__asm {
 		push	[ebp-0x14]

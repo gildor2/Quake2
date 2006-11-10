@@ -113,13 +113,13 @@ public:
 	int		dlightFrame;
 	unsigned dlightMask;
 	inlineModel_t *owner;
-	virtual void Tesselate (refEntity_t &ent) = 0;
+	virtual void Tesselate(refEntity_t &ent) = 0;
 };
 
 class surfacePlanar_t : public surfaceBase_t
 {
 public:
-	inline surfacePlanar_t () { type = SURFACE_PLANAR; };
+	inline surfacePlanar_t() { type = SURFACE_PLANAR; };
 	CBox	bounds;
 	CPlane	plane;
 	CVec3	axis[2];			// 2 orthogonal identity vectors from surface
@@ -131,25 +131,25 @@ public:
 	dynamicLightmap_t *lightmap;
 	CLight	*light;
 	surfDlight_t *dlights;
-	virtual void Tesselate (refEntity_t &ent);
+	virtual void Tesselate(refEntity_t &ent);
 };
 
 // Triangular surface: non-planar, every vertex have its own normal vector
 class surfaceTrisurf_t : public surfaceBase_t
 {
 public:
-	inline surfaceTrisurf_t () { type = SURFACE_TRISURF; };
+	inline surfaceTrisurf_t() { type = SURFACE_TRISURF; };
 	CBox	bounds;		//?? origin/radius?
 	int		numVerts, numIndexes;
 	vertexNormal_t *verts;
 	int		*indexes;
-//!!	virtual void Tesselate (refEntity_t &ent);
+//!!	virtual void Tesselate(refEntity_t &ent);
 };
 
 class surfaceMd3_t : public surfaceBase_t
 {
 public:
-	inline surfaceMd3_t () { type = SURFACE_MD3; };
+	inline surfaceMd3_t() { type = SURFACE_MD3; };
 
 	TString<32> Name;			// for skin application
 	// fields, same on all surfaces
@@ -165,16 +165,16 @@ public:
 	shader_t **shaders;			// [numShaders]
 
 	vertexMd3_t *verts;			// numVerts*numFrames
-	virtual void Tesselate (refEntity_t &ent);
+	virtual void Tesselate(refEntity_t &ent);
 };
 
 class surfacePoly_t : public surfaceBase_t
 {
 public:
-	inline surfacePoly_t () { type = SURFACE_POLY; };
+	inline surfacePoly_t() { type = SURFACE_POLY; };
 	int		numVerts;
 	vertexPoly_t verts[1];		// [numVerts]
-	virtual void Tesselate (refEntity_t &ent);
+	virtual void Tesselate(refEntity_t &ent);
 };
 
 // dummy surfaces
@@ -182,9 +182,9 @@ public:
 class surfaceParticle_t : public surfaceBase_t
 {
 public:
-	inline surfaceParticle_t () { type = SURFACE_PARTICLE; };
+	inline surfaceParticle_t() { type = SURFACE_PARTICLE; };
 	particle_t *part;
-	virtual void Tesselate (refEntity_t &ent);
+	virtual void Tesselate(refEntity_t &ent);
 };
 
 
@@ -192,9 +192,9 @@ public:
 class surfaceEntity_t : public surfaceBase_t
 {
 public:
-	inline surfaceEntity_t () { type = SURFACE_ENTITY; };
+	inline surfaceEntity_t() { type = SURFACE_ENTITY; };
 	refEntity_t *entity;
-	virtual void Tesselate (refEntity_t &ent);
+	virtual void Tesselate(refEntity_t &ent);
 };
 
 
@@ -275,13 +275,13 @@ class model_t : public CRenderModel
 public:
 	modelType_t	type;
 	int		size;				// in memory
-	inline model_t () { type = MODEL_UNKNOWN; };
-	virtual bool LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
+	inline model_t() { type = MODEL_UNKNOWN; };
+	virtual bool LerpTag(int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
 	// when return false, entity will not be added to world
-	virtual bool InitEntity (entity_t *ent, refEntity_t *out);
-	virtual void AddSurfaces (refEntity_t *e);
-	virtual void DrawLabel (refEntity_t *e);
-	virtual const CBspLeaf *GetLeaf (refEntity_t *e);	// NULL when culled
+	virtual bool InitEntity(entity_t *ent, refEntity_t *out);
+	virtual void AddSurfaces(refEntity_t *e);
+	virtual void DrawLabel(refEntity_t *e);
+	virtual const CBspLeaf *GetLeaf(refEntity_t *e);	// NULL when culled
 };
 
 
@@ -291,11 +291,11 @@ public:
 	//?? can add link to CBspModel instead of copying most fields
 	surfaceBase_t **faces;
 	int		numFaces;
-	inline inlineModel_t () { type = MODEL_INLINE; };
-	virtual bool InitEntity (entity_t *ent, refEntity_t *out);
-	virtual void AddSurfaces (refEntity_t *e);
-	virtual void DrawLabel (refEntity_t *e);
-	virtual const CBspLeaf *GetLeaf (refEntity_t *e);
+	inline inlineModel_t() { type = MODEL_INLINE; };
+	virtual bool InitEntity(entity_t *ent, refEntity_t *out);
+	virtual void AddSurfaces(refEntity_t *e);
+	virtual void DrawLabel(refEntity_t *e);
+	virtual const CBspLeaf *GetLeaf(refEntity_t *e);
 };
 
 
@@ -318,14 +318,14 @@ public:
 	int		numTags;
 	char	*tagNames;			// [MAX_QPATH][numTags]
 	CCoords	*tags;				// [numFrames][numTags]
-	inline md3Model_t () { type = MODEL_MD3; };
+	inline md3Model_t() { type = MODEL_MD3; };
 	// funcs for OpenGLDrv
-	virtual bool InitEntity (entity_t *ent, refEntity_t *out);
-	virtual void AddSurfaces (refEntity_t *e);
-	virtual void DrawLabel (refEntity_t *e);
-	virtual const CBspLeaf *GetLeaf (refEntity_t *e);
+	virtual bool InitEntity(entity_t *ent, refEntity_t *out);
+	virtual void AddSurfaces(refEntity_t *e);
+	virtual void DrawLabel(refEntity_t *e);
+	virtual const CBspLeaf *GetLeaf(refEntity_t *e);
 	// funcs for scene manager
-	virtual bool LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
+	virtual bool LerpTag(int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
 };
 
 
@@ -342,10 +342,10 @@ public:
 	int		numFrames;
 	float	radius;
 	sprFrame_t frames[1];		// [numFrames]
-	inline sprModel_t () { type = MODEL_SPR; };
-	virtual bool InitEntity (entity_t *ent, refEntity_t *out);
-	virtual void AddSurfaces (refEntity_t *e);
-	virtual const CBspLeaf *GetLeaf (refEntity_t *e);
+	inline sprModel_t() { type = MODEL_SPR; };
+	virtual bool InitEntity(entity_t *ent, refEntity_t *out);
+	virtual void AddSurfaces(refEntity_t *e);
+	virtual const CBspLeaf *GetLeaf(refEntity_t *e);
 };
 
 
@@ -358,19 +358,19 @@ extern model_t *modelsArray[MAX_GLMODELS];
 extern int	modelCount;
 
 // common
-void	InitModels ();
-void	ShutdownModels ();
-model_t	*FindModel (const char *name);
-void	FreeModels ();
+void	InitModels();
+void	ShutdownModels();
+model_t	*FindModel(const char *name);
+void	FreeModels();
 
 // bsp model
-void	LoadWorldMap ();
+void	LoadWorldMap();
 
 // triangle models
-md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len);
-md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len);
-sprModel_t *LoadSp2 (const char *name, byte *buf, unsigned len);
-sprModel_t *LoadSpr (const char *name, byte *buf, unsigned len);
+md3Model_t *LoadMd2(const char *name, byte *buf, unsigned len);
+md3Model_t *LoadMd3(const char *name, byte *buf, unsigned len);
+sprModel_t *LoadSp2(const char *name, byte *buf, unsigned len);
+sprModel_t *LoadSpr(const char *name, byte *buf, unsigned len);
 
 
 } // namespace

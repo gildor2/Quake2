@@ -58,77 +58,77 @@ static int modelIdx;
 static CBspModel *entModel;
 
 
-static entField_t *FindField (const char *name)
+static entField_t *FindField(const char *name)
 {
 	int		i;
 	entField_t *f;
 	for (i = 0, f = entity; i < numEntFields; i++, f++)
-		if (appMatchWildcard (f->name, name))		// case-sensitive
+		if (appMatchWildcard(f->name, name))		// case-sensitive
 			return f;
 	return NULL;
 }
 
 
-static void RemoveField (const char *name)
+static void RemoveField(const char *name)
 {
-	if (entField_t *field = FindField (name))
+	if (entField_t *field = FindField(name))
 		field->name[0] = 0;
 }
 
 
-static void AddField (const char *name, const char *value)
+static void AddField(const char *name, const char *value)
 {
 	if (numEntFields >= MAX_ENT_FIELDS) return;
 
-	strcpy (entity[numEntFields].name, name);
-	strcpy (entity[numEntFields].value, value);
+	strcpy(entity[numEntFields].name, name);
+	strcpy(entity[numEntFields].value, value);
 	numEntFields++;
 }
 
 
-static void ErrMsg (const char *str)
+static void ErrMsg(const char *str)
 {
 	haveErrors = true;
-	appWPrintf ("EntString error: %s\n", str);
+	appWPrintf("EntString error: %s\n", str);
 }
 
 
-static bool ReadEntity (const char *&src)
+static bool ReadEntity(const char *&src)
 {
 	numEntFields = 0;
 	if (!src) return false;
 
-	const char *tok = COM_Parse (src);
+	const char *tok = COM_Parse(src);
 	if (!tok[0]) return false;
 
 	if (tok[0] != '{' || tok[1] != 0)
 	{
-		ErrMsg ("expected \"{\"");
+		ErrMsg("expected \"{\"");
 		return false;
 	}
 
 	entField_t *field = entity;
 	while (true)
 	{
-		tok = COM_Parse (src);
+		tok = COM_Parse(src);
 		if (tok[0] == '}' && tok[1] == 0)
 			break;
 
 		// add field name
-		appStrncpyz (field->name, tok, ARRAY_COUNT(field->name));
+		appStrncpyz(field->name, tok, ARRAY_COUNT(field->name));
 
 		// add field value
-		tok = COM_Parse (src);
+		tok = COM_Parse(src);
 		if (!tok)
 		{
-			ErrMsg ("unexpected end of data");
+			ErrMsg("unexpected end of data");
 			return false;
 		}
-		appStrncpyz (field->value, tok, ARRAY_COUNT(field->value));
+		appStrncpyz(field->value, tok, ARRAY_COUNT(field->value));
 
 		if (numEntFields++ == MAX_ENT_FIELDS)
 		{
-			ErrMsg ("MAX_ENT_FIELDS");
+			ErrMsg("MAX_ENT_FIELDS");
 			return false;
 		}
 		field++;
@@ -138,56 +138,56 @@ static bool ReadEntity (const char *&src)
 }
 
 
-static void WriteEntity (char **dst)
+static void WriteEntity(char **dst)
 {
 #if SHOW_WRITE
 	const char *txt = *dst;
 #endif
-	strcpy (*dst, "{\n"); (*dst) += 2;
+	strcpy(*dst, "{\n"); (*dst) += 2;
 	for (int i = 0; i < numEntFields; i++)
 		if (entity[i].name[0])	// may be removed field
-			(*dst) += appSprintf (*dst, 1024, "\"%s\" \"%s\"\n", entity[i].name, entity[i].value);
-	strcpy (*dst, "}\n"); (*dst) += 2;
+			(*dst) += appSprintf(*dst, 1024, "\"%s\" \"%s\"\n", entity[i].name, entity[i].value);
+	strcpy(*dst, "}\n"); (*dst) += 2;
 #if SHOW_WRITE
-	appPrintf (S_CYAN"%s", txt);
+	appPrintf(S_CYAN"%s", txt);
 #endif
 }
 
 // gets "%f %f %f" or "%f"
-static void GetVector (const char *str, CVec3 &vec)
+static void GetVector(const char *str, CVec3 &vec)
 {
-	if (sscanf (str, "%f %f %f", VECTOR_ARG(&vec)) != 3)
+	if (sscanf(str, "%f %f %f", VECTOR_ARG(&vec)) != 3)
 		vec[1] = vec[2] = vec[0];
 }
 
 
-static void ProcessEntityTarget ()
+static void ProcessEntityTarget()
 {
-	if (entField_t *f = FindField ("targetname"))
+	if (entField_t *f = FindField("targetname"))
 	{
 		if (numTargets == MAX_TARGETS)
 		{
 			haveErrors = true;
-			Com_DPrintf ("MAX_TARGETS reached\n");
+			Com_DPrintf("MAX_TARGETS reached\n");
 			return;
 		}
-		strcpy (targets[numTargets].name, f->value);
-		if (f = FindField ("origin"))	// target can be without origin, but we are not interested with it
+		strcpy(targets[numTargets].name, f->value);
+		if (f = FindField("origin"))	// target can be without origin, but we are not interested with it
 		{
-			GetVector (f->value, targets[numTargets].origin);
+			GetVector(f->value, targets[numTargets].origin);
 			numTargets++;
 		}
 	}
 }
 
 
-static const CVec3& FindEntityTarget (const char *name)
+static const CVec3& FindEntityTarget(const char *name)
 {
 	for (int i = 0; i < numTargets; i++)
-		if (!strcmp (targets[i].name, name))
+		if (!strcmp(targets[i].name, name))
 			return targets[i].origin;
 
-	Com_DPrintf ("target \"%s\" is not found\n", name);
+	Com_DPrintf("target \"%s\" is not found\n", name);
 	return nullVec3;		// not found
 }
 
@@ -196,7 +196,7 @@ static const CVec3& FindEntityTarget (const char *name)
 	Loading light entities
 -----------------------------------------------------------------------------*/
 
-static bool LoadLight ()
+static bool LoadLight()
 {
 	entField_t *f;
 
@@ -204,14 +204,14 @@ static bool LoadLight ()
 	// "spawnflags": &2 -> flare, &4 -> resize, {&8 -> dynamic ?}
 	// get common lighting fields
 	int style = 0;
-	if (f = FindField ("style,_style"))
-		style = atoi (f->value);
+	if (f = FindField("style,_style"))
+		style = atoi(f->value);
 
 	// HL!!: "light": may have pattern (lightstyle: "aazzazz")
 
 	/*--------------- lightflares -----------------*/
 
-	if ((!classname[5] || !strcmp (classname + 5, "flare")) && (spawnflags & 2))	// "light" or "lightflare"
+	if ((!classname[5] || !strcmp(classname + 5, "flare")) && (spawnflags & 2))	// "light" or "lightflare"
 	{
 		// "health" -> size (def: 24)
 		// "dmg": normal (0, def), sun, amber, red, blue, green
@@ -222,22 +222,22 @@ static bool LoadLight ()
 		bspfile.flares = flare;
 		bspfile.numFlares++;
 
-		if (f = FindField ("health"))
-			flare->size = atof (f->value);
+		if (f = FindField("health"))
+			flare->size = atof(f->value);
 		else
 			flare->size = 24;						// default size
 		flare->style = style;
 
 		flare->color.rgba = RGB(1,1,1);
-		if (f = FindField ("dmg"))
+		if (f = FindField("dmg"))
 		{
-			switch (atoi (f->value))
+			switch (atoi(f->value))
 			{
 			case 1:
-				if (bspfile.type == map_kp) DebugPrintf ("HAVE SUN FLARE: %s\n", *bspfile.Name);//!!
+				if (bspfile.type == map_kp) DebugPrintf("HAVE SUN FLARE: %s\n", *bspfile.Name);//!!
 				flare->radius = -1;					// mark as "sun"
 				flare->color.c[2] = 192;
-				entOrigin.NormalizeFast ();			// just a sun direction
+				entOrigin.NormalizeFast();			// just a sun direction
 				break;
 			case 2:		// amber
 				flare->color.rgba = RGB255(255, 192, 0);
@@ -254,13 +254,13 @@ static bool LoadLight ()
 			}
 		}
 		flare->origin = entOrigin;
-		if (f = FindField ("radius"))
-			flare->radius = atof (f->value);
-		if (f = FindField ("color"))				// can override sun color ...
+		if (f = FindField("radius"))
+			flare->radius = atof(f->value);
+		if (f = FindField("color"))				// can override sun color ...
 		{
 			// NOTE: cannot scanf() into byte-sized vars
 			int	v[3];
-			sscanf (f->value, "%d %d %d", VECTOR_ARG(&v));
+			sscanf(f->value, "%d %d %d", VECTOR_ARG(&v));
 			flare->color.rgba = RGB255(v[0],v[1],v[2]);
 		}
 		if (entModel)
@@ -278,49 +278,49 @@ static bool LoadLight ()
 	slight->style  = style;
 	slight->origin = entOrigin;
 
-	if (!strcmp (classname + 5, "_environment"))	// HL sun
+	if (!strcmp(classname + 5, "_environment"))	// HL sun
 	{
 		bspfile.sunCount++;
 		slight->sun = true;
 	}
 
 	// ArghRad, ZHLT: "_falloff": 0 - linear (default), 1 - 1/dist. 2 - 1/(dist*dist)
-	if (f = FindField ("_falloff"))
-		slight->type = (slightType_t)atoi (f->value);
-	if (f = FindField ("_wait,_fade,wait"))			// ArghRad + TyrLite
-		slight->fade = atof (f->value);
+	if (f = FindField("_falloff"))
+		slight->type = (slightType_t)atoi(f->value);
+	if (f = FindField("_wait,_fade,wait"))			// ArghRad + TyrLite
+		slight->fade = atof(f->value);
 	if (!slight->fade) slight->fade = 1;			// default value + disallow "fade==0"
 
 	if (bspfile.type != map_hl)
 	{
 		// Quake1, Quake2, Kingpin
-		if (f = FindField ("light,_light"))
-			slight->intens = atof (f->value);
+		if (f = FindField("light,_light"))
+			slight->intens = atof(f->value);
 		else
 			slight->intens = 300;					// default
 
-		if (f = FindField ("color,_color"))
+		if (f = FindField("color,_color"))
 		{
-			GetVector (f->value, slight->color);
-			NormalizeColor (slight->color, slight->color);
+			GetVector(f->value, slight->color);
+			NormalizeColor(slight->color, slight->color);
 		}
 		else
-			slight->color.Set (1, 1, 1);			// default
+			slight->color.Set(1, 1, 1);			// default
 
 		if (bspfile.type == map_q1)
 		{
 			// IKLite: "angle" field can change attenuation
-			if (!FindField ("target") &&			// not spotlight
-				(f = FindField ("angle")))
+			if (!FindField("target") &&			// not spotlight
+				(f = FindField("angle")))
 			{
 				static const slightType_t types[] = {sl_linear, sl_inverse2, sl_nofade, sl_inverse};
-				int n = atoi (f->value);
+				int n = atoi(f->value);
 				if (n >= 0 && n <= 3)				// if outside range - possibly, not attenuation field ...
 					slight->type = types[n];
 			}
 			// TyrLite: "delay": 0 - linear, 1 - 1/dist, 2 - 1/(dist*dist), 3 - no fade
-			if (f = FindField ("delay"))
-				slight->type = (slightType_t)atoi (f->value);
+			if (f = FindField("delay"))
+				slight->type = (slightType_t)atoi(f->value);
 			// adjust intensity for inverse lights (take from TyrLite source)
 			if (slight->type == sl_inverse)
 				slight->intens *= 128;
@@ -331,34 +331,34 @@ static bool LoadLight ()
 	else
 	{
 		// Half-Life light entity
-		if (f = FindField ("_light"))
+		if (f = FindField("_light"))
 		{
 			float bright;
-			int i = sscanf (f->value, "%f %f %f %f", VECTOR_ARG(&slight->color), &bright);
+			int i = sscanf(f->value, "%f %f %f %f", VECTOR_ARG(&slight->color), &bright);
 			if (i == 1)
 				slight->color[1] = slight->color[2] = slight->color[0];
 			else if (i == 4)
-				slight->color.Scale (bright / 255.0f);
+				slight->color.Scale(bright / 255.0f);
 			slight->type   = sl_inverse2;
-			slight->intens = slight->color.Normalize ();
+			slight->intens = slight->color.Normalize();
 			slight->intens *= 256*25.6;				// qrad: max * max / 10, but operates with 0..255 values
 		}
 		// else - bad (will be zero)
 		if (slight->sun)
-			VectorScale (slight->color, slight->intens / (30000 * 1000), bspfile.sunSurface);
+			VectorScale(slight->color, slight->intens / (30000 * 1000), bspfile.sunSurface);
 	}
 
 	// targetted spotlight
-	if (f = FindField ("target"))
+	if (f = FindField("target"))
 	{
 		slight->spot = true;
-		const CVec3 &dst = FindEntityTarget (f->value);
+		const CVec3 &dst = FindEntityTarget(f->value);
 		CVec3	vec;
-		VectorSubtract (dst, slight->origin, vec);
-		VectorNormalize (vec, slight->spotDir);
+		VectorSubtract(dst, slight->origin, vec);
+		VectorNormalize(vec, slight->spotDir);
 
 		for (int i = 0; i < MAX_SUNS; i++)
-			if (!strcmp (f->value, sunTarget[i]))
+			if (!strcmp(f->value, sunTarget[i]))
 			{
 				// this spotlight used as sun target
 				if (sunLight[i])
@@ -370,53 +370,53 @@ static bool LoadLight ()
 
 	// spotlight with specified direction
 	// NOTE: qrad3 have "light_spot" entity support, but game will display error "no spawn function"
-	if (!strcmp (classname + 5, "_spot") || FindField ("_spotvector,_spotpoint,_mangle,_spotangle") || slight->sun)
+	if (!strcmp(classname + 5, "_spot") || FindField("_spotvector,_spotpoint,_mangle,_spotangle") || slight->sun)
 	{
 		CVec3	vec;
 
 		slight->spot = true;
-		if (f = FindField ("_spotvector"))
-			GetVector (f->value, slight->spotDir);
-		else if (f = FindField ("_spotpoint"))
+		if (f = FindField("_spotvector"))
+			GetVector(f->value, slight->spotDir);
+		else if (f = FindField("_spotpoint"))
 		{
-			GetVector (f->value, vec);
-			VectorSubtract (vec, slight->origin, vec);
-			VectorNormalize (vec, slight->spotDir);
+			GetVector(f->value, vec);
+			VectorSubtract(vec, slight->origin, vec);
+			VectorNormalize(vec, slight->spotDir);
 		}
-		else if (f = FindField ("_mangle,_spotangle"))
+		else if (f = FindField("_mangle,_spotangle"))
 		{
 			CVec3	ang;
-			ang.Zero ();
-			sscanf (f->value, "%f %f", &ang[YAW], &ang[PITCH]);
+			ang.Zero();
+			sscanf(f->value, "%f %f", &ang[YAW], &ang[PITCH]);
 			ang[PITCH] *= -1;
-			Euler2Vecs (ang, &slight->spotDir, NULL, NULL);
+			Euler2Vecs(ang, &slight->spotDir, NULL, NULL);
 		}
 		else
 		{
 			CVec3	ang;
 			float	angle;
-			ang.Zero ();
+			ang.Zero();
 
-			if (bspfile.type == map_hl && (f = FindField ("angles")))	// ZHLT
-				sscanf (f->value, "%f %f", &ang[YAW], &ang[PITCH]);
+			if (bspfile.type == map_hl && (f = FindField("angles")))	// ZHLT
+				sscanf(f->value, "%f %f", &ang[YAW], &ang[PITCH]);
 
 			angle = 0;
-			if (f = FindField ("angle"))			// yaw
-				angle = atof (f->value);
+			if (f = FindField("angle"))			// yaw
+				angle = atof(f->value);
 			if (angle == -1)		// ANGLE_UP
-				slight->spotDir.Set (0, 0, 1);
+				slight->spotDir.Set(0, 0, 1);
 			else if (angle == -2)	// ANGLE_DOWN
-				slight->spotDir.Set (0, 0, -1);
+				slight->spotDir.Set(0, 0, -1);
 			else
 			{
 				if (!angle) angle = ang[YAW];
 				angle *= M_PI / 180.0f;
-				slight->spotDir.Set (cos(angle), sin(angle), 0);
+				slight->spotDir.Set(cos(angle), sin(angle), 0);
 			}
 			// HL have "pitch" support (this code is clean, so - keep it for all map types)
 			angle = 0;
-			if (f = FindField ("pitch"))
-				angle = atof (f->value);
+			if (f = FindField("pitch"))
+				angle = atof(f->value);
 			if (!angle)
 				angle = ang[PITCH];
 			if (angle)
@@ -434,8 +434,8 @@ static bool LoadLight ()
 	{
 		float	cone;
 
-		if (f = FindField ("_cone"))
-			cone = atof (f->value);
+		if (f = FindField("_cone"))
+			cone = atof(f->value);
 		else
 			cone = 10;		// default
 
@@ -443,14 +443,14 @@ static bool LoadLight ()
 		if (bspfile.type == map_q1)
 		{
 			cone = 0;
-			if (f = FindField ("angle"))
-				cone = atof (f->value) / 2;
+			if (f = FindField("angle"))
+				cone = atof(f->value) / 2;
 			if (!cone) cone = 20;
 		}
 
 		slight->spotDot = cos(cone * M_PI / 180.0f);
-		if (f = FindField ("_focus"))
-			slight->focus = atof (f->value);
+		if (f = FindField("_focus"))
+			slight->focus = atof(f->value);
 		else
 			slight->focus = 1;
 	}
@@ -467,40 +467,40 @@ static bool LoadLight ()
 -----------------------------------------------------------------------------*/
 
 #define CHANGE(orig, new)			\
-	if (!strcmp (classname, orig))	\
-		strcpy (classNameField->value, new);
+	if (!strcmp(classname, orig))	\
+		strcpy(classNameField->value, new);
 #define REMOVE(orig)				\
-	if (!strcmp (classname, orig))	\
+	if (!strcmp(classname, orig))	\
 		return false;
 
-static bool ProcessEntity1 ()
+static bool ProcessEntity1()
 {
 	bool resetSpawnflags = false;
 	bool shiftUp = false;
 #define CHANGE0(orig, new)			\
-	if (!strcmp (classname, orig))	\
+	if (!strcmp(classname, orig))	\
 	{								\
-		strcpy (classNameField->value, new); \
+		strcpy(classNameField->value, new); \
 		resetSpawnflags = true;		\
 		shiftUp = true;				\
 	}
 	// teleport
-	if (!strcmp (classname, "trigger_teleport"))
+	if (!strcmp(classname, "trigger_teleport"))
 	{
-		strcpy (classNameField->value, "misc_teleporter");
+		strcpy(classNameField->value, "misc_teleporter");
 		if (entModel)
 		{
 			CVec3 org;
-			entModel->bounds.GetCenter (org);
+			entModel->bounds.GetCenter(org);
 			org[2] = entModel->bounds.mins[2] - 17;
-			AddField ("origin", va("%g %g %g", VECTOR_ARG(org)));
+			AddField("origin", va("%g %g %g", VECTOR_ARG(org)));
 		}
 	}
-	else if (!strcmp (classname, "info_teleport_destination"))
+	else if (!strcmp(classname, "info_teleport_destination"))
 	{
-		strcpy (classNameField->value, "misc_teleporter_dest");
+		strcpy(classNameField->value, "misc_teleporter_dest");
 		entOrigin[2] += 8;
-		strcpy (originField->value, va("%g %g %g", VECTOR_ARG(entOrigin)));
+		strcpy(originField->value, va("%g %g %g", VECTOR_ARG(entOrigin)));
 	}
 	// weapons/ammo
 	// weapon_: q2 have: supershotgun, rocketlauncher, grenadelauncher
@@ -518,15 +518,15 @@ static bool ProcessEntity1 ()
 	else CHANGE0("item_cells", "ammo_slugs")		// lightning
 
 	// item_health
-	else if (!strcmp (classname, "item_health"))
+	else if (!strcmp(classname, "item_health"))
 	{
 		if (spawnflags == 1)						// small, "ROTTEN": 15 points
-			strcpy (classNameField->value, "item_health_small");
+			strcpy(classNameField->value, "item_health_small");
 		else if (spawnflags == 2)					// mega, "MEGA": 100 points w/o limit
-			strcpy (classNameField->value, "item_health_mega");
+			strcpy(classNameField->value, "item_health_mega");
 		else										// normal, 25 points
-			strcpy (classNameField->value, "item_health_large");
-		RemoveField ("spawnflags");
+			strcpy(classNameField->value, "item_health_large");
+		RemoveField("spawnflags");
 		shiftUp = true;
 	}
 
@@ -549,11 +549,11 @@ static bool ProcessEntity1 ()
 //	else CHANGE("trigger_changelevel", "target_changelevel")
 
 	if (resetSpawnflags && spawnflagsField)
-		strcpy (spawnflagsField->value, "0");
+		strcpy(spawnflagsField->value, "0");
 	if (shiftUp)
 	{
 		entOrigin[2] += 20;
-		strcpy (originField->value, va("%g %g %g", VECTOR_ARG(entOrigin)));
+		strcpy(originField->value, va("%g %g %g", VECTOR_ARG(entOrigin)));
 	}
 
 	return true;
@@ -561,40 +561,40 @@ static bool ProcessEntity1 ()
 }
 
 
-static bool ProcessEntityHL ()
+static bool ProcessEntityHL()
 {
 	entField_t *f;
 
 	color_t entColor;
 	entColor.rgba = RGBA(1,1,1,1);
 	// read render properties
-	if (f = FindField ("rendercolor"))
+	if (f = FindField("rendercolor"))
 	{
 #if 0
 		-- used for few "rendermode" types only; not for brush models!
 		int c[3];
-		if (sscanf (f->value, "%f %f %f", VECTOR_ARG(&c)) != 3)
+		if (sscanf(f->value, "%f %f %f", VECTOR_ARG(&c)) != 3)
 			c[0] = c[1] = c[2] = 255;
 		entColor.c[0] = c[0];
 		entColor.c[1] = c[1];
 		entColor.c[2] = c[2];
 #endif
-		RemoveField ("rendercolor");
+		RemoveField("rendercolor");
 	}
-	if (f = FindField ("renderamt"))
+	if (f = FindField("renderamt"))
 	{
-		entColor.c[3] = atoi (f->value);
-		RemoveField ("renderamt");
+		entColor.c[3] = atoi(f->value);
+		RemoveField("renderamt");
 	}
-	if (f = FindField ("rendermode"))
+	if (f = FindField("rendermode"))
 	{
-		int rendermode = atoi (f->value);
+		int rendermode = atoi(f->value);
 		if (rendermode == 0) entColor.c[3] = 255;	// ignore renderamt in rendermode 0 ("normal")
-		RemoveField ("rendermode");
+		RemoveField("rendermode");
 	}
 	else
 		entColor.c[3] = 255;						// default rendermode == 0
-	RemoveField ("renderfx");						//?? use this field
+	RemoveField("renderfx");						//?? use this field
 
 	//?? check: is it possible, that one inline model used by few entities?
 	//?? if so, cannot use CMODEL_LOCAL flag for this model!
@@ -603,11 +603,11 @@ static bool ProcessEntityHL ()
 		entModel->color = entColor;
 		// check ability to remove entity
 		bool canRemove = false;
-		if (!spawnflagsField && !FindField ("*target*"))
+		if (!spawnflagsField && !FindField("*target*"))
 			canRemove = true;
-		else if (f = FindField ("dmg"))
-			canRemove = (strcmp (f->value, "0") == 0);
-		if (!strcmp (classname, "func_ladder"))
+		else if (f = FindField("dmg"))
+			canRemove = (strcmp(f->value, "0") == 0);
+		if (!strcmp(classname, "func_ladder"))
 		{
 			entModel->flags |= CMODEL_CONTENTS|CMODEL_NODRAW; // mark model
 			entModel->contents = CONTENTS_LADDER|CONTENTS_SOLID;
@@ -616,13 +616,13 @@ static bool ProcessEntityHL ()
 				entModel->flags |= CMODEL_WALL;
 				return false;
 			}
-			strcpy (classNameField->value, "func_wall"); // else - replace entity
+			strcpy(classNameField->value, "func_wall"); // else - replace entity
 		}
-		else if (!strcmp (classname, "func_water"))
+		else if (!strcmp(classname, "func_water"))
 		{
-			if (f = FindField ("skin"))
+			if (f = FindField("skin"))
 			{
-				int type = atoi (f->value);
+				int type = atoi(f->value);
 				switch (type)
 				{
 				case Q1_CONTENTS_WATER:
@@ -635,7 +635,7 @@ static bool ProcessEntityHL ()
 					entModel->contents = CONTENTS_LAVA;
 					break;
 				default:
-					Com_DPrintf ("func_water: bad skin=%s\n", f->value);
+					Com_DPrintf("func_water: bad skin=%s\n", f->value);
 					entModel->contents = CONTENTS_SOLID;
 				}
 				entModel->flags |= CMODEL_CONTENTS;
@@ -647,7 +647,7 @@ static bool ProcessEntityHL ()
 				return false;
 			}
 		}
-		else if (!strcmp (classname, "func_wall"))
+		else if (!strcmp(classname, "func_wall"))
 		{
 			if (canRemove)
 			{
@@ -663,7 +663,7 @@ static bool ProcessEntityHL ()
 			if (spawnflagsField) strcpy(spawnflagsField->value,"0");	//??
 			//?? spawnflags & 2 -> visual only (non-solid)
 			// "angle" have encoded CONTENTS_CURRENT_XXX
-			if (f = FindField ("angle"))
+			if (f = FindField("angle"))
 			{
 				static const struct {
 					int angle;
@@ -676,7 +676,7 @@ static bool ProcessEntityHL ()
 					{180, CONTENTS_CURRENT_180},
 					{270, CONTENTS_CURRENT_270}
 				};
-				int a = atoi (f->value);
+				int a = atoi(f->value);
 				unsigned cont = 0;
 				for (int i = 0; i < ARRAY_COUNT(angleCont); i++)
 					if (angleCont[i].angle == a)
@@ -684,7 +684,7 @@ static bool ProcessEntityHL ()
 						cont = angleCont[i].contents;
 						break;
 					}
-				if (!cont) Com_DPrintf ("func_conveyor: unknown angle %d\n", a);
+				if (!cont) Com_DPrintf("func_conveyor: unknown angle %d\n", a);
 				entModel->flags |= CMODEL_CONTENTS;
 				entModel->contents = cont|CONTENTS_SOLID;
 			}
@@ -703,7 +703,7 @@ static bool ProcessEntityHL ()
 			//?? flag: SURF_FLOWING for this entity
 			return false;								// do not send to game
 		}
-		else if (!strcmp (classname, "func_rotating"))
+		else if (!strcmp(classname, "func_rotating"))
 		{
 			if (spawnflags & 64)						// non-solid
 			{
@@ -714,17 +714,17 @@ static bool ProcessEntityHL ()
 			if (spawnflags & (64|128))
 			{
 				spawnflags &= ~(64|128);					// no in HL
-				appSprintf (ARRAY_ARG(spawnflagsField->value), "%d", spawnflags);
+				appSprintf(ARRAY_ARG(spawnflagsField->value), "%d", spawnflags);
 			}
 		}
-		else if (!strcmp (classname, "trigger_push"))
+		else if (!strcmp(classname, "trigger_push"))
 		{
-			if (!FindField ("angle") && !FindField ("angles"))
-				AddField ("angles", "0 0 0");
+			if (!FindField("angle") && !FindField("angles"))
+				AddField("angles", "0 0 0");
 			return false;		//?? cannot get this to work
 		}
 	}
-	if (!strcmp (classname, "env_sprite") || !(strcmp (classname, "env_glow")))
+	if (!strcmp(classname, "env_sprite") || !(strcmp(classname, "env_glow")))
 	{
 		// convert standard effects
 		// default effect is "glow"
@@ -732,9 +732,9 @@ static bool ProcessEntityHL ()
 		if (modelField)
 		{
 			mdl = modelField->value;
-			if (strncmp (mdl, "sprites/", 8) != 0)
+			if (strncmp(mdl, "sprites/", 8) != 0)
 			{
-				Com_DPrintf ("env_sprite: non-sprite model\n");
+				Com_DPrintf("env_sprite: non-sprite model\n");
 				return false;
 			}
 			mdl += 8;									// skip "sprites/"
@@ -742,15 +742,15 @@ static bool ProcessEntityHL ()
 		else
 			mdl = "glow";								// hack ... default model
 		// create lightflare
-		if (strstr (mdl, "flare") || strstr (mdl, "glow"))
+		if (strstr(mdl, "flare") || strstr(mdl, "glow"))
 		{
 			color_t c;
 			c.rgba = entColor.rgba;
-			if (!strncmp (mdl, "blue", 4))
+			if (!strncmp(mdl, "blue", 4))
 				c.rgba = RGB255(0, 192, 255);
-			else if (!strncmp (mdl, "red", 3))
+			else if (!strncmp(mdl, "red", 3))
 				c.rgba = RGB255(255, 0, 64);
-			else if (!strncmp (mdl, "yel", 3))
+			else if (!strncmp(mdl, "yel", 3))
 				c.rgba = RGB255(255, 192, 0);
 
 			lightFlare_t *flare = new (bspfile.extraChain) lightFlare_t;
@@ -765,18 +765,18 @@ static bool ProcessEntityHL ()
 		return false;
 	}
 	// func_breakable
-	else if (!strcmp (classname, "func_breakable"))
+	else if (!strcmp(classname, "func_breakable"))
 	{
 		//!!
-//		strcpy (classNameField->value, "func_explosive");
-		strcpy (classNameField->value, "func_wall");
-		if (spawnflagsField) strcpy (spawnflagsField->value, "0");
+//		strcpy(classNameField->value, "func_explosive");
+		strcpy(classNameField->value, "func_wall");
+		if (spawnflagsField) strcpy(spawnflagsField->value, "0");
 	}
 
 #define CHANGE0(orig, new)			\
-	if (!strcmp (classname, orig))	\
+	if (!strcmp(classname, orig))	\
 	{								\
-		strcpy (classNameField->value, new); \
+		strcpy(classNameField->value, new); \
 		shiftUp = true;				\
 	}
 	bool shiftUp = false;
@@ -806,7 +806,7 @@ static bool ProcessEntityHL ()
 	if (shiftUp)
 	{
 		entOrigin[2] += 20;
-		strcpy (originField->value, va("%g %g %g", VECTOR_ARG(entOrigin)));
+		strcpy(originField->value, va("%g %g %g", VECTOR_ARG(entOrigin)));
 	}
 
 	return true;
@@ -814,21 +814,21 @@ static bool ProcessEntityHL ()
 }
 
 
-static bool ProcessEntityKP ()
+static bool ProcessEntityKP()
 {
 	// check entities to remove
-	if (!strcmp (classname, "junior"))
+	if (!strcmp(classname, "junior"))
 		return false;	// KP "junior" entity
 
 	/*----- check entities with RF2_SURF_ALPHA flags ------*/
 	int chk = 0;
-	if (!strcmp (classname, "func_wall"))
+	if (!strcmp(classname, "func_wall"))
 		chk = 32;
-	else if (!strcmp (classname, "func_door"))
+	else if (!strcmp(classname, "func_door"))
 		chk = 128;
-	else if (!strcmp (classname, "func_door_rotating"))
+	else if (!strcmp(classname, "func_door_rotating"))
 		chk = 4;
-	else if (!strcmp (classname, "func_explosive") || !strcmp (classname, "func_train") || !strcmp (classname, "func_train_rotating"))
+	else if (!strcmp(classname, "func_explosive") || !strcmp(classname, "func_train") || !strcmp(classname, "func_train_rotating"))
 		chk = 8;
 
 	if ((chk & spawnflags) && entModel)
@@ -843,18 +843,18 @@ static bool ProcessEntityKP ()
 }
 
 
-static void ParseWorldSpawn ()
+static void ParseWorldSpawn()
 {
 	entField_t *f;
 	// sky
-	if (bspfile.type == map_kp && !FindField ("sky"))
-		AddField ("sky", "sr");		// set default Kingpin sky
+	if (bspfile.type == map_kp && !FindField("sky"))
+		AddField("sky", "sr");		// set default Kingpin sky
 	if (bspfile.type == map_q1)
-		AddField ("sky", "q1sky");	// do not allow q2 game to set default sky
-	if (bspfile.type == map_hl && (f = FindField ("skyname")))
-		strcpy (f->name, "sky");
+		AddField("sky", "q1sky");	// do not allow q2 game to set default sky
+	if (bspfile.type == map_hl && (f = FindField("skyname")))
+		strcpy(f->name, "sky");
 	// map message
-	if (f = FindField ("message"))
+	if (f = FindField("message"))
 	{
 		// replace
 		char copy[256];
@@ -876,21 +876,21 @@ static void ParseWorldSpawn ()
 //			appPrintf("[%c == %02X\n", d[-1], d[-1]);
 		}
 		*d = 0;
-		strcpy (f->value, copy);
+		strcpy(f->value, copy);
 	}
 	// wads
-	if (bspfile.type == map_hl && (f = FindField ("wad")))
+	if (bspfile.type == map_hl && (f = FindField("wad")))
 	{
 		bspfile.Wads[0] = 0;
 		// parse field: remove path and extension
 		for (TStringSplitter<64, ';'> wad = f->value; wad; ++wad)
 		{
 			if (!wad[0]) continue;
-			const char *s = strrchr (wad, '/');
-			if (!s) s = strrchr (wad, '\\');
+			const char *s = strrchr(wad, '/');
+			if (!s) s = strrchr(wad, '\\');
 			if (!s) s = wad;
 			else	s++;								// skip path separator
-			if (char *ext = strchr (s, '.')) *ext = 0;	// cut extension
+			if (char *ext = strchr(s, '.')) *ext = 0;	// cut extension
 			if (bspfile.Wads[0]) bspfile.Wads += ";";
 			bspfile.Wads += s;
 		}
@@ -898,22 +898,22 @@ static void ParseWorldSpawn ()
 		f->name[0] = 0;
 	}
 	// kp fog
-	if (f = FindField ("fogval"))
+	if (f = FindField("fogval"))
 	{
-		GetVector (f->value, bspfile.fogColor);
-		if (f = FindField ("fogdensity"))
+		GetVector(f->value, bspfile.fogColor);
+		if (f = FindField("fogdensity"))
 		{
-			bspfile.fogDens = atof (f->value);
+			bspfile.fogDens = atof(f->value);
 			bspfile.fogMode = fog_exp;
 		}
-		RemoveField ("fogval");
-		RemoveField ("fogdensity");
+		RemoveField("fogval");
+		RemoveField("fogdensity");
 		// Voodoo fog params
-		RemoveField ("fogval2");
-		RemoveField ("fogdensity2");
+		RemoveField("fogval2");
+		RemoveField("fogdensity2");
 	}
-//	if (f = FindField ("_ambient,light,_minlight")) -- it seems, this is not always true ... detect ambient by outselves (in renderer)
-//		GetVector (f->value, bspfile.ambientLight);
+//	if (f = FindField("_ambient,light,_minlight")) -- it seems, this is not always true ... detect ambient by outselves (in renderer)
+//		GetVector(f->value, bspfile.ambientLight);
 	// sun
 	for (int sunNum = 0; sunNum < MAX_SUNS; sunNum++)
 	{
@@ -921,7 +921,7 @@ static void ParseWorldSpawn ()
 			"", "2", "3", "4"
 		};
 		const char *suffix = sunSuffix[sunNum];
-		if (!FindField (va("_sun%s,_sun%s_*", suffix, suffix)))
+		if (!FindField(va("_sun%s,_sun%s_*", suffix, suffix)))
 			break;
 		// alloc new light
 		slight_t *sun = new (bspfile.extraChain) slight_t;
@@ -931,65 +931,65 @@ static void ParseWorldSpawn ()
 		sun->sun = true;
 		// have ArghRad sun
 		// get sun direction
-		sun->spotDir.Set (0, 0, -1);		// will be default even if incorrect sun with spotlight
-		if (f = FindField (va("_sun%s_vector", suffix)))
+		sun->spotDir.Set(0, 0, -1);		// will be default even if incorrect sun with spotlight
+		if (f = FindField(va("_sun%s_vector", suffix)))
 		{
-			GetVector (f->value, sun->spotDir);
-			sun->spotDir.NormalizeFast ();
+			GetVector(f->value, sun->spotDir);
+			sun->spotDir.NormalizeFast();
 		}
-		else if (f = FindField (va("_sun%s", suffix)))
+		else if (f = FindField(va("_sun%s", suffix)))
 		{
-			strcpy (sunTarget[sunNum], f->value);	// worldspawn always 1st in entstring, so - just remember suntarget
+			strcpy(sunTarget[sunNum], f->value);	// worldspawn always 1st in entstring, so - just remember suntarget
 			sunLight[sunNum] = sun;
 		}
-		else if (f = FindField (va("_sun%s_angle,_sun%s_mangle", suffix, suffix)))
+		else if (f = FindField(va("_sun%s_angle,_sun%s_mangle", suffix, suffix)))
 		{
 			CVec3 ang;
-			sscanf (f->value, "%f %f", &ang[YAW], &ang[PITCH]);
+			sscanf(f->value, "%f %f", &ang[YAW], &ang[PITCH]);
 			ang[PITCH] *= -1;
-			Euler2Vecs (ang, &sun->spotDir, NULL, NULL);
+			Euler2Vecs(ang, &sun->spotDir, NULL, NULL);
 		}
 		// get sun color info
-		if (f = FindField (va("_sun%s_color", suffix)))
+		if (f = FindField(va("_sun%s_color", suffix)))
 		{
-			GetVector (f->value, sun->color);
-			NormalizeColor (sun->color, sun->color);
+			GetVector(f->value, sun->color);
+			NormalizeColor(sun->color, sun->color);
 		}
-		if (f = FindField (va("_sun%s_light", suffix)))
-			sun->intens = atof (f->value);
+		if (f = FindField(va("_sun%s_light", suffix)))
+			sun->intens = atof(f->value);
 		else
 			sun->intens = 200;				// default
 	}
 	// global sun parameters
-	if (f = FindField ("_sun_ambient"))
-		GetVector (f->value, bspfile.sunAmbient);
-	if (f = FindField ("_sun_surface"))
-		GetVector (f->value, bspfile.sunSurface);
+	if (f = FindField("_sun_ambient"))
+		GetVector(f->value, bspfile.sunAmbient);
+	if (f = FindField("_sun_surface"))
+		GetVector(f->value, bspfile.sunSurface);
 }
 
 
 // our map script (temp !! better to use inline shaders/templates?)
-static void ParseSurfparam ()
+static void ParseSurfparam()
 {
 	entField_t *f;
 
-	if (!(f = FindField ("name")))
+	if (!(f = FindField("name")))
 	{
-		Com_DPrintf ("surfparam without \"name\"\n");
+		Com_DPrintf("surfparam without \"name\"\n");
 		return;
 	}
 	const char *name = f->value;
 
-	if (!(f = FindField ("flags")))
+	if (!(f = FindField("flags")))
 	{
-		Com_DPrintf ("no flags specified for \"%s\"\n", name);
+		Com_DPrintf("no flags specified for \"%s\"\n", name);
 		return;
 	}
-	int flags = atoi (f->value);
+	int flags = atoi(f->value);
 
 	int testflags, testmask;
-	if (f = FindField ("inflags"))
-		sscanf (f->value, "%d %d", &testmask, &testflags);
+	if (f = FindField("inflags"))
+		sscanf(f->value, "%d %d", &testmask, &testflags);
 	else
 		testflags = testmask = 0;
 
@@ -997,14 +997,14 @@ static void ParseSurfparam ()
 	int i;
 	dBsp2Texinfo_t *d;
 	for (i = 0, d = bspfile.texinfo2; i < bspfile.numTexinfo; i++, d++)	//?? note: does not works with Q1/HL maps
-		if (appMatchWildcard (d->texture, name, true) && ((d->flags & testmask) == testflags))
+		if (appMatchWildcard(d->texture, name, true) && ((d->flags & testmask) == testflags))
 		{
 			d->flags = d->flags & ~testmask | flags;
 			found = true;
 			// do not "break": process all matching surfaces
 		}
 	if (!found)
-		Com_DPrintf ("texinfo %s is not found\n", name);
+		Com_DPrintf("texinfo %s is not found\n", name);
 }
 
 
@@ -1021,46 +1021,46 @@ int numEntClassNames;
 
 
 // Returns "true" if entity should be passed to game
-static bool ProcessEntity ()
+static bool ProcessEntity()
 {
 	/*------------------ get some fields -------------------*/
 
 	// get classname
-	classNameField = FindField ("classname");
+	classNameField = FindField("classname");
 	classname      = classNameField ? classNameField->value : "";
 
 #if REMOVE_ENTS
 	EXEC_ONCE(appPrintf(S_RED"REMOVING MOST ENTITIES\n"));
-	if (!memcmp (classname, "func_", 5) || !memcmp (classname, "weapon_", 7) || !memcmp (classname, "trigger_", 8) ||
-		!memcmp (classname, "env_", 4) || !memcmp (classname, "ammo_", 5) || !memcmp (classname, "item_", 5)) return false;
+	if (!memcmp(classname, "func_", 5) || !memcmp(classname, "weapon_", 7) || !memcmp(classname, "trigger_", 8) ||
+		!memcmp(classname, "env_", 4) || !memcmp(classname, "ammo_", 5) || !memcmp(classname, "item_", 5)) return false;
 #endif
 
 	// get spawnflags
-	spawnflagsField = FindField ("spawnflags");
-	spawnflags      = spawnflagsField ? atoi (spawnflagsField->value) : 0;
+	spawnflagsField = FindField("spawnflags");
+	spawnflags      = spawnflagsField ? atoi(spawnflagsField->value) : 0;
 #if 0
 #define SPAWNFLAG_NOT_DEATHMATCH	0x800
 	if (Cvar_VariableInt("keep_sp") && (spawnflags & SPAWNFLAG_NOT_DEATHMATCH))//!!
 	{
 		spawnflags &= ~SPAWNFLAG_NOT_DEATHMATCH;
-		appSprintf (f->value, sizeof(f->value), "%d", spawnflags);
+		appSprintf(f->value, sizeof(f->value), "%d", spawnflags);
 	}
 #endif
 	// get origin
-	if (originField = FindField ("origin"))
-		GetVector (originField->value, entOrigin);
+	if (originField = FindField("origin"))
+		GetVector(originField->value, entOrigin);
 	else
-		entOrigin.Zero ();
+		entOrigin.Zero();
 
 	// get inline model
 	entModel = NULL;
-	if (modelField = FindField ("model"))
+	if (modelField = FindField("model"))
 	{
 		//!! note: HL can use different types of models here (non-inline)
-		if (sscanf (modelField->value, "*%d", &modelIdx) == 1)
+		if (sscanf(modelField->value, "*%d", &modelIdx) == 1)
 		{
 			if (modelIdx >= bspfile.numModels)
-				Com_DPrintf ("invalid model index %d\n", modelIdx);
+				Com_DPrintf("invalid model index %d\n", modelIdx);
 			else
 			{
 				entModel = &bspfile.models[modelIdx];
@@ -1074,17 +1074,17 @@ static bool ProcessEntity ()
 	{
 		int i;
 		for (i = 0; i < numEntClassNames; i++)
-			if (!strcmp (entClassNames[i], classname)) break;
+			if (!strcmp(entClassNames[i], classname)) break;
 		if (i >= numEntClassNames)
 		{
 			// not appeared before
 			if (numEntClassNames >= ARRAY_COUNT(entClassCounts)-1)
 			{
 				i = 0;
-				strcpy (entClassNames[0], "<< OVERFLOW >>");
+				strcpy(entClassNames[0], "<< OVERFLOW >>");
 			}
 			numEntClassNames++;
-			strcpy (entClassNames[i], classname);
+			strcpy(entClassNames[i], classname);
 			entClassCounts[i]      = 0;
 			entClassModelCounts[i] = 0;
 		}
@@ -1095,43 +1095,43 @@ static bool ProcessEntity ()
 
 	/*----------- check movable inline models -----------*/
 
-	if (entModel && appMatchWildcard (classname, "func_plat,func_*rotating,func_door,func_train"))
+	if (entModel && appMatchWildcard(classname, "func_plat,func_*rotating,func_door,func_train"))
 		entModel->flags |= CMODEL_MOVABLE;
 
 	/*---------------- get lighting info ----------------*/
 
-	if (!memcmp (classname, "light", 5))
-		return LoadLight ();
+	if (!memcmp(classname, "light", 5))
+		return LoadLight();
 
 	/*---------------------------------------------*/
 
-	if (!strcmp (classname, "worldspawn"))
+	if (!strcmp(classname, "worldspawn"))
 	{
-		ParseWorldSpawn ();
+		ParseWorldSpawn();
 		return true;
 	}
 
-	if (!strcmp (classname, "surfparam"))
+	if (!strcmp(classname, "surfparam"))
 	{
-		ParseSurfparam ();
+		ParseSurfparam();
 		return false;
 	}
 
 	switch (bspfile.type)
 	{
 	case map_q1:
-		if (!ProcessEntity1 ()) return false;
+		if (!ProcessEntity1()) return false;
 		break;
 	case map_hl:
-		if (!ProcessEntityHL ()) return false;
+		if (!ProcessEntityHL()) return false;
 		break;
 	case map_kp:
-		if (!ProcessEntityKP ()) return false;
+		if (!ProcessEntityKP()) return false;
 		break;
 	}
 
 	// q1/hl
-	if (entModel && !strcmp (classname, "func_illusionary"))
+	if (entModel && !strcmp(classname, "func_illusionary"))
 	{
 		entModel->flags |= CMODEL_SHOW;
 		return false;									// use in renderer only
@@ -1139,7 +1139,7 @@ static bool ProcessEntity ()
 
 	/*---------------------------------------------*/
 
-	if (!strcmp (classname, "target_splash"))
+	if (!strcmp(classname, "target_splash"))
 	{
 		if (originField)
 		{
@@ -1162,16 +1162,16 @@ static bool ProcessEntity ()
 }
 
 
-const char *ProcessEntstring (const char *entString)
+const char *ProcessEntstring(const char *entString)
 {
 	guard(ProcessEntstring);
 
 	unsigned plen;
-	char *patch = (char*) GFileSystem->LoadFile (va("%s.add", *bspfile.Name), &plen);
+	char *patch = (char*) GFileSystem->LoadFile(va("%s.add", *bspfile.Name), &plen);
 	plen++;	// add 1 byte for trailing zero
 
 	char *dst, *dst2;
-	dst = dst2 = (char*) bspfile.extraChain->Alloc (strlen (entString) + 1 + plen);
+	dst = dst2 = (char*) bspfile.extraChain->Alloc(strlen(entString) + 1 + plen);
 
 #if ENT_STATS
 	numEntClassNames = 0;
@@ -1180,35 +1180,35 @@ const char *ProcessEntstring (const char *entString)
 	// find all target entities
 	const char *src = entString;
 	numTargets = 0;
-	while (!haveErrors && ReadEntity (src))
-		ProcessEntityTarget ();
+	while (!haveErrors && ReadEntity(src))
+		ProcessEntityTarget();
 
 	// parse main entstring
 	src = entString;
 	haveErrors = false;
-	memset (sunTarget, 0, sizeof(sunTarget));
-	memset (sunLight, 0, sizeof(sunLight));
-	while (!haveErrors && ReadEntity (src))
+	memset(sunTarget, 0, sizeof(sunTarget));
+	memset(sunLight, 0, sizeof(sunLight));
+	while (!haveErrors && ReadEntity(src))
 	{
-		if (ProcessEntity ())
-			WriteEntity (&dst);
+		if (ProcessEntity())
+			WriteEntity(&dst);
 	}
 
 #if ENT_STATS
-	Com_DPrintf ("---- Entity statistics: ----\n-n--ct-mdl-name-------\n");
+	Com_DPrintf("---- Entity statistics: ----\n-n--ct-mdl-name-------\n");
 	for (int num = 0; num < numEntClassNames; num++)
-		Com_DPrintf ("%2d %3d %3d %s\n", num+1, entClassCounts[num], entClassModelCounts[num], entClassNames[num]);
+		Com_DPrintf("%2d %3d %3d %s\n", num+1, entClassCounts[num], entClassModelCounts[num], entClassNames[num]);
 #endif
 
 	// parse patch
 	if (patch)
 	{
-		Com_DPrintf ("Adding entity patch ...\n");
+		Com_DPrintf("Adding entity patch ...\n");
 		src = patch;
-		while (!haveErrors && ReadEntity (src))
+		while (!haveErrors && ReadEntity(src))
 		{
-			if (ProcessEntity ())
-				WriteEntity (&dst);
+			if (ProcessEntity())
+				WriteEntity(&dst);
 		}
 		delete patch;
 	}
@@ -1216,7 +1216,7 @@ const char *ProcessEntstring (const char *entString)
 	if (haveErrors)
 		return entString;
 
-	Com_DPrintf ("ProcessEntstring: size = %d -> %d\n", strlen (entString), dst - dst2);
+	Com_DPrintf("ProcessEntstring: size = %d -> %d\n", strlen(entString), dst - dst2);
 	return dst2;
 
 	unguard;

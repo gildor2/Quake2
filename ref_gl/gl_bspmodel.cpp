@@ -17,14 +17,14 @@ bspModel_t map;
 	Common BSP loading code
 -----------------------------------------------------------------------------*/
 
-static void LoadFlares (lightFlare_t *data, int count)
+static void LoadFlares(lightFlare_t *data, int count)
 {
 	gl_flare_t *out;
 
 	// get leafs/owner for already built flares (from SURF_AUTOFLARE)
 	for (out = map.flares; out; out = out->next)
 	{
-		out->leaf = CM_FindLeaf (out->origin);
+		out->leaf = CM_FindLeaf(out->origin);
 		if (out->surf) out->owner = out->surf->owner;
 	}
 
@@ -36,9 +36,9 @@ static void LoadFlares (lightFlare_t *data, int count)
 		out->size   = data->size;
 		out->radius = data->radius;
 		out->color.rgba = data->color.rgba | RGBA(0,0,0,1);
-		SaturateColor4b (&out->color);
+		SaturateColor4b(&out->color);
 		out->style  = data->style;
-		out->leaf   = CM_FindLeaf (data->origin);
+		out->leaf   = CM_FindLeaf(data->origin);
 		if (data->model)
 			out->owner = map.models + data->model;
 
@@ -51,7 +51,7 @@ static void LoadFlares (lightFlare_t *data, int count)
 
 //??#define MAX_ASPECT	(5.0f / 8)
 
-static void BuildSurfFlare (surfaceBase_t *surf, const color_t *color, float intens)
+static void BuildSurfFlare(surfaceBase_t *surf, const color_t *color, float intens)
 {
 	CVec3	origin, c;
 
@@ -63,9 +63,9 @@ static void BuildSurfFlare (surfaceBase_t *surf, const color_t *color, float int
 
 	float x = (pl->maxs2[0] + pl->mins2[0]) / 2;
 	float y = (pl->maxs2[1] + pl->mins2[1]) / 2;
-	VectorScale (pl->axis[0], x, origin);
-	VectorMA (origin, y, pl->axis[1]);
-	VectorMA (origin, pl->plane.dist + 1, pl->plane.normal);
+	VectorScale(pl->axis[0], x, origin);
+	VectorMA(origin, y, pl->axis[1]);
+	VectorMA(origin, pl->plane.dist + 1, pl->plane.normal);
 
 	gl_flare_t *f = new (map.dataChain) gl_flare_t;
 
@@ -73,19 +73,19 @@ static void BuildSurfFlare (surfaceBase_t *surf, const color_t *color, float int
 	f->surf   = surf;
 //	f->owner  = surf->owner;			// cannot do it: models not yet loaded
 	f->leaf   = NULL;
-	f->size   = sqrt (intens) * 3;
+	f->size   = sqrt(intens) * 3;
 	f->radius = 0;
 	f->style  = 0;
 
 	c[0] = color->c[0];
 	c[1] = color->c[1];
 	c[2] = color->c[2];
-	NormalizeColor255 (c, c);
-	f->color.c[0] = appRound (c[0]);
-	f->color.c[1] = appRound (c[1]);
-	f->color.c[2] = appRound (c[2]);
+	NormalizeColor255(c, c);
+	f->color.c[0] = appRound(c[0]);
+	f->color.c[1] = appRound(c[1]);
+	f->color.c[2] = appRound(c[2]);
 	f->color.c[3] = 255;				// A
-	SaturateColor4b (&f->color);
+	SaturateColor4b(&f->color);
 
 	// insert into list as first
 	f->next = map.flares;
@@ -94,7 +94,7 @@ static void BuildSurfFlare (surfaceBase_t *surf, const color_t *color, float int
 }
 
 
-static void LoadSlights (slight_t *data)
+static void LoadSlights(slight_t *data)
 {
 	// copy slights from map
 	for ( ; data; data = data->next)
@@ -130,7 +130,7 @@ static void LoadSlights (slight_t *data)
 			out = new (map.dataChain) CLightNofade;
 			break;
 		default:
-			Com_DropError ("unknown point sl.type at %g %g %g\n", VECTOR_ARG(data->origin));
+			Com_DropError("unknown point sl.type at %g %g %g\n", VECTOR_ARG(data->origin));
 		}
 		// copy data
 		out->origin  = data->origin;
@@ -160,23 +160,23 @@ static void LoadSlights (slight_t *data)
 		{
 			static const CBox bounds = {{-0.3, -0.3, -0.3}, {0.3, 0.3, 0.3}};
 			trace_t	tr;
-			CM_BoxTrace (tr, out->origin, out->origin, bounds, 0, CONTENTS_SOLID);
-			CM_ClipTraceToModels (tr, out->origin, out->origin, bounds, CONTENTS_SOLID);
+			CM_BoxTrace(tr, out->origin, out->origin, bounds, 0, CONTENTS_SOLID);
+			CM_ClipTraceToModels(tr, out->origin, out->origin, bounds, CONTENTS_SOLID);
 			if (tr.allsolid)
-				VectorMA (out->origin, 0.5f, tr.plane.normal);
+				VectorMA(out->origin, 0.5f, tr.plane.normal);
 			else
 				break;
 		}
 
-		SaturateColor3f (out->color);
+		SaturateColor3f(out->color);
 	}
 }
 
 
-static void BuildSurfLight (surfacePlanar_t *pl, const color_t *color, float area, float intens, bool sky)
+static void BuildSurfLight(surfacePlanar_t *pl, const color_t *color, float area, float intens, bool sky)
 {
 	CVec3	c;
-	c.Set (color->c[0] / 255.0f, color->c[1] / 255.0f, color->c[2] / 255.0f);
+	c.Set(color->c[0] / 255.0f, color->c[1] / 255.0f, color->c[2] / 255.0f);
 
 	if (bspfile.sunCount && sky)
 	{	// have sun -- params may be changed
@@ -200,7 +200,7 @@ static void BuildSurfLight (surfacePlanar_t *pl, const color_t *color, float are
 		else if (m == 0)
 			intens = 0;								// this surface will produce ambient light only
 	}
-	intens *= NormalizeColor (c, c);
+	intens *= NormalizeColor(c, c);
 
 	// create
 	CSurfLight *sl = new (map.dataChain) CSurfLight;
@@ -221,13 +221,13 @@ static void BuildSurfLight (surfacePlanar_t *pl, const color_t *color, float are
 		sl->color[2] *= sl->color[2];
 	}
 
-	SaturateColor3f (sl->color);
+	SaturateColor3f(sl->color);
 
 	pl->light = sl;
 }
 
 
-static void SetNodesAlpha ()
+static void SetNodesAlpha()
 {
 	CBspLeaf *leaf;
 	CBspNode *node;
@@ -248,7 +248,7 @@ static void SetNodesAlpha ()
 }
 
 
-static void LoadLeafsNodes (CBspNode *nodes, int numNodes, CBspLeaf *leafs, int numLeafs)
+static void LoadLeafsNodes(CBspNode *nodes, int numNodes, CBspLeaf *leafs, int numLeafs)
 {
 	int		i;
 
@@ -266,11 +266,11 @@ static void LoadLeafsNodes (CBspNode *nodes, int numNodes, CBspLeaf *leafs, int 
 	}
 
 	// Setup node/leaf parents
-	SetNodesAlpha ();
+	SetNodesAlpha();
 }
 
 
-static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
+static void BuildPlanarSurfAxis(surfacePlanar_t *pl)
 {
 	// generate axis
 	if (pl->plane.normal[2] == 1 || pl->plane.normal[2] == -1)
@@ -283,9 +283,9 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 	{
 		static const CVec3 up = {0, 0, 1};
 
-		cross (pl->plane.normal, up, pl->axis[0]);
-		pl->axis[0].Normalize ();
-		cross (pl->plane.normal, pl->axis[0], pl->axis[1]);
+		cross(pl->plane.normal, up, pl->axis[0]);
+		pl->axis[0].Normalize();
+		cross(pl->plane.normal, pl->axis[0], pl->axis[1]);
 	}
 	// compute 2D bounds
 	float min1, max1, min2, max2;
@@ -295,8 +295,8 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 	vertex_t *v;
 	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
 	{
-		float p1 = dot (v->xyz, pl->axis[0]);
-		float p2 = dot (v->xyz, pl->axis[1]);
+		float p1 = dot(v->xyz, pl->axis[0]);
+		float p2 = dot(v->xyz, pl->axis[1]);
 		v->pos[0] = p1;
 		v->pos[1] = p2;
 		EXPAND_BOUNDS(p1, min1, max1);
@@ -313,7 +313,7 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 	Loading Quake2 BSP file
 -----------------------------------------------------------------------------*/
 
-static void LoadInlineModels2 (CBspModel *data, int count)
+static void LoadInlineModels2(CBspModel *data, int count)
 {
 	inlineModel_t	*out;
 
@@ -323,7 +323,7 @@ static void LoadInlineModels2 (CBspModel *data, int count)
 	for (int i = 0; i < count; i++, data++, out++)
 	{
 		CALL_CONSTRUCTOR(out);
-		out->Name.sprintf ("*%d", i);
+		out->Name.sprintf("*%d", i);
 		out->size = -1;							// do not delete in FreeModels()
 		modelsArray[modelCount++] = out;
 
@@ -345,7 +345,7 @@ static void LoadInlineModels2 (CBspModel *data, int count)
 
 //-------------------------- surface loading ----------------------------------
 
-static unsigned SurfFlagsToShaderFlags2 (unsigned flags)
+static unsigned SurfFlagsToShaderFlags2(unsigned flags)
 {
 	int f = SHADER_WALL;
 	if (flags & SURF_ALPHA)		f |= SHADER_ALPHA;
@@ -360,7 +360,7 @@ static unsigned SurfFlagsToShaderFlags2 (unsigned flags)
 }
 
 
-static bool CanEnvmap (const dBspFace_t *surf, int headnode, CVec3 **pverts, int numVerts)
+static bool CanEnvmap(const dBspFace_t *surf, int headnode, CVec3 **pverts, int numVerts)
 {
 //	if (!gl_autoReflect->integer)		??
 //		return false;
@@ -369,21 +369,21 @@ static bool CanEnvmap (const dBspFace_t *surf, int headnode, CVec3 **pverts, int
 
 	// find middle point
 	assert(numVerts);
-	mid.Zero ();
+	mid.Zero();
 	for (int i = 0; i < numVerts; i++)
-		mid.Add (*pverts[i]);
-	mid.Scale (1.0f / numVerts);
+		mid.Add(*pverts[i]);
+	mid.Scale(1.0f / numVerts);
 	// get trace points
 	CVec3 &norm = (bspfile.planes + surf->planenum)->normal;
 	// vector with length 1 is not enough for non-axial surfaces
-	VectorMA (mid,  2, norm, p1);
-	VectorMA (mid, -2, norm, p2);
+	VectorMA(mid,  2, norm, p1);
+	VectorMA(mid, -2, norm, p2);
 	// perform trace
 	trace_t	trace;
 	//?? can add MASK_WATER to contents, and make Alice-line water with envmap and distorted normal
-	if (surf->side) Exchange (p1, p2);
-	CM_BoxTrace (trace, p1, p2, nullBox, headnode, MASK_SOLID);
-	CM_ClipTraceToModels (trace, p1, p2, nullBox, MASK_SOLID);
+	if (surf->side) Exchange(p1, p2);
+	CM_BoxTrace(trace, p1, p2, nullBox, headnode, MASK_SOLID);
+	CM_ClipTraceToModels(trace, p1, p2, nullBox, MASK_SOLID);
 	if (trace.fraction < 1 && !(trace.contents & CONTENTS_MIST))	//?? make MYST to be non-"alpha=f(angle)"-dependent
 		return true;
 
@@ -391,7 +391,7 @@ static bool CanEnvmap (const dBspFace_t *surf, int headnode, CVec3 **pverts, int
 }
 
 
-static shader_t *CreateSurfShader2 (unsigned sflags, const dBsp2Texinfo_t *stex, const dBsp2Texinfo_t *mapTextures)
+static shader_t *CreateSurfShader2(unsigned sflags, const dBsp2Texinfo_t *stex, const dBsp2Texinfo_t *mapTextures)
 {
 	if (sflags & SHADER_SKY)
 	{
@@ -406,7 +406,7 @@ static shader_t *CreateSurfShader2 (unsigned sflags, const dBsp2Texinfo_t *stex,
 	int numTextures = 0;
 	while (true)
 	{
-		pname += appSprintf (pname, MAX_QPATH, "textures/%s", ptex->texture) + 1;	// length(format)+1
+		pname += appSprintf(pname, MAX_QPATH, "textures/%s", ptex->texture) + 1;	// length(format)+1
 		numTextures++;
 
 		int n = ptex->nexttexinfo;
@@ -417,15 +417,15 @@ static shader_t *CreateSurfShader2 (unsigned sflags, const dBsp2Texinfo_t *stex,
 	*pname = 0;						// make zero (NULL string) after ASCIIZ string
 
 	if (numTextures > MAX_STAGE_TEXTURES)
-		appWPrintf ("%s: animation chain is too long (%d)\n", stex->texture, numTextures);
+		appWPrintf("%s: animation chain is too long (%d)\n", stex->texture, numTextures);
 	else if (numTextures > 1)
 		sflags |= SHADER_ANIM;
 
-	return FindShader (textures, sflags);
+	return FindShader(textures, sflags);
 }
 
 
-static unsigned *GetQ1Palette ()
+static unsigned *GetQ1Palette()
 {
 	static unsigned q1palette[256];
 	static bool loaded = false;
@@ -434,9 +434,9 @@ static unsigned *GetQ1Palette ()
 	loaded = true;
 
 	// get the palette
-	byte *pal = (byte*)GFileSystem->LoadFile ("gfx/palette.lmp");
+	byte *pal = (byte*)GFileSystem->LoadFile("gfx/palette.lmp");
 //	if (!pal) //-- file always exists now (resource)
-//		Com_DropError ("Can not load gfx/palette");
+//		Com_DropError("Can not load gfx/palette");
 
 	const byte *p = pal;
 	for (int i = 0; i < 256; i++, p += 3)
@@ -452,14 +452,14 @@ static unsigned *GetQ1Palette ()
 }
 
 
-static void CreatePalettedImage (const char *name, dBsp1Miptex_t *tex, bool useAlpha)
+static void CreatePalettedImage(const char *name, dBsp1Miptex_t *tex, bool useAlpha)
 {
 	if (!tex->offsets[0])
 	{
 		// use wad file! (half-life map)
 		//!!
 
-		//!! CreateImage8 (Name, ......);
+		//!! CreateImage8(Name, ......);
 	}
 	else
 	{
@@ -467,7 +467,7 @@ static void CreatePalettedImage (const char *name, dBsp1Miptex_t *tex, bool useA
 		// find and load inline texture + load shader again
 		unsigned *palette = NULL;
 		if (bspfile.type == map_q1)
-			palette = GetQ1Palette ();
+			palette = GetQ1Palette();
 		else
 		{
 			byte *p = (byte*)(tex+1) + tex->width * tex->height * 85 / 64 + 2;	// 1+1/4+1/16+1/64 = (64+16+4+1)/64 = 85/64
@@ -478,28 +478,28 @@ static void CreatePalettedImage (const char *name, dBsp1Miptex_t *tex, bool useA
 			}
 			// HL uses palette index as translucent
 #if 0
-			if (useAlpha) hlPalette[255] &= LittleLong (RGBA(1,1,1,0));	// keep original color to allow non-translucent use (as HL does)
+			if (useAlpha) hlPalette[255] &= LittleLong(RGBA(1,1,1,0));	// keep original color to allow non-translucent use (as HL does)
 #else
 			if (useAlpha) hlPalette[255] = 0;							// prevent appearance of blue borders
 #endif
 			palette = hlPalette;
 		}
-		if (FindImage (name, IMAGE_PICMIP|IMAGE_MIPMAP|IMAGE_WORLD)) return;	// image may be already created
-		CreateImage8 (name, (byte*)(tex+1), tex->width, tex->height, IMAGE_PICMIP|IMAGE_MIPMAP|IMAGE_WORLD, palette);
+		if (FindImage(name, IMAGE_PICMIP|IMAGE_MIPMAP|IMAGE_WORLD)) return;	// image may be already created
+		CreateImage8(name, (byte*)(tex+1), tex->width, tex->height, IMAGE_PICMIP|IMAGE_MIPMAP|IMAGE_WORLD, palette);
 	}
 }
 
 
-static int FindMiptex1 (const char *texName)
+static int FindMiptex1(const char *texName)
 {
 	for (int i = 0; i < bspfile.miptex1->nummiptex; i++)
-		if (!(stricmp ((char*)bspfile.miptex1 + bspfile.miptex1->dataofs[i], texName)))
+		if (!(stricmp((char*)bspfile.miptex1 + bspfile.miptex1->dataofs[i], texName)))
 			return i;
 	return -1;
 }
 
 
-static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
+static shader_t *CreateSurfShader1(unsigned sflags, const dBsp2Texinfo_t *stex)
 {
 	if (sflags & SHADER_SKY)
 	{
@@ -509,7 +509,7 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 
 	// get pointer to 1st char of real texture name (for hl -- cut wads/wad_name/)
 	const char *srcTexName;
-	if (srcTexName = strrchr (stex->texture, '/'))
+	if (srcTexName = strrchr(stex->texture, '/'))
 		srcTexName++;
 	else
 		srcTexName = stex->texture;
@@ -519,7 +519,7 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 		sflags |= SHADER_ANIM;
 		if (!stex->texture[1])
 		{
-			appWPrintf ("CreateSurfShader1(): bad anim texture name: %s\n", stex->texture);
+			appWPrintf("CreateSurfShader1(): bad anim texture name: %s\n", stex->texture);
 			return gl_defaultShader;
 		}
 	}
@@ -529,11 +529,11 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 	if (!srcTexName[0]) return gl_defaultShader;
 
 	TString<MAX_QPATH> Name;
-	Name.sprintf ("textures/%s", stex->texture);
+	Name.sprintf("textures/%s", stex->texture);
 	char *dstTexName = Name.rchr('/') + 1;
 
 	// check: may be, shader already loaded
-	shader_t *shader = FindShader (Name, sflags|SHADER_CHECKLOADED);
+	shader_t *shader = FindShader(Name, sflags|SHADER_CHECKLOADED);
 	if (shader) return shader;
 
 	if (!(sflags & SHADER_ANIM))
@@ -544,16 +544,16 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 		// try external shader/texture
 		// note: here we clear SHADER_ANIM flag (not needed for scripts, but
 		// FindShader() will require name[MAX_QPATH][numAnimTextures] array)
-		shader = FindShader (Name, (sflags|SHADER_CHECK) & ~SHADER_ANIM);
+		shader = FindShader(Name, (sflags|SHADER_CHECK) & ~SHADER_ANIM);
 		if (shader) return shader;
 	}
 
 	// HERE: shader not yet loaded and have no external texture replacement
 
-	int miptex = FindMiptex1 (dstTexName);	// set in LoadSurfaces1() (cmodel.cpp)
+	int miptex = FindMiptex1(dstTexName);	// set in LoadSurfaces1() (cmodel.cpp)
 	if (miptex < 0)
 	{
-		appWPrintf ("CreateSurfShader1(%s): bad miptex index %d\n", *Name, miptex);
+		appWPrintf("CreateSurfShader1(%s): bad miptex index %d\n", *Name, miptex);
 		return gl_defaultShader;
 	}
 
@@ -574,7 +574,7 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 			if (wrapped && dstTexName[1] == srcTexName[1])
 				break;						// all frames found
 			// get 'miptex' index
-			miptex = FindMiptex1 (dstTexName);
+			miptex = FindMiptex1(dstTexName);
 			if (miptex < 0 && srcTexName[1] != '0' && !wrapped)
 			{
 				// support for animations, started from non-0 frame
@@ -587,10 +587,10 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 
 		// find miptex
 		dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)bspfile.miptex1 + bspfile.miptex1->dataofs[miptex] );
-		CreatePalettedImage (Name, tex, (sflags & SHADER_ALPHA) != 0);
+		CreatePalettedImage(Name, tex, (sflags & SHADER_ALPHA) != 0);
 		// add Name to textures[]
-		strcpy (pname, Name);
-		pname = strchr (pname, 0) + 1;
+		strcpy(pname, Name);
+		pname = strchr(pname, 0) + 1;
 
 		if (!(sflags & SHADER_ANIM)) break;	// not animated shader
 		miptex = -1;						// force next anim texture to be searched
@@ -599,14 +599,14 @@ static shader_t *CreateSurfShader1 (unsigned sflags, const dBsp2Texinfo_t *stex)
 	*pname = 0;								// make zero (NULL string) after ASCIIZ string
 	// create shader
 
-	shader = FindShader (textures, sflags);
+	shader = FindShader(textures, sflags);
 	if (sflags & SHADER_ANIM)
-		SetShaderAnimFreq (shader, bspfile.type == map_q1 ? 5 : 10);	// q1/hl animation frequency
+		SetShaderAnimFreq(shader, bspfile.type == map_q1 ? 5 : 10);	// q1/hl animation frequency
 	return shader;
 }
 
 
-static void InitSurfaceLightmap2 (const dBspFace_t *face, surfacePlanar_t *surf, float mins[2], float maxs[2])
+static void InitSurfaceLightmap2(const dBspFace_t *face, surfacePlanar_t *surf, float mins[2], float maxs[2])
 {
 	int		size[2];				// lightmap size
 	int		imins[2], imaxs[2];		// int mins/maxs, aligned to lightmap grid
@@ -648,7 +648,7 @@ static void InitSurfaceLightmap2 (const dBspFace_t *face, surfacePlanar_t *surf,
 }
 
 
-static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *surfedges, const dEdge_t *edges,
+static void LoadSurfaces2(const dBspFace_t *surfs, int numSurfaces, const int *surfedges, const dEdge_t *edges,
 	CVec3 *verts, const dBsp2Texinfo_t *tex, const CBspModel *models, int numModels)
 {
 	int		j;
@@ -673,7 +673,7 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 
 		/*---- Generate shader with name and SURF_XXX flags ----*/
 		const dBsp2Texinfo_t *stex = tex + surfs->texinfo;
-		unsigned sflags = SurfFlagsToShaderFlags2 (stex->flags);
+		unsigned sflags = SurfFlagsToShaderFlags2(stex->flags);
 
 		// find owner model
 		const CBspModel *owner;
@@ -703,7 +703,7 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 		if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_FORCEALPHA) && !(sflags &
 			(SHADER_ENVMAP|SHADER_ENVMAP2|SHADER_TURB|SHADER_SCROLL)))	// && gl_autoReflect ??
 		{
-			if (CanEnvmap (surfs, owner->headnode, pverts, numVerts))
+			if (CanEnvmap(surfs, owner->headnode, pverts, numVerts))
 				sflags |= SHADER_ENVMAP;
 		}
 
@@ -716,16 +716,16 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 				// get color of sun surface
 				if (map.sunSurfColor[0] + map.sunSurfColor[1] + map.sunSurfColor[2] == 0)
 				{
-					image_t *img = FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP|IMAGE_PICMIP);	// find sky image only for taking its color
+					image_t *img = FindImage(va("textures/%s", stex->texture), IMAGE_MIPMAP|IMAGE_PICMIP);	// find sky image only for taking its color
 					if (img)
 					{
 						// do not require to divide by 255: will be normalized anyway
 						// NOTE: here byte c[4] -> float[3]
-						map.sunSurfColor.Set (VECTOR_ARG(img->color.c));
-						NormalizeColor (map.sunSurfColor, map.sunSurfColor);
+						map.sunSurfColor.Set(VECTOR_ARG(img->color.c));
+						NormalizeColor(map.sunSurfColor, map.sunSurfColor);
 					}
 					else
-						map.sunSurfColor.Set (1, 1, 1);
+						map.sunSurfColor.Set(1, 1, 1);
 				}
 			}
 			else
@@ -756,12 +756,12 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 
 		// create shader for surface
 		shader_t *shader = (bspfile.type == map_q2 || bspfile.type == map_kp)
-			? CreateSurfShader2 (sflags, stex, tex)
-			: CreateSurfShader1 (sflags, stex);
+			? CreateSurfShader2(sflags, stex, tex)
+			: CreateSurfShader1(sflags, stex);
 		//?? update sflags from this (created) shader -- it may be scripted (with different flags)
 
 		if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA|SHADER_TURB|SHADER_SKY))
-			numVerts = RemoveCollinearPoints (pverts, numVerts);
+			numVerts = RemoveCollinearPoints(pverts, numVerts);
 
 		/* numTriangles = numVerts - 2 (3 verts = 1 tri, 4 verts = 2 tri etc.)
 		 * numIndexes = numTriangles * 3
@@ -770,7 +770,7 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 		int numTris;
 		if (shader->tessSize)
 		{
-			numTris  = SubdividePlane (pverts, numVerts, shader->tessSize);
+			numTris  = SubdividePlane(pverts, numVerts, shader->tessSize);
 			numVerts = subdivNumVerts;
 		}
 		else
@@ -780,7 +780,7 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 
 		/*------- Prepare for vertex generation ----------------*/
 		// alloc new surface
-		surfacePlanar_t *s = (surfacePlanar_t*) map.dataChain->Alloc (sizeof(surfacePlanar_t) + sizeof(vertex_t)*numVerts + sizeof(int)*numIndexes);
+		surfacePlanar_t *s = (surfacePlanar_t*) map.dataChain->Alloc(sizeof(surfacePlanar_t) + sizeof(vertex_t)*numVerts + sizeof(int)*numIndexes);
 		CALL_CONSTRUCTOR(s);
 		s->shader = shader;
 		map.faces[i] = s;
@@ -789,9 +789,9 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 		if (surfs->side)
 		{
 			// backface (needed for backface culling)
-			s->plane.normal.Negate ();
+			s->plane.normal.Negate();
 			s->plane.dist = -s->plane.dist;
-			s->plane.Setup ();
+			s->plane.Setup();
 		}
 		s->numVerts   = numVerts;
 		s->verts      = (vertex_t *) (s+1);	//!!! allocate verts separately (for fast draw - in AGP memory)
@@ -800,7 +800,7 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 
 		/*-------------- Generate indexes ----------------------*/
 		if (shader->tessSize)
-			GetSubdivideIndexes (s->indexes);
+			GetSubdivideIndexes(s->indexes);
 		else
 		{
 			int *pindex = s->indexes;
@@ -814,23 +814,23 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 
 		/*----------- Create surface vertexes ------------------*/
 		vertex_t *v = s->verts;
-		// ClearBounds2D (mins, maxs)
+		// ClearBounds2D(mins, maxs)
 		float mins[2], maxs[2];				// surface extents
 		mins[0] = mins[1] =  BIG_NUMBER;
 		maxs[0] = maxs[1] = -BIG_NUMBER;
-		s->bounds.Clear ();
+		s->bounds.Clear();
 		// Enumerate vertexes
 		for (j = 0; j < numVerts; j++, v++)
 		{
 			v->xyz = *pverts[j];
 			if (sflags & SHADER_SKY) continue;
 
-			float v1 = dot (v->xyz, stex->vecs[0].vec) + stex->vecs[0].offset;
-			float v2 = dot (v->xyz, stex->vecs[1].vec) + stex->vecs[1].offset;
+			float v1 = dot(v->xyz, stex->vecs[0].vec) + stex->vecs[0].offset;
+			float v2 = dot(v->xyz, stex->vecs[1].vec) + stex->vecs[1].offset;
 			// Update bounds
 			EXPAND_BOUNDS(v1, mins[0], maxs[0]);
 			EXPAND_BOUNDS(v2, mins[1], maxs[1]);
-			s->bounds.Expand (v->xyz);
+			s->bounds.Expand(v->xyz);
 			// Texture coordinates
 			if (!(sflags & SHADER_TURB)) //?? (!shader->tessSize)
 			{
@@ -853,7 +853,7 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 		/*----------------- Lightmap -------------------*/
 		s->lightmap = NULL;
 		if (needLightmap)
-			InitSurfaceLightmap2 (surfs, s, mins, maxs);
+			InitSurfaceLightmap2(surfs, s, mins, maxs);
 		// special case for q1/hl lightmap without data: dark lightmap
 		// (other map formats -- fullbright texture)
 		if (darkLightmap)
@@ -872,28 +872,28 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 			lm->externalSource = true;
 		}
 
-		BuildPlanarSurfAxis (s);
+		BuildPlanarSurfAxis(s);
 		if (stex->flags & SURF_LIGHT)		//!! + sky when ambient <> 0
 		{
 			static const color_t defColor = {96, 96, 96, 255};// {255, 255, 255, 255};
 
-			float area = GetPolyArea (pverts, numVerts);
-			image_t *img = FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP);
-			BuildSurfLight (s, img ? &img->color : &defColor, area, stex->value, (stex->flags & SURF_SKY) != 0);
+			float area = GetPolyArea(pverts, numVerts);
+			image_t *img = FindImage(va("textures/%s", stex->texture), IMAGE_MIPMAP);
+			BuildSurfLight(s, img ? &img->color : &defColor, area, stex->value, (stex->flags & SURF_SKY) != 0);
 			if (stex->flags & SURF_AUTOFLARE && !(stex->flags & SURF_SKY))
-				BuildSurfFlare (s, img ? &img->color : &defColor, area);
+				BuildSurfFlare(s, img ? &img->color : &defColor, area);
 		}
 
 		// free allocated poly
 		if (shader->tessSize)
-			FreeSubdividedPlane ();
+			FreeSubdividedPlane();
 	}
 }
 
 
 //------------------------ loading surface lightmaps --------------------------
 
-static int LightmapCompare (surfacePlanar_t* const* s1, surfacePlanar_t* const* s2)
+static int LightmapCompare(surfacePlanar_t* const* s1, surfacePlanar_t* const* s2)
 {
 	const surfacePlanar_t *surf1 = *s1, *surf2 = *s2;
 
@@ -915,12 +915,12 @@ static int LightmapCompare (surfacePlanar_t* const* s1, surfacePlanar_t* const* 
 	return v1 - v2;
 }
 
-static int ShaderCompare (surfacePlanar_t* const* surf1, surfacePlanar_t* const* surf2)
+static int ShaderCompare(surfacePlanar_t* const* surf1, surfacePlanar_t* const* surf2)
 {
 	return (*surf1)->shader->sortIndex - (*surf2)->shader->sortIndex;
 }
 
-static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
+static void GenerateLightmaps2(byte *lightData, int lightDataSize)
 {
 	guard(GenerateLightmaps2);
 
@@ -931,7 +931,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 
 	// NOTE: we assume here, that all Q2-bsp map faces are of surfacePlanar_t type
 
-	LM_Init ();		// reset lightmap status (even when vertex lighting used)
+	LM_Init();		// reset lightmap status (even when vertex lighting used)
 
 	int optLmTexels = 0;
 
@@ -950,7 +950,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			if (map.monoLightmap) continue;				//?? add q1 map support here
 			// optimize lightmaps
 			color_t avg;
-			if (LM_IsMonotone (dl, &avg))
+			if (LM_IsMonotone(dl, &avg))
 			{
 				//!! if no mtex (+env_add/env_combine) -- use 1-pixel lm; otherwise -- vertex lm
 				//?? can check avg color too: if c[i] < 128 -- can be doubled, so -- vertex light
@@ -973,20 +973,20 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 				{
 					// convert to a vertex lightmap
 					//!! UNFINISHED: need SPECIAL vertex lm, which will be combined with dyn. lm with ENV_ADD
-					s->shader = FindShader (s->shader->Name, s->shader->style | SHADER_TRYLIGHTMAP);
+					s->shader = FindShader(s->shader->Name, s->shader->style | SHADER_TRYLIGHTMAP);
 					optLmTexels += dl->w * dl->h;
 				}
 			}
 		}
 	}
-	Com_DPrintf ("removed %d lm texels (%.3f blocks)\n", optLmTexels, (float)optLmTexels / (LIGHTMAP_SIZE * LIGHTMAP_SIZE));
+	Com_DPrintf("removed %d lm texels (%.3f blocks)\n", optLmTexels, (float)optLmTexels / (LIGHTMAP_SIZE * LIGHTMAP_SIZE));
 
 	/*------------ find invalid lightmaps -------------*/
 	// sort surfaces by lightmap data pointer
 	if (lightDataSize)
 	{
 		// when map have no lightmaps, we do not need to sort them
-		QSort (sortedSurfaces, map.numFaces, LightmapCompare);
+		QSort(sortedSurfaces, map.numFaces, LightmapCompare);
 	}
 
 	// check for lightmap intersection
@@ -1017,10 +1017,10 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			if (s->shader->lightmapNumber != LIGHTMAP_NONE)
 			{
 				// later (in this function), just don't create vertex colors for this surface
-				Com_DPrintf ("Disable lm for %s\n", *s->shader->Name);
-				SetShaderLightmap (s->shader, LIGHTMAP_NONE);
-//				appPrintf ("  diff: %d\n", ptr - dl->source[0]);
-//				appPrintf ("  w: %d  h: %d  st: %d\n", dl->w, dl->h, dl->numStyles);
+				Com_DPrintf("Disable lm for %s\n", *s->shader->Name);
+				SetShaderLightmap(s->shader, LIGHTMAP_NONE);
+//				appPrintf("  diff: %d\n", ptr - dl->source[0]);
+//				appPrintf("  w: %d  h: %d  st: %d\n", dl->w, dl->h, dl->numStyles);
 			}
 			continue;
 		}
@@ -1030,9 +1030,9 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 		}
 
 		// after this examination. we can resort lightstyles (cannot do this earlier because used source[0])
-		LM_SortLightStyles (dl);
+		LM_SortLightStyles(dl);
 		if (!map.monoLightmap)
-			LM_CheckMinlight (dl);		//?? check for q1 minlight ?
+			LM_CheckMinlight(dl);		//?? check for q1 minlight ?
 		// set shader lightstyles
 		if (s->shader->lightmapNumber >= 0)
 		{
@@ -1052,7 +1052,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 				else
 					fastOnly = false;
 			}
-			if (styles) s->shader = SetShaderLightstyles (s->shader, styles, fastOnly);
+			if (styles) s->shader = SetShaderLightstyles(s->shader, styles, fastOnly);
 		}
 	}
 
@@ -1069,14 +1069,14 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			continue;
 		}
 
-		UpdateDynamicLightmap (s, true, 0);
+		UpdateDynamicLightmap(s, true, 0);
 	}
 
 	/*----------- allocate lightmaps for surfaces -----------*/
 	if (!gl_config.vertexLight)
 	{
 		// resort surfaces by shader
-		QSort (sortedSurfaces, map.numFaces, ShaderCompare);
+		QSort(sortedSurfaces, map.numFaces, ShaderCompare);
 
 		lightmapBlock_t *bl = NULL;
 		i = 0;
@@ -1098,21 +1098,21 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			int nextIndex = i2;
 
 			// try to allocate all surfaces in a single lightmap block
-			LM_Rewind ();
+			LM_Rewind();
 			bool fit = false;
 			while (!fit)
 			{
-				bl = LM_NextBlock ();
-				LM_Save (bl);					// save layout
+				bl = LM_NextBlock();
+				LM_Save(bl);					// save layout
 				for (i2 = i; i2 < nextIndex; i2++)
 				{
-					fit = LM_AllocBlock (bl, sortedSurfaces[i2]->lightmap);
+					fit = LM_AllocBlock(bl, sortedSurfaces[i2]->lightmap);
 					if (!fit)
 					{
 						if (bl->empty)
 						{	// not fit to EMPTY block -- allocate multiple blocks
-							LM_Restore (bl);	// restore layout
-							LM_Rewind ();
+							LM_Restore(bl);		// restore layout
+							LM_Rewind();
 							bl = NULL;			// do not repeat "Restore()"
 							fit = true;
 							break;
@@ -1120,30 +1120,30 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 						break;
 					}
 				}
-				if (bl) LM_Restore (bl);		// ...
-				else	bl = LM_NextBlock ();	// was not fit to one block - use 1st available block
+				if (bl) LM_Restore(bl);			// ...
+				else	bl = LM_NextBlock();	// was not fit to one block - use 1st available block
 			}
 
 			// Here: all surfaces fits "bl" block, or allocate multiple blocks started from "bl"
 			for (i2 = i; i2 < nextIndex; i2++)
 			{
 				dl = sortedSurfaces[i2]->lightmap;
-				while (!LM_AllocBlock (bl, dl))
+				while (!LM_AllocBlock(bl, dl))
 				{
 					if (bl->empty)
-						Com_DropError ("LM_AllocBlock: unable to allocate lightmap %d x %d\n", dl->w, dl->h);
-					LM_Flush (bl);				// finilize block
-					bl = LM_NextBlock ();
+						Com_DropError("LM_AllocBlock: unable to allocate lightmap %d x %d\n", dl->w, dl->h);
+					LM_Flush(bl);				// finilize block
+					bl = LM_NextBlock();
 				}
 				if (!map.monoLightmap)
-					LM_PutBlock (dl);
+					LM_PutBlock(dl);
 				else
-					LM_PutBlock1 (dl);
+					LM_PutBlock1(dl);
 			}
 
 			i = nextIndex;
 		}
-		LM_Done ();
+		LM_Done();
 
 		// update surfaces
 		for (i = 0; i < map.numFaces; i++)
@@ -1153,7 +1153,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			if (!dl || !dl->block) continue;
 
 			// set lightmap for shader
-			s->shader = SetShaderLightmap (s->shader, dl->block->index);
+			s->shader = SetShaderLightmap(s->shader, dl->block->index);
 
 			// update vertex lightmap coords
 			float s0 = (float)dl->s / LIGHTMAP_SIZE;
@@ -1173,7 +1173,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 
 
 // Q3's leafFaces are int, Q1/2 - short
-static void LoadLeafSurfaces2 (const unsigned short *data, int count)
+static void LoadLeafSurfaces2(const unsigned short *data, int count)
 {
 	surfaceBase_t **out;
 
@@ -1184,22 +1184,22 @@ static void LoadLeafSurfaces2 (const unsigned short *data, int count)
 }
 
 
-static void LoadBsp2 ()
+static void LoadBsp2()
 {
 	guard(LoadBsp2);
 
 	// Load surfaces
 START_PROFILE(LoadSurfaces2)
-	LoadSurfaces2 (bspfile.faces2, bspfile.numFaces, bspfile.surfedges, bspfile.edges, bspfile.vertexes2,
+	LoadSurfaces2(bspfile.faces2, bspfile.numFaces, bspfile.surfedges, bspfile.edges, bspfile.vertexes2,
 		bspfile.texinfo2, bspfile.models, bspfile.numModels);
 END_PROFILE
-	LoadLeafSurfaces2 (bspfile.leaffaces2, bspfile.numLeaffaces);
+	LoadLeafSurfaces2(bspfile.leaffaces2, bspfile.numLeaffaces);
 START_PROFILE(GenerateLightmaps2)
-	GenerateLightmaps2 (bspfile.lighting, bspfile.lightDataSize);
+	GenerateLightmaps2(bspfile.lighting, bspfile.lightDataSize);
 END_PROFILE
 	// Load bsp (leafs and nodes)
-	LoadLeafsNodes (bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);
-	LoadInlineModels2 (bspfile.models, bspfile.numModels);
+	LoadLeafsNodes(bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);
+	LoadInlineModels2(bspfile.models, bspfile.numModels);
 
 	switch (bspfile.fogMode)
 	{
@@ -1220,7 +1220,7 @@ END_PROFILE
 		gl_fogMode = 0;
 	}
 	if (bspfile.fogMode)
-		memcpy (gl_fogColor, bspfile.fogColor.v, sizeof(bspfile.fogColor));	// bspfile.fogColor is [3], but gl_fogColor is [4]
+		memcpy(gl_fogColor, bspfile.fogColor.v, sizeof(bspfile.fogColor));	// bspfile.fogColor is [3], but gl_fogColor is [4]
 	else
 		gl_fogColor[0] = gl_fogColor[1] = gl_fogColor[2] = 0;
 	gl_fogColor[3] = 1;
@@ -1233,14 +1233,14 @@ END_PROFILE
 	Loading Quake1/Half-Life BSP file
 -----------------------------------------------------------------------------*/
 
-static void LoadSky1 ()
+static void LoadSky1()
 {
 	if (bspfile.type != map_q1) return;
 
 	// find sky texinfo
 	int miptex = -1;
 	for (int i = 0; i < bspfile.miptex1->nummiptex; i++)
-		if (!(strncmp ((char*)bspfile.miptex1 + bspfile.miptex1->dataofs[i], "sky", 3)))
+		if (!(strncmp((char*)bspfile.miptex1 + bspfile.miptex1->dataofs[i], "sky", 3)))
 		{
 			// found
 			miptex = i;
@@ -1252,7 +1252,7 @@ static void LoadSky1 ()
 	dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)bspfile.miptex1 + bspfile.miptex1->dataofs[miptex] );
 	if (tex->width != 256 || tex->height != 128)
 	{
-		Com_DPrintf ("sky texture \"%s\" have wring size (%d x %d)\n", tex->name, tex->width, tex->height);
+		Com_DPrintf("sky texture \"%s\" have wring size (%d x %d)\n", tex->name, tex->width, tex->height);
 		return;
 	}
 
@@ -1264,15 +1264,15 @@ static void LoadSky1 ()
 		for (int y = 0; y < 128; y++)
 		{
 			// NOTE: q1 uses color index #0 in mask texture as completely transparent
-			memcpy (buf + y*128, data, 128);
+			memcpy(buf + y*128, data, 128);
 			data += 256;
 		}
-		CreateImage8 (va("env/q1sky_%s", names[idx]), buf, 128, 128, IMAGE_WORLD, GetQ1Palette ());
+		CreateImage8(va("env/q1sky_%s", names[idx]), buf, 128, 128, IMAGE_WORLD, GetQ1Palette());
 	}
 }
 
 
-static void LoadBsp1 ()
+static void LoadBsp1()
 {
 	guard(LoadBsp1);
 
@@ -1280,17 +1280,17 @@ static void LoadBsp1 ()
 
 	// Load surfaces
 START_PROFILE(LoadSurfaces2)
-	LoadSurfaces2 (bspfile.faces2, bspfile.numFaces, bspfile.surfedges, bspfile.edges, bspfile.vertexes2,
+	LoadSurfaces2(bspfile.faces2, bspfile.numFaces, bspfile.surfedges, bspfile.edges, bspfile.vertexes2,
 		bspfile.texinfo2, bspfile.models, bspfile.numModels);
 END_PROFILE
-	LoadLeafSurfaces2 (bspfile.leaffaces2, bspfile.numLeaffaces);
+	LoadLeafSurfaces2(bspfile.leaffaces2, bspfile.numLeaffaces);
 START_PROFILE(GenerateLightmaps2)
-	GenerateLightmaps2 (bspfile.lighting, bspfile.lightDataSize);
+	GenerateLightmaps2(bspfile.lighting, bspfile.lightDataSize);
 END_PROFILE
 	// Load bsp (leafs and nodes)
-	LoadLeafsNodes (bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);
-	LoadInlineModels2 (bspfile.models, bspfile.numModels);
-	LoadSky1 ();
+	LoadLeafsNodes(bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);
+	LoadInlineModels2(bspfile.models, bspfile.numModels);
+	LoadSky1();
 
 	unguard;
 }
@@ -1300,11 +1300,11 @@ END_PROFILE
 	LoadWorldMap()
 -----------------------------------------------------------------------------*/
 
-void LoadWorldMap ()
+void LoadWorldMap()
 {
 	guard(LoadWorldMap);
 
-	FreeModels ();					// will zero `map'
+	FreeModels();					// will zero `map'
 	map.dataChain = new CMemoryChain;
 
 	STAT(clock(gl_ldStats.bspLoad));
@@ -1319,28 +1319,28 @@ void LoadWorldMap ()
 	{
 	case map_q2:
 	case map_kp:
-		LoadBsp2 ();
+		LoadBsp2();
 		// get ambient light from lightmaps (place to all map types ??)
 		if (map.ambientLight[0] + map.ambientLight[1] + map.ambientLight[2] == 0)
 		{
 			map.ambientLight[0] = lmMinlight.c[0] * 2;
 			map.ambientLight[1] = lmMinlight.c[1] * 2;
 			map.ambientLight[2] = lmMinlight.c[2] * 2;
-			Com_DPrintf ("Used minlight from lightmap {%d, %d, %d}\n", VECTOR_ARG(lmMinlight.c));
+			Com_DPrintf("Used minlight from lightmap {%d, %d, %d}\n", VECTOR_ARG(lmMinlight.c));
 		}
 		break;
 	case map_q1:
 	case map_hl:
-		LoadBsp1 ();
+		LoadBsp1();
 		//?? ambient light?
 		break;
 	default:
-		Com_DropError ("R_LoadWorldMap: unknown BSP type");
+		Com_DropError("R_LoadWorldMap: unknown BSP type");
 	}
-	LoadFlares (bspfile.flares, bspfile.numFlares);
-	LoadSlights (bspfile.slights);
-	PostLoadLights ();
-	InitLightGrid ();
+	LoadFlares(bspfile.flares, bspfile.numFlares);
+	LoadSlights(bspfile.slights);
+	PostLoadLights();
+	InitLightGrid();
 	STAT(unclock(gl_ldStats.bspLoad));
 
 	unguard;

@@ -12,7 +12,7 @@
 #undef M_PI
 #define M_PI				(3.14159265358979323846)
 
-CORE_API float appRsqrt (float number);
+CORE_API float appRsqrt(float number);
 #define SQRTFAST(x)			(x * appRsqrt(x))
 
 #if 1
@@ -20,7 +20,7 @@ CORE_API float appRsqrt (float number);
 #define uint_cast(f)		(reinterpret_cast<unsigned&>(f))
 #define uint_cast_const(f)	(reinterpret_cast<const unsigned&>(f))
 
-inline unsigned IsNegative (float f)
+inline unsigned IsNegative(float f)
 {
 	return uint_cast(f) >> 31;
 }
@@ -32,18 +32,18 @@ inline unsigned IsNegative (float f)
 		s = mask >> 31;	\
 	}
 
-inline void FAbs (float &a)
+inline void FAbs(float &a)
 {
 	uint_cast(a) &= 0x7FFFFFFF;
 }
 
 // NOTE: FNegate(0) will produce -0 (0x00000000 -> 0x80000000)
-inline void FNegate (const float &a, float &b)
+inline void FNegate(const float &a, float &b)
 {
 	uint_cast(b) = uint_cast_const(a) ^ 0x80000000;
 }
 
-inline void FNegate (float &a)
+inline void FNegate(float &a)
 {
 	uint_cast(a) ^= 0x80000000;
 }
@@ -65,16 +65,16 @@ inline unsigned IsNegative(f)
 		d = fabs(f);		\
 	}
 
-inline void FAbs (float &a)
+inline void FAbs(float &a)
 {
-	a = fabs (a);
+	a = fabs(a);
 }
 
-inline void FNegate (const float &a, float &b)
+inline void FNegate(const float &a, float &b)
 {
 	b = -a;
 }
-inline void FNegate (float &a)
+inline void FNegate(float &a)
 {
 	a = -a;
 }
@@ -110,8 +110,8 @@ union color_t
 #define RGBS(r,g,b)			(appRound((r)*255) | (appRound((g)*255)<<8) | (appRound((b)*255)<<16) | (255<<24))
 
 
-CORE_API float NormalizeColor (const CVec3 &in, CVec3 &out);
-CORE_API float NormalizeColor255 (const CVec3 &in, CVec3 &out);
+CORE_API float NormalizeColor(const CVec3 &in, CVec3 &out);
+CORE_API float NormalizeColor255(const CVec3 &in, CVec3 &out);
 
 //?? NOTE: small values will not be normalized (so - rename to CLAMP_COLOR() ?)
 #define NORMALIZE_COLOR255(r,g,b) \
@@ -126,4 +126,4 @@ CORE_API float NormalizeColor255 (const CVec3 &in, CVec3 &out);
 		b = b * m >> 16;	\
 	}
 
-CORE_API float ClampColor255 (const CVec3 &in, CVec3 &out);
+CORE_API float ClampColor255(const CVec3 &in, CVec3 &out);

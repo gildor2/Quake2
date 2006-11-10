@@ -221,29 +221,29 @@ enum
 	Functions
 -----------------------------------------------------------------------------*/
 
-void	GL_Lock ();
-void	GL_Unlock ();
+void	GL_Lock();
+void	GL_Unlock();
 
-void	GL_Bind (const image_t *tex);
-void	GL_BindForce (const image_t *tex);
+void	GL_Bind(const image_t *tex);
+void	GL_BindForce(const image_t *tex);
 
-void	GL_SelectTexture (int tmu);
-void	GL_TexCoordPointer (void *ptr);
-void	GL_TexEnv (unsigned env);
-void	GL_TexMipBias (float f);
-void	GL_TexEnvColor (const color_t *c);
-void	GL_SetMultitexture (int level);
-void	GL_DisableTexCoordArrays ();
+void	GL_SelectTexture(int tmu);
+void	GL_TexCoordPointer(void *ptr);
+void	GL_TexEnv(unsigned env);
+void	GL_TexMipBias(float f);
+void	GL_TexEnvColor(const color_t *c);
+void	GL_SetMultitexture(int level);
+void	GL_DisableTexCoordArrays();
 
-void	GL_CullFace (gl_cullMode_t mode);
-void	GL_DepthRange (gl_depthMode_t mode);
-void	GL_State (unsigned state);
-void	GL_EnableFog (bool enable);
+void	GL_CullFace(gl_cullMode_t mode);
+void	GL_DepthRange(gl_depthMode_t mode);
+void	GL_State(unsigned state);
+void	GL_EnableFog(bool enable);
 
-void	GL_SetDefaultState ();
-void	GL_Set2DMode ();
-void	GL_Set3DMode (viewPortal_t *port);
-void	GL_ResetState ();
+void	GL_SetDefaultState();
+void	GL_Set2DMode();
+void	GL_Set3DMode(viewPortal_t *port);
+void	GL_ResetState();
 
 
 //} // namespace

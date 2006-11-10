@@ -19,52 +19,52 @@ protected:
 		FILE *file;					// opened file
 		const CFileInfo &info;		// pointer to file information
 		unsigned readPos;
-		CFilePak (const CFileInfo &AInfo, FILE *AFile)
+		CFilePak(const CFileInfo &AInfo, FILE *AFile)
 		:	info(AInfo)
 		,	file(AFile)
 		{}
-		~CFilePak ()
+		~CFilePak()
 		{
 			if (file)
-				fclose (file);
+				fclose(file);
 		}
-		int Read (void *Buffer, int Size)
+		int Read(void *Buffer, int Size)
 		{
 			if (!file)
 				return 0;
 			int len = info.size - readPos;
 			if (len > Size) len = Size;
-			int count = fread (Buffer, 1, len, file);
+			int count = fread(Buffer, 1, len, file);
 			readPos += count;
 			return count;
 		}
-		int GetSize ()
+		int GetSize()
 		{
 			return info.size;
 		}
-		bool Eof ()
+		bool Eof()
 		{
 			return readPos >= info.size;
 		}
 	};
-	const char *GetType ()
+	const char *GetType()
 	{
 		return "pak";
 	}
 	// function for file opening
-	CFile *OpenLocalFile (const FFileInfo &Info)
+	CFile *OpenLocalFile(const FFileInfo &Info)
 	{
 		const CFileInfo &info = static_cast<const CFileInfo&>(Info);
-		FILE *f = fopen (name, "rb");
+		FILE *f = fopen(name, "rb");
 		if (!f)						// cannot open archive file
 			return NULL;
 		// rewind to file start
-		fseek (f, info.pos, SEEK_SET);
-		CFilePak *File = new CFilePak (info, f);
+		fseek(f, info.pos, SEEK_SET);
+		CFilePak *File = new CFilePak(info, f);
 		return File;
 	}
 public:
-	static CFileContainer *Create (const char *filename, FILE *f)
+	static CFileContainer *Create(const char *filename, FILE *f)
 	{
 		// file format
 #define IDPAKHEADER		BYTES4('P','A','C','K')
@@ -83,32 +83,32 @@ public:
 
 		// read header
 		DPakHeader hdr;
-		if (fread (&hdr, sizeof(hdr), 1, f) != 1 ||
+		if (fread(&hdr, sizeof(hdr), 1, f) != 1 ||
 			hdr.ident != IDPAKHEADER)
 			return NULL;
 		// LITTLE_ENDIAN
-		if (fseek (f, hdr.dirofs, SEEK_SET))
+		if (fseek(f, hdr.dirofs, SEEK_SET))
 			return NULL;
 		// create CFileContainerPak
-		CFileContainerPak *Pak = new (filename) CFileContainerPak;
+		CFileContainerPak *Pak = new(filename) CFileContainerPak;
 		Pak->numFiles = hdr.dirlen / sizeof(DPakFile);
 		for (int i = 0; i < Pak->numFiles; i++)
 		{
 			DPakFile file;
-			if (fread (&file, sizeof(file), 1, f) != 1)
+			if (fread(&file, sizeof(file), 1, f) != 1)
 			{
 				delete Pak;
 				return NULL;
 			}
-			TString<64> Filename; Filename.filename (file.name);	// looks cool :)
+			TString<64> Filename; Filename.filename(file.name);	// looks cool :)
 			// cut filename => path + name
-			char *name = Filename.rchr ('/');
+			char *name = Filename.rchr('/');
 			// find/create directory
 			FDirInfo *Dir;
 			if (name)
 			{
 				*name++ = 0;
-				Dir = Pak->FindDir (Filename, true);
+				Dir = Pak->FindDir(Filename, true);
 			}
 			else
 			{
@@ -117,12 +117,12 @@ public:
 			}
 			// add file to dir
 			CStringItem *ins;
-			CFileInfo *info = static_cast<CFileInfo*>(Dir->Files.Find (name, &ins));
+			CFileInfo *info = static_cast<CFileInfo*>(Dir->Files.Find(name, &ins));
 			if (!info)
 			{
 				// should always pass
 				info = new (name, Pak->mem) CFileInfo;
-				Dir->Files.InsertAfter (info, ins);
+				Dir->Files.InsertAfter(info, ins);
 				info->pos  = file.filepos;
 				info->size = file.filelen;
 			}

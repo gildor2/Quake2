@@ -287,7 +287,7 @@ public:
 	shaderStage_t *stages[1];	// WARNING: should be last data field
 
 	// functions
-	virtual void Reload ();
+	virtual void Reload();
 };
 
 
@@ -313,9 +313,9 @@ extern	shader_t	*gl_alphaShader1, *gl_alphaShader2;
 	Functions
 -----------------------------------------------------------------------------*/
 
-void	InitShaders ();
-void	ShutdownShaders ();
-void	ResetShaders ();				// should be called every time before loading a new map
+void	InitShaders();
+void	ShutdownShaders();
+void	ResetShaders();				// should be called every time before loading a new map
 
 // lightmap types (negative numbers -- no lightmap stage, >= 0 -- has lightmap stage)
 #define LIGHTMAP_NONE		(-1)
@@ -348,16 +348,16 @@ void	ResetShaders ();				// should be called every time before loading a new map
 #define SHADER_CHECK		0x40000000	// if shader doesn't exists, FindShader() will return NULL and do not generate error
 #define SHADER_CHECKLOADED	0x80000000	// if shader loaded, return it, else - NULL
 
-shader_t *FindShader (const char *name, unsigned style = 0);
+shader_t *FindShader(const char *name, unsigned style = 0);
 
 // modify current shader, possibly duplicate shader and modify its copy
-shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber);
-shader_t *SetShaderLightstyles (shader_t *shader, unsigned styles, bool fastOnly);
-shader_t *GetAlphaShader (shader_t *shader);
+shader_t *SetShaderLightmap(shader_t *shader, int lightmapNumber);
+shader_t *SetShaderLightstyles(shader_t *shader, unsigned styles, bool fastOnly);
+shader_t *GetAlphaShader(shader_t *shader);
 
-void SetShaderAnimFreq (shader_t *shader, int freq);
+void SetShaderAnimFreq(shader_t *shader, int freq);
 
-shader_t *GetShaderByNum (int num);		//?? for backend: sort index -> shader
+shader_t *GetShaderByNum(int num);		//?? for backend: sort index -> shader
 
 
 } // namespace

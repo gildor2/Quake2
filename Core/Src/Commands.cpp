@@ -31,39 +31,39 @@ static TList<CAlias> AliasList;
 	Command management
 -----------------------------------------------------------------------------*/
 
-static void InitCommands ();
+static void InitCommands();
 
-bool RegisterCommand (const char *name, void(*func)(), unsigned flags)
+bool RegisterCommand(const char *name, void(*func)(), unsigned flags)
 {
 	guard(RegisterCommand);
 	EXEC_ONCE(InitCommands())
 
 	CCommand *pos;
-	if (CmdList.Find (name, &pos))
+	if (CmdList.Find(name, &pos))
 	{
-		appWPrintf ("RegisterCommand: \"%s\" is already registered\n", name);
+		appWPrintf("RegisterCommand: \"%s\" is already registered\n", name);
 		return false;
 	}
 	CCommand *cmd = new (name) CCommand;
 	cmd->flags = flags;
 	cmd->func  = func;
-	CmdList.InsertAfter (cmd, pos);
+	CmdList.InsertAfter(cmd, pos);
 
 	return true;
 	unguard;
 }
 
 
-bool UnregisterCommand (const char *name)
+bool UnregisterCommand(const char *name)
 {
 	guard(UnregisterCommand);
-	CCommand *cmd = CmdList.Find (name);
+	CCommand *cmd = CmdList.Find(name);
 	if (!cmd)
 	{
-		appWPrintf ("UnregisterCommand: \"%s\" is not registered\n", name);
+		appWPrintf("UnregisterCommand: \"%s\" is not registered\n", name);
 		return false;
 	}
-	CmdList.Remove (cmd);
+	CmdList.Remove(cmd);
 	delete cmd;
 
 	return true;
@@ -89,7 +89,7 @@ static char *c_argv[MAX_ARGS];
 static int  c_argc;
 
 
-static void GetArgs (const char *str, bool expandVars)
+static void GetArgs(const char *str, bool expandVars)
 {
 	guard(GetArgs);
 	// preparing
@@ -103,7 +103,7 @@ static void GetArgs (const char *str, bool expandVars)
 	{
 		if (c_argc == MAX_ARGS)
 		{
-			appWPrintf ("GetArgs: MAX_ARGS hit\n");
+			appWPrintf("GetArgs: MAX_ARGS hit\n");
 			return;
 		}
 		c_argv[c_argc++] = d;
@@ -155,13 +155,13 @@ static void GetArgs (const char *str, bool expandVars)
 
 
 // Generic command execution
-bool ExecuteCommand (const char *str)
+bool ExecuteCommand(const char *str)
 {
 	guard(ExecuteCommand);
-	GetArgs (str, true);
+	GetArgs(str, true);
 	if (!c_argc) return true;			// empty string
 
-	CAlias *alias = AliasList.Find (c_argv[0]);
+	CAlias *alias = AliasList.Find(c_argv[0]);
 	if (alias && !alias->active)
 	{
 		alias->active = true;
@@ -170,13 +170,13 @@ bool ExecuteCommand (const char *str)
 		return true;	//?? recurse
 	}
 
-	CCommand *cmd = CmdList.Find (c_argv[0]);
+	CCommand *cmd = CmdList.Find(c_argv[0]);
 	if (cmd && cmd->func)
 	{
-		bool usage = c_argc == 2 && !appStrcmp (c_argv[1], "/?");
+		bool usage = c_argc == 2 && !appStrcmp(c_argv[1], "/?");
 		if (!(cmd->flags & COMMAND_USAGE) && usage)
 		{
-			appPrintf ("No usage info for command \"%s\"\n", cmd->name);
+			appPrintf("No usage info for command \"%s\"\n", cmd->name);
 			return true;
 		}
 		// execute function
@@ -184,7 +184,7 @@ bool ExecuteCommand (const char *str)
 		switch (cmd->flags)
 		{
 		case 0:
-			cmd->func ();
+			cmd->func();
 			break;
 		case COMMAND_USAGE:
 			((void (*) (bool)) cmd->func) (usage);
@@ -211,16 +211,16 @@ bool ExecuteCommand (const char *str)
 }
 
 
-bool ExecuteCommand (const char *str, const CSimpleCommand *CmdList, int numCommands)
+bool ExecuteCommand(const char *str, const CSimpleCommand *CmdList, int numCommands)
 {
 	guard(ExecuteSimpleCommand);
-	GetArgs (str, false);
+	GetArgs(str, false);
 	for (int i = 0; i < numCommands; i++, CmdList++)
-		if (!appStricmp (CmdList->name, c_argv[0]))
+		if (!appStricmp(CmdList->name, c_argv[0]))
 		{
 			if (!CmdList->func) return true;		// NULL function
 			guard(cmd)
-			CmdList->func (c_argc, c_argv);
+			CmdList->func(c_argc, c_argv);
 			return true;
 			unguardf(("%s", CmdList->name))
 		}
@@ -234,35 +234,35 @@ bool ExecuteCommand (const char *str, const CSimpleCommand *CmdList, int numComm
 -----------------------------------------------------------------------------*/
 
 
-static void Cmd_Echo (int argc, char **argv)
+static void Cmd_Echo(int argc, char **argv)
 {
-	for (int i = 1; i < argc; i++) appPrintf (i > 1 ? " %s" : "%s", argv[i]);
-	appPrintf ("\n");
+	for (int i = 1; i < argc; i++) appPrintf(i > 1 ? " %s" : "%s", argv[i]);
+	appPrintf("\n");
 }
 
 
-static void Cmd_CmdList (bool usage, int argc, char **argv)
+static void Cmd_CmdList(bool usage, int argc, char **argv)
 {
 	if (argc > 2 || usage)
 	{
-		appPrintf ("Usage: cmdlist [<mask>]\n");
+		appPrintf("Usage: cmdlist [<mask>]\n");
 		return;
 	}
 
 	const char *mask = (argc == 2) ? argv[1] : NULL;
 	int n = 0, total = 0;
-	appPrintf ("----i-a-name----------------\n");
+	appPrintf("----i-a-name----------------\n");
 	for (TListIterator<CCommand> cmd = CmdList; cmd; ++cmd)
 	{
 		total++;
-		if (mask && !appMatchWildcard (cmd->name, mask, true)) continue;
-		appPrintf ("%-3d %c %c %s\n", total,
+		if (mask && !appMatchWildcard(cmd->name, mask, true)) continue;
+		appPrintf("%-3d %c %c %s\n", total,
 			cmd->flags & COMMAND_USAGE ? 'I' : ' ',
 			cmd->flags & (COMMAND_ARGS|COMMAND_ARGS2) ? 'A' : ' ',
 			cmd->name);
 		n++;
 	}
-	appPrintf ("Displayed %d/%d commands\n", n, total);
+	appPrintf("Displayed %d/%d commands\n", n, total);
 }
 
 
@@ -270,8 +270,8 @@ static void Cmd_CmdList (bool usage, int argc, char **argv)
 	Initialization
 -----------------------------------------------------------------------------*/
 
-static void InitCommands ()
+static void InitCommands()
 {
-	RegisterCommand ("echo", Cmd_Echo);
-	RegisterCommand ("cmdlist", Cmd_CmdList);
+	RegisterCommand("echo", Cmd_Echo);
+	RegisterCommand("cmdlist", Cmd_CmdList);
 }

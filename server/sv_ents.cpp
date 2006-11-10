@@ -33,7 +33,7 @@ static byte fatpvs[MAX_MAP_LEAFS/8];
 
 // The client will interpolate the view position, so we can't use a single PVS point
 //?? move to cmodel.cpp, name 'void CM_BoxPVS(const CBox&, byte *pvs)'
-static void SV_FatPVS (const CVec3 &org)
+static void SV_FatPVS(const CVec3 &org)
 {
 	int		i, j;
 	CBox	bounds;
@@ -45,11 +45,11 @@ static void SV_FatPVS (const CVec3 &org)
 	}
 
 	CBspLeaf *leafs[64];
-	int count = CM_BoxLeafs (bounds, ARRAY_ARG(leafs));
+	int count = CM_BoxLeafs(bounds, ARRAY_ARG(leafs));
 	if (count < 1)
-		appError ("SV_FatPVS: count < 1");
+		appError("SV_FatPVS: count < 1");
 
-	memcpy (fatpvs, CM_ClusterPVS (leafs[0]->cluster), bspfile.visRowSize);
+	memcpy(fatpvs, CM_ClusterPVS(leafs[0]->cluster), bspfile.visRowSize);
 	// or in all the other leaf bits
 	for (i = 1; i < count; i++)
 	{
@@ -57,7 +57,7 @@ static void SV_FatPVS (const CVec3 &org)
 			if (leafs[i] == leafs[j]) break;
 		if (j != i) continue;		// already have the cluster we want
 
-		const byte *src = CM_ClusterPVS (leafs[i]->cluster);
+		const byte *src = CM_ClusterPVS(leafs[i]->cluster);
 		for (j = 0; j < bspfile.visRowSize; j++)
 			fatpvs[j] |= src[j];
 	}
@@ -65,7 +65,7 @@ static void SV_FatPVS (const CVec3 &org)
 
 
 // Decides which entities are going to be visible to the client, and copies off the playerstat and areabits.
-static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldframe)
+static void SV_BuildClientFrame(client_t *client, const client_frame_t *oldframe)
 {
 	guard(SV_BuildClientFrame);
 
@@ -87,12 +87,12 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 	int clientarea = CM_FindLeaf(org)->area;
 
 	// calculate the visible areas
-	frame->areabytes = CM_WriteAreaBits (frame->areabits, clientarea);
+	frame->areabytes = CM_WriteAreaBits(frame->areabits, clientarea);
 
 	// grab the current player_state_t
 	frame->ps = cl_ent->client->ps;
 
-	SV_FatPVS (org);
+	SV_FatPVS(org);
 
 	// build up the list of visible entities
 	frame->num_entities = 0;
@@ -114,10 +114,10 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 		if (ent != cl_ent)
 		{
 			// check area
-			if (!CM_AreasConnected (clientarea, ent->areanum))
+			if (!CM_AreasConnected(clientarea, ent->areanum))
 			{	// doors can legally straddle two areas, so
 				// we may need to check another one
-				if (!ent->areanum2 || !CM_AreasConnected (clientarea, ent->areanum2))
+				if (!ent->areanum2 || !CM_AreasConnected(clientarea, ent->areanum2))
 					continue;		// blocked by a door
 			}
 
@@ -132,7 +132,7 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 			{
 				if (ent->num_clusters == -1)
 				{	// too many leafs for individual check, go by headnode
-					if (!CM_HeadnodeVisible (ent->headnode, fatpvs))
+					if (!CM_HeadnodeVisible(ent->headnode, fatpvs))
 						continue;
 				}
 				else
@@ -149,7 +149,7 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 				}
 
 				// don't send sounds if they will be attenuated away
-				if (!ent->s.modelindex && VectorDistance (org, ent->s.origin) > 400)
+				if (!ent->s.modelindex && VectorDistance(org, ent->s.origin) > 400)
 					continue;
 			}
 		}
@@ -157,7 +157,7 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 		// add it to the circular client_entities array
 		if (ent->s.number != e)
 		{
-//			Com_DPrintf (S_RED"FIXING ENT->S.NUMBER\n");
+//			Com_DPrintf(S_RED"FIXING ENT->S.NUMBER\n");
 			ent->s.number = e;
 		}
 		// copy entity_state_t -> entityStateEx_t
@@ -194,7 +194,7 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 				}
 			// add some extended protocol features
 			if (state.modelindex == 255)
-				SV_ComputeAnimation (&ent->client->ps, state, oldent, ent);
+				SV_ComputeAnimation(&ent->client->ps, state, oldent, ent);
 		}
 
 		if (sv_labels->integer)
@@ -206,7 +206,7 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 			{
 				modelname = sv.configstrings[CS_MODELS+state.modelindex];
 				if (modelname[0] == '*')
-					ent->bounds.GetCenter (org);
+					ent->bounds.GetCenter(org);
 			}
 
 			//?? possible bug: in multiplayer, BuildClientFrame() will be called for each client, and labels
@@ -215,19 +215,19 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 			{
 				int legs, torso, angle1;
 				float angle2;
-				state.GetAnim (legs, torso, angle1, angle2);
-				SV_DrawText3D (org, va("ent: %d cl: %04X\nframe: %d\nanim: %d+%d/%d+%g",
+				state.GetAnim(legs, torso, angle1, angle2);
+				SV_DrawText3D(org, va("ent: %d cl: %04X\nframe: %d\nanim: %d+%d/%d+%g",
 					e, state.skinnum,
 					state.frame,
 					legs, torso, angle1, angle2));
 			}
 			else
-				SV_DrawText3D (org, va("ent: %d cl: %04X\nframe: %d\nmdl: %s",
+				SV_DrawText3D(org, va("ent: %d cl: %04X\nframe: %d\nmdl: %s",
 					e, state.skinnum, state.frame, modelname), RGB(1,0,0));
 		}
 #if 0
 		if (ent->client)
-			SV_DrawText3D (state.origin, va("pm.flags: %X\norg: %d %d %d\nvel: %d %d %d",
+			SV_DrawText3D(state.origin, va("pm.flags: %X\norg: %d %d %d\nvel: %d %d %d",
 				ent->client->ps.pmove.pm_flags,
 				VECTOR_ARG(ent->client->ps.pmove.origin),
 				VECTOR_ARG(ent->client->ps.pmove.velocity)));
@@ -255,11 +255,11 @@ Encode a client frame onto the network channel
 */
 
 // Writes a delta update of an entity_state_t list to the message.
-static void SV_EmitPacketEntities (const client_frame_t *from, const client_frame_t *to, sizebuf_t *msg, bool extProtocol)
+static void SV_EmitPacketEntities(const client_frame_t *from, const client_frame_t *to, sizebuf_t *msg, bool extProtocol)
 {
 	guard(SV_EmitPacketEntities);
 
-	MSG_WriteByte (msg, svc_packetentities);
+	MSG_WriteByte(msg, svc_packetentities);
 
 	int from_num_entities = from ? from->num_entities : 0;
 
@@ -291,32 +291,32 @@ static void SV_EmitPacketEntities (const client_frame_t *from, const client_fram
 			// delta update from old position
 			// note that players are always 'newentities', this updates their oldorigin always and prevents warping
 			// NOTE: it's impossible to get newindex AND oldindex both overflowed (> num_entities), because of while() condition
-			MSG_WriteDeltaEntity (msg, oldent, newent, false, newent->number <= sv_maxclients->integer, extProtocol);
+			MSG_WriteDeltaEntity(msg, oldent, newent, false, newent->number <= sv_maxclients->integer, extProtocol);
 			oldindex++;
 			newindex++;
 		}
 		else if (newnum < oldnum)
 		{
 			// this is a new entity, send it from the baseline
-			MSG_WriteDeltaEntity (msg, &sv.baselines[newnum], newent, true, true, extProtocol);
+			MSG_WriteDeltaEntity(msg, &sv.baselines[newnum], newent, true, true, extProtocol);
 			newindex++;
 		}
 		else // if (newnum > oldnum)
 		{
 			// the old entity isn't present in the new message
-			MSG_WriteRemoveEntity (msg, oldnum);
+			MSG_WriteRemoveEntity(msg, oldnum);
 			oldindex++;
 		}
 	}
 
-	MSG_WriteShort (msg, 0);	// end of packetentities; corresponds to bits(byte)=0,entNum(byte)=0
+	MSG_WriteShort(msg, 0);	// end of packetentities; corresponds to bits(byte)=0,entNum(byte)=0
 
 	unguard;
 }
 
 
 
-void SV_WriteFrameToClient (client_t *client, sizebuf_t *msg)
+void SV_WriteFrameToClient(client_t *client, sizebuf_t *msg)
 {
 	// this is the frame we are creating
 	client_frame_t *frame = &client->frames[sv.framenum & UPDATE_MASK];
@@ -330,7 +330,7 @@ void SV_WriteFrameToClient (client_t *client, sizebuf_t *msg)
 	}
 	else if (sv.framenum - client->lastframe >= (UPDATE_BACKUP - 3))
 	{	// client hasn't gotten a good message through in a long time
-//		appPrintf ("%s: Delta request from out-of-date packet.\n", client->name);
+//		appPrintf("%s: Delta request from out-of-date packet.\n", client->name);
 		oldframe  = NULL;
 		lastframe = -1;
 	}
@@ -340,70 +340,70 @@ void SV_WriteFrameToClient (client_t *client, sizebuf_t *msg)
 		lastframe = client->lastframe;
 	}
 
-	SV_BuildClientFrame (client, oldframe);
+	SV_BuildClientFrame(client, oldframe);
 
-	MSG_WriteByte (msg, svc_frame);
-	MSG_WriteLong (msg, sv.framenum);
-	MSG_WriteLong (msg, lastframe);	// what we are delta'ing from
-	MSG_WriteByte (msg, client->surpressCount);	// rate dropped packets
+	MSG_WriteByte(msg, svc_frame);
+	MSG_WriteLong(msg, sv.framenum);
+	MSG_WriteLong(msg, lastframe);	// what we are delta'ing from
+	MSG_WriteByte(msg, client->surpressCount);	// rate dropped packets
 	client->surpressCount = 0;
 
 	// send over the areabits
-	MSG_WriteByte (msg, frame->areabytes);
-	msg->Write (frame->areabits, frame->areabytes);
+	MSG_WriteByte(msg, frame->areabytes);
+	msg->Write(frame->areabits, frame->areabytes);
 
 	// delta encode the playerstate
-	MSG_WriteByte (msg, svc_playerinfo);
-	MSG_WriteDeltaPlayerstate (msg, oldframe ? &oldframe->ps : NULL, &frame->ps);
+	MSG_WriteByte(msg, svc_playerinfo);
+	MSG_WriteDeltaPlayerstate(msg, oldframe ? &oldframe->ps : NULL, &frame->ps);
 
 	// delta encode the entities
-	SV_EmitPacketEntities (oldframe, frame, msg, client->newprotocol);
+	SV_EmitPacketEntities(oldframe, frame, msg, client->newprotocol);
 }
 
 
 // Save everything in the world out without deltas. Used for recording footage for merged or assembled demos
-void SV_RecordDemoMessage (void)
+void SV_RecordDemoMessage(void)
 {
 	guard(SV_RecordDemoMessage);
 
 	if (!svs.wdemofile) return;
 
 	entityStateEx_t	nostate;
-	memset (&nostate, 0, sizeof(nostate));
+	memset(&nostate, 0, sizeof(nostate));
 
 	sizebuf_t buf;
 	byte buf_data[32768];
-	buf.Init (ARRAY_ARG(buf_data));
+	buf.Init(ARRAY_ARG(buf_data));
 
 	// write a frame message that doesn't contain a player_state_t
-	MSG_WriteByte (&buf, svc_frame);
-	MSG_WriteLong (&buf, sv.framenum);
+	MSG_WriteByte(&buf, svc_frame);
+	MSG_WriteLong(&buf, sv.framenum);
 
-	MSG_WriteByte (&buf, svc_packetentities);
+	MSG_WriteByte(&buf, svc_packetentities);
 
 	for (int i = 1; i < ge->num_edicts; i++)
 	{
 		edict_t *ent = EDICT_NUM(i);
 		entityStateEx_t st;
-		memset (&st, 0, sizeof(st));
+		memset(&st, 0, sizeof(st));
 		static_cast<entity_state_t&>(st) = ent->s;
 		//?? may be, compute extended fields
 		// ignore ents without visible models unless they have an effect
 		if (ent->inuse && ent->s.number && !(ent->svflags & SVF_NOCLIENT) &&
 			(ent->s.modelindex || ent->s.effects || ent->s.sound || ent->s.event))
-			MSG_WriteDeltaEntity (&buf, &nostate, &st, false, true, false /*?? extProtocol*/);
+			MSG_WriteDeltaEntity(&buf, &nostate, &st, false, true, false /*?? extProtocol*/);
 	}
 
-	MSG_WriteShort (&buf, 0);		// end of packetentities
+	MSG_WriteShort(&buf, 0);		// end of packetentities
 
 	// now add the accumulated multicast information
-	buf.Write (svs.demo_multicast);
-	svs.demo_multicast.Clear ();
+	buf.Write(svs.demo_multicast);
+	svs.demo_multicast.Clear();
 
 	// now write the entire message to the file, prefixed by the length
-	int len = LittleLong (buf.cursize);
-	fwrite (&len, 4, 1, svs.wdemofile);
-	fwrite (buf.data, buf.cursize, 1, svs.wdemofile);
+	int len = LittleLong(buf.cursize);
+	fwrite(&len, 4, 1, svs.wdemofile);
+	fwrite(buf.data, buf.cursize, 1, svs.wdemofile);
 
 	unguard;
 }

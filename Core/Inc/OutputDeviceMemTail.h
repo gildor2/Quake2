@@ -8,22 +8,22 @@ protected:
 	int		used;
 	int		size;
 public:
-	COutputDeviceMemTail (int bufSize = 4096)
-	:	size (bufSize)
-	,	used (0)
+	COutputDeviceMemTail(int bufSize = 4096)
+	:	size(bufSize)
+	,	used(0)
 	{
 		buffer = new char [bufSize];
 	}
-	~COutputDeviceMemTail ()
+	~COutputDeviceMemTail()
 	{
-		Unregister ();
+		Unregister();
 		delete buffer;
 	}
-	inline const char *GetText () const
+	inline const char *GetText() const
 	{
 		return buffer;
 	}
-	const char *GetTail (int numLines)
+	const char *GetTail(int numLines)
 	{
 		const char *s = buffer+used;
 		while (s > buffer)
@@ -36,9 +36,9 @@ public:
 		}
 		return buffer;
 	}
-	void Write (const char *str)
+	void Write(const char *str)
 	{
-		int len = strlen (str);
+		int len = strlen(str);
 		if (len > size - 1)
 		{
 			// incoming "str" is too long - fill buffer with it ...
@@ -47,7 +47,7 @@ public:
 			// ... discretely by lines
 			while (s < limit)
 			{
-				s = strchr (s, '\n');
+				s = strchr(s, '\n');
 				if (!s)
 				{
 					// single line exceeds buffer size - empty buffer and exit
@@ -58,7 +58,7 @@ public:
 				s++;				// skip '\n'
 			}
 			used = len - (s - str);
-			memcpy (buffer, s, used+1);
+			memcpy(buffer, s, used+1);
 		}
 		else if (used + len > size - 1)
 		{
@@ -67,25 +67,25 @@ public:
 			const char *s     = buffer;
 			while (s < limit)
 			{
-				s = strchr (s, '\n');
+				s = strchr(s, '\n');
 				if (!s)
 				{
 					// it's too few space in buffer to keep previous text's last line and "str"
 					used = len;
-					memcpy (buffer, str, used+1);
+					memcpy(buffer, str, used+1);
 					return;
 				}
 				s++;				// skip '\n'
 			}
 			int move = used - (s - buffer);
-			memcpy (buffer, s, move);
-			memcpy (buffer+move, str, len+1);
+			memcpy(buffer, s, move);
+			memcpy(buffer+move, str, len+1);
 			used = move + len;
 		}
 		else
 		{
 			// enough space in buffer for previous text and str
-			memcpy (buffer+used, str, len+1);
+			memcpy(buffer+used, str, len+1);
 			used += len;
 		}
 	}

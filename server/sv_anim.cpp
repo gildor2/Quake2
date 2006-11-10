@@ -49,7 +49,7 @@ struct simpleAnim_t
 };
 
 
-void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateEx_t *oldent, edict_t *edict)
+void SV_ComputeAnimation(player_state_t *ps, entityStateEx_t &ent, entityStateEx_t *oldent, edict_t *edict)
 {
 	int f = ent.frame;		// Quake2 animation frame
 	int i;
@@ -78,7 +78,7 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 			// allow DEATH animation to complete; if entity already not linked to player
 			// (player respawned) - switch to corresponding DEAD animation
 			if (ps == NULL) n++;	// BOTH_DEATHn -> BOTH_DEADn
-			ent.SetAnim (n, n);
+			ent.SetAnim(n, n);
 			return;
 		}
 	}
@@ -107,7 +107,7 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 		 *	ps->viewangles
 		 *	ps->rdflags & RDF_UNDERWATER
 		 */
-		memset (&calcPs, 0, sizeof(player_state_t));
+		memset(&calcPs, 0, sizeof(player_state_t));
 		// detect crouch
 		if (f >= 135 && f <= 172)	// crstnd/crwalk/crattack/crpain
 			calcPs.pmove.pm_flags |= PMF_DUCKED;
@@ -115,11 +115,11 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 		CVec3 down = ent.origin;
 		down[2] -= 0.25f;
 		trace_t trace;
-		SV_Trace (trace, ent.origin, down, trBounds, edict, MASK_PLAYERSOLID);
+		SV_Trace(trace, ent.origin, down, trBounds, edict, MASK_PLAYERSOLID);
 		if (trace.fraction < 1.0f || trace.startsolid)
 			calcPs.pmove.pm_flags |= PMF_ON_GROUND;
 		// check underwater
-		if (SV_PointContents (ent.origin) & MASK_WATER)
+		if (SV_PointContents(ent.origin) & MASK_WATER)
 			calcPs.rdflags |= RDF_UNDERWATER;
 		// viewangles will be same, as ent.angles ...
 		calcPs.viewangles = ent.angles;
@@ -141,15 +141,15 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 	velHorz[2] = 0;					// no vertical component
 
 	CVec3 forward, right;
-	Euler2Vecs (ps->viewangles, &forward, &right, NULL);
-	float velForward = dot (forward, velHorz);
-	float velRight   = dot (right, velHorz);
+	Euler2Vecs(ps->viewangles, &forward, &right, NULL);
+	float velForward = dot(forward, velHorz);
+	float velRight   = dot(right, velHorz);
 	float absVelHorz = SQRTFAST(velForward*velForward + velRight*velRight);
 
 	// acquire previous frame info
 	int prevLegs = ANIM_NOCHANGE, prevTorso = ANIM_NOCHANGE, prevAngle = LEGS_NEUTRAL;
 	float prevPitch = 0;
-	if (oldent) oldent->GetAnim (prevLegs, prevTorso, prevAngle, prevPitch);
+	if (oldent) oldent->GetAnim(prevLegs, prevTorso, prevAngle, prevPitch);
 
 	int legs = ANIM_NOCHANGE;
 
@@ -167,7 +167,7 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 				CVec3 down = ent.origin;
 				down[2] -= 57;		// Q3A uses height=64; Q2 have models 0.9 times smaller (QUAKE3_PLAYER_SCALE) => 57
 				trace_t trace;
-				SV_Trace (trace, ent.origin, down, trBounds, edict, MASK_PLAYERSOLID);
+				SV_Trace(trace, ent.origin, down, trBounds, edict, MASK_PLAYERSOLID);
 				if (trace.fraction < 1.0f || trace.startsolid)
 					smallFall = true;
 			}
@@ -220,7 +220,7 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 		else if (fabs(velRight) > 20)
 		{
 			// |velRight| > 20, |velForward| > 20 -- +/- 45 degrees
-			if (IsNegative (velRight) ^ IsNegative (velForward))
+			if (IsNegative(velRight) ^ IsNegative(velForward))
 				legsAngle = LEGS_LEFT_45;
 			else
 				legsAngle = LEGS_RIGHT_45;
@@ -266,11 +266,11 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 #endif
 		torso = TORSO_DROP;
 
-	int pitch = bound(appRound (ps->viewangles[PITCH]), -90, 90);
+	int pitch = bound(appRound(ps->viewangles[PITCH]), -90, 90);
 
 	//!! granade attack: when crouched -> crattack (normal); when standing -> wave#8->vave#1
 	//!! pain: 54-57,58-61,62-65; crpain: 169-172 -> angles (may be, mix rotate + lean angles?)
 
 	// send
-	ent.SetAnim (legs, torso, legsAngle, pitch);
+	ent.SetAnim(legs, torso, legsAngle, pitch);
 }

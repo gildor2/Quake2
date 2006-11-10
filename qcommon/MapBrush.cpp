@@ -11,7 +11,7 @@ CMemoryChain *CBrush::mem;
 
 
 // Create brush from bounds
-CBrush::CBrush (const CBox &Bounds)
+CBrush::CBrush(const CBox &Bounds)
 {
 	CPlane *p     = new (mem) CPlane[6];
 	CVec3 *vec    = new (mem) CVec3[8];
@@ -46,7 +46,7 @@ CBrush::CBrush (const CBox &Bounds)
 	{
 		p[i].normal[i>>1] = (i & 1) ? 1 : -1;
 		p[i].dist = (i & 1) ? Bounds.maxs[i>>1] : -Bounds.mins[i>>1];	// note: +maxs[] and -mins[] (because normal[]==-1)
-		p[i].Setup ();
+		p[i].Setup();
 	}
 	// init vecs
 	for (i = 0; i < 8; i++)
@@ -88,18 +88,18 @@ private:
 	CVec3 *alloced[MAX_SIDE_VERTS];
 	int numAllocedVecs;
 public:
-	CAllocVertexPool ()
-	:	numAllocedVecs (0)
+	CAllocVertexPool()
+	:	numAllocedVecs(0)
 	{}
-	CVec3 *GetVec (const CVec3 &v)
+	CVec3 *GetVec(const CVec3 &v)
 	{
 		// find same (similar) vec in already allocated
 		for (int i = 0; i < numAllocedVecs; i++)
 		{
 			CVec3 &v2 = *alloced[i];
-			if (fabs (v2[0] - v[0]) < EPSILON &&
-				fabs (v2[1] - v[1]) < EPSILON &&
-				fabs (v2[2] - v[2]) < EPSILON)
+			if (fabs(v2[0] - v[0]) < EPSILON &&
+				fabs(v2[1] - v[1]) < EPSILON &&
+				fabs(v2[2] - v[2]) < EPSILON)
 			return &v2;
 		}
 		// alloc new vec
@@ -123,7 +123,7 @@ static float planeBounds[2];						// min/max distance from plane
 //		returns 'false' when poly placed on plane (cannot divide)
 // `poly' will be damaged (altered)
 // When poly on a single side of plane, it will not be modified (but returned as 'front' or 'back')
-static bool SplitPoly (CBrushVert *poly, CPlane *plane, CBrushVert* &front, CBrushVert* &back)
+static bool SplitPoly(CBrushVert *poly, CPlane *plane, CBrushVert* &front, CBrushVert* &back)
 {
 	guardSlow(SplitPoly);
 
@@ -144,8 +144,8 @@ static bool SplitPoly (CBrushVert *poly, CPlane *plane, CBrushVert* &front, CBru
 	for (v = poly; v; v = v->next)
 	{
 		if (numVerts >= MAX_SIDE_VERTS)
-			Com_DropError ("SplitPoly: MAX_SIDE_VERTS");
-		float d = plane->DistanceTo (*v->v);
+			Com_DropError("SplitPoly: MAX_SIDE_VERTS");
+		float d = plane->DistanceTo(*v->v);
 		EXPAND_BOUNDS(d, planeBounds[0], planeBounds[1]);
 		byte s = (d >  EPSILON) ? 0 : (				// front
 				 (d < -EPSILON) ? 1 :				// back
@@ -218,10 +218,10 @@ assert(0);
 	sidesFirst[0] = sidesFirst[1] = sidesLast[0] = sidesLast[1] = NULL;
 
 #if SPLIT_DEBUG
-	appPrintf ("split\n");
+	appPrintf("split\n");
 	int ii;
 	for (ii = 0, v = poly; v; v = v->next, ii++)
-		appPrintf ("... %g %g %g = %d\n", VECTOR_ARG((*v->v)), side[ii]);
+		appPrintf("... %g %g %g = %d\n", VECTOR_ARG((*v->v)), side[ii]);
 #endif
 
 	// split poly
@@ -271,8 +271,8 @@ assert(0);
 				// create midpoint, placed on a plane
 				float frac = dist1 / (dist1 - dist2);
 				CVec3 m;
-				Lerp (v1, v2, frac, m);
-				CVec3 *mid = vecPool->GetVec (m);
+				Lerp(v1, v2, frac, m);
+				CVec3 *mid = vecPool->GetVec(m);
 				// add to both sides
 				clone = new (CBrush::mem) CBrushVert;
 				clone->v = mid;
@@ -283,7 +283,7 @@ assert(0);
 				// remember in planeVecs[]
 				planeVecs[numPlaneVecs++] = mid;
 #if SPLIT_DEBUG
-				appPrintf ("... new: %g %g %g\n", VECTOR_ARG(m));
+				appPrintf("... new: %g %g %g\n", VECTOR_ARG(m));
 #endif
 			}
 		}
@@ -299,7 +299,7 @@ assert(0);
 			// remember in planeVecs[]
 			planeVecs[numPlaneVecs++] = v->v;
 #if SPLIT_DEBUG
-			appPrintf ("... on-plane: %g %g %g\n", VECTOR_ARG((*v->v)));
+			appPrintf("... on-plane: %g %g %g\n", VECTOR_ARG((*v->v)));
 #endif
 		}
 	}
@@ -316,7 +316,7 @@ assert(0);
 // should remember on-plane verts from SplitPoly() (new verts+old on-plane verts), analyze them and
 // combine in CBrush::Split() into new side
 
-CBrush *CBrush::Split (CPlane *plane)
+CBrush *CBrush::Split(CPlane *plane)
 {
 	guard(CBrush::Split);
 
@@ -330,7 +330,7 @@ CBrush *CBrush::Split (CPlane *plane)
 	planeBounds[1] = -BIG_NUMBER;
 
 #if SPLIT_DEBUG
-	appPrintf (S_GREEN"split by {%g %g %g} %g:\n", VECTOR_ARG(plane->normal), plane->dist);
+	appPrintf(S_GREEN"split by {%g %g %g} %g:\n", VECTOR_ARG(plane->normal), plane->dist);
 #endif
 	CBrushSide *sidesFirst[3], *sidesLast[3];	// front, back and on-plane sides
 	sidesFirst[0] = sidesFirst[1] = sidesFirst[2] = sidesLast[0] = sidesLast[1] = sidesLast[2] = NULL;
@@ -342,7 +342,7 @@ CBrush *CBrush::Split (CPlane *plane)
 
 		// check for available space in planeVecs[] array
 		if (numPlaneVecs >= MAX_SIDE_VERTS-2)
-			Com_DropError ("CBrush::Split(): intersection is too complex");
+			Com_DropError("CBrush::Split(): intersection is too complex");
 
 #define ADD_TO_BRUSH(b,n)	\
 	{						\
@@ -353,15 +353,15 @@ CBrush *CBrush::Split (CPlane *plane)
 	}
 
 		CBrushVert *front, *back;
-		if (!SplitPoly (s->verts, plane, front, back))
+		if (!SplitPoly(s->verts, plane, front, back))
 		{
-			ADD_TO_BRUSH (s,2);			// on-plane side
+			ADD_TO_BRUSH(s,2);			// on-plane side
 			continue;
 		}
 
 		// each splitted brush side will produce 2 verts for new side
 		if (numPlaneVecs & 1)
-			Com_DropError ("CBrush::Split(): odd numPlaneVecs");
+			Com_DropError("CBrush::Split(): odd numPlaneVecs");
 
 		assert(front==s->verts || back==s->verts);
 
@@ -393,7 +393,7 @@ CBrush *CBrush::Split (CPlane *plane)
 	if (sidesFirst[2])
 	{
 		if (sidesFirst[0] && sidesFirst[1])
-			Com_DropError ("CBrush::Split(): non-convex brush detected %g %g", planeBounds[0], planeBounds[1]);
+			Com_DropError("CBrush::Split(): non-convex brush detected %g %g", planeBounds[0], planeBounds[1]);
 		if (sidesFirst[0])
 		{
 			// insert s[2] into s[0]
@@ -448,14 +448,14 @@ CBrush *CBrush::Split (CPlane *plane)
 		int i;
 
 		if (numPlaneVecs < 6)
-			Com_DropError ("split: numPlaneVecs = %d\n", numPlaneVecs);
+			Com_DropError("split: numPlaneVecs = %d\n", numPlaneVecs);
 #if SPLIT_DEBUG
 		// check distance from all planeVecs[] to plane (should be 0)
 		for (i = 0; i < numPlaneVecs; i++)
 		{
-			float f = plane->DistanceTo (*planeVecs[i]);
+			float f = plane->DistanceTo(*planeVecs[i]);
 			if (f < -EPSILON || f > EPSILON)
-				Com_DropError ("split: dist = %g", f);
+				Com_DropError("split: dist = %g", f);
 			appPrintf("%g %g %g: %g\n",VECTOR_ARG((*planeVecs[i])), f);
 		}
 #endif
@@ -504,22 +504,22 @@ CBrush *CBrush::Split (CPlane *plane)
 				for (int i = 0; i < numPlaneVecs; i += 2)
 					appPrintf(S_RED"%d  {%g %g %g}  {%g %g %g}\n",i,VECTOR_ARG((*planeVecs[i])),VECTOR_ARG((*planeVecs[i+1])));
 #endif
-				Com_DropError ("CBrush::Split(): cannot build poly");
+				Com_DropError("CBrush::Split(): cannot build poly");
 			}
 			// perform pointer swapping
-			if (swapI) Exchange (planeVecs[i], planeVecs[i+1]);
-			if (swapJ) Exchange (planeVecs[j], planeVecs[j+1]);
+			if (swapI) Exchange(planeVecs[i], planeVecs[i+1]);
+			if (swapJ) Exchange(planeVecs[j], planeVecs[j+1]);
 			// here: found connected verts, j==index
 			// now: make 'j'-vecs to come directly after i
 			if (j != i+2)
 			{
-				Exchange (planeVecs[j],   planeVecs[i+2]);
-				Exchange (planeVecs[j+1], planeVecs[i+3]);
+				Exchange(planeVecs[j],   planeVecs[i+2]);
+				Exchange(planeVecs[j+1], planeVecs[i+3]);
 			}
 		}
 		// here: vec[0] should be equal to vec[last]
 		if (*planeVecs[0] != *planeVecs[numPlaneVecs-1])
-			Com_DropError ("CBrush::Split(): no loop in poly (%d vecs)", numPlaneVecs);
+			Com_DropError("CBrush::Split(): no loop in poly (%d vecs)", numPlaneVecs);
 
 		// build 2 new sides
 		CBrushSide *s1 = new (CBrush::mem) CBrushSide;
@@ -560,9 +560,9 @@ CBrush *CBrush::Split (CPlane *plane)
 		int n = 0;
 		for (CBrushVert *v = s->verts; v; v = v->next)
 			n++;
-		if (n < 3) Com_DropError ("nv<3");
+		if (n < 3) Com_DropError("nv<3");
 	}
-	if (ns < 3) Com_DropError ("ns<3");
+	if (ns < 3) Com_DropError("ns<3");
 #endif
 
 	vecPool = NULL;
@@ -572,18 +572,18 @@ CBrush *CBrush::Split (CPlane *plane)
 }
 
 
-void CBrush::GetBounds (CBox &bounds)
+void CBrush::GetBounds(CBox &bounds)
 {
 	guardSlow(CBrush::GetBounds);
-	bounds.Clear ();
+	bounds.Clear();
 	for (CBrushSide *s = sides; s; s = s->next)
 		for (CBrushVert *v = s->verts; v; v = v->next)
-			bounds.Expand (*v->v);
+			bounds.Expand(*v->v);
 	unguardSlow;
 }
 
 
-void CBrush::AddBevels (CPlane* (*GetPlane)(const CVec3&, float))
+void CBrush::AddBevels(CPlane* (*GetPlane)(const CVec3&, float))
 {
 	guard(CBrush::AddBevels);
 
@@ -606,12 +606,12 @@ void CBrush::AddBevels (CPlane* (*GetPlane)(const CVec3&, float))
 			if (!vec) continue;
 			// found: should check requirement of new side creation
 			CVec3 norm1 = s1->plane->normal;
-			if (s1->back) norm1.Negate ();
+			if (s1->back) norm1.Negate();
 			CVec3 norm2 = s2->plane->normal;
-			if (s2->back) norm2.Negate ();
+			if (s2->back) norm2.Negate();
 			CVec3 norm3;
-			VectorAdd (norm1, norm2, norm3);
-			float len = dot (norm3, norm3);
+			VectorAdd(norm1, norm2, norm3);
+			float len = dot(norm3, norm3);
 			// when norm1 looks almost to norm2 direction, angle between them will be < 90grad,
 			// and dot(norm3,norm3) will be >2 (when angle is 90grad, sum of two igentity vecs
 			// will produce vec of len sqrt(2); dot() is square of len ==> 2); otherwise, dot()
@@ -620,10 +620,10 @@ void CBrush::AddBevels (CPlane* (*GetPlane)(const CVec3&, float))
 											// (angle between normals is less than 90)
 			if (len == 0) continue;			// two opposite planes ... should not happens in BSP
 			// create new side
-			norm3.Normalize ();
-			float dist = dot (norm3, *vec) + EPSILON;	// +EPSILON: ensure all brush verts on the back side of plane
+			norm3.Normalize();
+			float dist = dot(norm3, *vec) + EPSILON;	// +EPSILON: ensure all brush verts on the back side of plane
 			CBrushSide *newSide = new (CBrush::mem) CBrushSide;
-			newSide->plane = GetPlane (norm3, dist);
+			newSide->plane = GetPlane(norm3, dist);
 			// insert into list
 			newSide->next  = sides;
 			sides = newSide;
@@ -633,7 +633,7 @@ void CBrush::AddBevels (CPlane* (*GetPlane)(const CVec3&, float))
 
 	// add axial sides
 	CBox bounds;
-	GetBounds (bounds);
+	GetBounds(bounds);
 	for (int i = 0; i < 6; i++)
 	{
 		int idx    = i >> 1;
@@ -642,12 +642,12 @@ void CBrush::AddBevels (CPlane* (*GetPlane)(const CVec3&, float))
 		const float val[] = {-1, 1};		// -1 for mins, +1 for maxs
 		// prepare plane
 		CVec3 norm;
-		norm.Zero ();
+		norm.Zero();
 		norm[idx] = val[i & 1];
 		if (!(i&1)) dist = -dist;
 		// prepare backplane
 //		CVec3 norm2;
-//		VectorNegate (norm, norm2);
+//		VectorNegate(norm, norm2);
 		// check: may be, side already present
 		CBrushSide *s;
 		for (s = sides; s; s = s->next)
@@ -655,13 +655,13 @@ void CBrush::AddBevels (CPlane* (*GetPlane)(const CVec3&, float))
 			CPlane *p = s->plane;
 			if (!s->back)
 			{
-				if (fabs (p->dist - dist) > EPSILON) continue;
+				if (fabs(p->dist - dist) > EPSILON) continue;
 //--				if (p->normal != norm) continue; -- does not works
 				if (p->normal[idx] != val[i&1]) continue;
 			}
 			else
 			{
-				if (fabs (p->dist + dist) > EPSILON) continue;
+				if (fabs(p->dist + dist) > EPSILON) continue;
 //--				if (p->normal != norm2) continue; -- does not works
 				if (p->normal[idx] != -val[i&1]) continue;
 			}
@@ -671,7 +671,7 @@ void CBrush::AddBevels (CPlane* (*GetPlane)(const CVec3&, float))
 
 		// create side
 		CBrushSide *newSide = new (CBrush::mem) CBrushSide;
-		newSide->plane = GetPlane (norm, dist);
+		newSide->plane = GetPlane(norm, dist);
 		// insert into list
 		newSide->next  = sides;
 		sides = newSide;

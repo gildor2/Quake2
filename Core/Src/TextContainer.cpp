@@ -1,7 +1,7 @@
 #include "CorePrivate.h"
 
 
-CTextRec *CTextContainer::Add (const char *text)
+CTextRec *CTextContainer::Add(const char *text)
 {
 	if (!text || !*text) return NULL;				// empty text
 
@@ -12,15 +12,15 @@ CTextRec *CTextContainer::Add (const char *text)
 	}
 
 	CTextRec *rec = (CTextRec*) &textBuf[fillPos];
-	int len = strlen (text);
+	int len = strlen(text);
 	if (!len) return NULL;
 
 	int size = recSize + len + 1;
 	if (fillPos + size > bufSize) return NULL;		// out of buffer space
 
-	memset (rec, 0, recSize);
-	rec->text = (char*) OffsetPointer (rec, recSize);
-	memcpy (rec->text, text, len+1);
+	memset(rec, 0, recSize);
+	rec->text = (char*) OffsetPointer(rec, recSize);
+	memcpy(rec->text, text, len+1);
 
 	if (lastRec) lastRec->next = rec;
 	lastRec = rec;
@@ -32,11 +32,11 @@ CTextRec *CTextContainer::Add (const char *text)
 }
 
 
-void CTextContainer::Enumerate (void (*func) (const CTextRec *rec))
+void CTextContainer::Enumerate(void (*func) (const CTextRec *rec))
 {
 	guard(CTextContainer::Enumerate);
 	if (!filled) return;
 	for (CTextRec *rec = (CTextRec*) textBuf; rec; rec = rec->next)
-		func (rec);
+		func(rec);
 	unguard;
 }

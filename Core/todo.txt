@@ -14,7 +14,7 @@ COMPILER BUGS/INCOMPATIBILITIES
 - VisualC and GnuC 3+ have incompatible cdecl convention for functions, returning a structure: VC on return will keep
   in stack all variables, but GCC will use "retn 4" -- e.g. will drop pointer to return value buffer
   0) original code:
-    strucType Func (arg1, arg2, ...)
+    strucType Func(arg1, arg2, ...)
     {
         strucType var;
         action(&var);
@@ -22,7 +22,7 @@ COMPILER BUGS/INCOMPATIBILITIES
     }
   1) VisualC:
     -- compiled as following: --
-    strucType* Func (strucType* var, arg1, arg2, ...)
+    strucType* Func(strucType* var, arg1, arg2, ...)
     {
         strucType var2;
         action(&var2);
@@ -30,7 +30,7 @@ COMPILER BUGS/INCOMPATIBILITIES
         return var;
     }
     -- code may be replaced with: --
-    strucType* Func (strucType* var, arg1, arg2, ...)
+    strucType* Func(strucType* var, arg1, arg2, ...)
     {
         action(&var);
         return var;

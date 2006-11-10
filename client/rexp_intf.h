@@ -39,114 +39,114 @@ struct refExport_t
 
 extern refExport_t re;
 
-inline bool RE_Init ()
+inline bool RE_Init()
 {
-	return re.Init ();
+	return re.Init();
 }
-inline void RE_Shutdown (bool complete = false)
+inline void RE_Shutdown(bool complete = false)
 {
-	re.Shutdown (complete);
+	re.Shutdown(complete);
 }
-inline void RE_LoadNewWorld ()
+inline void RE_LoadNewWorld()
 {
-	re.LoadNewWorld ();
+	re.LoadNewWorld();
 }
-inline void RE_FinishLoadingWorld ()
+inline void RE_FinishLoadingWorld()
 {
-	re.FinishLoadingWorld ();
+	re.FinishLoadingWorld();
 }
-inline CRenderModel* RE_RegisterModel (const char *name)
+inline CRenderModel* RE_RegisterModel(const char *name)
 {
-	return re.RegisterModel (name);
+	return re.RegisterModel(name);
 }
-inline CBasicImage* RE_RegisterSkin (const char *name, bool force = false)
+inline CBasicImage* RE_RegisterSkin(const char *name, bool force = false)
 {
-	return re.RegisterSkin (name, force);
+	return re.RegisterSkin(name, force);
 }
-inline CBasicImage* RE_RegisterPic (const char *name)
+inline CBasicImage* RE_RegisterPic(const char *name)
 {
-	return re.RegisterPic (name);
+	return re.RegisterPic(name);
 }
-inline void RE_SetSky (const char *name, float rotate, const CVec3 &axis)
+inline void RE_SetSky(const char *name, float rotate, const CVec3 &axis)
 {
-	re.SetSky (name, rotate, axis);
+	re.SetSky(name, rotate, axis);
 }
-inline void RE_BeginFrame (double time)
+inline void RE_BeginFrame(double time)
 {
-	re.BeginFrame (time);
+	re.BeginFrame(time);
 }
-inline void RE_RenderFrame (refdef_t *fd)
+inline void RE_RenderFrame(refdef_t *fd)
 {
-	re.RenderFrame (fd);
+	re.RenderFrame(fd);
 }
-inline void RE_EndFrame ()
+inline void RE_EndFrame()
 {
-	re.EndFrame ();
+	re.EndFrame();
 }
-inline void RE_DrawPic (int x, int y, const char *pic, int anchor = ANCHOR_TOP_LEFT, int color = C_WHITE)
+inline void RE_DrawPic(int x, int y, const char *pic, int anchor = ANCHOR_TOP_LEFT, int color = C_WHITE)
 {
-	re.DrawPic (x, y, pic, anchor, color);
+	re.DrawPic(x, y, pic, anchor, color);
 }
-inline void RE_DrawStretchPic (int x, int y, int w, int h, const char *name)
+inline void RE_DrawStretchPic(int x, int y, int w, int h, const char *name)
 {
-	re.DrawStretchPic (x, y, w, h, name);
+	re.DrawStretchPic(x, y, w, h, name);
 }
-inline void RE_DrawDetailedPic (int x, int y, int w, int h, const char *name)
+inline void RE_DrawDetailedPic(int x, int y, int w, int h, const char *name)
 {
-	re.DrawDetailedPic (x, y, w, h, name);
+	re.DrawDetailedPic(x, y, w, h, name);
 }
-inline void RE_DrawChar (int x, int y, int c, int color = C_WHITE)
+inline void RE_DrawChar(int x, int y, int c, int color = C_WHITE)
 {
-	re.DrawChar (x, y, c, color);
+	re.DrawChar(x, y, c, color);
 }
-inline void RE_TileClear (int x, int y, int w, int h, const char *name)
+inline void RE_TileClear(int x, int y, int w, int h, const char *name)
 {
-	re.TileClear (x, y, w, h, name);
+	re.TileClear(x, y, w, h, name);
 }
-inline void RE_Fill (int x, int y, int w, int h, unsigned rgba)
+inline void RE_Fill(int x, int y, int w, int h, unsigned rgba)
 {
-	re.Fill (x, y, w, h, rgba);
+	re.Fill(x, y, w, h, rgba);
 }
-inline void RE_Fill8 (int x, int y, int w, int h, int c)
+inline void RE_Fill8(int x, int y, int w, int h, int c)
 {
-	re.Fill8 (x, y, w, h, c);
+	re.Fill8(x, y, w, h, c);
 }
-inline void RE_DrawStretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data, unsigned *palette)
+inline void RE_DrawStretchRaw8(int x, int y, int w, int h, int cols, int rows, byte *data, unsigned *palette)
 {
-	re.DrawStretchRaw8 (x, y, w, h, cols, rows, data, palette);
+	re.DrawStretchRaw8(x, y, w, h, cols, rows, data, palette);
 }
-inline void RE_AppActivate (bool activate)
+inline void RE_AppActivate(bool activate)
 {
-	re.AppActivate (activate);
+	re.AppActivate(activate);
 }
-inline void RE_Screenshot (int flags, const char *name)
+inline void RE_Screenshot(int flags, const char *name)
 {
-	re.Screenshot (flags, name);
+	re.Screenshot(flags, name);
 }
-inline void RE_DrawTextPos (int x, int y, const char *text, unsigned rgba = 0xFFFFFFFF)
+inline void RE_DrawTextPos(int x, int y, const char *text, unsigned rgba = 0xFFFFFFFF)
 {
-	re.DrawTextPos (x, y, text, rgba);
+	re.DrawTextPos(x, y, text, rgba);
 }
-inline void RE_DrawTextLeft (const char *text, unsigned rgba = 0xFFFFFFFF)
+inline void RE_DrawTextLeft(const char *text, unsigned rgba = 0xFFFFFFFF)
 {
-	re.DrawTextLeft (text, rgba);
+	re.DrawTextLeft(text, rgba);
 }
-inline void RE_DrawTextRight (const char *text, unsigned rgba = 0xFFFFFFFF)
+inline void RE_DrawTextRight(const char *text, unsigned rgba = 0xFFFFFFFF)
 {
-	re.DrawTextRight (text, rgba);
+	re.DrawTextRight(text, rgba);
 }
-inline void RE_DrawText3D (const CVec3 &pos, const char *text, unsigned rgba = 0xFFFFFFFF)
+inline void RE_DrawText3D(const CVec3 &pos, const char *text, unsigned rgba = 0xFFFFFFFF)
 {
-	re.DrawText3D (pos, text, rgba);
+	re.DrawText3D(pos, text, rgba);
 }
-inline float RE_GetClientLight ()
+inline float RE_GetClientLight()
 {
-	return re.GetClientLight ();
+	return re.GetClientLight();
 }
 #if !NO_DEBUG
-inline void RE_DrawBrush (const CBrush *brush, const char *label, int num)
+inline void RE_DrawBrush(const CBrush *brush, const char *label, int num)
 {
-	re.DrawBrush (brush, label, num);
+	re.DrawBrush(brush, label, num);
 }
 #endif
 

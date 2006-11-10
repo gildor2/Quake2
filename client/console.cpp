@@ -66,7 +66,7 @@ int		con_height;
 #define		WRAP_CHAR	(char)(' ' + 128)
 
 
-static void Con_Clear_f ()
+static void Con_Clear_f()
 {
 	con.totallines = 1;		// current line, even if empty, encounted
 	con.current = con.display = 0;
@@ -83,23 +83,23 @@ static void Con_Clear_f ()
 	}
 	// clear line position cache
 	con.disp.line = con.notif.line = -1;
-	Con_ClearNotify ();
+	Con_ClearNotify();
 }
 
 
-static void Con_Dump_f (bool usage, int argc, char **argv)
+static void Con_Dump_f(bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		appPrintf ("Usage: condump <filename>\n");
+		appPrintf("Usage: condump <filename>\n");
 		return;
 	}
 
 	TString<MAX_OSPATH> Name;
-	Name.sprintf ("./%s/%s.txt", FS_Gamedir(), argv[1]);
+	Name.sprintf("./%s/%s.txt", FS_Gamedir(), argv[1]);
 
 	COutputDeviceFile Out(Name, true);
-	if (!Out.IsOpened ()) return;
+	if (!Out.IsOpened()) return;
 
 	int pos = con.startpos;
 	int size = con.endpos - pos;
@@ -120,20 +120,20 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 		{
 			buffer[out] = 0;			// ASCIIZ
 			out = 0;
-			Out.Write (buffer);
+			Out.Write(buffer);
 		}
 	}
-	appPrintf ("Console text was dumped to %s\n", *Name);
+	appPrintf("Console text was dumped to %s\n", *Name);
 }
 
 
-void Con_ClearNotify ()
+void Con_ClearNotify()
 {
-	memset (con.times, 0, sizeof(con.times));
+	memset(con.times, 0, sizeof(con.times));
 }
 
 
-void Con_CheckResize ()
+void Con_CheckResize()
 {
 	bool w = (con_wordWrap && con_wordWrap->integer);
 	if (w != con.wordwrap)
@@ -199,7 +199,7 @@ void Con_CheckResize ()
 	Printing text to console
 -----------------------------------------------------------------------------*/
 
-static int FindLine (int lineno)
+static int FindLine(int lineno)
 {
 	// try to get line info from cache
 	if (lineno == con.disp.line)
@@ -241,7 +241,7 @@ static int FindLine (int lineno)
 }
 
 
-static void PlaceChar (char c, byte color)
+static void PlaceChar(char c, byte color)
 {
 	// calculate free space in buffer
 	int size = con.startpos - con.endpos;
@@ -303,9 +303,9 @@ static void PlaceChar (char c, byte color)
 }
 
 
-void COutputDeviceCon::Write (const char *str)
+void COutputDeviceCon::Write(const char *str)
 {
-	if (!con.started) Con_Clear_f ();
+	if (!con.started) Con_Clear_f();
 
 	byte color = C_WHITE;
 	while (char c = *str++)
@@ -328,7 +328,7 @@ void COutputDeviceCon::Write (const char *str)
 		else if (c == WRAP_CHAR)
 			c = ' ';									// force WRAP_CHAR (== space|0x80) to be a space
 
-		PlaceChar (c, color);
+		PlaceChar(c, color);
 	}
 }
 
@@ -337,7 +337,7 @@ void COutputDeviceCon::Write (const char *str)
 	Drawing console
 -----------------------------------------------------------------------------*/
 
-static void DrawInput ()
+static void DrawInput()
 {
 	const char *text = editLine;
 
@@ -367,16 +367,16 @@ static void DrawInput ()
 		}
 		if (eoln) c = ' ';
 		// draw char
-		RE_DrawChar (x, y, c);
+		RE_DrawChar(x, y, c);
 		// draw blinking cursor
 #define CURSOR_HEIGHT	(CHAR_HEIGHT/4)
 		if ((i == editPos  - shift) && (cls.realtime >> 8) & 1 && cls.key_dest == key_console)
-			RE_Fill (x, y+CHAR_HEIGHT-CURSOR_HEIGHT, CHAR_WIDTH, CURSOR_HEIGHT, RGBA(1,0.2,0.3,0.8));
+			RE_Fill(x, y+CHAR_HEIGHT-CURSOR_HEIGHT, CHAR_WIDTH, CURSOR_HEIGHT, RGBA(1,0.2,0.3,0.8));
 	}
 }
 
 
-void Con_DrawNotify (bool drawBack)
+void Con_DrawNotify(bool drawBack)
 {
 	int v = 0;
 	int pos = -1;
@@ -392,7 +392,7 @@ void Con_DrawNotify (bool drawBack)
 
 		if (pos == -1)
 		{
-			pos = FindLine (i);		// else (pos!=-1) - already searched on previous loop
+			pos = FindLine(i);		// else (pos!=-1) - already searched on previous loop
 			// cache info
 			con.notif.line = i;
 			con.notif.pos  = pos;
@@ -402,7 +402,7 @@ void Con_DrawNotify (bool drawBack)
 
 		if (drawBack)
 		{
-			RE_Fill (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * CHAR_HEIGHT + CHAR_HEIGHT/2, RGBA(1,0,0,0.3));
+			RE_Fill(0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * CHAR_HEIGHT + CHAR_HEIGHT/2, RGBA(1,0,0,0.3));
 			drawBack = false;
 		}
 		for (int x = 0; x < GScreenWidth; x++)
@@ -412,7 +412,7 @@ void Con_DrawNotify (bool drawBack)
 			if (++pos >= CON_TEXTSIZE) pos -= CON_TEXTSIZE;
 
 			if (c == '\n' || c == WRAP_CHAR) break;
-			RE_DrawChar ((x + 1) * CHAR_WIDTH, v, c, color);
+			RE_DrawChar((x + 1) * CHAR_WIDTH, v, c, color);
 		}
 
 		v += CHAR_HEIGHT;
@@ -422,7 +422,7 @@ void Con_DrawNotify (bool drawBack)
 
 //#define DEBUG_CONSOLE		1
 
-void Con_DrawConsole (float frac)
+void Con_DrawConsole(float frac)
 {
 	int		i, x;
 #if DEBUG_CONSOLE
@@ -433,7 +433,7 @@ void Con_DrawConsole (float frac)
 #define CON_DBG(x)
 #endif
 
-	int lines = appRound (viddef.height * frac);
+	int lines = appRound(viddef.height * frac);
 	con_height = lines;
 	if (lines <= 0) return;
 
@@ -442,25 +442,25 @@ void Con_DrawConsole (float frac)
 
 	// draw the background
 #if 0
-//	RE_Fill (0, 0, viddef.width, lines, RGBA(0,0,0.02,Cvar_VariableValue("con_alpha")));
-	RE_Fill (0, 0, viddef.width, lines, RGBA(0,0,0.02,0.75));
+//	RE_Fill(0, 0, viddef.width, lines, RGBA(0,0,0.02,Cvar_VariableValue("con_alpha")));
+	RE_Fill(0, 0, viddef.width, lines, RGBA(0,0,0.02,0.75));
 #else
-	RE_DrawStretchPic (0, 0, viddef.width, lines, "pics/console");
+	RE_DrawStretchPic(0, 0, viddef.width, lines, "pics/console");
 #endif
 	if (lines < viddef.height)
-		RE_Fill (0, lines - 1, viddef.width, 1, RGBA(0.2,0.2,0.2,0.8));
+		RE_Fill(0, lines - 1, viddef.width, 1, RGBA(0.2,0.2,0.2,0.8));
 
 	// draw version info
 #if 1
 	TString<64> Version;
-	i = Version.sprintf ("%s v" STR(VERSION), appPackage ());
+	i = Version.sprintf("%s v" STR(VERSION), appPackage());
 	for (x = 0; x < i; x++)
-		RE_DrawChar (viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, Version[x], C_GREEN);
+		RE_DrawChar(viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, Version[x], C_GREEN);
 #else
 	static const char version[] = APPNAME " v" STR(VERSION);
 	i = sizeof(version) - 1;
 	for (x = 0; x < i; x++)
-		RE_DrawChar (viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, version[x], C_GREEN);
+		RE_DrawChar(viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, version[x], C_GREEN);
 #endif
 
 	// draw the text
@@ -494,12 +494,12 @@ void Con_DrawConsole (float frac)
 	{
 		/*------ draw arrows to show the buffer is backscrolled -------*/
 		for (x = 0; x < GScreenWidth; x += 4)
-			RE_DrawChar ((x + 1) * CHAR_WIDTH, y0, '^');
+			RE_DrawChar((x + 1) * CHAR_WIDTH, y0, '^');
 		rows--;
 	}
 
 	CON_DBG(va(" 1st:%d/count:%d/y1:%d",row,rows,y));
-	i = FindLine (row);
+	i = FindLine(row);
 	// cache info
 	con.disp.line = row;
 	con.disp.pos = i;
@@ -518,19 +518,19 @@ void Con_DrawConsole (float frac)
 				if (c == '\n' || c == WRAP_CHAR) break;
 
 				if (!con_colorText->integer) color = C_WHITE;
-				RE_DrawChar ((x + 1) * CHAR_WIDTH, y, c, color);
+				RE_DrawChar((x + 1) * CHAR_WIDTH, y, c, color);
 			}
 			y += CHAR_HEIGHT;
 		}
 	}
 	CON_DBG(va(" disp:%d total:%d",con.display,con.totallines));
 #if DEBUG_CONSOLE
-	i = DbgBuf.len ();
+	i = DbgBuf.len();
 	for (x = 0; x < i; x++)
-		RE_DrawChar (x*CHAR_WIDTH, lines - 12, DbgBuf[x], C_BLUE);
+		RE_DrawChar(x*CHAR_WIDTH, lines - 12, DbgBuf[x], C_BLUE);
 #endif
 	// draw the input prompt, user text, and cursor
-	DrawInput ();
+	DrawInput();
 }
 
 
@@ -539,19 +539,19 @@ void Con_DrawConsole (float frac)
 -----------------------------------------------------------------------------*/
 
 
-static bool iswordsym (char n)
+static bool iswordsym(char n)
 {
 	return (n >= '0' && n <= '9') || (n >= 'A' && n <= 'Z') || (n >= 'a' && n <= 'z') || n == '_';
 }
 
-void Con_ClearTyping ()
+void Con_ClearTyping()
 {
 	editLine[0] = ']';
 	editLine[1] = 0;
 	editPos = 1;
 }
 
-void Key_Console (int key, int modKey)
+void Key_Console(int key, int modKey)
 {
 	int		i;
 	char	*s;
@@ -568,34 +568,34 @@ void Key_Console (int key, int modKey)
 	switch (modKey)
 	{
 	case MOD_CTRL+'l':
-//		Cbuf_AddText ("clear\n");
-		Con_Clear_f ();
+//		Cbuf_AddText("clear\n");
+		Con_Clear_f();
 		return;
 
 	//------------- input line editing ------------------
 	case K_ENTER:
 #if 0
 		// trim spaces at line end
-		for (i = strlen (editLine) - 1; i >= 0; i--)
+		for (i = strlen(editLine) - 1; i >= 0; i--)
 			if (editLine[i] == ' ')
 				editLine[i] = 0;
 			else
 				break;
 #endif
 		if (editLine[1] == '\\' || editLine[1] == '/')
-			Cbuf_AddText (editLine + 2);			// skip the prompt
+			Cbuf_AddText(editLine + 2);			// skip the prompt
 		else
-			Cbuf_AddText (editLine + 1);			// valid command
-		Cbuf_AddText ("\n");
-		appPrintf ("%s\n", editLine);
+			Cbuf_AddText(editLine + 1);			// valid command
+		Cbuf_AddText("\n");
+		appPrintf("%s\n", editLine);
 
 		if (editLine[1])							// editLine[0] is input prompt
 		{
 			// find the same line in history and remove it
 			for (i = 0; i < historyCount; i++)
-				if (!strcmp (history[i], editLine))
+				if (!strcmp(history[i], editLine))
 				{
-					if (i != historyCount - 1) memcpy (history[i], history[i+1], sizeof(history[0]) * (historyCount - 1 - i));
+					if (i != historyCount - 1) memcpy(history[i], history[i+1], sizeof(history[0]) * (historyCount - 1 - i));
 					historyCount--;
 					break;
 				}
@@ -604,19 +604,19 @@ void Key_Console (int key, int modKey)
 			if (historyCount < MAX_HISTORY)
 				historyCount++;
 			else
-				memcpy (history[0], history[1], sizeof(history[0]) * (MAX_HISTORY - 1));
-			memcpy (history[historyCount-1], editLine, sizeof(editLine));
+				memcpy(history[0], history[1], sizeof(history[0]) * (MAX_HISTORY - 1));
+			memcpy(history[historyCount-1], editLine, sizeof(editLine));
 			historyLine = historyCount;
 		}
 		// prepare new line
-		Con_ClearTyping ();
+		Con_ClearTyping();
 		if (cls.loading)
-			SCR_UpdateScreen ();					// force an update, because the command may take some time
+			SCR_UpdateScreen();					// force an update, because the command may take some time
 		return;
 
 	case K_TAB:
 		// command completion
-		CompleteCommand ();
+		CompleteCommand();
 		return;
 
 	case K_LEFTARROW:
@@ -627,15 +627,15 @@ void Key_Console (int key, int modKey)
 		i = editPos;
 		if (modKey >= MOD_CTRL)			// CTRL_PRESSED
 		{
-			while (editPos > 1 && !iswordsym (editLine[--editPos]));
-			while (editPos > 0 && iswordsym (editLine[--editPos]));
+			while (editPos > 1 && !iswordsym(editLine[--editPos]));
+			while (editPos > 0 && iswordsym(editLine[--editPos]));
 			editPos++;
 		}
 		else
 			editPos--;
 
 		if (key == K_BACKSPACE)		// not modKey ! (i.e. without modifier)
-			strcpy (&editLine[editPos], &editLine[i]);
+			strcpy(&editLine[editPos], &editLine[i]);
 		return;
 
 	case K_RIGHTARROW:
@@ -643,13 +643,13 @@ void Key_Console (int key, int modKey)
 		return;
 
 	case MOD_CTRL+K_RIGHTARROW:
-		while (editLine[editPos] && iswordsym (editLine[editPos])) editPos++;
-		while (editLine[editPos] && !iswordsym (editLine[editPos])) editPos++;
+		while (editLine[editPos] && iswordsym(editLine[editPos])) editPos++;
+		while (editLine[editPos] && !iswordsym(editLine[editPos])) editPos++;
 		return;
 
 	case K_DEL:
 		s = &editLine[editPos];
-		strcpy (s, s + 1);
+		strcpy(s, s + 1);
 		return;
 
 	case MOD_CTRL+K_DEL:
@@ -662,7 +662,7 @@ void Key_Console (int key, int modKey)
 		return;
 
 	case K_END:
-		editPos = strlen (editLine);
+		editPos = strlen(editLine);
 		return;
 
 	//---------------- history -----------------------
@@ -670,8 +670,8 @@ void Key_Console (int key, int modKey)
 //	case MOD_CTRL+'p':
 		if (!historyLine) return;					// empty or top of history
 
-		strcpy (editLine, history[--historyLine]);
-		editPos = strlen (editLine);
+		strcpy(editLine, history[--historyLine]);
+		editPos = strlen(editLine);
 		return;
 
 	case K_DOWNARROW:
@@ -680,11 +680,11 @@ void Key_Console (int key, int modKey)
 
 		historyLine++;
 		if (historyLine == historyCount)
-			Con_ClearTyping ();
+			Con_ClearTyping();
 		else
 		{
-			strcpy (editLine, history[historyLine]);
-			editPos = strlen (editLine);
+			strcpy(editLine, history[historyLine]);
+			editPos = strlen(editLine);
 		}
 		return;
 
@@ -735,7 +735,7 @@ void Key_Console (int key, int modKey)
 	Initialization
 -----------------------------------------------------------------------------*/
 
-void Con_Init ()
+void Con_Init()
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(con_notifyTime, 3, 0),
@@ -744,16 +744,16 @@ CVAR_BEGIN(vars)
 CVAR_END
 
 	EXEC_ONCE(
-		Cvar_GetVars (ARRAY_ARG(vars));
+		Cvar_GetVars(ARRAY_ARG(vars));
 		GScreenWidth = -1;		// force Con_CheckResize()
 
-		if (!con.started) Con_Clear_f ();
+		if (!con.started) Con_Clear_f();
 
-//		Con_CheckResize ();
+//		Con_CheckResize();
 
-		RegisterCommand ("clear", Con_Clear_f);
-		RegisterCommand ("condump", Con_Dump_f);
+		RegisterCommand("clear", Con_Clear_f);
+		RegisterCommand("condump", Con_Dump_f);
 
-		Con_ClearTyping ();
+		Con_ClearTyping();
 	)
 }

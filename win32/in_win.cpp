@@ -61,7 +61,7 @@ bool in_needRestart;
 -----------------------------------------------------------------------------*/
 
 // forwards
-static void MouseEvent (unsigned buttons);
+static void MouseEvent(unsigned buttons);
 
 // buffered DirectInput mouse
 #define BUFFERED_MOUSE		1
@@ -92,49 +92,49 @@ static IDirectInputDevice8	*pMouse;
 static int mouseType;		// copy of in_mouse
 
 
-static void DXMouse_Free ()
+static void DXMouse_Free()
 {
-	Com_DPrintf ("Shutdown DirectInput mouse\n");
+	Com_DPrintf("Shutdown DirectInput mouse\n");
 	if (pDI)
 	{
 		if (pMouse)
 		{
-			pMouse->Unacquire ();
-			pMouse->Release ();
+			pMouse->Unacquire();
+			pMouse->Release();
 			pMouse = NULL;
 		}
-		pDI->Release ();
+		pDI->Release();
 		pDI = NULL;
 	}
-	libDI.Free ();
-	ShowCursor (TRUE);
+	libDI.Free();
+	ShowCursor(TRUE);
 }
 
 
-static bool DXMouse_Init ()
+static bool DXMouse_Init()
 {
-	appPrintf ("Initializing DirectInput\n");
+	appPrintf("Initializing DirectInput\n");
 #if DIRECTINPUT_VERSION < 0x0800
 	typedef HRESULT (WINAPI * pDirectInputCreate_t) (HINSTANCE, DWORD, LPDIRECTINPUT *, LPUNKNOWN);
 	static pDirectInputCreate_t pDirectInputCreate;
 	if (!libDI)
 	{
-		if (!(libDI.Load ("dinput.dll")))
+		if (!(libDI.Load("dinput.dll")))
 		{
-			appWPrintf ("dinput.dll not found\n");
+			appWPrintf("dinput.dll not found\n");
 			return false;
 		}
-		if (!(libDI.GetProc ("DirectInputCreateA", &pDirectInputCreate)))
+		if (!(libDI.GetProc("DirectInputCreateA", &pDirectInputCreate)))
 		{
-			appWPrintf ("Wrong dinput.dll\n");
-			DXMouse_Free ();
+			appWPrintf("Wrong dinput.dll\n");
+			DXMouse_Free();
 			return false;
 		}
 	}
-	if FAILED(pDirectInputCreate (hInstance, DIRECTINPUT_VERSION, &pDI, NULL))
+	if FAILED(pDirectInputCreate(hInstance, DIRECTINPUT_VERSION, &pDI, NULL))
 	{
-		Com_DPrintf ("... cannot create DirectInput object\n");
-		DXMouse_Free ();
+		Com_DPrintf("... cannot create DirectInput object\n");
+		DXMouse_Free();
 		return false;
 	}
 #else
@@ -142,50 +142,50 @@ static bool DXMouse_Init ()
 	static pDirectInput8Create_t pDirectInput8Create;
 	if (!libDI)
 	{
-		if (!(libDI.Load ("dinput8.dll")))
+		if (!(libDI.Load("dinput8.dll")))
 		{
-			appWPrintf ("dinput8.dll not found\n");
+			appWPrintf("dinput8.dll not found\n");
 			return false;
 		}
-		if (!(libDI.GetProc ("DirectInput8Create", &pDirectInput8Create)))
+		if (!(libDI.GetProc("DirectInput8Create", &pDirectInput8Create)))
 		{
-			appWPrintf ("Wrong dinput8.dll\n");
-			DXMouse_Free ();
+			appWPrintf("Wrong dinput8.dll\n");
+			DXMouse_Free();
 			return false;
 		}
 	}
-	if FAILED(pDirectInput8Create (hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&pDI, NULL))
+	if FAILED(pDirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&pDI, NULL))
 	{
-		Com_DPrintf ("... cannot create DirectInput object\n");
-		DXMouse_Free ();
+		Com_DPrintf("... cannot create DirectInput object\n");
+		DXMouse_Free();
 		return false;
 	}
 #endif
 
-	if FAILED(pDI->CreateDevice (GUID_SysMouse, &pMouse, NULL))
+	if FAILED(pDI->CreateDevice(GUID_SysMouse, &pMouse, NULL))
 	{
-		Com_DPrintf ("... cannot create DirectInput mouse\n");
-		DXMouse_Free ();
+		Com_DPrintf("... cannot create DirectInput mouse\n");
+		DXMouse_Free();
 		return false;
 	}
 
 #if DIRECTINPUT_VERSION >= 0x0700
-	HRESULT res = pMouse->SetDataFormat (&c_dfDIMouse2);	// up to 8 mouse buttons
+	HRESULT res = pMouse->SetDataFormat(&c_dfDIMouse2);	// up to 8 mouse buttons
 #else
-	HRESULT res = pMouse->SetDataFormat (&c_dfDIMouse);		// up to 4 mouse buttons
+	HRESULT res = pMouse->SetDataFormat(&c_dfDIMouse);		// up to 4 mouse buttons
 #endif
 	if FAILED(res)
 	{
-		appPrintf ("... cannot set data format\n");
-		DXMouse_Free ();
+		appPrintf("... cannot set data format\n");
+		DXMouse_Free();
 		return false;
 	}
-	if FAILED(pMouse->SetCooperativeLevel (cl_hwnd, DISCL_EXCLUSIVE|DISCL_FOREGROUND))
+	if FAILED(pMouse->SetCooperativeLevel(cl_hwnd, DISCL_EXCLUSIVE|DISCL_FOREGROUND))
 	{
 		//?? set fullscreen to 0 -- if cannot capture mouse in fullscreen mode
 		//?? (if fullscreen is already 0, it will not be changed)
-		appPrintf ("... cannot set cooperative level\n");
-		DXMouse_Free ();
+		appPrintf("... cannot set cooperative level\n");
+		DXMouse_Free();
 		return false;
 	}
 #if BUFFERED_MOUSE
@@ -197,31 +197,31 @@ static bool DXMouse_Init ()
 	dipdw.diph.dwHow		= DIPH_DEVICE;
 	// the data
 	dipdw.dwData			= 16;							// size of buffer
-	if FAILED(pMouse->SetProperty (DIPROP_BUFFERSIZE, &dipdw.diph))
+	if FAILED(pMouse->SetProperty(DIPROP_BUFFERSIZE, &dipdw.diph))
 	{
-		appPrintf ("... cannot set mouse buffered mode\n");
-		DXMouse_Free ();
+		appPrintf("... cannot set mouse buffered mode\n");
+		DXMouse_Free();
 		return false;
 	}
 #endif
 #if 0
-	if FAILED(pMouse->Acquire ())
+	if FAILED(pMouse->Acquire())
 	{
 		//?? fullscreen <- 0
-		appPrintf ("... cannot acquire mouse\n");
+		appPrintf("... cannot acquire mouse\n");
 		//?? do not Free() -- just keep mouse unacquired; when window will be activated -- acquire mouse
-		IN_DXMouse_Free ();
+		IN_DXMouse_Free();
 		return false;
 	}
 #endif
 
-	ShowCursor (FALSE);
-	SetCursor (NULL);		// DirectX manual says: "cursor will disappear"; but, in some circusmances it appears ...
+	ShowCursor(FALSE);
+	SetCursor(NULL);		// DirectX manual says: "cursor will disappear"; but, in some circusmances it appears ...
 	return true;
 }
 
 
-static void DXMouse_Frame (int &move_x, int &move_y)
+static void DXMouse_Frame(int &move_x, int &move_y)
 {
 	// poll DirectInput mouse
 #if BUFFERED_MOUSE
@@ -230,16 +230,16 @@ static void DXMouse_Frame (int &move_x, int &move_y)
 	{
 		DIDEVICEOBJECTDATA od;
 		DWORD	dwElements = 1;			// number of items to be retreived
-		HRESULT res = pMouse->GetDeviceData (sizeof(od), &od, &dwElements, 0);
+		HRESULT res = pMouse->GetDeviceData(sizeof(od), &od, &dwElements, 0);
 		if (res == DIERR_INPUTLOST || res == DIERR_NOTACQUIRED)
 		{
 			// try to acquire mouse
-			pMouse->Acquire ();
+			pMouse->Acquire();
 			return;
 		}
 		if FAILED(res)
 		{
-			appWPrintf ("Error %X on DI mouse.GetData()\n", (unsigned)res);
+			appWPrintf("Error %X on DI mouse.GetData()\n", (unsigned)res);
 			return;
 		}
 		if (dwElements == 0) return;	// no data available
@@ -249,7 +249,7 @@ static void DXMouse_Frame (int &move_x, int &move_y)
 		if (od.dwOfs >= DIMOFS_BUTTON0 && od.dwOfs <= DIMOFS_BUTTON3)
 #endif
 		{
-			Key_Event (K_MOUSE1 + od.dwOfs - DIMOFS_BUTTON0, (od.dwData & 0x80) != 0);	//?? can use od.dwTimeStamp for timing
+			Key_Event(K_MOUSE1 + od.dwOfs - DIMOFS_BUTTON0, (od.dwData & 0x80) != 0);	//?? can use od.dwTimeStamp for timing
 			continue;
 		}
 
@@ -263,8 +263,8 @@ static void DXMouse_Frame (int &move_x, int &move_y)
 			break;
 		case DIMOFS_Z:
 			int msg = ((int)od.dwData > 0) ? K_MWHEELUP : K_MWHEELDOWN;
-			Key_Event (msg, true);
-			Key_Event (msg, false);
+			Key_Event(msg, true);
+			Key_Event(msg, false);
 			break;
 		}
 	}
@@ -274,24 +274,24 @@ static void DXMouse_Frame (int &move_x, int &move_y)
 #else
 	DIMOUSESTATE ms;
 #endif
-	HRESULT res = pMouse->GetDeviceState (sizeof(ms), &ms);
+	HRESULT res = pMouse->GetDeviceState(sizeof(ms), &ms);
 	if (res == DIERR_INPUTLOST || res == DIERR_NOTACQUIRED)
 	{
 		// try to acquire mouse
-		pMouse->Acquire ();
+		pMouse->Acquire();
 		return;
 	}
 	if FAILED(res)
 	{
-		appWPrintf ("Error %X on DI mouse.GetState()\n", res);
+		appWPrintf("Error %X on DI mouse.GetState()\n", res);
 		return;
 	}
 	// process mouse wheel
 	if (ms.lZ)
 	{
 		int msg = (ms.lZ > 0) ? K_MWHEELUP : K_MWHEELDOWN;
-		Key_Event (msg, true);
-		Key_Event (msg, false);
+		Key_Event(msg, true);
+		Key_Event(msg, false);
 	}
 	// process X and Y axes
 	move_x = ms.lX;
@@ -300,7 +300,7 @@ static void DXMouse_Frame (int &move_x, int &move_y)
 	int tmp = 0;
 	for (int i = 0; i < ARRAY_COUNT(ms.rgbButtons); i++)
 		if (ms.rgbButtons[i]) tmp |= 1 << i;
-	MouseEvent (tmp);			// call this always - to detect button on/off
+	MouseEvent(tmp);			// call this always - to detect button on/off
 #endif // BUFFERED_MOUSE
 }
 
@@ -314,20 +314,20 @@ static int	window_center_x, window_center_y;
 static bool	haveSpiMouse, haveSpiMouseSpeed;
 static int	originalMouseParms[3], originalMouseSpeed;
 
-static bool MouseMsgHook (UINT uMsg, WPARAM wParam, LPARAM lParam)
+static bool MouseMsgHook(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
 	case WM_MOUSEWHEEL:
 		if (wParam >> 31)	// sign of HIWORD(wParam)
 		{
-			Key_Event (K_MWHEELDOWN, true);
-			Key_Event (K_MWHEELDOWN, false);
+			Key_Event(K_MWHEELDOWN, true);
+			Key_Event(K_MWHEELDOWN, false);
 		}
 		else
 		{
-			Key_Event (K_MWHEELUP, true);
-			Key_Event (K_MWHEELUP, false);
+			Key_Event(K_MWHEELUP, true);
+			Key_Event(K_MWHEELUP, false);
 		}
 		break;
 	// catch all mouse state messages
@@ -347,7 +347,7 @@ static bool MouseMsgHook (UINT uMsg, WPARAM wParam, LPARAM lParam)
 			if (wParam & MK_MBUTTON)  temp |= 4;
 			if (wParam & MK_XBUTTON1) temp |= 8;
 			if (wParam & MK_XBUTTON2) temp |= 16;
-			MouseEvent (temp);
+			MouseEvent(temp);
 		}
 		break;
 	}
@@ -356,23 +356,23 @@ static bool MouseMsgHook (UINT uMsg, WPARAM wParam, LPARAM lParam)
 }
 
 
-static void WinMouse_Init ()
+static void WinMouse_Init()
 {
-	appPrintf ("Initializing Win32 mouse support\n");
-	AddMsgHook (MouseMsgHook);
+	appPrintf("Initializing Win32 mouse support\n");
+	AddMsgHook(MouseMsgHook);
 
 	static int mouseParms[3] = {0, 0, 0};
 	static int mouseSpeed = 10;
 	if (haveSpiMouse)
-		SystemParametersInfo (SPI_SETMOUSE, 0, mouseParms, 0);
+		SystemParametersInfo(SPI_SETMOUSE, 0, mouseParms, 0);
 	if (haveSpiMouseSpeed)
-		SystemParametersInfo (SPI_SETMOUSESPEED, 0, &mouseSpeed, 0);
+		SystemParametersInfo(SPI_SETMOUSESPEED, 0, &mouseSpeed, 0);
 
-	int width  = GetSystemMetrics (SM_CXSCREEN);
-	int height = GetSystemMetrics (SM_CYSCREEN);
+	int width  = GetSystemMetrics(SM_CXSCREEN);
+	int height = GetSystemMetrics(SM_CYSCREEN);
 
 	RECT window_rect;
-	GetWindowRect (cl_hwnd, &window_rect);
+	GetWindowRect(cl_hwnd, &window_rect);
 	if (window_rect.left < 0)			window_rect.left   = 0;
 	if (window_rect.top < 0)		 	window_rect.top    = 0;
 	if (window_rect.right >= width)		window_rect.right  = width-1;
@@ -380,28 +380,28 @@ static void WinMouse_Init ()
 
 	window_center_x = (window_rect.right + window_rect.left) / 2;
 	window_center_y = (window_rect.top + window_rect.bottom) / 2;
-	SetCursorPos (window_center_x, window_center_y);
+	SetCursorPos(window_center_x, window_center_y);
 
-	SetCapture (cl_hwnd);
-	ClipCursor (&window_rect);
+	SetCapture(cl_hwnd);
+	ClipCursor(&window_rect);
 
-	SetCursor (NULL);
-	ShowCursor (FALSE);
+	SetCursor(NULL);
+	ShowCursor(FALSE);
 }
 
 
-static void WinMouse_Free ()
+static void WinMouse_Free()
 {
-	Com_DPrintf ("Shutdown Win32 mouse\n");
-	RemoveMsgHook (MouseMsgHook);
+	Com_DPrintf("Shutdown Win32 mouse\n");
+	RemoveMsgHook(MouseMsgHook);
 	if (haveSpiMouse)
-		SystemParametersInfo (SPI_SETMOUSE, 0, originalMouseParms, 0);
+		SystemParametersInfo(SPI_SETMOUSE, 0, originalMouseParms, 0);
 	if (haveSpiMouseSpeed)
-		SystemParametersInfo (SPI_SETMOUSESPEED, 0, &originalMouseSpeed, 0);
+		SystemParametersInfo(SPI_SETMOUSESPEED, 0, &originalMouseSpeed, 0);
 
-	ClipCursor (NULL);
-	ReleaseCapture ();
-	ShowCursor (TRUE);
+	ClipCursor(NULL);
+	ReleaseCapture();
+	ShowCursor(TRUE);
 }
 
 
@@ -409,18 +409,18 @@ static void WinMouse_Free ()
 	Common mouse support
 -----------------------------------------------------------------------------*/
 
-static void DeactivateMouse (bool complete)
+static void DeactivateMouse(bool complete)
 {
 	if (mouseType == 2)
 	{
 		if (complete)
-			DXMouse_Free ();
+			DXMouse_Free();
 		else
-			pMouse->Unacquire ();
+			pMouse->Unacquire();
 	}
 	else if (mouseType == 1)
 	{
-		WinMouse_Free ();
+		WinMouse_Free();
 		complete = true;		// required
 	}
 
@@ -429,7 +429,7 @@ static void DeactivateMouse (bool complete)
 }
 
 
-static void ActivateMouse ()
+static void ActivateMouse()
 {
 	in_mouse->modified = false;
 	if (mouseType == in_mouse->integer) return;
@@ -438,16 +438,16 @@ static void ActivateMouse ()
 	{
 		if (!in_mouse->modified)
 			return;
-		Com_DPrintf ("Changing mouse type\n");
+		Com_DPrintf("Changing mouse type\n");
 		// deactivate then reactivate mouse
-		DeactivateMouse (true);
+		DeactivateMouse(true);
 	}
 
-	if (in_mouse->integer == 2 && DXMouse_Init ())
+	if (in_mouse->integer == 2 && DXMouse_Init())
 		mouseType = 2;
 	else if (in_mouse->integer)
 	{
-		WinMouse_Init ();
+		WinMouse_Init();
 		mouseType = 1;
 	}
 	else
@@ -455,14 +455,14 @@ static void ActivateMouse ()
 }
 
 
-static void StartupMouse ()
+static void StartupMouse()
 {
-	haveSpiMouse      = SystemParametersInfo (SPI_GETMOUSE, 0, originalMouseParms, 0) != 0;
-	haveSpiMouseSpeed = SystemParametersInfo (SPI_GETMOUSESPEED, 0, &originalMouseSpeed, 0) != 0;	// Win98+, Win2K+
+	haveSpiMouse      = SystemParametersInfo(SPI_GETMOUSE, 0, originalMouseParms, 0) != 0;
+	haveSpiMouseSpeed = SystemParametersInfo(SPI_GETMOUSESPEED, 0, &originalMouseSpeed, 0) != 0;	// Win98+, Win2K+
 }
 
 
-static void MouseEvent (unsigned buttons)
+static void MouseEvent(unsigned buttons)
 {
 	static unsigned oldButtons = 0;
 	unsigned old = oldButtons;
@@ -473,7 +473,7 @@ static void MouseEvent (unsigned buttons)
 	while (buttons || old)
 	{
 		if ((buttons ^ old) & 1)
-			Key_Event (key, buttons & 1);
+			Key_Event(key, buttons & 1);
 
 		buttons >>= 1;
 		old     >>= 1;
@@ -482,7 +482,7 @@ static void MouseEvent (unsigned buttons)
 }
 
 
-static void MouseMove (usercmd_t *cmd)
+static void MouseMove(usercmd_t *cmd)
 {
 	static int old_mouse_x, old_mouse_y;
 
@@ -491,17 +491,17 @@ static void MouseMove (usercmd_t *cmd)
 
 	int mx, my;
 	if (mouseType == 2)
-		DXMouse_Frame (mx, my);
+		DXMouse_Frame(mx, my);
 	else
 	{
 		// get mouse position
 		POINT current_pos;
-		if (!GetCursorPos (&current_pos)) return;
+		if (!GetCursorPos(&current_pos)) return;
 		// compute movement
 		mx = current_pos.x - window_center_x;
 		my = current_pos.y - window_center_y;
 		// force the mouse to the center, so there's room to move
-		SetCursorPos (window_center_x, window_center_y);
+		SetCursorPos(window_center_x, window_center_y);
 	}
 
 	// filter mouse movement
@@ -514,8 +514,8 @@ static void MouseMove (usercmd_t *cmd)
 	old_mouse_x = mx;
 	old_mouse_y = my;
 
-	mx = appRound (mx * sensitivity->value * 1.5f);
-	my = appRound (my * sensitivity->value * 1.5f);
+	mx = appRound(mx * sensitivity->value * 1.5f);
+	my = appRound(my * sensitivity->value * 1.5f);
 	if (m_invert->integer) my = -my;
 
 	// add mouse X/Y movement to cmd
@@ -545,14 +545,14 @@ LIST
 // save state and disable accessibility
 #define F(type)		\
 	acc##type.cbSize = sizeof(type); \
-	have##type = SystemParametersInfo (SPI_GET##type, sizeof(type), &acc##type, 0) != 0; \
+	have##type = SystemParametersInfo(SPI_GET##type, sizeof(type), &acc##type, 0) != 0; \
 	if (have##type) {			\
 		type tmp = acc##type;	\
 		tmp.dwFlags = 0;		\
-		SystemParametersInfo (SPI_SET##type, sizeof(type), &tmp, 0); \
+		SystemParametersInfo(SPI_SET##type, sizeof(type), &tmp, 0); \
 	}
 
-static void DisableAccessibility ()
+static void DisableAccessibility()
 {
 	LIST
 }
@@ -561,9 +561,9 @@ static void DisableAccessibility ()
 // restore accessibility to original state
 #define F(type)		\
 	if (have##type)	\
-		SystemParametersInfo (SPI_SET##type, sizeof(type), &acc##type, 0);
+		SystemParametersInfo(SPI_SET##type, sizeof(type), &acc##type, 0);
 
-static void RestoreAccessibility ()
+static void RestoreAccessibility()
 {
 	LIST
 }
@@ -621,15 +621,15 @@ static cvar_t	*joy_mapVars[6];
 static cvar_t	*joy_sensVars[5];
 
 
-static void StartupJoystick ()
+static void StartupJoystick()
 {
 	joy_avail = false;
 
 	// verify joystick driver is present
 	int numdevs;
-	if (!(numdevs = joyGetNumDevs ()))
+	if (!(numdevs = joyGetNumDevs()))
 	{
-//		appPrintf ("\njoystick not found -- driver not present\n\n");
+//		appPrintf("\njoystick not found -- driver not present\n\n");
 		return;
 	}
 
@@ -638,33 +638,33 @@ static void StartupJoystick ()
 	for (joy_id = JOYSTICKID1; joy_id < JOYSTICKID1+numdevs; joy_id++)
 	{
 		JOYINFOEX ji;
-		memset (&ji, 0, sizeof(ji));
+		memset(&ji, 0, sizeof(ji));
 		ji.dwSize  = sizeof(ji);
 		ji.dwFlags = JOY_RETURNCENTERED;
 
-		mmr = joyGetPosEx (joy_id, &ji);
+		mmr = joyGetPosEx(joy_id, &ji);
 		if (mmr == JOYERR_NOERROR || mmr == JOYERR_PARMS) break;		// found a connected joystick
 	}
 
 	// MSDN Q133065
 	if (mmr == JOYERR_PARMS)
 	{
-		appPrintf ("No connected joysticks found\n");
+		appPrintf("No connected joysticks found\n");
 		return;
 	}
 
 	if (mmr != JOYERR_NOERROR)
 	{
-		appPrintf ("No valid joysticks; err=%X\n", mmr);
+		appPrintf("No valid joysticks; err=%X\n", mmr);
 		return;
 	}
 
 	// get the capabilities of the selected joystick
 	JOYCAPS jc;
-	memset (&jc, 0, sizeof(jc));
-	if ((mmr = joyGetDevCaps (joy_id, &jc, sizeof(jc))) != JOYERR_NOERROR)
+	memset(&jc, 0, sizeof(jc));
+	if ((mmr = joyGetDevCaps(joy_id, &jc, sizeof(jc))) != JOYERR_NOERROR)
 	{
-		appPrintf ("Invalid joystick capabilities (err=%X)\n", mmr);
+		appPrintf("Invalid joystick capabilities (err=%X)\n", mmr);
 		return;
 	}
 
@@ -674,11 +674,11 @@ static void StartupJoystick ()
 	joy_hasPov     = (jc.wCaps & JOYCAPS_HASPOV) != 0;
 
 	joy_avail = true;
-	appPrintf ("Joystick detected\n");
+	appPrintf("Joystick detected\n");
 }
 
 
-static void JoyMove (usercmd_t *cmd)
+static void JoyMove(usercmd_t *cmd)
 {
 	if (!joy_avail || !in_joystick->integer)
 		return;
@@ -687,10 +687,10 @@ static void JoyMove (usercmd_t *cmd)
 
 	// acquire joystick data
 	JOYINFOEX ji;
-	memset (&ji, 0, sizeof(ji));
+	memset(&ji, 0, sizeof(ji));
 	ji.dwSize  = sizeof(ji);
 	ji.dwFlags = JOY_RETURNALL;
-	if (joyGetPosEx (joy_id, &ji) != JOYERR_NOERROR) return;
+	if (joyGetPosEx(joy_id, &ji) != JOYERR_NOERROR) return;
 
 	//--------- loop through the buttons -----------------------
 	// key a joystick event or auxillary event for higher number buttons for each state change
@@ -701,7 +701,7 @@ static void JoyMove (usercmd_t *cmd)
 		int oldState = (oldButtonState >> i) & 1;
 		int newState = (buttonState    >> i) & 1;
 		if (oldState != newState)
-			Key_Event (K_JOY1 + i, newState != 0);	// for button index >= 4 used K_AUXn (n = button-4)
+			Key_Event(K_JOY1 + i, newState != 0);	// for button index >= 4 used K_AUXn (n = button-4)
 	}
 	oldButtonState = buttonState;
 
@@ -723,7 +723,7 @@ static void JoyMove (usercmd_t *cmd)
 			int oldState = (oldPovState >> i) & 1;
 			int newState = (povState    >> i) & 1;
 			if (oldState != newState)
-				Key_Event (K_AUX29 + i, newState != 0);
+				Key_Event(K_AUX29 + i, newState != 0);
 		}
 		oldPovState = povState;
 	}
@@ -738,7 +738,7 @@ static void JoyMove (usercmd_t *cmd)
 		// convert range from -32768..32767 to -1..1
 		float fAxisValue = (OFS2FIELD(&ji, joyOffsets[i], unsigned) - 32768) / 32768.0f;
 		// check sensitivity threshold
-		if (fabs (fAxisValue) < joy_threshold->value) continue;
+		if (fabs(fAxisValue) < joy_threshold->value) continue;
 		// "speed" key is down
 		if ((in_Speed.state & STATE_DOWN) ^ cl_run->integer)
 			fAxisValue *= 2;
@@ -749,15 +749,15 @@ static void JoyMove (usercmd_t *cmd)
 		{
 		// case AxisNone == 0 -- do nothing
 		case AxisForward:
-			cmd->forwardmove += appRound (cl_forwardspeed->value * fAxisValue);
+			cmd->forwardmove += appRound(cl_forwardspeed->value * fAxisValue);
 			break;
 
 		case AxisSide:
-			cmd->sidemove    += appRound (cl_sidespeed->value * fAxisValue);
+			cmd->sidemove    += appRound(cl_sidespeed->value * fAxisValue);
 			break;
 
 		case AxisUp:
-			cmd->upmove      += appRound (cl_upspeed->value * fAxisValue);
+			cmd->upmove      += appRound(cl_upspeed->value * fAxisValue);
 			break;
 
 		case AxisTurn:
@@ -788,7 +788,7 @@ static void JoyMove (usercmd_t *cmd)
 	Initialization/finalization
 -----------------------------------------------------------------------------*/
 
-void IN_Init ()
+void IN_Init()
 {
 CVAR_BEGIN(vars)
 	//--------- mouse variables ----------
@@ -816,18 +816,18 @@ CVAR_BEGIN(vars)
 	CVAR_FULL(&joy_sensVars[AxisUp],      "joy_upSensitivity",      "-1", 0)
 CVAR_END
 
-	Cvar_GetVars (ARRAY_ARG(vars));
+	Cvar_GetVars(ARRAY_ARG(vars));
 
-	DisableAccessibility ();
-	StartupMouse ();
-	StartupJoystick ();
+	DisableAccessibility();
+	StartupMouse();
+	StartupJoystick();
 }
 
 
-void IN_Shutdown ()
+void IN_Shutdown()
 {
-	DeactivateMouse (true);
-	RestoreAccessibility ();
+	DeactivateMouse(true);
+	RestoreAccessibility();
 }
 
 
@@ -835,7 +835,7 @@ static bool in_active = false;
 
 // Called when the main window gains or loses focus. The window may have been
 // destroyed and recreated between a deactivate and an activate.
-void IN_Activate (bool active)
+void IN_Activate(bool active)
 {
 	in_active = active;
 	/* NOTES:
@@ -848,7 +848,7 @@ void IN_Activate (bool active)
 
 
 // Called every frame, even if not generating commands
-void IN_Frame ()
+void IN_Frame()
 {
 	guard(IN_Frame);
 
@@ -856,42 +856,42 @@ void IN_Frame ()
 	{
 		//?? deactivate for console only (when GUI mouse will be implemented)
 		// temporarily deactivate if not in fullscreen
-		DeactivateMouse (false);
+		DeactivateMouse(false);
 		return;
 	}
 
 	if (!in_active)
 	{
-		if (mouseType) DeactivateMouse (false);
+		if (mouseType) DeactivateMouse(false);
 		return;
 	}
 
 	if (!mouseType)
 	{
 		in_needRestart = false;
-		ActivateMouse ();
+		ActivateMouse();
 		return;
 	}
 
 	if (in_needRestart)
 	{
 		in_needRestart = false;
-		DeactivateMouse (true);
-		ActivateMouse ();
+		DeactivateMouse(true);
+		ActivateMouse();
 		return;
 	}
 
 	if (in_mouse->modified || !mouseType)
 	{
-		ActivateMouse ();
+		ActivateMouse();
 		return;
 	}
 
 	unguard;
 }
 
-void IN_Move (usercmd_t *cmd)
+void IN_Move(usercmd_t *cmd)
 {
-	MouseMove (cmd);
-	if (ActiveApp) JoyMove (cmd);
+	MouseMove(cmd);
+	if (ActiveApp) JoyMove(cmd);
 }

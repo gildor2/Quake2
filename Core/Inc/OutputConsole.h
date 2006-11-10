@@ -19,23 +19,23 @@
 class COutputDeviceCon : public COutputDevice
 {
 public:
-	void Write (const char *str)
+	void Write(const char *str)
 	{
-		HANDLE hOutput = GetStdHandle (STD_OUTPUT_HANDLE); // fast function ...
+		HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE); // fast function ...
 		while (char c = *str++)
 		{
 			// parse color info
 			if (c == COLOR_ESCAPE && str[0] >= '0' && str[0] <= '7')
 			{
 				static const byte colorTable[8] = {0, 4, 2, 6, 1, 5, 3, 7};
-				SetConsoleTextAttribute (hOutput, colorTable[str[0] - '0']);
+				SetConsoleTextAttribute(hOutput, colorTable[str[0] - '0']);
 				str++;
 				continue;
 			}
 			DWORD dummy;
-			WriteFile (hOutput, &c, 1, &dummy, NULL);
+			WriteFile(hOutput, &c, 1, &dummy, NULL);
 		}
-		SetConsoleTextAttribute (hOutput, 7);
+		SetConsoleTextAttribute(hOutput, 7);
 	}
 };
 
@@ -47,12 +47,12 @@ class COutputDeviceCon : public COutputDevice
 {
 public:
 #if __CYGWIN__
-	COutputDeviceCon ()
+	COutputDeviceCon()
 	{
-		setbuf (stdout, NULL);						// disable buffering; required for cygwin, when connected to remote terminal
+		setbuf(stdout, NULL);						// disable buffering; required for cygwin, when connected to remote terminal
 	}
 #endif
-	void Write (const char *str)
+	void Write(const char *str)
 	{
 		byte color = 0;
 		// draw message
@@ -64,14 +64,14 @@ public:
 				static char buf[] = "\033[30m";
 				buf[3] = str[0];
 				color = str[0] - '0';
-				fwrite (buf, 5, 1, stdout);
+				fwrite(buf, 5, 1, stdout);
 				str++;
 				continue;
 			}
-			fwrite (&c, 1, 1, stdout);
+			fwrite(&c, 1, 1, stdout);
 		}
 		if (color)
-			fwrite ("\033[0m", 4, 1, stdout);		// reset color attribute
+			fwrite("\033[0m", 4, 1, stdout);		// reset color attribute
 	}
 };
 

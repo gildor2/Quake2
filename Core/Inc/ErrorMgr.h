@@ -10,21 +10,21 @@ public:
 	bool	wasError;			// used for error history formatting
 	TString<256>  Message;		// error message
 	TString<2048> History;		// call history
-	void	Reset ();
+	void	Reset();
 	// fields for non-fatal error
 	bool	nonFatalError;		// when false, app can try to recover from error (and swError will be true)
 };
 
-CORE_API NORETURN void appFatalError (const char *fmt, ...) PRINTF(1,2);
+CORE_API NORETURN void appFatalError(const char *fmt, ...) PRINTF(1,2);
 #define appError	appFatalError
-CORE_API NORETURN void appNonFatalError (const char *fmt, ...) PRINTF(1,2);
+CORE_API NORETURN void appNonFatalError(const char *fmt, ...) PRINTF(1,2);
 
 
-CORE_API void appUnwindPrefix (const char *fmt);		// not vararg (will display function name for unguardf only)
-CORE_API NORETURN void appUnwindThrow (const char *fmt, ...) PRINTF(1,2);
+CORE_API void appUnwindPrefix(const char *fmt);		// not vararg (will display function name for unguardf only)
+CORE_API NORETURN void appUnwindThrow(const char *fmt, ...) PRINTF(1,2);
 
-CORE_API const char *appGetSystemErrorMessage (unsigned code);
-CORE_API void appDisplayError ();
+CORE_API const char *appGetSystemErrorMessage(unsigned code);
+CORE_API void appDisplayError();
 
 
 // global variables

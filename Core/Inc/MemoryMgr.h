@@ -19,8 +19,8 @@ CORE_API extern address_t GCurrentMemAllocator;
 // If we use alignment=8, this will allocate 7 additional bytes to ensure this condition,
 // so - use alignment=1 by default (appMalloc uses malloc(), which itself returns aligned
 // blocks (in VC by 8 bytes) )
-CORE_API void *appMalloc (size_t size, int alignment = 1);
-CORE_API void appFree (void *ptr);
+CORE_API void *appMalloc(size_t size, int alignment = 1);
+CORE_API void appFree(void *ptr);
 
 
 // WARNING: when used multiple inheritance, and one of base classes is CMemoryChain, it should
@@ -28,7 +28,7 @@ CORE_API void appFree (void *ptr);
 class CORE_API CMemoryChain
 {
 #if MEM_DEBUG
-	friend int BuildAllocatorsTable (void *info, int maxCount);
+	friend int BuildAllocatorsTable(void *info, int maxCount);
 #endif
 private:
 	CMemoryChain *next;
@@ -39,72 +39,72 @@ private:
 	address_t owner;
 	CMemoryChain *dPrev, *dNext;
 	static CMemoryChain *first;
-	void	Link ();
-	void	Unlink ();
+	void	Link();
+	void	Unlink();
 #endif
 public:
-	void *Alloc (size_t size, int alignment = DEFAULT_ALIGNMENT);
+	void* Alloc(size_t size, int alignment = DEFAULT_ALIGNMENT);
 	// creating chain
-	void *operator new (size_t size, int dataSize = MEM_CHUNK_SIZE);
+	void* operator new(size_t size, int dataSize = MEM_CHUNK_SIZE);
 	// deleting chain
-	void operator delete (void *ptr);
+	void operator delete(void* ptr);
 	// stats
-	int GetSize ();
+	int GetSize();
 };
 
 
 // VC and GCC does not allow to make "operator new (size,alignment=1)" (def. param) ONLY; so - we
 // have 2 versions of this operators ...
 
-FORCEINLINE void *operator new (size_t size)
+FORCEINLINE void* operator new(size_t size)
 {
-	return appMalloc (size, 1);
+	return appMalloc(size, 1);
 }
 
-FORCEINLINE void *operator new (size_t size, int alignment)
+FORCEINLINE void* operator new(size_t size, int alignment)
 {
-	return appMalloc (size, alignment);
+	return appMalloc(size, alignment);
 }
 
-FORCEINLINE void operator delete (void *ptr)
+FORCEINLINE void operator delete(void* ptr)
 {
-	appFree (ptr);
+	appFree(ptr);
 }
 
 // allocating block from chain
-FORCEINLINE void *operator new (size_t size, CMemoryChain *chain, int alignment = DEFAULT_ALIGNMENT)
+FORCEINLINE void* operator new(size_t size, CMemoryChain *chain, int alignment = DEFAULT_ALIGNMENT)
 {
-	return chain->Alloc (size, alignment);
+	return chain->Alloc(size, alignment);
 };
 
 #if __GNUC__
 // for GCC: operator new[]/delete[]
 // exact copy of non-[] operators ...
 
-FORCEINLINE void *operator new[] (size_t size)
+FORCEINLINE void* operator new[](size_t size)
 {
-	return appMalloc (size, 1);
+	return appMalloc(size, 1);
 }
 
-FORCEINLINE void *operator new[] (size_t size, int alignment)
+FORCEINLINE void* operator new[](size_t size, int alignment)
 {
-	return appMalloc (size, alignment);
+	return appMalloc(size, alignment);
 }
 
-FORCEINLINE void operator delete[] (void *ptr)
+FORCEINLINE void operator delete[](void *ptr)
 {
-	appFree (ptr);
+	appFree(ptr);
 }
 
-FORCEINLINE void *operator new[] (size_t size, CMemoryChain *chain, int alignment = DEFAULT_ALIGNMENT)
+FORCEINLINE void* operator new[](size_t size, CMemoryChain *chain, int alignment = DEFAULT_ALIGNMENT)
 {
-	return chain->Alloc (size, alignment);
+	return chain->Alloc(size, alignment);
 };
 
 #endif
 
 // hack to initialize VMT for objects, created without using "operator new"
-FORCEINLINE void *operator new (unsigned size, char *buffer)
+FORCEINLINE void* operator new(unsigned size, char *buffer)
 {
 	return buffer;
 }

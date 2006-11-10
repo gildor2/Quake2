@@ -11,13 +11,13 @@
 		- and OpenFile()/FileExists() will require to use ListDirectoryOS() function
 */
 
-void appListDirectory (const char *mask, CFileList &List, unsigned flags)
+void appListDirectory(const char *mask, CFileList &List, unsigned flags)
 {
 	guard(appListDirectory);
 
 	TString<256> Path, Mask;
-	Path.filename (mask);
-	char *s = Path.rchr ('/');
+	Path.filename(mask);
+	char *s = Path.rchr('/');
 	if (s)
 	{
 		*s++ = 0;					// cut filename from path
@@ -33,7 +33,7 @@ void appListDirectory (const char *mask, CFileList &List, unsigned flags)
 //	appPrintf("mask=[%s] Path=[%s] Mask=[%s]\n", mask, *Path, *Mask);
 
 	_finddata_t found;
-	long hFind = _findfirst (Path, &found);
+	long hFind = _findfirst(Path, &found);
 	if (hFind == -1) return;
 
 	do
@@ -43,38 +43,38 @@ void appListDirectory (const char *mask, CFileList &List, unsigned flags)
 		if (!(f & flags)) continue;
 
 		// lowercase found.name
-		appStrncpylwr (found.name, found.name, sizeof(found.name));
+		appStrncpylwr(found.name, found.name, sizeof(found.name));
 		// refine by wildcard
-		if (!appMatchWildcard (found.name, Mask)) continue;
+		if (!appMatchWildcard(found.name, Mask)) continue;
 		// process NOEXT
 		if (flags & FS_NOEXT)
 		{
-			char *s = strchr (found.name, '.');
+			char *s = strchr(found.name, '.');
 			if (s) *s = 0;
 		}
 		// add to list
 		CFileItem *item, *place;
-		if (!(item = List.Find (found.name, &place)))
+		if (!(item = List.Find(found.name, &place)))
 		{
 			item = new (found.name, &List) CFileItem;
 			// here: item->flags=0
-			List.InsertAfter (item, place);
+			List.InsertAfter(item, place);
 		}
 		item->flags |= f | FS_OS;
-	} while (_findnext (hFind, &found) != -1);
+	} while (_findnext(hFind, &found) != -1);
 
-	_findclose (hFind);
+	_findclose(hFind);
 
 	unguard;
 }
 
 
-void appMakeDirectory (const char *dirname)
+void appMakeDirectory(const char *dirname)
 {
 	if (!dirname[0]) return;
 	// mkdir() and win32 CreateDirectory() does not support "a/b/c" creation,
 	// so - we will create "a", then "a/b", then "a/b/c"
-	TString<256> Name; Name.filename (dirname);
+	TString<256> Name; Name.filename(dirname);
 	for (char *s = *Name; /* empty */ ; s++)
 	{
 		char c = *s;
@@ -83,7 +83,7 @@ void appMakeDirectory (const char *dirname)
 		*s = 0;						// temporarily cut rest of path
 		// here: path delimiter or end of string
 		if (Name[0] != '.' || Name[1] != 0)		// do not create "."
-			_mkdir (Name);
+			_mkdir(Name);
 		if (!c) break;				// end of string
 		*s = '/';					// restore string (c == '/')
 	}
@@ -96,10 +96,10 @@ void appMakeDirectory (const char *dirname)
 #define	S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
 #endif
 
-unsigned appFileType (const char *filename)
+unsigned appFileType(const char *filename)
 {
 	struct stat buf;
-	if (stat (filename, &buf) == -1)
+	if (stat(filename, &buf) == -1)
 		return 0;					// no such file/dir
 	if (S_ISDIR(buf.st_mode))
 		return FS_DIR;

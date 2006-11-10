@@ -15,7 +15,7 @@
 
 bool			GIsFatalError;
 CErrorHandler	GErr;
-static COutputDeviceMemTail LogTail (1024);
+static COutputDeviceMemTail LogTail(1024);
 
 
 /*-----------------------------------------------------------------------------
@@ -27,13 +27,13 @@ static bool ErrLogOpened;				// cannot use ErrLog.IsOpened(): may be failed to o
 static bool IsRecursiveError;
 
 
-COutputDevice *appBeginError (const char *msg)
+COutputDevice *appBeginError(const char *msg)
 {
-	DBG(printf("appBeginError() from %s\n", appSymbolName (GET_RETADDR(msg))));
+	DBG(printf("appBeginError() from %s\n", appSymbolName(GET_RETADDR(msg))));
 	if (GIsFatalError)
 	{
 		// recursive error
-		ErrLog.Printf ("\n\nRecursive error: %s\n", msg);
+		ErrLog.Printf("\n\nRecursive error: %s\n", msg);
 		IsRecursiveError = true;
 		return GNull;
 	}
@@ -41,22 +41,22 @@ COutputDevice *appBeginError (const char *msg)
 	GLogHook        = NULL;
 	GErr.Message    = msg;
 	GErr.History[0] = 0;
-	LogTail.Unregister ();				// freeze log tail
+	LogTail.Unregister();				// freeze log tail
 
 	// start log
-	appGetErrorLog ();
-	ErrLog.Printf ("-------------------------------------------\n");
-	ErrLog.Printf ("%s crash, %s\n", appPackage (), appTimestamp ());
-	ErrLog.Printf ("-------------------------------------------\n");
-	ErrLog.Printf ("OS:  %s\nCPU: %s\n", GMachineOS, GMachineCPU);
-	ErrLog.Printf ("\nERROR: %s\n\n", msg);
+	appGetErrorLog();
+	ErrLog.Printf("-------------------------------------------\n");
+	ErrLog.Printf("%s crash, %s\n", appPackage(), appTimestamp());
+	ErrLog.Printf("-------------------------------------------\n");
+	ErrLog.Printf("OS:  %s\nCPU: %s\n", GMachineOS, GMachineCPU);
+	ErrLog.Printf("\nERROR: %s\n\n", msg);
 
 	return &ErrLog;
 }
 
 
 // real function is BeginError, but later - get error log; should be a different name!
-COutputDevice *appGetErrorLog ()
+COutputDevice *appGetErrorLog()
 {
 	if (IsRecursiveError)
 		return GNull;
@@ -65,20 +65,20 @@ COutputDevice *appGetErrorLog ()
 	{
 		// init log
 		ErrLogOpened = true;
-		ErrLog.Open (CRASH_LOG);
+		ErrLog.Open(CRASH_LOG);
 		ErrLog.FlushEveryTime = true;
 		ErrLog.NoColors       = false;	// do not modify output
-		ErrLog.Printf ("\n\n");
+		ErrLog.Printf("\n\n");
 		// detect logging w/o error
 		if (!GIsFatalError)
-			ErrLog.Printf ("WARNING: log opened without error!\n");
+			ErrLog.Printf("WARNING: log opened without error!\n");
 	}
 	return &ErrLog;
 }
 
 
 #if DO_GUARD
-static void LogHistory (const char *part)
+static void LogHistory(const char *part)
 {
 	if (GErr.nonFatalError)
 	{
@@ -90,13 +90,13 @@ static void LogHistory (const char *part)
 	{
 		// fatal error, but log is not started ...
 		// this may happen on Win32 when compiled with WIN32_USE_SEH=0
-		appGetErrorLog ();
+		appGetErrorLog();
 	}
 	// HERE: ErrLog is opened
 	if (!GErr.History[0])
-		ErrLog.Write ("History:\n  ");
+		ErrLog.Write("History:\n  ");
 	GErr.History += part;
-	ErrLog.Write (part);
+	ErrLog.Write(part);
 }
 #endif
 
@@ -112,7 +112,7 @@ static CGuardContext *contexts[512];
 static int numContexts = 0;
 
 
-CGuardContext::CGuardContext (const char *msg)
+CGuardContext::CGuardContext(const char *msg)
 :	text(msg)
 ,	jumped(false)
 {
@@ -124,7 +124,7 @@ CGuardContext::CGuardContext (const char *msg)
 }
 
 
-CGuardContext::~CGuardContext ()
+CGuardContext::~CGuardContext()
 {
 	if (jumped)
 	{
@@ -142,8 +142,8 @@ CGuardContext::~CGuardContext ()
 }
 
 
-CGuardContext2::CGuardContext2 ()
-:	CGuardContext (NULL)
+CGuardContext2::CGuardContext2()
+:	CGuardContext(NULL)
 {
 	DBG(printf("...disable:%d(%d)\n", numContexts-1, GNumDisabledContexts));
 	if (!GNumDisabledContexts)
@@ -151,14 +151,14 @@ CGuardContext2::CGuardContext2 ()
 }
 
 
-void appThrowException ()
+void appThrowException()
 {
 	if (!numContexts)
 	{
 		// no guard/unguard or TRY/CATCH blocks
-		appGetErrorLog ();			// force open
-		ErrLog.Printf ("\n\nUncatched appThrowException()\n");
-		abort ();
+		appGetErrorLog();			// force open
+		ErrLog.Printf("\n\nUncatched appThrowException()\n");
+		abort();
 	}
 	// check for stack overflow
 	if (numContexts > ARRAY_COUNT(contexts))
@@ -167,7 +167,7 @@ void appThrowException ()
 		GNumDisabledContexts = 0;					// just in case; seems, stack overflow ... (always error)
 		numContexts = ARRAY_COUNT(contexts);
 	}
-	DBG(printf ("#%d  %s\n", numContexts-1, contexts[numContexts-1]->text));
+	DBG(printf("#%d  %s\n", numContexts-1, contexts[numContexts-1]->text));
 	// remove context
 	CGuardContext *ctx = contexts[numContexts-1];
 	numContexts--;
@@ -177,23 +177,23 @@ void appThrowException ()
 		GNumDisabledContexts = 0;
 	}
 	ctx->jumped = true;
-	longjmp (ctx->jmp, 1);
+	longjmp(ctx->jmp, 1);
 }
 
 #endif
 
 
-void appFatalError (const char *fmt, ...)
+void appFatalError(const char *fmt, ...)
 {
 	char buf[1024];
 	va_list argptr;
-	va_start (argptr, fmt);
-	vsnprintf (ARRAY_ARG(buf), fmt, argptr);
-	va_end (argptr);
+	va_start(argptr, fmt);
+	vsnprintf(ARRAY_ARG(buf), fmt, argptr);
+	va_end(argptr);
 
-//??	if (debugLog) debugLog->Printf ("FATAL ERROR: %s\n", buf);
+//??	if (debugLog) debugLog->Printf("FATAL ERROR: %s\n", buf);
 	// initiate error + open log
-	appBeginError (buf);
+	appBeginError(buf);
 	if (!IsRecursiveError)
 		GErr.swError = true;
 
@@ -201,7 +201,7 @@ void appFatalError (const char *fmt, ...)
 }
 
 
-void appNonFatalError (const char *fmt, ...)
+void appNonFatalError(const char *fmt, ...)
 {
 	GErr.swError       = true;
 	GErr.nonFatalError = true;
@@ -211,10 +211,10 @@ void appNonFatalError (const char *fmt, ...)
 	if (fmt)
 	{
 		va_list argptr;
-		va_start (argptr, fmt);
-		vsnprintf (ARRAY_ARG(GErr.Message), fmt, argptr);
-		va_end (argptr);
-		appPrintf (S_RED"ERROR: %s\n", *GErr.Message);
+		va_start(argptr, fmt);
+		vsnprintf(ARRAY_ARG(GErr.Message), fmt, argptr);
+		va_end(argptr);
+		appPrintf(S_RED"ERROR: %s\n", *GErr.Message);
 	}
 	else
 		GErr.Message[0] = 0;	// no message at all
@@ -225,32 +225,32 @@ void appNonFatalError (const char *fmt, ...)
 
 #if DO_GUARD
 
-void appUnwindPrefix (const char *fmt)
+void appUnwindPrefix(const char *fmt)
 {
 	TString<512> Buf;
-	Buf.sprintf (GErr.wasError ? " <- %s:" : "%s:", fmt);
-	LogHistory (Buf);
+	Buf.sprintf(GErr.wasError ? " <- %s:" : "%s:", fmt);
+	LogHistory(Buf);
 	GErr.wasError = false;		// will not insert "<-" next appUnwindThrow()
 }
 
 
-void appUnwindThrow (const char *fmt, ...)
+void appUnwindThrow(const char *fmt, ...)
 {
 	char	buf[512];
 	va_list	argptr;
 
-	va_start (argptr, fmt);
+	va_start(argptr, fmt);
 	if (GErr.wasError)
 	{
 		*((unsigned*)buf) = BYTES4(' ','<','-',' ');
 //		buf[0] = ' '; buf[1] = '<'; buf[2] = '-'; buf[3] = ' ';
-		vsnprintf (buf+4, sizeof(buf)-4, fmt, argptr);
+		vsnprintf(buf+4, sizeof(buf)-4, fmt, argptr);
 	}
 	else
-		vsnprintf (buf, sizeof(buf), fmt, argptr);
-	va_end (argptr);
+		vsnprintf(buf, sizeof(buf), fmt, argptr);
+	va_end(argptr);
 	GErr.wasError = true;
-	LogHistory (buf);
+	LogHistory(buf);
 
 	THROW;
 }
@@ -258,7 +258,7 @@ void appUnwindThrow (const char *fmt, ...)
 #endif
 
 
-void CErrorHandler::Reset ()
+void CErrorHandler::Reset()
 {
 	swError = nonFatalError = wasError = false;
 	Message = "General Protection Fault !";		// on Win32 this message will appears only when compiled with WIN32_USE_SEH=1
@@ -271,53 +271,53 @@ void CErrorHandler::Reset ()
 -----------------------------------------------------------------------------*/
 
 #if !NO_DEBUG
-static void Cmd_Error (int argc, char **argv)
+static void Cmd_Error(int argc, char **argv)
 {
 	guard(Cmd_Error);
-	if (!stricmp (argv[1], "-gpf"))
+	if (!stricmp(argv[1], "-gpf"))
 		*((int*)NULL) = 0;						// this is not "throw" command, this is GPF
-	else if (!stricmp (argv[1], "-drop"))		//?? "drop" error - Q2-style (drop server); global usage (and name) may be different
-		appNonFatalError ("testing drop error");
-	else if (!stricmp (argv[1], "-stack"))
-		Cmd_Error (argc, argv);					// infinite recurse
-	else if (!stricmp (argv[1], "-throw"))
+	else if (!stricmp(argv[1], "-drop"))		//?? "drop" error - Q2-style (drop server); global usage (and name) may be different
+		appNonFatalError("testing drop error");
+	else if (!stricmp(argv[1], "-stack"))
+		Cmd_Error(argc, argv);					// infinite recurse
+	else if (!stricmp(argv[1], "-throw"))
 		THROW;
-	appFatalError ("%s", argv[1]);
+	appFatalError("%s", argv[1]);
 	unguard;
 }
 #endif
 
 
 //?? set GErr
-void appInitError ()
+void appInitError()
 {
 	LogTail.NoColors = true;
-	LogTail.Register ();
-	GErr.Reset ();
+	LogTail.Register();
+	GErr.Reset();
 #if !NO_DEBUG
-	RegisterCommand ("error", Cmd_Error);
+	RegisterCommand("error", Cmd_Error);
 #endif
 }
 
 
-void appShutdownError ()
+void appShutdownError()
 {
 	if (ErrLogOpened)
 	{
 		// finish error log and close it
-		ErrLog.Write ("\n\nLast log lines:\n");
-		ErrLog.Write (LogTail.GetTail (10));
-		ErrLog.Write ("\n\n");
-		ErrLog.Close ();
+		ErrLog.Write("\n\nLast log lines:\n");
+		ErrLog.Write(LogTail.GetTail(10));
+		ErrLog.Write("\n\n");
+		ErrLog.Close();
 	}
 	if (GIsFatalError)
 	{
 		// print error message to global log
-		appPrintf ("\n\n"S_RED"--------------------\n%s fatal error: %s\n", appPackage (), *GErr.Message);
+		appPrintf("\n\n"S_RED"--------------------\n%s fatal error: %s\n", appPackage(), *GErr.Message);
 #if DO_GUARD
-		appPrintf ("History: %s\n\n", *GErr.History);
+		appPrintf("History: %s\n\n", *GErr.History);
 #endif
 		// display popup
-		appDisplayError ();
+		appDisplayError();
 	}
 }

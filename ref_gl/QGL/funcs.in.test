@@ -13,8 +13,8 @@ GLboolean AreTexturesResident (GLsizei n, const GLuint *textures, GLboolean *res
 const char *NoLog (int a, char b) NOLOG
 
 #platform win32
-void wglTestFunc (float tst) ARGS
-char *wglGetString (void);
+void wglTestFunc(float tst) ARGS
+char *wglGetString(void);
 
 #platform linux
 int glxTestFunc (int tst) ARGS
@@ -40,12 +40,12 @@ void TestExtensionStopEXT (void);
 #platform win32
 
 #name WGL_ANOTHER_TEST
-void wglAnother (void);
+void wglAnother(void);
 
 #name WGL_SECOND_EXT
 #require WGL_ANOTHER_TEST GL_ARB_TEXTURE_COMPRESSION
-void wglSecondFunc (int num);
-void wglSecondFunc2 (int num1, int num2);
+void wglSecondFunc(int num);
+void wglSecondFunc2(int num1, int num2);
 
 #platform linux
 

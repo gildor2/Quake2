@@ -85,23 +85,23 @@ static edict_t	**area_list;
 static int		area_count, area_maxcount;
 static int		area_type;
 
-int SV_HullForEntity (edict_t *ent);
+int SV_HullForEntity(edict_t *ent);
 
 
 //?? convert these funcs to class members
 // ClearLink is used for new headnodes
-static void ClearLink (link_t &l)
+static void ClearLink(link_t &l)
 {
 	l.prev = l.next = &l;
 }
 
-static void RemoveLink (link_t &l)
+static void RemoveLink(link_t &l)
 {
 	l.next->prev = l.prev;
 	l.prev->next = l.next;
 }
 
-static void InsertLinkBefore (link_t &l, link_t &before)
+static void InsertLinkBefore(link_t &l, link_t &before)
 {
 	l.next = &before;
 	l.prev = before.prev;
@@ -111,12 +111,12 @@ static void InsertLinkBefore (link_t &l, link_t &before)
 
 
 // Builds a uniformly subdivided tree for the given world size
-static areanode_t *SV_CreateAreaNode (int depth, const CBox &bounds)
+static areanode_t *SV_CreateAreaNode(int depth, const CBox &bounds)
 {
 	areanode_t &anode = areaNodes[numAreaNodes++];
 
-	ClearLink (anode.trigEdicts);
-	ClearLink (anode.solidEdicts);
+	ClearLink(anode.trigEdicts);
+	ClearLink(anode.solidEdicts);
 
 	if (depth == AREA_DEPTH)
 	{
@@ -139,21 +139,21 @@ static areanode_t *SV_CreateAreaNode (int depth, const CBox &bounds)
 	CBox bounds2 = bounds;
 	bounds1.maxs[anode.axis] = bounds2.mins[anode.axis] = anode.dist;
 
-	anode.children[0] = SV_CreateAreaNode (depth+1, bounds1);
-	anode.children[1] = SV_CreateAreaNode (depth+1, bounds2);
+	anode.children[0] = SV_CreateAreaNode(depth+1, bounds1);
+	anode.children[1] = SV_CreateAreaNode(depth+1, bounds2);
 	anode.children[0]->parent = anode.children[1]->parent = &anode;	// NULL for root, because of memset(..,0,..)
 
 	return &anode;
 }
 
 
-void SV_ClearWorld ()
+void SV_ClearWorld()
 {
-	memset (areaNodes, 0, sizeof(areaNodes));
-	memset (ents, 0, sizeof(ents));
+	memset(areaNodes, 0, sizeof(areaNodes));
+	memset(ents, 0, sizeof(ents));
 	numAreaNodes = 0;
 	if (!sv.models[1]) return;		// map is not yet loaded (check [1], not [0] ...)
-	SV_CreateAreaNode (0, sv.models[1]->bounds);
+	SV_CreateAreaNode(0, sv.models[1]->bounds);
 }
 
 
@@ -161,12 +161,12 @@ void SV_ClearWorld ()
 	Linking edicts to world tree
 -----------------------------------------------------------------------------*/
 
-void SV_UnlinkEdict (edict_t *ent)
+void SV_UnlinkEdict(edict_t *ent)
 {
 	guard(SV_UnlinkEdict);
 
 	if (!ent->area.prev) return;			// not linked
-	RemoveLink (ent->area);
+	RemoveLink(ent->area);
 	ent->area.prev = ent->area.next = NULL;
 
 	entityHull_t &ex = ents[NUM_FOR_EDICT(ent)];
@@ -186,7 +186,7 @@ void SV_UnlinkEdict (edict_t *ent)
 
 #define MAX_TOTAL_ENT_LEAFS		128
 
-void SV_LinkEdict (edict_t *ent)
+void SV_LinkEdict(edict_t *ent)
 {
 	guard(SV_LinkEdict);
 
@@ -199,17 +199,17 @@ void SV_LinkEdict (edict_t *ent)
 		{
 			// link model hook
 			const char *modelName = sv.configstrings[CS_MODELS + ent->s.modelindex];
-			if (!strcmp (modelName, "models/objects/dmspot/tris.md2"))
+			if (!strcmp(modelName, "models/objects/dmspot/tris.md2"))
 			{
 				// teleporter (source+target) was found
-//				appPrintf (S_CYAN"teleport: %g %g %g\n", VECTOR_ARG(ent->s.origin));
+//				appPrintf(S_CYAN"teleport: %g %g %g\n", VECTOR_ARG(ent->s.origin));
 				return;			// simply do not link model; trigger entity will be added anyway
 			}
 		}
 	}
 
 	if (ent->area.prev)
-		SV_UnlinkEdict (ent);	// unlink from old position (i.e. relink edict)
+		SV_UnlinkEdict(ent);	// unlink from old position (i.e. relink edict)
 
 	if (ent == ge->edicts)
 		return;					// don't add the world
@@ -219,20 +219,20 @@ void SV_LinkEdict (edict_t *ent)
 
 	entityHull_t &ex = ents[NUM_FOR_EDICT(ent)];
 	ex.owner = ent;
-	ex.axis.FromEuler (ent->s.angles);
+	ex.axis.FromEuler(ent->s.angles);
 
 	// set the size
-	VectorSubtract (ent->bounds.maxs, ent->bounds.mins, ent->size);
+	VectorSubtract(ent->bounds.maxs, ent->bounds.mins, ent->size);
 
 	// encode the size into the entity_state for client prediction
 	if (ent->solid == SOLID_BBOX)
 	{
 		// assume that x/y are equal and symetric
-		i = appRound (ent->bounds.maxs[0] / 8);
+		i = appRound(ent->bounds.maxs[0] / 8);
 		// z is not symetric
-		j = appRound (-ent->bounds.mins[2] / 8);
+		j = appRound(-ent->bounds.mins[2] / 8);
 		// and z maxs can be negative...
-		k = appRound ((ent->bounds.maxs[2] + 32) / 8);
+		k = appRound((ent->bounds.maxs[2] + 32) / 8);
 		// original Q2 have bounded i/j/k/ with lower margin==1 (for client prediction only); this will
 		// produce incorrect collision test when bbox mins/maxs is (0,0,0)
 		i = bound(i, 0, 31);		// mins/maxs[0,1] range is -248..0/0..248
@@ -245,20 +245,20 @@ void SV_LinkEdict (edict_t *ent)
 		i *= 8;
 		j *= 8;
 		k *= 8;
-		ex.bounds.mins.Set (-i, -i, -j);
-		ex.bounds.maxs.Set (i, i, k - 32);
-		ex.bounds.GetCenter (ex.center);
-		ex.center.Add (ent->s.origin);
+		ex.bounds.mins.Set(-i, -i, -j);
+		ex.bounds.maxs.Set(i, i, k - 32);
+		ex.bounds.GetCenter(ex.center);
+		ex.center.Add(ent->s.origin);
 		ex.model  = NULL;
-		ex.radius = VectorDistance (ex.bounds.maxs, ex.bounds.mins) / 2;
+		ex.radius = VectorDistance(ex.bounds.maxs, ex.bounds.mins) / 2;
 	}
 	else if (ent->solid == SOLID_BSP)
 	{
 		ex.model = sv.models[ent->s.modelindex];
-		if (!ex.model) Com_DropError ("MOVETYPE_PUSH with a non bsp model");
+		if (!ex.model) Com_DropError("MOVETYPE_PUSH with a non bsp model");
 		CVec3	v;
-		ex.model->bounds.GetCenter (v);
-		UnTransformPoint (ent->s.origin, ex.axis, v, ex.center);
+		ex.model->bounds.GetCenter(v);
+		UnTransformPoint(ent->s.origin, ex.axis, v, ex.center);
 		ex.radius = ex.model->radius;
 
 		ent->s.solid = 31;		// a SOLID_BBOX will never create this value (mins=(-248,-248,0) maxs=(248,248,-32))
@@ -278,8 +278,8 @@ void SV_LinkEdict (edict_t *ent)
 	}
 	else
 	{	// normal
-		VectorAdd (ent->s.origin, ent->bounds.mins, ent->absBounds.mins);
-		VectorAdd (ent->s.origin, ent->bounds.maxs, ent->absBounds.maxs);
+		VectorAdd(ent->s.origin, ent->bounds.mins, ent->absBounds.mins);
+		VectorAdd(ent->s.origin, ent->bounds.maxs, ent->absBounds.maxs);
 	}
 
 	// because movement is clipped an epsilon away from an actual edge,
@@ -298,7 +298,7 @@ void SV_LinkEdict (edict_t *ent)
 	// get all leafs, including solids
 	CBspLeaf *leafs[MAX_TOTAL_ENT_LEAFS];
 	int topnode;
-	int num_leafs = CM_BoxLeafs (ent->absBounds, ARRAY_ARG(leafs), &topnode);
+	int num_leafs = CM_BoxLeafs(ent->absBounds, ARRAY_ARG(leafs), &topnode);
 
 	// set areas
 	int clusters[MAX_TOTAL_ENT_LEAFS];
@@ -312,7 +312,7 @@ void SV_LinkEdict (edict_t *ent)
 			if (ent->areanum && ent->areanum != area)
 			{
 				if (ent->areanum2 && ent->areanum2 != area && sv.state == ss_loading)
-					Com_DPrintf ("Object touching 3 areas at %g %g %g\n", VECTOR_ARG(ent->absBounds.mins));
+					Com_DPrintf("Object touching 3 areas at %g %g %g\n", VECTOR_ARG(ent->absBounds.mins));
 				ent->areanum2 = area;
 			}
 			else
@@ -373,13 +373,13 @@ void SV_LinkEdict (edict_t *ent)
 	areanode_t *node2 = node;
 	if (ent->solid == SOLID_TRIGGER)
 	{
-		InsertLinkBefore (ent->area, node->trigEdicts);
+		InsertLinkBefore(ent->area, node->trigEdicts);
 		for ( ; node2; node2 = node2->parent)
 			node2->numTrigEdicts++;
 	}
 	else
 	{
-		InsertLinkBefore (ent->area, node->solidEdicts);
+		InsertLinkBefore(ent->area, node->solidEdicts);
 		for ( ; node2; node2 = node2->parent)
 			node2->numSolidEdicts++;
 	}
@@ -389,7 +389,7 @@ void SV_LinkEdict (edict_t *ent)
 }
 
 
-static void SV_AreaEdicts_r (areanode_t *node)
+static void SV_AreaEdicts_r(areanode_t *node)
 {
 	link_t	*start;
 
@@ -424,7 +424,7 @@ static void SV_AreaEdicts_r (areanode_t *node)
 
 		if (area_count == area_maxcount)
 		{
-			appWPrintf ("SV_AreaEdicts: MAXCOUNT\n");
+			appWPrintf("SV_AreaEdicts: MAXCOUNT\n");
 			return;
 		}
 
@@ -434,12 +434,12 @@ static void SV_AreaEdicts_r (areanode_t *node)
 	if (node->axis == -1)
 		return;				// terminal node
 
-	if (area_bounds.maxs[node->axis] > node->dist) SV_AreaEdicts_r (node->children[0]);
-	if (area_bounds.mins[node->axis] < node->dist) SV_AreaEdicts_r (node->children[1]);
+	if (area_bounds.maxs[node->axis] > node->dist) SV_AreaEdicts_r(node->children[0]);
+	if (area_bounds.mins[node->axis] < node->dist) SV_AreaEdicts_r(node->children[1]);
 }
 
 
-int SV_AreaEdicts (const CVec3 &mins, const CVec3 &maxs, edict_t **list, int maxcount, int areatype)
+int SV_AreaEdicts(const CVec3 &mins, const CVec3 &maxs, edict_t **list, int maxcount, int areatype)
 {
 	guard(SV_AreaEdicts);
 	area_bounds.mins = mins;
@@ -449,7 +449,7 @@ int SV_AreaEdicts (const CVec3 &mins, const CVec3 &maxs, edict_t **list, int max
 	area_maxcount    = maxcount;
 	area_type        = areatype;
 
-	SV_AreaEdicts_r (areaNodes);
+	SV_AreaEdicts_r(areaNodes);
 
 	return area_count;
 	unguard;
@@ -460,16 +460,16 @@ int SV_AreaEdicts (const CVec3 &mins, const CVec3 &maxs, edict_t **list, int max
 	Trace
 -----------------------------------------------------------------------------*/
 
-int SV_PointContents (const CVec3 &p)
+int SV_PointContents(const CVec3 &p)
 {
 	guard(SV_PointContents);
 
 	// get base contents from world
-	unsigned contents = CM_PointContents (p, 0);
-	contents |= CM_PointModelContents (p);
+	unsigned contents = CM_PointContents(p, 0);
+	contents |= CM_PointModelContents(p);
 
 	edict_t	*list[MAX_EDICTS];
-	int num = SV_AreaEdicts (p, p, ARRAY_ARG(list), AREA_SOLID);
+	int num = SV_AreaEdicts(p, p, ARRAY_ARG(list), AREA_SOLID);
 
 	for (int i = 0; i < num; i++)
 	{
@@ -477,9 +477,9 @@ int SV_PointContents (const CVec3 &p)
 		entityHull_t *ent = &ents[NUM_FOR_EDICT(edict)];
 
 		if (ent->model)
-			contents |= CM_TransformedPointContents (p, ent->model->headnode, edict->s.origin, ent->axis);
+			contents |= CM_TransformedPointContents(p, ent->model->headnode, edict->s.origin, ent->axis);
 		else
-			contents |= CM_TransformedPointContents (p, CM_HeadnodeForBox (ent->bounds), edict->s.origin, nullVec3);
+			contents |= CM_TransformedPointContents(p, CM_HeadnodeForBox(ent->bounds), edict->s.origin, nullVec3);
 	}
 	return contents;
 
@@ -487,7 +487,7 @@ int SV_PointContents (const CVec3 &p)
 }
 
 
-static void SV_ClipMoveToEntities (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds, edict_t *passedict, int contentmask)
+static void SV_ClipMoveToEntities(trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds, edict_t *passedict, int contentmask)
 {
 	guard(SV_ClipMoveToEntities);
 
@@ -510,16 +510,16 @@ static void SV_ClipMoveToEntities (trace_t &trace, const CVec3 &start, const CVe
 		}
 	}
 	edict_t	*list[MAX_EDICTS];
-	int num = SV_AreaEdicts (amins, amaxs, ARRAY_ARG(list), AREA_SOLID);
+	int num = SV_AreaEdicts(amins, amaxs, ARRAY_ARG(list), AREA_SOLID);
 	if (!num) return;
 
-	float b1 = dot (bounds.mins, bounds.mins);
-	float b2 = dot (bounds.maxs, bounds.maxs);
+	float b1 = dot(bounds.mins, bounds.mins);
+	float b2 = dot(bounds.maxs, bounds.maxs);
 	float t = max(b1, b2);
 	float traceWidth = SQRTFAST(t);
 	CVec3 traceDir;
-	VectorSubtract (end, start, traceDir);
-	float traceLen = traceDir.Normalize () + traceWidth;
+	VectorSubtract(end, start, traceDir);
+	float traceLen = traceDir.Normalize() + traceWidth;
 
 	for (i = 0; i < num; i++)
 	{
@@ -539,25 +539,25 @@ static void SV_ClipMoveToEntities (trace_t &trace, const CVec3 &start, const CVe
 			continue;
 
 		CVec3 eCenter;
-		VectorSubtract (ent.center, start, eCenter);
+		VectorSubtract(ent.center, start, eCenter);
 		// check position of point projection on line
-		float entPos = dot (eCenter, traceDir);
+		float entPos = dot(eCenter, traceDir);
 		if (entPos < -traceWidth - ent.radius || entPos > traceLen + ent.radius)
 			continue;		// too near / too far
 
 		// check distance between point and line
 		CVec3 tmp;
-		VectorMA (eCenter, -entPos, traceDir, tmp);
-		float dist2 = dot (tmp, tmp);
+		VectorMA(eCenter, -entPos, traceDir, tmp);
+		float dist2 = dot(tmp, tmp);
 		float dist0 = ent.radius + traceWidth;
 		if (dist2 >= dist0 * dist0) continue;
 
 		trace_t	tr;
 		if (ent.model)
-			CM_TransformedBoxTrace (tr, start, end, bounds, ent.model->headnode, contentmask, edict->s.origin, ent.axis);
+			CM_TransformedBoxTrace(tr, start, end, bounds, ent.model->headnode, contentmask, edict->s.origin, ent.axis);
 		else
-			CM_TransformedBoxTrace (tr, start, end, bounds, CM_HeadnodeForBox (ent.bounds), contentmask, edict->s.origin, nullVec3);
-		if (CM_CombineTrace (trace, tr))
+			CM_TransformedBoxTrace(tr, start, end, bounds, CM_HeadnodeForBox(ent.bounds), contentmask, edict->s.origin, nullVec3);
+		if (CM_CombineTrace(trace, tr))
 			trace.ent = edict;
 		if (trace.allsolid) return;
 	}
@@ -568,22 +568,22 @@ static void SV_ClipMoveToEntities (trace_t &trace, const CVec3 &start, const CVe
 
 // Moves the given mins/maxs volume through the world from start to end.
 // Passedict and edicts owned by passedict are explicitly not checked.
-void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, edict_t *passedict, int contentmask)
+void SV_Trace(trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, edict_t *passedict, int contentmask)
 {
 	guard(SV_Trace);
 
 	// clip to world
-	CM_BoxTrace (tr, start, end, bounds, 0, contentmask);
+	CM_BoxTrace(tr, start, end, bounds, 0, contentmask);
 
 	tr.ent = ge->edicts;				// entity[0]
 	if (tr.fraction == 0) return;		// blocked by the world
 
-	CM_ClipTraceToModels (tr, start, end, bounds, contentmask);
+	CM_ClipTraceToModels(tr, start, end, bounds, contentmask);
 	tr.ent = ge->edicts;				// entity[0]
 	if (tr.fraction == 0) return;		// blocked by model
 
 	// clip to other solid entities
-	SV_ClipMoveToEntities (tr, start, end, bounds, passedict, contentmask);
+	SV_ClipMoveToEntities(tr, start, end, bounds, passedict, contentmask);
 
 	unguard;
 }

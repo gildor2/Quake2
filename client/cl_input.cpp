@@ -57,12 +57,12 @@ kbutton_t			in_Speed;
 
 
 //?? make as method of kbutton_t
-static void KeyDown (kbutton_t &b, char **argv)
+static void KeyDown(kbutton_t &b, char **argv)
 {
 	int		k;
 
 	if (*argv[1])
-		k = atoi (argv[1]);
+		k = atoi(argv[1]);
 	else
 		k = -1;					// typed manually at the console for continuous down
 
@@ -75,14 +75,14 @@ static void KeyDown (kbutton_t &b, char **argv)
 		b.down[1] = k;
 	else
 	{
-		Com_DPrintf ("KeyDown: 3 keys down for a button\n");
+		Com_DPrintf("KeyDown: 3 keys down for a button\n");
 		return;
 	}
 
 	if (b.state & STATE_DOWN) return;
 
 	// save timestamp
-	b.downtime = atoi (argv[2]);
+	b.downtime = atoi(argv[2]);
 	if (!b.downtime)
 		b.downtime = sys_frame_time - 100;	//?? const=100; situation: KeyDown() <- console, downtime = time of prev frame
 
@@ -90,12 +90,12 @@ static void KeyDown (kbutton_t &b, char **argv)
 }
 
 //?? make as method of kbutton_t
-static void KeyUp (kbutton_t &b, char **argv)
+static void KeyUp(kbutton_t &b, char **argv)
 {
 	int		k;
 
 	if (*argv[1])
-		k = atoi (argv[1]);
+		k = atoi(argv[1]);
 	else
 	{
 		// typed manually at the console, assume for unsticking, so clear all
@@ -118,7 +118,7 @@ static void KeyUp (kbutton_t &b, char **argv)
 		return;					// up (this should not happen: 2 times "up" one by one)
 
 	// save timestamp
-	unsigned uptime = atoi (argv[2]);
+	unsigned uptime = atoi(argv[2]);
 	if (uptime)
 		b.msec += uptime - b.downtime;
 	else
@@ -131,7 +131,7 @@ static void KeyUp (kbutton_t &b, char **argv)
 
 // Returns the fraction of the frame that the key was down
 //?? make as method of kbutton_t
-static float KeyState (kbutton_t &key)
+static float KeyState(kbutton_t &key)
 {
 	int msec = key.msec;		// != 0 only if KeyUp() called ...
 
@@ -151,9 +151,9 @@ static float KeyState (kbutton_t &key)
 }
 
 
-static float KeyDelta (kbutton_t &key1, kbutton_t &key2)
+static float KeyDelta(kbutton_t &key1, kbutton_t &key2)
 {
-	return KeyState (key1) - KeyState (key2);
+	return KeyState(key1) - KeyState(key2);
 }
 
 
@@ -172,27 +172,27 @@ cvar_t	*cl_run;
 static cvar_t *cl_anglespeedkey;
 
 
-static void KeyboardMove (usercmd_t *cmd)
+static void KeyboardMove(usercmd_t *cmd)
 {
-	memset (cmd, 0, sizeof(usercmd_t));
+	memset(cmd, 0, sizeof(usercmd_t));
 
 	// rotate player with keyboard
 	float speed = cls.frametime;
 	if (in_Speed.state & STATE_DOWN)
 		speed *= cl_anglespeedkey->value;
 
-	cl.viewangles[YAW]   += speed * cl_yawspeed->value   * KeyDelta (in_Left, in_Right);
-	cl.viewangles[PITCH] += speed * cl_pitchspeed->value * KeyDelta (in_Lookdown, in_Lookup);
+	cl.viewangles[YAW]   += speed * cl_yawspeed->value   * KeyDelta(in_Left, in_Right);
+	cl.viewangles[PITCH] += speed * cl_pitchspeed->value * KeyDelta(in_Lookdown, in_Lookup);
 
 	// copy angles with float->short
-	cmd->angles[0] = appRound (cl.viewangles[0]);
-	cmd->angles[1] = appRound (cl.viewangles[1]);
-	cmd->angles[2] = appRound (cl.viewangles[2]);
+	cmd->angles[0] = appRound(cl.viewangles[0]);
+	cmd->angles[1] = appRound(cl.viewangles[1]);
+	cmd->angles[2] = appRound(cl.viewangles[2]);
 
 	// movement
-	cmd->forwardmove += appRound (cl_forwardspeed->value * KeyDelta (in_Forward, in_Back));
-	cmd->sidemove    += appRound (cl_sidespeed->value    * KeyDelta (in_Moveright, in_Moveleft));
-	cmd->upmove      += appRound (cl_upspeed->value      * KeyDelta (in_Up, in_Down));
+	cmd->forwardmove += appRound(cl_forwardspeed->value * KeyDelta(in_Forward, in_Back));
+	cmd->sidemove    += appRound(cl_sidespeed->value    * KeyDelta(in_Moveright, in_Moveleft));
+	cmd->upmove      += appRound(cl_upspeed->value      * KeyDelta(in_Up, in_Down));
 
 	// adjust for speed key / running
 	if ((in_Speed.state & STATE_DOWN) ^ cl_run->integer)
@@ -204,7 +204,7 @@ static void KeyboardMove (usercmd_t *cmd)
 }
 
 
-static void ClampPitch ()
+static void ClampPitch()
 {
 	float pitch = SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
 	if (pitch > 180)
@@ -217,7 +217,7 @@ static void ClampPitch ()
 }
 
 
-static void FinishMove (usercmd_t *cmd)
+static void FinishMove(usercmd_t *cmd)
 {
 	// figure button bits
 	if (in_Attack.state & (STATE_DOWN|STATE_IMPULSEDOWN))
@@ -232,22 +232,22 @@ static void FinishMove (usercmd_t *cmd)
 		cmd->buttons |= BUTTON_ANY;
 
 	// send milliseconds of time to apply the move
-	int ms = appRound (accum_frame_time * 1000);
+	int ms = appRound(accum_frame_time * 1000);
 	if (ms > 250) ms = 250;
 
 	cmd->msec = ms;
 
-	ClampPitch ();
+	ClampPitch();
 	for (int i = 0; i < 3; i++)
 		cmd->angles[i] = ANGLE2SHORT(cl.viewangles[i]);
 
 	cmd->impulse    = 0;		//!! unused
 	// send the ambient light level at the player's current position
-	cmd->lightlevel = appRound (RE_GetClientLight ());
+	cmd->lightlevel = appRound(RE_GetClientLight());
 }
 
 
-static void CreateCmd (usercmd_t *cmd)
+static void CreateCmd(usercmd_t *cmd)
 {
 	frame_msec = sys_frame_time - old_sys_frame_time;
 	frame_msec = bound(frame_msec, 1, 200);
@@ -255,15 +255,15 @@ static void CreateCmd (usercmd_t *cmd)
 	// save view angles to restore it when needed
 	CVec3 oldAngles = cl.viewangles;
 
-	KeyboardMove (cmd);
-	IN_Move (cmd);			// mouse and joystick movement (platform-dependent)
-	FinishMove (cmd);
+	KeyboardMove(cmd);
+	IN_Move(cmd);			// mouse and joystick movement (platform-dependent)
+	FinishMove(cmd);
 
 	// if client paused, do not produce movement
 	if (cl_paused->integer)
 	{
 		//?? if not in game (menu, console, gui ...) -- clear usercmd too
-		memset (cmd, 0, sizeof(usercmd_t));
+		memset(cmd, 0, sizeof(usercmd_t));
 		cl.viewangles = oldAngles;
 	}
 
@@ -273,38 +273,38 @@ static void CreateCmd (usercmd_t *cmd)
 }
 
 
-static void IN_CenterView ()
+static void IN_CenterView()
 {
 	cl.viewangles[PITCH] = -SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
 }
 
 
-static void IN_Lookdown (bool usage, int argc, char **argv)
+static void IN_Lookdown(bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		appPrintf ("Usage: lookdown <angle>\n");
+		appPrintf("Usage: lookdown <angle>\n");
 		return;
 	}
-	cl.viewangles[PITCH] += atof (argv[1]);
+	cl.viewangles[PITCH] += atof(argv[1]);
 }
 
 
-static void IN_Lookup (bool usage, int argc, char **argv)	// can be used "lookdown -angle" instead
+static void IN_Lookup(bool usage, int argc, char **argv)	// can be used "lookdown -angle" instead
 {
 	if (argc != 2 || usage)
 	{
-		appPrintf ("Usage: lookup <angle>\n");
+		appPrintf("Usage: lookup <angle>\n");
 		return;
 	}
-	cl.viewangles[PITCH] -= atof (argv[1]);
+	cl.viewangles[PITCH] -= atof(argv[1]);
 }
 
 
 // Declare console functions
 #define KB(name)	\
-static void IN_##name##Up (int argc, char **argv) { KeyUp(in_##name, argv); }	\
-static void IN_##name##Down (int argc, char **argv) { KeyDown(in_##name, argv); }
+static void IN_##name##Up(int argc, char **argv) { KeyUp(in_##name, argv); }	\
+static void IN_##name##Down(int argc, char **argv) { KeyDown(in_##name, argv); }
 	KB(Up)			KB(Down)
 	KB(Left)		KB(Right)
 	KB(Forward)		KB(Back)
@@ -315,7 +315,7 @@ static void IN_##name##Down (int argc, char **argv) { KeyDown(in_##name, argv); 
 #undef KB
 
 
-void CL_InitInput ()
+void CL_InitInput()
 {
 CVAR_BEGIN(vars)
 	// movement speed
@@ -329,12 +329,12 @@ CVAR_BEGIN(vars)
 	// other
 	CVAR_VAR(cl_run, 0, CVAR_ARCHIVE),		// always run; make default==1 ??
 CVAR_END
-	Cvar_GetVars (ARRAY_ARG(vars));
+	Cvar_GetVars(ARRAY_ARG(vars));
 
-	RegisterCommand ("centerview", IN_CenterView);
+	RegisterCommand("centerview", IN_CenterView);
 #define KB(name, str)	\
-	RegisterCommand ("+" #str, IN_##name##Down); \
-	RegisterCommand ("-" #str, IN_##name##Up);
+	RegisterCommand("+" #str, IN_##name##Down); \
+	RegisterCommand("-" #str, IN_##name##Up);
 	KB(Up, moveup);			KB(Down, movedown);
 	KB(Left, left);			KB(Right, right);
 	KB(Forward, forward);	KB(Back, back);
@@ -344,15 +344,15 @@ CVAR_END
 	KB(Attack, attack);		KB(Use, use);
 #undef KB
 
-	RegisterCommand ("lookdown", IN_Lookdown);
-	RegisterCommand ("lookup", IN_Lookup);
+	RegisterCommand("lookdown", IN_Lookdown);
+	RegisterCommand("lookup", IN_Lookup);
 
-	cl_nodelta = Cvar_Get ("cl_nodelta", "0");
+	cl_nodelta = Cvar_Get("cl_nodelta", "0");
 }
 
 
 // network stuff
-void CL_SendCmd ()
+void CL_SendCmd()
 {
 	accum_frame_time += cls.frametime;
 
@@ -362,7 +362,7 @@ void CL_SendCmd ()
 	usercmd_t *cmd = &cl.cmds[i];
 	cl.cmd_time[i] = cls.realtime;	// for netgraph ping calculation
 
-	CreateCmd (cmd);
+	CreateCmd(cmd);
 
 	cls.netFrameDropped = true;		// will be set to false after sending command to server
 	if (cl_infps->integer && accum_frame_time < 1.0f / cl_infps->value)
@@ -374,7 +374,7 @@ void CL_SendCmd ()
 	if (cls.state == ca_connected)
 	{
 		if (cls.netchan.message.cursize	|| cls.realtime - cls.netchan.last_sent > 1000)
-			cls.netchan.Transmit (NULL, 0);
+			cls.netchan.Transmit(NULL, 0);
 		return;
 	}
 
@@ -397,49 +397,49 @@ void CL_SendCmd ()
 		// updated it; and more: this will update "gender" when "gender_auto" is set;
 		// "gender" will be recomputed later (when server send info back) too, but this
 		// will require to send userinfo to server again)
-		CL_UpdatePlayerClientInfo ();
+		CL_UpdatePlayerClientInfo();
 		// send userinfo
-		MSG_WriteByte (&cls.netchan.message, clc_userinfo);
-		MSG_WriteString (&cls.netchan.message, Cvar_BitInfo (CVAR_USERINFO));
+		MSG_WriteByte(&cls.netchan.message, clc_userinfo);
+		MSG_WriteString(&cls.netchan.message, Cvar_BitInfo(CVAR_USERINFO));
 	}
 
 	sizebuf_t buf;
 	byte	data[128];
-	buf.Init (ARRAY_ARG(data));
+	buf.Init(ARRAY_ARG(data));
 
 	// stop the cinematic when any key is down
 	if (cmd->buttons && cl.cinematicActive && !cl.attractloop)
-		SCR_StopCinematic ();
+		SCR_StopCinematic();
 
 	// begin a client move command
-	MSG_WriteByte (&buf, clc_move);
+	MSG_WriteByte(&buf, clc_move);
 
 	// save the position for a checksum byte
 	int checksumIndex = buf.cursize;
-	MSG_WriteByte (&buf, 0);
+	MSG_WriteByte(&buf, 0);
 
 	// let the server know what the last frame we
 	// got was, so the next message can be delta compressed
 	if (cl_nodelta->integer || !cl.frame.valid || cls.demowaiting)
-		MSG_WriteLong (&buf, -1);	// no compression
+		MSG_WriteLong(&buf, -1);	// no compression
 	else
-		MSG_WriteLong (&buf, cl.frame.serverframe);
+		MSG_WriteLong(&buf, cl.frame.serverframe);
 
 	// send this and the previous cmds in the message, so
 	// if the last packet was dropped, it can be recovered
 	usercmd_t nullcmd;
-	memset (&nullcmd, 0, sizeof(nullcmd));
+	memset(&nullcmd, 0, sizeof(nullcmd));
 
 	cmd = &cl.cmds[(cls.netchan.outgoing_sequence-2) & (CMD_BACKUP-1)];
-	MSG_WriteDeltaUsercmd (&buf, &nullcmd, cmd);
+	MSG_WriteDeltaUsercmd(&buf, &nullcmd, cmd);
 	usercmd_t *oldcmd = cmd;
 
 	cmd = &cl.cmds[(cls.netchan.outgoing_sequence-1) & (CMD_BACKUP-1)];
-	MSG_WriteDeltaUsercmd (&buf, oldcmd, cmd);
+	MSG_WriteDeltaUsercmd(&buf, oldcmd, cmd);
 	oldcmd = cmd;
 
 	cmd = &cl.cmds[(cls.netchan.outgoing_sequence) & (CMD_BACKUP-1)];
-	MSG_WriteDeltaUsercmd (&buf, oldcmd, cmd);
+	MSG_WriteDeltaUsercmd(&buf, oldcmd, cmd);
 
 	// calculate a checksum over the move commands
 	buf.data[checksumIndex] = Com_BlockSequenceCRCByte(
@@ -447,7 +447,7 @@ void CL_SendCmd ()
 		cls.netchan.outgoing_sequence);
 
 	// deliver the message
-	cls.netchan.Transmit (buf.data, buf.cursize);
+	cls.netchan.Transmit(buf.data, buf.cursize);
 
 	// prepare for next frame
 	cls.netFrameDropped = false;

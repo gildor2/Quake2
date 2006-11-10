@@ -117,7 +117,7 @@ int		SNDDMA_GetDMAPos(void);
 // shutdown the DMA xfer.
 void	SNDDMA_Shutdown(void);
 
-void	SNDDMA_BeginPainting (void);
+void	SNDDMA_BeginPainting(void);
 
 void	SNDDMA_Submit(void);
 
@@ -141,11 +141,11 @@ extern cvar_t	*s_khz;
 extern cvar_t	*s_testsound;
 extern cvar_t	*s_primary;		//?? win32-only
 
-void S_InitScaletable (void);
+void S_InitScaletable(void);
 
-sfxcache_t *S_LoadSound (sfx_t *s);
+sfxcache_t *S_LoadSound(sfx_t *s);
 
-void S_IssuePlaysound (playsound_t *ps);
+void S_IssuePlaysound(playsound_t *ps);
 
 void S_PaintChannels(int endtime);
 

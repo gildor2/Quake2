@@ -263,29 +263,29 @@ extern	clEntityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 //
 // cl_ents.cpp
 //
-void CL_ParseDelta (clEntityState_t *from, clEntityState_t *to, int number, unsigned bits, bool baseline);
-void CL_AddEntityBox (clEntityState_t *st, unsigned rgba);
-void CL_AddEntities ();
-void CL_ParseFrame ();
+void CL_ParseDelta(clEntityState_t *from, clEntityState_t *to, int number, unsigned bits, bool baseline);
+void CL_AddEntityBox(clEntityState_t *st, unsigned rgba);
+void CL_AddEntities();
+void CL_ParseFrame();
 
 //
 // cl_main.cpp
 //
-//void CL_Init (); -- declared in qcommon.h -- init from Com_Init()
+//void CL_Init(); -- declared in qcommon.h -- init from Com_Init()
 
-void CL_Pause (bool enable);
-void CL_Disconnect ();
-void CL_Disconnect_f ();
-void CL_GetChallengePacket ();
+void CL_Pause(bool enable);
+void CL_Disconnect();
+void CL_Disconnect_f();
+void CL_GetChallengePacket();
 
 #define NUM_ADDRESSBOOK_ENTRIES 9
-void CL_PingServers_f ();
-void CL_Snd_Restart_f ();
-void CL_RegisterSounds ();
+void CL_PingServers_f();
+void CL_Snd_Restart_f();
+void CL_RegisterSounds();
 
-void CL_WriteDemoMessage ();
+void CL_WriteDemoMessage();
 
-void CL_ClearState ();
+void CL_ClearState();
 
 
 //
@@ -293,13 +293,13 @@ void CL_ClearState ();
 //
 extern const char *svc_strings[svc_last];
 
-void CL_ParseServerMessage ();
+void CL_ParseServerMessage();
 
 #define SHOWNET(s)	\
-	if (cl_shownet->integer >= 2) appPrintf ("%3d:%s\n", net_message.readcount-1, s);
+	if (cl_shownet->integer >= 2) appPrintf("%3d:%s\n", net_message.readcount-1, s);
 
-void CL_ParseClientinfo (int player);
-void CL_UpdatePlayerClientInfo ();
+void CL_ParseClientinfo(int player);
+void CL_UpdatePlayerClientInfo();
 
 //
 // cl_view.cpp
@@ -311,39 +311,39 @@ extern CRenderModel *gun_model;
 #endif
 extern float r_blend[4];
 
-void V_Init ();
-void V_InitRenderer ();
-bool V_RenderView ();
+void V_Init();
+void V_InitRenderer();
+bool V_RenderView();
 
-void V_AddEntity (entity_t *ent);
-void V_AddEntity2 (entity_t *ent);
-void AddEntityWithEffects (entity_t *ent, unsigned fx);
-void AddEntityWithEffects2 (entity_t *ent, unsigned fx);
+void V_AddEntity(entity_t *ent);
+void V_AddEntity2(entity_t *ent);
+void AddEntityWithEffects(entity_t *ent, unsigned fx);
+void AddEntityWithEffects2(entity_t *ent, unsigned fx);
 
-void V_AddLight (const CVec3 &org, float intensity, float r, float g, float b);
-float CalcFov (float fov_x, float width, float height);
+void V_AddLight(const CVec3 &org, float intensity, float r, float g, float b);
+float CalcFov(float fov_x, float width, float height);
 
 //
 // cl_tent.cpp
 //
 //!! MOVE to cl_fx.h
-void CL_RegisterTEntSounds ();
-void CL_RegisterTEntModels ();
+void CL_RegisterTEntSounds();
+void CL_RegisterTEntModels();
 void CL_SmokeAndFlash(const CVec3 &origin);
-void CL_ClearTEnts ();
-void CL_ParseTEnt ();
-void CL_AddTEnts ();
+void CL_ClearTEnts();
+void CL_ParseTEnt();
+void CL_AddTEnts();
 
 //
 // menu.cpp & qmenu.cpp
 //
-void M_Init ();
-void M_Keydown (int key);
-void M_Draw ();
-void M_Menu_Main_f ();
-void M_ForceMenuOff ();
-void M_ForceMenuOn ();
-void M_AddToServerList (netadr_t adr, char *info);
+void M_Init();
+void M_Keydown(int key);
+void M_Draw();
+void M_Menu_Main_f();
+void M_ForceMenuOff();
+void M_ForceMenuOn();
+void M_AddToServerList(netadr_t adr, char *info);
 
 struct menuFramework_t;
 extern menuFramework_t *m_current;
@@ -352,14 +352,14 @@ extern menuFramework_t *m_current;
 //
 // cl_pred.cpp
 //
-void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int contents);
-void CL_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int contents);
-void CL_PredictMovement ();
-void CL_CheckPredictionError ();
+void CL_EntityTrace(trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int contents);
+void CL_Trace(trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int contents);
+void CL_PredictMovement();
+void CL_CheckPredictionError();
 
 //
 // cl_download.cpp
 //
-void CL_ParseDownload ();
-void CL_Download_f (bool usage, int argc, char **argv);
-void CL_Precache_f (int argc, char **argv);
+void CL_ParseDownload();
+void CL_Download_f(bool usage, int argc, char **argv);
+void CL_Precache_f(int argc, char **argv);

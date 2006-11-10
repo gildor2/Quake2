@@ -274,7 +274,7 @@ static const byte encoded[] =
 // should be "const", but computed on program startup
 CVec3 bytedirs[NUMVERTEXNORMALS];
 
-void InitByteDirs ()
+void InitByteDirs()
 {
 	const byte *s = encoded;
 	float *d = &bytedirs[0][0];

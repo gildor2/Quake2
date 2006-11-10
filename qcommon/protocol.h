@@ -207,11 +207,11 @@ struct entityStateEx_t : entity_state_t
 	// added since extended protocol v1
 	unsigned anim;			// legs, torso animation + some features
 	// functions to support additional fields
-	inline void SetAnim (int legs, int torso, int moveDir = 0, float pitch = 0)
+	inline void SetAnim(int legs, int torso, int moveDir = 0, float pitch = 0)
 	{
-		anim = legs | (torso << 6) | (moveDir << 12) | ((appRound (pitch) + 90) << 15);
+		anim = legs | (torso << 6) | (moveDir << 12) | ((appRound(pitch) + 90) << 15);
 	}
-	inline void GetAnim (int &legs, int &torso, int &moveDir, float &pitch) const
+	inline void GetAnim(int &legs, int &torso, int &moveDir, float &pitch) const
 	{
 		legs    =   anim        & 0x3F;
 		torso   =  (anim >> 6)  & 0x3F;

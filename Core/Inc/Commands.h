@@ -9,34 +9,34 @@
 -----------------------------------------------------------------------------*/
 
 
-CORE_API bool RegisterCommand (const char *name, void(*func)(), unsigned flags = 0);
-CORE_API bool UnregisterCommand (const char *name);
-CORE_API bool ExecuteCommand (const char *str);
+CORE_API bool RegisterCommand(const char *name, void(*func)(), unsigned flags = 0);
+CORE_API bool UnregisterCommand(const char *name);
+CORE_API bool ExecuteCommand(const char *str);
 
 
-inline bool RegisterCommand (const char *name, void(*func)(bool), unsigned flags = 0)
+inline bool RegisterCommand(const char *name, void(*func)(bool), unsigned flags = 0)
 {
-	return RegisterCommand (name, (void(*)())func, COMMAND_USAGE|flags);
+	return RegisterCommand(name, (void(*)())func, COMMAND_USAGE|flags);
 }
 
-inline bool RegisterCommand (const char *name, void(*func)(int,char**), unsigned flags = 0)
+inline bool RegisterCommand(const char *name, void(*func)(int,char**), unsigned flags = 0)
 {
-	return RegisterCommand (name, (void(*)())func, COMMAND_ARGS|flags);
+	return RegisterCommand(name, (void(*)())func, COMMAND_ARGS|flags);
 }
 
-inline bool RegisterCommand (const char *name, void(*func)(bool,int,char**), unsigned flags = 0)
+inline bool RegisterCommand(const char *name, void(*func)(bool,int,char**), unsigned flags = 0)
 {
-	return RegisterCommand (name, (void(*)())func, COMMAND_USAGE|COMMAND_ARGS|flags);
+	return RegisterCommand(name, (void(*)())func, COMMAND_USAGE|COMMAND_ARGS|flags);
 }
 
-inline bool RegisterCommand (const char *name, void(*func)(const char*), unsigned flags = 0)
+inline bool RegisterCommand(const char *name, void(*func)(const char*), unsigned flags = 0)
 {
-	return RegisterCommand (name, (void(*)())func, COMMAND_ARGS2|flags);
+	return RegisterCommand(name, (void(*)())func, COMMAND_ARGS2|flags);
 }
 
-inline bool RegisterCommand (const char *name, void(*func)(bool,const char*), unsigned flags = 0)
+inline bool RegisterCommand(const char *name, void(*func)(bool,const char*), unsigned flags = 0)
 {
-	return RegisterCommand (name, (void(*)())func, COMMAND_USAGE|COMMAND_ARGS2|flags);
+	return RegisterCommand(name, (void(*)())func, COMMAND_USAGE|COMMAND_ARGS2|flags);
 }
 
 
@@ -51,4 +51,4 @@ struct CSimpleCommand
 	void (*func)(int argc, char **argv);	// NULL to ignore command
 };
 
-CORE_API bool ExecuteCommand (const char *str, const CSimpleCommand *CmdList, int numCommands);
+CORE_API bool ExecuteCommand(const char *str, const CSimpleCommand *CmdList, int numCommands);

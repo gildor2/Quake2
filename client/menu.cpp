@@ -63,72 +63,72 @@ static const char *yesno_names[] = {
 
 
 // forward declarations
-static void Menu_DMOptions_f ();
+static void Menu_DMOptions_f();
 
 /*---------- Support Routines ------------*/
 
-void M_ForceMenuOn ()
+void M_ForceMenuOn()
 {
-	if (!m_current) M_Menu_Main_f ();
+	if (!m_current) M_Menu_Main_f();
 }
 
 
 //=============================================================================
 
-static void M_Print (int cx, int cy, const char *str)
+static void M_Print(int cx, int cy, const char *str)
 {
 	while (*str)
 	{
-		RE_DrawChar (cx + ((viddef.width - 320)/2), cy + ((viddef.height - 240)/2), *str++, C_RED);
+		RE_DrawChar(cx + ((viddef.width - 320)/2), cy + ((viddef.height - 240)/2), *str++, C_RED);
 		cx += CHAR_WIDTH;
 	}
 }
 
-static void DrawCharacter (int cx, int cy, int num)
+static void DrawCharacter(int cx, int cy, int num)
 {
-	RE_DrawChar (cx + ((viddef.width - 320)/2), cy + ((viddef.height - 240)/2), num);
+	RE_DrawChar(cx + ((viddef.width - 320)/2), cy + ((viddef.height - 240)/2), num);
 }
 
-static void M_DrawTextBox (int x, int y, int width, int lines)
+static void M_DrawTextBox(int x, int y, int width, int lines)
 {
 	int		n;
 
 	// draw left side
 	int cx = x;
 	int cy = y;
-	DrawCharacter (cx, cy, 1);
+	DrawCharacter(cx, cy, 1);
 	for (n = 0; n < lines; n++)
 	{
 		cy += CHAR_HEIGHT;
-		DrawCharacter (cx, cy, 4);
+		DrawCharacter(cx, cy, 4);
 	}
-	DrawCharacter (cx, cy+CHAR_HEIGHT, 7);
+	DrawCharacter(cx, cy+CHAR_HEIGHT, 7);
 
 	// draw middle
 	cx += CHAR_WIDTH;
 	while (width > 0)
 	{
 		cy = y;
-		DrawCharacter (cx, cy, 2);
+		DrawCharacter(cx, cy, 2);
 		for (n = 0; n < lines; n++)
 		{
 			cy += CHAR_HEIGHT;
-			DrawCharacter (cx, cy, 5);
+			DrawCharacter(cx, cy, 5);
 		}
-		DrawCharacter (cx, cy+CHAR_HEIGHT, 8);
+		DrawCharacter(cx, cy+CHAR_HEIGHT, 8);
 		width -= 1;
 		cx += CHAR_WIDTH;
 	}
 
 	// draw right side
 	cy = y;
-	DrawCharacter (cx, cy, 3);
+	DrawCharacter(cx, cy, 3);
 	for (n = 0; n < lines; n++)
 	{
 		cy += CHAR_HEIGHT;
-		DrawCharacter (cx, cy, 6);
+		DrawCharacter(cx, cy, 6);
 	}
-	DrawCharacter (cx, cy+CHAR_WIDTH, 9);
+	DrawCharacter(cx, cy+CHAR_WIDTH, 9);
 }
 
 
@@ -146,7 +146,7 @@ struct menuMain_t : menuFramework_t
 #define NUM_CURSOR_FRAMES 15
 
 	static const char *menuNames[MAIN_ITEMS];
-	void Draw ()
+	void Draw()
 	{
 		int		i;
 
@@ -155,7 +155,7 @@ struct menuMain_t : menuFramework_t
 		int		totalheight = 0;
 		for (i = 0; i < MAIN_ITEMS; i++)
 		{
-			CBasicImage *img = RE_RegisterPic (va("pics/m_main_%s", menuNames[i]));
+			CBasicImage *img = RE_RegisterPic(va("pics/m_main_%s", menuNames[i]));
 			if (!img) continue;		//?? error
 			if (img->width > widest) widest = img->width;
 			totalheight += img->height + 12;
@@ -168,27 +168,27 @@ struct menuMain_t : menuFramework_t
 		for (i = 0; i < MAIN_ITEMS; i++)
 		{
 			//?? can use img->Draw()
-			RE_DrawPic (xoffset, ystart + i * 40 + 13, va("pics/m_main_%s%s", menuNames[i], i != cursor ? "" : "_sel"));
+			RE_DrawPic(xoffset, ystart + i * 40 + 13, va("pics/m_main_%s%s", menuNames[i], i != cursor ? "" : "_sel"));
 		}
 		// draw animated cursor
 #if 0
-		RE_DrawPic (xoffset - 25, ystart + cursor * 40 + 11,
-			va("pics/m_cursor%d", (unsigned)appRound (cls.realtime / 100) % NUM_CURSOR_FRAMES));
+		RE_DrawPic(xoffset - 25, ystart + cursor * 40 + 11,
+			va("pics/m_cursor%d", (unsigned)appRound(cls.realtime / 100) % NUM_CURSOR_FRAMES));
 #else
-		RE_DrawPic (xoffset - 25, ystart + cursor * 40 + 11, "pics/m_cursor");
+		RE_DrawPic(xoffset - 25, ystart + cursor * 40 + 11, "pics/m_cursor");
 #endif
 
-		CBasicImage *img = RE_RegisterPic ("pics/m_main_plaque");
+		CBasicImage *img = RE_RegisterPic("pics/m_main_plaque");
 		if (img)
 		{
 			//!! can use img->Draw()
 			// NOTE: size of this image used for 2 image placement
-			RE_DrawPic (xoffset - 30 - img->width, ystart, "pics/m_main_plaque");					// "QUAKE2" vertical text
-			RE_DrawPic (xoffset - 30 - img->width, ystart + img->height + 5, "pics/m_main_logo");	// id logo
+			RE_DrawPic(xoffset - 30 - img->width, ystart, "pics/m_main_plaque");					// "QUAKE2" vertical text
+			RE_DrawPic(xoffset - 30 - img->width, ystart + img->height + 5, "pics/m_main_logo");	// id logo
 		}
 	}
 
-	const char * KeyDown (int key)
+	const char * KeyDown(int key)
 	{
 		const char *sound = menu_move_sound;
 
@@ -196,7 +196,7 @@ struct menuMain_t : menuFramework_t
 		{
 		case K_ESCAPE:
 		case K_MOUSE2:
-			Pop ();
+			Pop();
 			break;
 
 		case K_KP_DOWNARROW:
@@ -224,16 +224,16 @@ struct menuMain_t : menuFramework_t
 		case K_KP_ENTER:
 		case K_ENTER:
 		case K_MOUSE1:
-			Cbuf_AddText (va("menu_%s\n", menuNames[cursor]));
+			Cbuf_AddText(va("menu_%s\n", menuNames[cursor]));
 			return menu_in_sound;
 		}
 
 		return NULL;
 	}
 
-	bool Init ()
+	bool Init()
 	{
-		M_ForceMenuOff ();		// pop all opened menus
+		M_ForceMenuOff();		// pop all opened menus
 		return true;
 	}
 };
@@ -249,9 +249,9 @@ const char *menuMain_t::menuNames[] =
 	"quit"
 };
 
-void M_Menu_Main_f ()
+void M_Menu_Main_f()
 {
-	mainMenu.Push ();
+	mainMenu.Push();
 }
 
 /*
@@ -269,7 +269,7 @@ struct multiplayerMenu_t : menuFramework_t
 	menuAction_t	player_setup_action;
 	menuAction_t	disconnect_action;
 
-	bool Init ()
+	bool Init()
 	{
 		x = viddef.width / 2 - 64;
 		nitems = 0;
@@ -277,30 +277,30 @@ struct multiplayerMenu_t : menuFramework_t
 
 		MENU_ACTION(join_network_server_action,0,"join network server",NULL,"menu_joinserver")
 		join_network_server_action.flags  = QMF_LEFT_JUSTIFY;
-		AddItem (&join_network_server_action);
+		AddItem(&join_network_server_action);
 
 		MENU_ACTION(start_network_server_action,10,"start network server",NULL,"menu_startserver")
 		start_network_server_action.flags  = QMF_LEFT_JUSTIFY;
-		AddItem (&start_network_server_action);
+		AddItem(&start_network_server_action);
 
 		MENU_ACTION(disconnect_action,20,"disconnect",NULL,"disconnect;menu_main")
 		disconnect_action.flags  = QMF_LEFT_JUSTIFY;
-		AddItem (&disconnect_action);
+		AddItem(&disconnect_action);
 
 		MENU_ACTION(player_setup_action,30,"player setup",NULL,"menu_playerconfig")
 		player_setup_action.flags  = QMF_LEFT_JUSTIFY;
-		AddItem (&player_setup_action);
+		AddItem(&player_setup_action);
 
-		SetStatusBar (NULL);
-		Center ();
+		SetStatusBar(NULL);
+		Center();
 		return true;
 	}
 };
 static multiplayerMenu_t multiplayerMenu;
 
-static void Menu_Multiplayer_f ()
+static void Menu_Multiplayer_f()
 {
-	multiplayerMenu.Push ();
+	multiplayerMenu.Push();
 }
 
 
@@ -312,7 +312,7 @@ KEYS MENU
 =======================================================================
 */
 
-static void SeekLine (const char *&s)
+static void SeekLine(const char *&s)
 {
 	char c1 = *s;							// remember line delimiter (CR or LF)
 	if (c1 != '\n' && c1 != '\r') return;	// it was not line delimiter!
@@ -324,12 +324,12 @@ static void SeekLine (const char *&s)
 	}
 }
 
-static void AppendToken (char **dest, const char *&src)
+static void AppendToken(char **dest, const char *&src)
 {
 	char *tok;
-	tok = COM_Parse (src);
-	strcpy (*dest, tok);
-	*dest += strlen (tok) + 1;
+	tok = COM_Parse(src);
+	strcpy(*dest, tok);
+	*dest += strlen(tok) + 1;
 }
 
 
@@ -342,41 +342,41 @@ struct keysMenu_t : menuFramework_t
 	static char *bindnames[MAX_KEYS_MENU][2];		// static, because accessed from static DrawKeyBindingFunc()
 	char	bindmenubuf[MAX_KEYS_BUF];
 
-	static void KeyCursorDrawFunc (menuFramework_t *menu)
+	static void KeyCursorDrawFunc(menuFramework_t *menu)
 	{
-		RE_DrawChar (menu->x, menu->y + menu->cursor * BIND_LINE_HEIGHT,
+		RE_DrawChar(menu->x, menu->y + menu->cursor * BIND_LINE_HEIGHT,
 			cls.key_dest == key_bindingMenu ? '=' : 12 + ((cls.realtime >> 8) & 1));
 	}
 
-	static void DrawKeyBindingFunc (void *self)
+	static void DrawKeyBindingFunc(void *self)
 	{
 		int		keys[2];
 		menuAction_t *a = (menuAction_t *) self;
 		char	text[256];
 
-		int numKeys = Key_FindBinding (bindnames[a->localData][0], ARRAY_ARG(keys));
+		int numKeys = Key_FindBinding(bindnames[a->localData][0], ARRAY_ARG(keys));
 
 		if (!numKeys)
-			strcpy (text, S_RED"(not bound)");
+			strcpy(text, S_RED"(not bound)");
 		else
 		{
 			if (numKeys == 1)
-				strcpy (text, Key_KeynumToString (keys[0]));
+				strcpy(text, Key_KeynumToString(keys[0]));
 			else
-				appSprintf (ARRAY_ARG(text), "%s or %s%s",
-					Key_KeynumToString (keys[0]), Key_KeynumToString (keys[1]), numKeys > 2 ? " ..." : "");
+				appSprintf(ARRAY_ARG(text), "%s or %s%s",
+					Key_KeynumToString(keys[0]), Key_KeynumToString(keys[1]), numKeys > 2 ? " ..." : "");
 		}
-		DrawString (a->x + a->parent->x + 16, a->y + a->parent->y, text);
+		DrawString(a->x + a->parent->x + 16, a->y + a->parent->y, text);
 	}
 
-	bool Init ()
+	bool Init()
 	{
 		int		i;
 
 		//!! change parser
 		// load "binds.lst" (file always present - have inline file)
 		unsigned length;
-		char *buffer = (char*) GFileSystem->LoadFile ("binds.lst", &length);
+		char *buffer = (char*) GFileSystem->LoadFile("binds.lst", &length);
 		// parse this file
 		const char *s = buffer;
 		int numbinds = 0;
@@ -392,22 +392,22 @@ struct keysMenu_t : menuFramework_t
 			while ((c = *s) == ' ') s++;		// skip whitespace
 			if (c == '\r' || c == '\n')
 			{
-				SeekLine (s);
+				SeekLine(s);
 				continue;	// empty line
 			}
 			bindnames[i][0] = d;				// remember place for command name
-			AppendToken (&d, s);
+			AppendToken(&d, s);
 			while ((c = *s) == ' ') s++;
 			if (c == '\r' || c == '\n')
 			{	// EOLN => command = menu string
 				bindnames[i][1] = bindnames[i][0];
-				SeekLine (s);
+				SeekLine(s);
 				continue;
 			}
 			bindnames[i][1] = d;
-			AppendToken (&d, s);
+			AppendToken(&d, s);
 			while (*s != '\n') s++;				// was '\r'
-			SeekLine (s);
+			SeekLine(s);
 		}
 
 		// unload "binds.lst"
@@ -437,44 +437,44 @@ struct keysMenu_t : menuFramework_t
 			keys_item[i].ownerdraw = DrawKeyBindingFunc;
 			keys_item[i].localData = i;
 			keys_item[i].name = bindnames[i][1];
-			AddItem (&keys_item[i]);
+			AddItem(&keys_item[i]);
 		}
 
-		SetStatusBar ("enter to change, backspace to clear");
-		Center ();
+		SetStatusBar("enter to change, backspace to clear");
+		Center();
 		return true;
 	}
 
-	void UnbindCommand (char *command)
+	void UnbindCommand(char *command)
 	{
 		int		keys[256];
 
-		int numKeys = Key_FindBinding (command, ARRAY_ARG(keys));
+		int numKeys = Key_FindBinding(command, ARRAY_ARG(keys));
 		for (int i = 0; i < numKeys; i++)
 		{
-			Key_SetBinding (keys[i], NULL);
-//			Com_DPrintf ("unbind %s\n",Key_KeynumToString(keys[i]));
+			Key_SetBinding(keys[i], NULL);
+//			Com_DPrintf("unbind %s\n",Key_KeynumToString(keys[i]));
 		}
 	}
 
-	void KeyBindingFunc (void *self)
+	void KeyBindingFunc(void *self)
 	{
 		menuAction_t *a = (menuAction_t *) self;
-		if (Key_FindBinding (bindnames[a->localData][0], NULL, 0) > 1)
-			UnbindCommand (bindnames[a->localData][0]);
+		if (Key_FindBinding(bindnames[a->localData][0], NULL, 0) > 1)
+			UnbindCommand(bindnames[a->localData][0]);
 		cls.key_dest = key_bindingMenu;		// hook keyboard
-		SetStatusBar ("press a key or button for this action");
+		SetStatusBar("press a key or button for this action");
 	}
 
-	const char * KeyDown (int key)
+	const char * KeyDown(int key)
 	{
-		menuAction_t *item = (menuAction_t *) ItemAtCursor ();
+		menuAction_t *item = (menuAction_t *) ItemAtCursor();
 		if (cls.key_dest == key_bindingMenu)
 		{
 			if (key != K_ESCAPE && key != '`')
-				Key_SetBinding (key, bindnames[item->localData][0]);
+				Key_SetBinding(key, bindnames[item->localData][0]);
 
-			SetStatusBar ("enter to change, backspace to clear");
+			SetStatusBar("enter to change, backspace to clear");
 			cls.key_dest = key_menu;		// unhook keyboard
 			return menu_out_sound;
 		}
@@ -484,15 +484,15 @@ struct keysMenu_t : menuFramework_t
 		case K_KP_ENTER:
 		case K_ENTER:
 		case K_MOUSE1:
-			KeyBindingFunc (item);
+			KeyBindingFunc(item);
 			return menu_in_sound;
 		case K_BACKSPACE:		// delete bindings
 		case K_DEL:
 		case K_KP_DEL:
-			UnbindCommand (bindnames[item->localData][0]);
+			UnbindCommand(bindnames[item->localData][0]);
 			return menu_out_sound;
 		default:
-			return menuFramework_t::KeyDown (key);
+			return menuFramework_t::KeyDown(key);
 		}
 	}
 };
@@ -502,9 +502,9 @@ static keysMenu_t keysMenu;
 char *keysMenu_t::bindnames[MAX_KEYS_MENU][2];
 
 
-static void Menu_Keys_f ()
+static void Menu_Keys_f()
 {
-	keysMenu.Push ();
+	keysMenu.Push();
 }
 
 
@@ -543,103 +543,103 @@ struct optionsMenu_t : menuFramework_t
 
 	static void CrosshairFunc( void *unused )
 	{
-		Cvar_SetInteger ("crosshair", crosshair_box.curvalue);
-		Cvar_SetInteger ("crosshairColor", crosshair_color_box.curvalue);
+		Cvar_SetInteger("crosshair", crosshair_box.curvalue);
+		Cvar_SetInteger("crosshairColor", crosshair_color_box.curvalue);
 	}
 
-	static void JoystickFunc (void *unused)
+	static void JoystickFunc(void *unused)
 	{
-		Cvar_SetInteger ("in_joystick", joystick_box.curvalue);
+		Cvar_SetInteger("in_joystick", joystick_box.curvalue);
 	}
 
-	static void AlwaysRunFunc (void *unused)
+	static void AlwaysRunFunc(void *unused)
 	{
-		Cvar_SetInteger ("cl_run", alwaysrun_box.curvalue);
+		Cvar_SetInteger("cl_run", alwaysrun_box.curvalue);
 	}
 
-	static void MouseSpeedFunc (void *unused)
+	static void MouseSpeedFunc(void *unused)
 	{
-		Cvar_SetValue ("sensitivity", sensitivity_slider.curvalue / 2.0f);
+		Cvar_SetValue("sensitivity", sensitivity_slider.curvalue / 2.0f);
 	}
 
-	static void InvertMouseFunc (void *unused)
+	static void InvertMouseFunc(void *unused)
 	{
-		Cvar_SetValue ("m_invert", !m_invert->value);
+		Cvar_SetValue("m_invert", !m_invert->value);
 	}
 
-	static void UpdateVolumeFunc (void *unused)
+	static void UpdateVolumeFunc(void *unused)
 	{
-		Cvar_SetValue ("s_volume", sfxvolume_slider.curvalue / 10);
+		Cvar_SetValue("s_volume", sfxvolume_slider.curvalue / 10);
 	}
 
-	static void UpdateCDVolumeFunc (void *unused)
+	static void UpdateCDVolumeFunc(void *unused)
 	{
-		Cvar_SetInteger ("cd_nocd", !cdvolume_box.curvalue);
+		Cvar_SetInteger("cd_nocd", !cdvolume_box.curvalue);
 	}
 
-	static void SetMenuItemValues ()
+	static void SetMenuItemValues()
 	{
-		sfxvolume_slider.curvalue	= Cvar_VariableValue ("s_volume") * 10;
-		cdvolume_box.curvalue 		= !Cvar_VariableInt ("cd_nocd");
-		s_8bit.curvalue				= Cvar_VariableInt ("s_loadas8bit");
-		int i = Cvar_VariableInt ("s_khz");
+		sfxvolume_slider.curvalue	= Cvar_VariableValue("s_volume") * 10;
+		cdvolume_box.curvalue 		= !Cvar_VariableInt("cd_nocd");
+		s_8bit.curvalue				= Cvar_VariableInt("s_loadas8bit");
+		int i = Cvar_VariableInt("s_khz");
 		s_khz.curvalue				= i == 11 ? 0 : (i == 22 ? 1 : 2);
-		s_reverse.curvalue			= Cvar_VariableInt ("s_reverse_stereo");
+		s_reverse.curvalue			= Cvar_VariableInt("s_reverse_stereo");
 
 		sensitivity_slider.curvalue	= sensitivity->value * 2;
 
-		cl_run->Clamp (0, 1);
+		cl_run->Clamp(0, 1);
 		alwaysrun_box.curvalue		= cl_run->integer;
 
 		invertmouse_box.curvalue	= m_invert->integer;
 
-		crosshair->Clamp (0, crosshairs_count);
+		crosshair->Clamp(0, crosshairs_count);
 		crosshair_box.curvalue		= crosshair->integer;
 
-		crosshairColor->Clamp (0, 7);
+		crosshairColor->Clamp(0, 7);
 		crosshair_color_box.curvalue = crosshairColor->integer;
 
-		in_joystick->Clamp (0, 1);
+		in_joystick->Clamp(0, 1);
 		joystick_box.curvalue		= in_joystick->integer;
 	}
 
-	static void ResetDefaultsFunc (void *unused)
+	static void ResetDefaultsFunc(void *unused)
 	{
 		//?? should use cvar->resetString of all linked vars instead ?
-		Cbuf_AddText ("exec default.cfg\n");
-		Cbuf_Execute ();
+		Cbuf_AddText("exec default.cfg\n");
+		Cbuf_Execute();
 
-		SetMenuItemValues ();
+		SetMenuItemValues();
 	}
 
-	static void UpdateSoundFunc (void *unused)
+	static void UpdateSoundFunc(void *unused)
 	{
 		const int khz[] = {11, 22, 44};
 
-		Cvar_SetInteger ("s_loadas8bit", s_8bit.curvalue);
-		Cvar_SetInteger ("s_khz", khz[s_khz.curvalue]);
-		Cvar_SetInteger ("s_reverse_stereo", s_reverse.curvalue);
+		Cvar_SetInteger("s_loadas8bit", s_8bit.curvalue);
+		Cvar_SetInteger("s_khz", khz[s_khz.curvalue]);
+		Cvar_SetInteger("s_reverse_stereo", s_reverse.curvalue);
 
-		Cvar_SetInteger ("s_primary", compatibility_list.curvalue);
+		Cvar_SetInteger("s_primary", compatibility_list.curvalue);
 
-		M_DrawTextBox (8, 120 - 48, 36, 3 );
-		M_Print (16 + 16, 120 - 48 + 8,  "Restarting the sound system. This");
-		M_Print (16 + 16, 120 - 48 + 16, "could take up to a minute, so");
-		M_Print (16 + 16, 120 - 48 + 24, "please be patient.");
+		M_DrawTextBox(8, 120 - 48, 36, 3 );
+		M_Print(16 + 16, 120 - 48 + 8,  "Restarting the sound system. This");
+		M_Print(16 + 16, 120 - 48 + 16, "could take up to a minute, so");
+		M_Print(16 + 16, 120 - 48 + 24, "please be patient.");
 
 		// the text box won't show up unless we do a buffer swap
-		RE_EndFrame ();
+		RE_EndFrame();
 
-		CL_Snd_Restart_f ();
+		CL_Snd_Restart_f();
 	}
 
-	static void ScanCrosshairs ()
+	static void ScanCrosshairs()
 	{
 		crosshair_names[0] = S_RED"(none)";
 		int i;
 		for (i = 1; i <= MAX_CROSSHAIRS; i++)	// item [0] is "none"
 		{
-			if (!ImageExists (va("pics/ch%d", i), IMAGE_ANY))
+			if (!ImageExists(va("pics/ch%d", i), IMAGE_ANY))
 			{
 				crosshair_names[i] = NULL;
 				break;
@@ -650,7 +650,7 @@ struct optionsMenu_t : menuFramework_t
 		crosshairs_count = i - 1;
 	}
 
-	bool Init ()
+	bool Init()
 	{
 		static const char *cd_music_items[] = {
 			"disabled", "enabled", NULL
@@ -674,50 +674,50 @@ struct optionsMenu_t : menuFramework_t
 		int y = 0;
 
 		MENU_SLIDER(sfxvolume_slider,y,"effects volume",UpdateVolumeFunc,0,10)
-		AddItem (&sfxvolume_slider);
+		AddItem(&sfxvolume_slider);
 		MENU_SPIN(cdvolume_box,y+=10,"CD music",UpdateCDVolumeFunc,cd_music_items)
-		AddItem (&cdvolume_box);
+		AddItem(&cdvolume_box);
 		MENU_SPIN(s_khz,y+=10,"sound quality",UpdateSoundFunc,s_khz_items)
-		AddItem (&s_khz);
+		AddItem(&s_khz);
 		MENU_SPIN(s_8bit,y+=10,"8 bit sound",UpdateSoundFunc,yesno_names)
-		AddItem (&s_8bit);
+		AddItem(&s_8bit);
 		MENU_SPIN(s_reverse,y+=10,"reverse stereo",UpdateSoundFunc,yesno_names)
-		AddItem (&s_reverse);
+		AddItem(&s_reverse);
 		MENU_SPIN(compatibility_list,y+=10,"sound compatibility",UpdateSoundFunc,compatibility_items)
-		compatibility_list.curvalue = Cvar_VariableInt ("s_primary");
-		AddItem (&compatibility_list);
+		compatibility_list.curvalue = Cvar_VariableInt("s_primary");
+		AddItem(&compatibility_list);
 		y += 10;
 		MENU_SLIDER(sensitivity_slider,y+=10,"mouse speed",MouseSpeedFunc,2,22)
-		AddItem (&sensitivity_slider);
+		AddItem(&sensitivity_slider);
 		MENU_SPIN(invertmouse_box,y+=10,"invert mouse",InvertMouseFunc,yesno_names)
-		AddItem (&invertmouse_box);
+		AddItem(&invertmouse_box);
 		MENU_SPIN(alwaysrun_box,y+=10,"always run",AlwaysRunFunc,yesno_names)
-		AddItem (&alwaysrun_box);
+		AddItem(&alwaysrun_box);
 		y += 10;
 		MENU_SPIN(crosshair_box,y+=10,"crosshair shape",CrosshairFunc,crosshair_names)
-		AddItem (&crosshair_box);
+		AddItem(&crosshair_box);
 		MENU_SPIN(crosshair_color_box,y+=10,"crosshair color",CrosshairFunc,crosshair_color_names)
-		AddItem (&crosshair_color_box);
+		AddItem(&crosshair_color_box);
 		y += 10;
 		MENU_SPIN(joystick_box,y+=10,"use joystick",JoystickFunc,yesno_names)
-		AddItem (&joystick_box);
+		AddItem(&joystick_box);
 		y += 10;
 		MENU_ACTION(customize_options_action,y+=10,"customize controls",NULL,"menu_keys")
-		AddItem (&customize_options_action);
+		AddItem(&customize_options_action);
 		MENU_ACTION(defaults_action,y+=10,S_RED"reset defaults",ResetDefaultsFunc,NULL)
-		AddItem (&defaults_action);
+		AddItem(&defaults_action);
 
-		ScanCrosshairs ();
-		SetMenuItemValues ();
+		ScanCrosshairs();
+		SetMenuItemValues();
 		return true;
 	}
 
-	void Draw ()
+	void Draw()
 	{
-		menuFramework_t::Draw ();
+		menuFramework_t::Draw();
 		// draw crosshair
 		if (!crosshair->integer) return;
-		RE_DrawPic (viddef.width / 2 + 32, crosshair_box.y + y + 10, va("pics/ch%d", crosshair->integer),
+		RE_DrawPic(viddef.width / 2 + 32, crosshair_box.y + y + 10, va("pics/ch%d", crosshair->integer),
 			ANCHOR_CENTER, crosshairColor->integer);
 	}
 };
@@ -736,9 +736,9 @@ menuList_t	optionsMenu_t::s_8bit;
 menuList_t	optionsMenu_t::s_reverse;
 menuList_t	optionsMenu_t::compatibility_list;
 
-static void Menu_Options_f ()
+static void Menu_Options_f()
 {
-	optionsMenu.Push ();
+	optionsMenu.Push();
 }
 
 /*
@@ -755,7 +755,7 @@ struct creditsMenu_t : menuFramework_t
 	char *credits[256];		// start of each line; ugly !!
 	char *creditsBuffer;
 
-	void Draw ()
+	void Draw()
 	{
 		int y = viddef.height - (cls.realtime - credits_start_time) / 40;
 		for (int i = 0; credits[i] && y < viddef.height; y += CHAR_HEIGHT+2, i++)
@@ -771,10 +771,10 @@ struct creditsMenu_t : menuFramework_t
 				s++;
 			}
 
-			int x = (viddef.width - strlen (s) * CHAR_WIDTH) / 2;
+			int x = (viddef.width - strlen(s) * CHAR_WIDTH) / 2;
 			while (*s)
 			{
-				RE_DrawChar (x, y, *s, color);
+				RE_DrawChar(x, y, *s, color);
 				x += CHAR_WIDTH;
 				s++;
 			}
@@ -784,7 +784,7 @@ struct creditsMenu_t : menuFramework_t
 			credits_start_time = cls.realtime;
 	}
 
-	const char * KeyDown (int key)
+	const char * KeyDown(int key)
 	{
 		switch (key)
 		{
@@ -792,16 +792,16 @@ struct creditsMenu_t : menuFramework_t
 		case K_MOUSE1:
 		case K_MOUSE2:
 			if (creditsBuffer) delete creditsBuffer;
-			Pop ();
+			Pop();
 			break;
 		}
 		return menu_out_sound;
 	}
 
-	bool Init ()
+	bool Init()
 	{
 		unsigned count;
-		creditsBuffer = (char*) GFileSystem->LoadFile ("credits", &count);
+		creditsBuffer = (char*) GFileSystem->LoadFile("credits", &count);
 		// file always present - have inline file
 		char *p = creditsBuffer;
 		int n;
@@ -829,9 +829,9 @@ struct creditsMenu_t : menuFramework_t
 };
 static creditsMenu_t creditsMenu;
 
-static void Menu_Credits_f ()
+static void Menu_Credits_f()
 {
-	creditsMenu.Push ();
+	creditsMenu.Push();
 }
 
 /*
@@ -851,37 +851,37 @@ struct gameMenu_t : menuFramework_t
 	menuAction_t	save_game_action;
 	menuAction_t	credits_action;
 
-	static void StartGame (const char *skill)
+	static void StartGame(const char *skill)
 	{
 		// disable updates and start the cinematic going
 		cl.servercount = -1;
-		M_ForceMenuOff ();
-		Cvar_ForceSet ("skill", skill);
-		Cvar_ForceSet ("deathmatch", "0");
-		Cvar_ForceSet ("coop", "0");
+		M_ForceMenuOff();
+		Cvar_ForceSet("skill", skill);
+		Cvar_ForceSet("deathmatch", "0");
+		Cvar_ForceSet("coop", "0");
 
-		Cvar_SetInteger ("gamerules", 0);		// ROGUE
+		Cvar_SetInteger("gamerules", 0);		// ROGUE
 
-		Cbuf_AddText ("killserver\nwait\nnewgame\n");
+		Cbuf_AddText("killserver\nwait\nnewgame\n");
 		cls.key_dest = key_game;
 	}
 
-	static void EasyGameFunc (void *data)
+	static void EasyGameFunc(void *data)
 	{
-		StartGame ("0");
+		StartGame("0");
 	}
 
-	static void MediumGameFunc (void *data)
+	static void MediumGameFunc(void *data)
 	{
-		StartGame ("1");
+		StartGame("1");
 	}
 
-	static void HardGameFunc (void *data)
+	static void HardGameFunc(void *data)
 	{
-		StartGame ("2");
+		StartGame("2");
 	}
 
-	bool Init ()
+	bool Init()
 	{
 		x = viddef.width / 2;
 		nitems = 0;
@@ -889,32 +889,32 @@ struct gameMenu_t : menuFramework_t
 
 		MENU_ACTION(easy_game_action,0,"easy",EasyGameFunc,NULL)
 		easy_game_action.flags  = QMF_LEFT_JUSTIFY;
-		AddItem (&easy_game_action);
+		AddItem(&easy_game_action);
 		MENU_ACTION(medium_game_action,10,"medium",MediumGameFunc,NULL)
 		medium_game_action.flags  = QMF_LEFT_JUSTIFY;
-		AddItem (&medium_game_action);
+		AddItem(&medium_game_action);
 		MENU_ACTION(hard_game_action,20,"hard",HardGameFunc,NULL)
 		hard_game_action.flags  = QMF_LEFT_JUSTIFY;
-		AddItem (&hard_game_action);
+		AddItem(&hard_game_action);
 		MENU_ACTION(load_game_action,40,"load game",NULL,"menu_loadgame")
 		load_game_action.flags  = QMF_LEFT_JUSTIFY;
-		AddItem (&load_game_action);
+		AddItem(&load_game_action);
 		MENU_ACTION(save_game_action,50,"save game",NULL,"menu_savegame")
 		save_game_action.flags  = QMF_LEFT_JUSTIFY;
-		AddItem (&save_game_action);
+		AddItem(&save_game_action);
 		MENU_ACTION(credits_action,60,"credits",NULL,"menu_credits")
 		credits_action.flags  = QMF_LEFT_JUSTIFY;
-		AddItem (&credits_action);
+		AddItem(&credits_action);
 
-		Center ();
+		Center();
 		return true;
 	}
 };
 static gameMenu_t gameMenu;
 
-static void Menu_Game_f ()
+static void Menu_Game_f()
 {
-	gameMenu.Push ();
+	gameMenu.Push();
 }
 
 /*
@@ -936,31 +936,31 @@ struct savegameMenu_t : menuFramework_t
 	static bool m_savevalid[MAX_SAVEGAMES];
 	bool	m_shotvalid[MAX_SAVEGAMES];
 
-	void Create_Savestrings ()
+	void Create_Savestrings()
 	{
-		memset (m_savevalid, 0, sizeof(m_savevalid));
-		memset (m_shotvalid, 0, sizeof(m_shotvalid));
+		memset(m_savevalid, 0, sizeof(m_savevalid));
+		memset(m_shotvalid, 0, sizeof(m_shotvalid));
 		for (int i = 0; i < MAX_SAVEGAMES; i++)
 		{
-			CFile *File = GFileSystem->OpenFile (va("./%s/" SAVEGAME_DIRECTORY "/save%d/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir (), i));
+			CFile *File = GFileSystem->OpenFile(va("./%s/" SAVEGAME_DIRECTORY "/save%d/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), i));
 			if (!File)
-				strcpy (m_savestrings[i], "<EMPTY>");
+				strcpy(m_savestrings[i], "<EMPTY>");
 			else
 			{
-				File->Read (m_savestrings[i], sizeof(m_savestrings[i])-1);
+				File->Read(m_savestrings[i], sizeof(m_savestrings[i])-1);
 				delete File;
 				m_savevalid[i] = true;
-				if (CBasicImage *img = RE_RegisterPic (va(SAVEGAME_DIRECTORY "/save%d/shot", i)))
+				if (CBasicImage *img = RE_RegisterPic(va(SAVEGAME_DIRECTORY "/save%d/shot", i)))
 				{
 					m_shotvalid[i] = true;
 					// force renderer to refresh image
-					img->Reload ();
+					img->Reload();
 				}
 			}
 		}
 	}
 
-	void DrawSavegameShot (int index, int y)
+	void DrawSavegameShot(int index, int y)
 	{
 		int		x, w, h;
 
@@ -978,30 +978,30 @@ struct savegameMenu_t : menuFramework_t
 			h = w * 3 / 4;
 			y = (viddef.height - h) / 2;
 		}
-		RE_Fill (x - 3, y - 3, w + 6, h + 6, RGB(0,0,0));
+		RE_Fill(x - 3, y - 3, w + 6, h + 6, RGB(0,0,0));
 
 		if (!m_shotvalid[index]) return;
-		RE_DrawDetailedPic (x, y, w, h, va(SAVEGAME_DIRECTORY "/save%d/shot", index));
+		RE_DrawDetailedPic(x, y, w, h, va(SAVEGAME_DIRECTORY "/save%d/shot", index));
 	}
 
-	static void LoadGameCallback (void *self)
+	static void LoadGameCallback(void *self)
 	{
 		menuAction_t *a = (menuAction_t *) self;
 
 		if (m_savevalid[a->localData])
-			Cbuf_AddText (va("load save%d\n",  a->localData));
-		M_ForceMenuOff ();
+			Cbuf_AddText(va("load save%d\n",  a->localData));
+		M_ForceMenuOff();
 	}
 
-	static void SaveGameCallback (void *self)
+	static void SaveGameCallback(void *self)
 	{
 		menuAction_t *a = (menuAction_t *) self;
 
-		Cbuf_AddText (va("save save%d\n", a->localData));
-		M_ForceMenuOff ();
+		Cbuf_AddText(va("save save%d\n", a->localData));
+		M_ForceMenuOff();
 	}
 
-	bool Init ()
+	bool Init()
 	{
 		if (saveMenu && !Com_ServerState()) return false;	// not playing a game
 
@@ -1010,7 +1010,7 @@ struct savegameMenu_t : menuFramework_t
 		nitems = 0;
 		banner = saveMenu ? "save_game" : "load_game";
 
-		Create_Savestrings ();
+		Create_Savestrings();
 
 		int d = 0;
 		int i = 0;
@@ -1030,15 +1030,15 @@ struct savegameMenu_t : menuFramework_t
 			actions[i].type = MTYPE_ACTION;
 //			if (!m_savevalid[i] && !saveMenu) -- incorrect drawing
 //				actions[i].type = MTYPE_SEPARATOR;
-			AddItem (&actions[i]);
+			AddItem(&actions[i]);
 		}
 		return true;
 	}
 
-	void Draw ()
+	void Draw()
 	{
-		menuFramework_t::Draw ();
-		DrawSavegameShot (cursor, y);
+		menuFramework_t::Draw();
+		DrawSavegameShot(cursor, y);
 	}
 };
 static savegameMenu_t savegameMenu;
@@ -1047,18 +1047,18 @@ static savegameMenu_t savegameMenu;
 bool savegameMenu_t::saveMenu;
 bool savegameMenu_t::m_savevalid[MAX_SAVEGAMES];
 
-static void Menu_LoadGame_f ()
+static void Menu_LoadGame_f()
 {
 	if (savegameMenu.saveMenu) savegameMenu.cursor++;	// save->load
 	savegameMenu.saveMenu = false;
-	savegameMenu.Push ();
+	savegameMenu.Push();
 }
 
-static void Menu_SaveGame_f ()
+static void Menu_SaveGame_f()
 {
 	if (!savegameMenu.saveMenu) savegameMenu.cursor--;	// load->save
 	savegameMenu.saveMenu = true;
-	savegameMenu.Push ();
+	savegameMenu.Push();
 }
 
 
@@ -1086,41 +1086,41 @@ struct joinserverMenu_t : menuFramework_t
 	// network address
 	static netadr_t local_server_netadr[MAX_LOCAL_SERVERS];
 
-	static void JoinServerFunc (void *self)
+	static void JoinServerFunc(void *self)
 	{
 		int index = (menuAction_t *) self - server_actions;
 
-		if (!stricmp (local_server_names[index], NO_SERVER_STRING))
+		if (!stricmp(local_server_names[index], NO_SERVER_STRING))
 			return;
 
 		if (index >= num_servers) return;
 
-		Cbuf_AddText (va("connect %s\n", NET_AdrToString (&local_server_netadr[index])));
-		M_ForceMenuOff ();
+		Cbuf_AddText(va("connect %s\n", NET_AdrToString(&local_server_netadr[index])));
+		M_ForceMenuOff();
 	}
 
-	static void NullCursorDraw (void *self)
+	static void NullCursorDraw(void *self)
 	{}
 
-	static void SearchLocalGames ()
+	static void SearchLocalGames()
 	{
 		num_servers = 0;
 		for (int i = 0; i < MAX_LOCAL_SERVERS; i++)
-			strcpy (local_server_names[i], NO_SERVER_STRING);
+			strcpy(local_server_names[i], NO_SERVER_STRING);
 
-		M_DrawTextBox (8, 120 - 48, 36, 3);
-		M_Print (16 + 16, 120 - 48 + 8,  "Searching for local servers, this");
-		M_Print (16 + 16, 120 - 48 + 16, "could take up to a minute, so");
-		M_Print (16 + 16, 120 - 48 + 24, "please be patient.");
+		M_DrawTextBox(8, 120 - 48, 36, 3);
+		M_Print(16 + 16, 120 - 48 + 8,  "Searching for local servers, this");
+		M_Print(16 + 16, 120 - 48 + 16, "could take up to a minute, so");
+		M_Print(16 + 16, 120 - 48 + 24, "please be patient.");
 
 		// the text box won't show up unless we do a buffer swap
-		RE_EndFrame ();
+		RE_EndFrame();
 
 		// send out info packets
-		CL_PingServers_f ();
+		CL_PingServers_f();
 	}
 
-	bool Init ()
+	bool Init()
 	{
 		x = viddef.width / 2 - 120;
 		nitems = 0;
@@ -1130,37 +1130,37 @@ struct joinserverMenu_t : menuFramework_t
 		server_title.name = "connect to...";
 		server_title.x    = 80;
 		server_title.y	  = 0;
-		AddItem (&server_title);
+		AddItem(&server_title);
 
 		int y = 0;
 		for (int i = 0; i < MAX_LOCAL_SERVERS; i++)
 		{
-			strcpy (local_server_names[i], NO_SERVER_STRING);
+			strcpy(local_server_names[i], NO_SERVER_STRING);
 			MENU_ACTION(server_actions[i],y+=10,local_server_names[i],JoinServerFunc,NULL)
 			server_actions[i].flags = QMF_LEFT_JUSTIFY;
 			server_actions[i].statusbar = "press ENTER to connect";
-			AddItem (&server_actions[i]);
+			AddItem(&server_actions[i]);
 		}
 
 		MENU_ACTION(address_book_action,y+=20,"address book",NULL,"menu_addressbook")
 		address_book_action.flags = QMF_LEFT_JUSTIFY;
-		AddItem (&address_book_action);
+		AddItem(&address_book_action);
 
 		MENU_ACTION(search_action,y+=10,"search for servers",SearchLocalGames,NULL)
 		search_action.flags = QMF_LEFT_JUSTIFY;
 		search_action.statusbar = "search for servers";
-		AddItem (&search_action);
+		AddItem(&search_action);
 
-		Center ();
+		Center();
 		SearchLocalGames();
 		return true;
 	}
 };
 static joinserverMenu_t joinserverMenu;
 
-static void Menu_JoinServer_f ()
+static void Menu_JoinServer_f()
 {
-	joinserverMenu.Push ();
+	joinserverMenu.Push();
 }
 
 // static members
@@ -1170,7 +1170,7 @@ char joinserverMenu_t::local_server_names[MAX_LOCAL_SERVERS][80];
 netadr_t joinserverMenu_t::local_server_netadr[MAX_LOCAL_SERVERS];
 
 
-void M_AddToServerList (netadr_t adr, char *info)
+void M_AddToServerList(netadr_t adr, char *info)
 {
 	if (joinserverMenu.num_servers == MAX_LOCAL_SERVERS) return;
 
@@ -1178,11 +1178,11 @@ void M_AddToServerList (netadr_t adr, char *info)
 
 	// ignore if duplicated
 	for (int i = 0; i < joinserverMenu.num_servers; i++)
-		if (!strcmp (info, joinserverMenu.local_server_names[i]))
+		if (!strcmp(info, joinserverMenu.local_server_names[i]))
 			return;
 
 	joinserverMenu.local_server_netadr[joinserverMenu.num_servers] = adr;
-	appStrncpyz (joinserverMenu.local_server_names[joinserverMenu.num_servers], info, sizeof(joinserverMenu_t::local_server_names[0]));
+	appStrncpyz(joinserverMenu.local_server_names[joinserverMenu.num_servers], info, sizeof(joinserverMenu_t::local_server_names[0]));
 	joinserverMenu.num_servers++;
 }
 
@@ -1211,13 +1211,13 @@ struct startserverMenu_t : menuFramework_t
 	static menuList2_t	startmap_list;
 	static menuList_t	rules_box;
 
-	static void DMOptionsFunc (void *self)
+	static void DMOptionsFunc(void *self)
 	{
 		if (rules_box.curvalue == 1) return;		// coop game
-		Menu_DMOptions_f ();
+		Menu_DMOptions_f();
 	}
 
-	static void RulesChangeFunc (void *self)
+	static void RulesChangeFunc(void *self)
 	{
 		if (rules_box.curvalue == 0)				// deathmatch
 		{
@@ -1227,11 +1227,11 @@ struct startserverMenu_t : menuFramework_t
 		else if (rules_box.curvalue == 1)			// coop
 		{
 			maxclients_field.statusbar = "4 maximum for cooperative";
-			if (atoi (maxclients_field.buffer) > 4)
-				strcpy (maxclients_field.buffer, "4" );
+			if (atoi(maxclients_field.buffer) > 4)
+				strcpy(maxclients_field.buffer, "4" );
 			dmoptions_action.statusbar = "N/A for cooperative";
 		}
-		else if (!stricmp (FS_Gamedir (), "rogue"))
+		else if (!stricmp(FS_Gamedir(), "rogue"))
 		{
 			if (rules_box.curvalue == 2)			// tag
 			{
@@ -1248,76 +1248,76 @@ struct startserverMenu_t : menuFramework_t
 		}
 	}
 
-	static void StartServerFunc (const char *map)
+	static void StartServerFunc(const char *map)
 	{
 		int		v;
 
 		//?? low limit is 0, upper limit - unlimited ?
-		v = atoi (maxclients_field.buffer);
-		Cvar_SetInteger ("maxclients", max(v, 0));
+		v = atoi(maxclients_field.buffer);
+		Cvar_SetInteger("maxclients", max(v, 0));
 
-		v = atoi (timelimit_field.buffer);
-		Cvar_SetInteger ("timelimit", max(v, 0));
+		v = atoi(timelimit_field.buffer);
+		Cvar_SetInteger("timelimit", max(v, 0));
 
-		v = atoi (fraglimit_field.buffer);
-		Cvar_SetInteger ("fraglimit", max(v, 0));
+		v = atoi(fraglimit_field.buffer);
+		Cvar_SetInteger("fraglimit", max(v, 0));
 
-//		Cvar_SetValue ("deathmatch", !rules_box.curvalue);
-//		Cvar_SetValue ("coop", rules_box.curvalue);
+//		Cvar_SetValue("deathmatch", !rules_box.curvalue);
+//		Cvar_SetValue("coop", rules_box.curvalue);
 
-		if (!stricmp (FS_Gamedir (), "rogue") && rules_box.curvalue >= 2)
+		if (!stricmp(FS_Gamedir(), "rogue") && rules_box.curvalue >= 2)
 		{
-			Cvar_SetInteger ("deathmatch", 1);		// deathmatch is always true for rogue games, right?
-			Cvar_SetInteger ("coop", 0);			// FIXME - this might need to depend on which game we're running
-			Cvar_SetInteger ("gamerules", rules_box.curvalue);
+			Cvar_SetInteger("deathmatch", 1);		// deathmatch is always true for rogue games, right?
+			Cvar_SetInteger("coop", 0);			// FIXME - this might need to depend on which game we're running
+			Cvar_SetInteger("gamerules", rules_box.curvalue);
 		}
 		else
 		{
-			Cvar_SetInteger ("deathmatch", !rules_box.curvalue);
-			Cvar_SetInteger ("coop", rules_box.curvalue);
-			Cvar_SetInteger ("gamerules", 0);
+			Cvar_SetInteger("deathmatch", !rules_box.curvalue);
+			Cvar_SetInteger("coop", rules_box.curvalue);
+			Cvar_SetInteger("gamerules", 0);
 		}
 
 		const char *spot = NULL;
 		if (rules_box.curvalue == 1)		// ROGUE
 		{
-			if (!stricmp (map, "bunk1")  ||
-				!stricmp (map, "mintro") ||
-				!stricmp (map, "fact1"))
+			if (!stricmp(map, "bunk1")  ||
+				!stricmp(map, "mintro") ||
+				!stricmp(map, "fact1"))
 				spot = "start";
-			else if (!stricmp (map, "power1"))
+			else if (!stricmp(map, "power1"))
 				spot = "pstart";
-			else if (!stricmp (map, "biggun"))
+			else if (!stricmp(map, "biggun"))
 				spot = "bstart";
-			else if (!stricmp (map, "hangar1") || !stricmp (map, "city1"))
+			else if (!stricmp(map, "hangar1") || !stricmp(map, "city1"))
 				spot = "unitstart";
-			else if (!stricmp (map, "boss1"))
+			else if (!stricmp(map, "boss1"))
 				spot = "bosstart";
 		}
 
 		if (spot)
 		{
-			if (Com_ServerState()) Cbuf_AddText ("disconnect\n");
-			Cbuf_AddText (va("gamemap \"*%s$%s\"\n", map, spot));
+			if (Com_ServerState()) Cbuf_AddText("disconnect\n");
+			Cbuf_AddText(va("gamemap \"*%s$%s\"\n", map, spot));
 		}
 		else
-			Cbuf_AddText (va("map %s\n", map));
+			Cbuf_AddText(va("map %s\n", map));
 
 		if (mapNamesChain)
 		{
 			delete mapNamesChain;
 			mapNamesChain = NULL;
 		}
-		M_ForceMenuOff ();
+		M_ForceMenuOff();
 	}
 
-	static void StartServerActionFunc (void *self)
+	static void StartServerActionFunc(void *self)
 	{
 		CStringItem *item = &mapNames[startmap_list.curvalue];
-		if (item) StartServerFunc (strchr (item->name, '\n') + 1);
+		if (item) StartServerFunc(strchr(item->name, '\n') + 1);
 	}
 
-	bool Init ()
+	bool Init()
 	{
 		static const char *dm_coop_names[] =
 		{
@@ -1336,21 +1336,21 @@ struct startserverMenu_t : menuFramework_t
 
 		char	*buffer;
 		// load the list of map names
-		TString<64> Filename; Filename.sprintf ("./%s/maps.lst", FS_Gamedir());
-		CFile *File = GFileSystem->OpenFile (Filename, FS_OS);	// try OS file (quake fs OS file have lower priority, than pak)
-		if (!File) File = GFileSystem->OpenFile (Filename);		// open any file from this mod dir
-		if (!File) File = GFileSystem->OpenFile ("maps.lst");	// open any file from any dir
+		TString<64> Filename; Filename.sprintf("./%s/maps.lst", FS_Gamedir());
+		CFile *File = GFileSystem->OpenFile(Filename, FS_OS);	// try OS file (quake fs OS file have lower priority, than pak)
+		if (!File) File = GFileSystem->OpenFile(Filename);		// open any file from this mod dir
+		if (!File) File = GFileSystem->OpenFile("maps.lst");	// open any file from any dir
 
 		if (!File)
 		{
-			appWPrintf ("Couldn't find maps.lst\n");
+			appWPrintf("Couldn't find maps.lst\n");
 			buffer = NULL;
 		}
 		else
 		{
-			unsigned len = File->GetSize ();
+			unsigned len = File->GetSize();
 			buffer = new char [len+1];
-			File->Read (buffer, len);
+			File->Read(buffer, len);
 			delete File;
 		}
 
@@ -1365,9 +1365,9 @@ struct startserverMenu_t : menuFramework_t
 			{
 				char	name[256];
 
-				appStrncpylwr (name, COM_Parse (s, true), sizeof(name));
+				appStrncpylwr(name, COM_Parse(s, true), sizeof(name));
 				if (!name[0]) break;
-				/*CStringItem *item =*/ mapNames.CreateAndInsert (va("%s\n%s", COM_Parse (s, false), name), mapNamesChain);
+				/*CStringItem *item =*/ mapNames.CreateAndInsert(va("%s\n%s", COM_Parse(s, false), name), mapNamesChain);
 
 				numMaps++;
 			}
@@ -1384,22 +1384,22 @@ struct startserverMenu_t : menuFramework_t
 		startmap_list.y	= 0;
 		startmap_list.name = "initial map";
 		startmap_list.itemnames = mapNames.First();
-		AddItem (&startmap_list);
+		AddItem(&startmap_list);
 
 		rules_box.type = MTYPE_SPINCONTROL;
 		rules_box.x	= 0;
 		rules_box.y	= 20;
 		rules_box.name = "rules";
-		if (!stricmp (FS_Gamedir(), "rogue"))
+		if (!stricmp(FS_Gamedir(), "rogue"))
 			rules_box.itemnames = dm_coop_names_rogue;
 		else
 			rules_box.itemnames = dm_coop_names;
-		if (Cvar_VariableInt ("coop"))
+		if (Cvar_VariableInt("coop"))
 			rules_box.curvalue = 1;
 		else
 			rules_box.curvalue = 0;
 		rules_box.callback = RulesChangeFunc;
-		AddItem (&rules_box);
+		AddItem(&rules_box);
 
 		timelimit_field.type = MTYPE_FIELD;
 		timelimit_field.name = "time limit";
@@ -1409,8 +1409,8 @@ struct startserverMenu_t : menuFramework_t
 		timelimit_field.statusbar = "0 = no limit";
 		timelimit_field.length = 3;
 		timelimit_field.visible_length = 3;
-		strcpy (timelimit_field.buffer, Cvar_VariableString ("timelimit"));
-		AddItem (&timelimit_field);
+		strcpy(timelimit_field.buffer, Cvar_VariableString("timelimit"));
+		AddItem(&timelimit_field);
 
 		fraglimit_field.type = MTYPE_FIELD;
 		fraglimit_field.name = "frag limit";
@@ -1420,8 +1420,8 @@ struct startserverMenu_t : menuFramework_t
 		fraglimit_field.statusbar = "0 = no limit";
 		fraglimit_field.length = 3;
 		fraglimit_field.visible_length = 3;
-		strcpy (fraglimit_field.buffer, Cvar_VariableString ("fraglimit"));
-		AddItem (&fraglimit_field);
+		strcpy(fraglimit_field.buffer, Cvar_VariableString("fraglimit"));
+		AddItem(&fraglimit_field);
 
 		/*
 		** maxclients determines the maximum number of players that can join
@@ -1437,11 +1437,11 @@ struct startserverMenu_t : menuFramework_t
 		maxclients_field.statusbar = NULL;
 		maxclients_field.length = 3;
 		maxclients_field.visible_length = 3;
-		if (Cvar_VariableInt ("maxclients") == 1)
-			strcpy (maxclients_field.buffer, "8");
+		if (Cvar_VariableInt("maxclients") == 1)
+			strcpy(maxclients_field.buffer, "8");
 		else
-			strcpy (maxclients_field.buffer, Cvar_VariableString ("maxclients"));
-		AddItem (&maxclients_field);
+			strcpy(maxclients_field.buffer, Cvar_VariableString("maxclients"));
+		AddItem(&maxclients_field);
 
 		hostname_field.type = MTYPE_FIELD;
 		hostname_field.name = "hostname";
@@ -1451,34 +1451,34 @@ struct startserverMenu_t : menuFramework_t
 		hostname_field.statusbar = NULL;
 		hostname_field.length = 12;
 		hostname_field.visible_length = 12;
-		strcpy (hostname_field.buffer, Cvar_VariableString("hostname"));
-		AddItem (&hostname_field);
+		strcpy(hostname_field.buffer, Cvar_VariableString("hostname"));
+		AddItem(&hostname_field);
 
 		MENU_ACTION(dmoptions_action,108,"deathmatch flags",DMOptionsFunc,NULL)
 		dmoptions_action.flags= QMF_LEFT_JUSTIFY;
 		dmoptions_action.x	= 24;
 		dmoptions_action.statusbar = NULL;
-		AddItem (&dmoptions_action);
+		AddItem(&dmoptions_action);
 
 		MENU_ACTION(dmbrowse_action,118,"browse maps",NULL,"menu_dmbrowse")
 		dmbrowse_action.flags = QMF_LEFT_JUSTIFY;
 		dmbrowse_action.x = 24;
 		dmbrowse_action.statusbar = NULL;
-		AddItem (&dmbrowse_action);
+		AddItem(&dmbrowse_action);
 
 		MENU_ACTION(start_action,138,"begin",StartServerActionFunc,NULL)
 		start_action.flags= QMF_LEFT_JUSTIFY;
 		start_action.x	= 24;
-		AddItem (&start_action);
+		AddItem(&start_action);
 
-		Center ();
+		Center();
 
 		// call this now to set proper inital state
-		RulesChangeFunc (NULL);
+		RulesChangeFunc(NULL);
 		return true;
 	}
 
-	const char * KeyDown (int key)
+	const char * KeyDown(int key)
 	{
 		if (key == K_ESCAPE || key == K_MOUSE2)
 		{
@@ -1490,7 +1490,7 @@ struct startserverMenu_t : menuFramework_t
 			numMaps = 0;
 		}
 
-		return menuFramework_t::KeyDown (key);
+		return menuFramework_t::KeyDown(key);
 	}
 };
 static startserverMenu_t startserverMenu;
@@ -1507,9 +1507,9 @@ menuList2_t	startserverMenu_t::startmap_list;
 menuList_t	startserverMenu_t::rules_box;
 
 
-static void Menu_StartServer_f ()
+static void Menu_StartServer_f()
 {
-	startserverMenu.Push ();
+	startserverMenu.Push();
 }
 
 /*
@@ -1546,13 +1546,13 @@ struct dmoptionsMenu_t : menuFramework_t
 	static menuList_t	stack_double_box;
 	static menuList_t	no_spheres_box;
 
-	static void DMFlagCallback (void *self)
+	static void DMFlagCallback(void *self)
 	{
 		menuList_t *f;
 		int		flags, bit, nobit;
 
 		f = (menuList_t *)self;
-		flags = Cvar_VariableInt ("dmflags");
+		flags = Cvar_VariableInt("dmflags");
 		bit = nobit = 0;
 
 		if (f == &friendlyfire_box)
@@ -1598,7 +1598,7 @@ struct dmoptionsMenu_t : menuFramework_t
 			bit = DF_FIXED_FOV;
 		else if (f == &quad_drop_box)
 			bit = DF_QUAD_DROP;
-		else if (!stricmp (FS_Gamedir(), "rogue"))
+		else if (!stricmp(FS_Gamedir(), "rogue"))
 		{
 			if (f == &no_mines_box)
 				bit = DF_NO_MINES;
@@ -1618,18 +1618,18 @@ struct dmoptionsMenu_t : menuFramework_t
 				flags = flags & ~nobit | bit;
 		}
 
-		Cvar_SetInteger ("dmflags", flags);
+		Cvar_SetInteger("dmflags", flags);
 
-		appSprintf (ARRAY_ARG(dmoptions_statusbar), "dmflags = %d", flags);
+		appSprintf(ARRAY_ARG(dmoptions_statusbar), "dmflags = %d", flags);
 	}
 
-	bool Init ()
+	bool Init()
 	{
 		static const char *teamplay_names[] =
 		{
 			"disabled", "by skin", "by model", 0
 		};
-		int dmflags = Cvar_VariableInt ("dmflags");
+		int dmflags = Cvar_VariableInt("dmflags");
 
 		x = viddef.width / 2;
 		nitems = 0;
@@ -1637,71 +1637,71 @@ struct dmoptionsMenu_t : menuFramework_t
 		int y = 0;
 		MENU_SPIN(falls_box,y,"falling damage",DMFlagCallback,yesno_names)
 		falls_box.curvalue = ( dmflags & DF_NO_FALLING ) == 0;
-		AddItem (&falls_box );
+		AddItem(&falls_box );
 		MENU_SPIN(weapons_stay_box,y+=10,"weapons stay",DMFlagCallback,yesno_names)
 		weapons_stay_box.curvalue = ( dmflags & DF_WEAPONS_STAY ) != 0;
-		AddItem (&weapons_stay_box );
+		AddItem(&weapons_stay_box );
 		MENU_SPIN(instant_powerups_box,y+=10,"instant powerups",DMFlagCallback,yesno_names)
 		instant_powerups_box.curvalue = ( dmflags & DF_INSTANT_ITEMS ) != 0;
-		AddItem (&instant_powerups_box );
+		AddItem(&instant_powerups_box );
 		MENU_SPIN(powerups_box,y+=10,"allow powerups",DMFlagCallback,yesno_names)
 		powerups_box.curvalue = ( dmflags & DF_NO_ITEMS ) == 0;
-		AddItem (&powerups_box );
+		AddItem(&powerups_box );
 		MENU_SPIN(health_box,y+=10,"allow health",DMFlagCallback,yesno_names)
 		health_box.curvalue = ( dmflags & DF_NO_HEALTH ) == 0;
-		AddItem (&health_box );
+		AddItem(&health_box );
 		MENU_SPIN(armor_box,y+=10,"allow armor",DMFlagCallback,yesno_names)
 		armor_box.curvalue = ( dmflags & DF_NO_ARMOR ) == 0;
-		AddItem (&armor_box );
+		AddItem(&armor_box );
 		MENU_SPIN(spawn_farthest_box,y+=10,"spawn farthest",DMFlagCallback,yesno_names)
 		spawn_farthest_box.curvalue = ( dmflags & DF_SPAWN_FARTHEST ) != 0;
-		AddItem (&spawn_farthest_box );
+		AddItem(&spawn_farthest_box );
 		MENU_SPIN(samelevel_box,y+=10,"same map",DMFlagCallback,yesno_names)
 		samelevel_box.curvalue = ( dmflags & DF_SAME_LEVEL ) != 0;
-		AddItem (&samelevel_box );
+		AddItem(&samelevel_box );
 		MENU_SPIN(force_respawn_box,y+=10,"force respawn",DMFlagCallback,yesno_names)
 		force_respawn_box.curvalue = ( dmflags & DF_FORCE_RESPAWN ) != 0;
-		AddItem (&force_respawn_box );
+		AddItem(&force_respawn_box );
 		MENU_SPIN(teamplay_box,y+=10,"teamplay",DMFlagCallback,yesno_names)
 		teamplay_box.itemnames = teamplay_names;
-		AddItem (&teamplay_box );
+		AddItem(&teamplay_box );
 		MENU_SPIN(allow_exit_box,y+=10,"allow exit",DMFlagCallback,yesno_names)
 		allow_exit_box.curvalue = ( dmflags & DF_ALLOW_EXIT ) != 0;
-		AddItem (&allow_exit_box );
+		AddItem(&allow_exit_box );
 		MENU_SPIN(infinite_ammo_box,y+=10,"infinite ammo",DMFlagCallback,yesno_names)
 		infinite_ammo_box.curvalue = ( dmflags & DF_INFINITE_AMMO ) != 0;
-		AddItem (&infinite_ammo_box );
+		AddItem(&infinite_ammo_box );
 		MENU_SPIN(fixed_fov_box,y+=10,"fixed FOV",DMFlagCallback,yesno_names)
 		fixed_fov_box.curvalue = ( dmflags & DF_FIXED_FOV ) != 0;
-		AddItem (&fixed_fov_box );
+		AddItem(&fixed_fov_box );
 		MENU_SPIN(quad_drop_box,y+=10,"quad drop",DMFlagCallback,yesno_names)
 		quad_drop_box.curvalue = ( dmflags & DF_QUAD_DROP ) != 0;
-		AddItem (&quad_drop_box );
+		AddItem(&quad_drop_box );
 		MENU_SPIN(friendlyfire_box,y+=10,"friendly fire",DMFlagCallback,yesno_names)
 		friendlyfire_box.curvalue = ( dmflags & DF_NO_FRIENDLY_FIRE ) == 0;
-		AddItem (&friendlyfire_box );
+		AddItem(&friendlyfire_box );
 
-		if (!stricmp (FS_Gamedir(), "rogue"))
+		if (!stricmp(FS_Gamedir(), "rogue"))
 		{
 			MENU_SPIN(no_mines_box,y+=10,"remove mines",DMFlagCallback,yesno_names)
 			no_mines_box.curvalue = ( dmflags & DF_NO_MINES ) != 0;
-			AddItem ( &no_mines_box );
+			AddItem( &no_mines_box );
 			MENU_SPIN(no_nukes_box,y+=10,"remove nukes",DMFlagCallback,yesno_names)
 			no_nukes_box.curvalue = ( dmflags & DF_NO_NUKES ) != 0;
-			AddItem ( &no_nukes_box );
+			AddItem( &no_nukes_box );
 			MENU_SPIN(stack_double_box,y+=10,"2x/4x stacking off",DMFlagCallback,yesno_names)
 			stack_double_box.curvalue = ( dmflags & DF_NO_STACK_DOUBLE ) != 0;
-			AddItem ( &stack_double_box );
+			AddItem( &stack_double_box );
 			MENU_SPIN(no_spheres_box,y+=10,"remove spheres",DMFlagCallback,yesno_names)
 			no_spheres_box.curvalue = ( dmflags & DF_NO_SPHERES ) != 0;
-			AddItem ( &no_spheres_box );
+			AddItem( &no_spheres_box );
 		}
 
-		Center ();
+		Center();
 
 		// set the original dmflags statusbar
-		DMFlagCallback (0);
-		SetStatusBar (dmoptions_statusbar );
+		DMFlagCallback(0);
+		SetStatusBar(dmoptions_statusbar );
 		return true;
 	}
 };
@@ -1730,9 +1730,9 @@ menuList_t	dmoptionsMenu_t::stack_double_box;
 menuList_t	dmoptionsMenu_t::no_spheres_box;
 
 
-static void Menu_DMOptions_f ()
+static void Menu_DMOptions_f()
 {
-	dmoptionsMenu.Push ();
+	dmoptionsMenu.Push();
 }
 
 /*
@@ -1752,7 +1752,7 @@ struct downloadOptionsMenu_t : menuFramework_t
 	static menuList_t	allow_download_players_box;
 	static menuList_t	allow_download_sounds_box;
 
-	static void DownloadCallback (void *self)
+	static void DownloadCallback(void *self)
 	{
 		const char *name;
 		menuList_t *f = (menuList_t *) self;
@@ -1769,10 +1769,10 @@ struct downloadOptionsMenu_t : menuFramework_t
 			name = "allow_download_sounds";
 		else
 			return;
-		Cvar_SetInteger (name, f->curvalue);
+		Cvar_SetInteger(name, f->curvalue);
 	}
 
-	bool Init ()
+	bool Init()
 	{
 		x = viddef.width / 2;
 		nitems = 0;
@@ -1782,25 +1782,25 @@ struct downloadOptionsMenu_t : menuFramework_t
 		download_title.name = "Download Options";
 		download_title.x	= 48;
 		download_title.y	= y;
-		AddItem ( &download_title);
+		AddItem( &download_title);
 
 		MENU_SPIN(allow_download_box, y+=20,"allow downloading", DownloadCallback, yesno_names);
-		allow_download_box.curvalue = Cvar_VariableInt ("allow_download");
-		AddItem ( &allow_download_box);
+		allow_download_box.curvalue = Cvar_VariableInt("allow_download");
+		AddItem( &allow_download_box);
 		MENU_SPIN(allow_download_maps_box, y+=20,"maps", DownloadCallback, yesno_names);
-		allow_download_maps_box.curvalue = Cvar_VariableInt ("allow_download_maps");
-		AddItem ( &allow_download_maps_box);
+		allow_download_maps_box.curvalue = Cvar_VariableInt("allow_download_maps");
+		AddItem( &allow_download_maps_box);
 		MENU_SPIN(allow_download_players_box, y+=20,"player models/skins",DownloadCallback, yesno_names);
-		allow_download_players_box.curvalue = Cvar_VariableInt ("allow_download_players");
-		AddItem ( &allow_download_players_box);
+		allow_download_players_box.curvalue = Cvar_VariableInt("allow_download_players");
+		AddItem( &allow_download_players_box);
 		MENU_SPIN(allow_download_models_box, y+=20,"models", DownloadCallback, yesno_names)
 		allow_download_models_box.curvalue = Cvar_VariableInt("allow_download_models");
-		AddItem ( &allow_download_models_box);
+		AddItem( &allow_download_models_box);
 		MENU_SPIN(allow_download_sounds_box, y+=20,"sounds", DownloadCallback, yesno_names)
-		allow_download_sounds_box.curvalue = Cvar_VariableInt ("allow_download_sounds");
-		AddItem ( &allow_download_sounds_box);
+		allow_download_sounds_box.curvalue = Cvar_VariableInt("allow_download_sounds");
+		AddItem( &allow_download_sounds_box);
 
-		Center ();
+		Center();
 		return true;
 	}
 };
@@ -1814,9 +1814,9 @@ menuList_t	downloadOptionsMenu_t::allow_download_players_box;
 menuList_t	downloadOptionsMenu_t::allow_download_sounds_box;
 
 
-static void Menu_DownloadOptions_f ()
+static void Menu_DownloadOptions_f()
 {
-	downloadOptionsMenu.Push ();
+	downloadOptionsMenu.Push();
 }
 
 /*
@@ -1831,7 +1831,7 @@ struct addressBookMenu_t : menuFramework_t
 {
 	menuField_t	addressbook_fields[NUM_ADDRESSBOOK_ENTRIES];
 
-	bool Init ()
+	bool Init()
 	{
 		x = viddef.width / 2 - 142;
 		y = viddef.height / 2 - 58;
@@ -1850,26 +1850,26 @@ struct addressBookMenu_t : menuFramework_t
 			addressbook_fields[i].length = 60;
 			addressbook_fields[i].visible_length = 30;
 
-			strcpy (addressbook_fields[i].buffer, Cvar_VariableString (va("adr%d", i)));
+			strcpy(addressbook_fields[i].buffer, Cvar_VariableString(va("adr%d", i)));
 
-			AddItem (&addressbook_fields[i]);
+			AddItem(&addressbook_fields[i]);
 		}
 		return true;
 	}
 
-	const char * KeyDown (int key)
+	const char * KeyDown(int key)
 	{
 		if (key == K_ESCAPE || key == K_MOUSE2)
 			for (int i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
-				Cvar_Set (va("adr%d", i), addressbook_fields[i].buffer);
-		return menuFramework_t::KeyDown (key);
+				Cvar_Set(va("adr%d", i), addressbook_fields[i].buffer);
+		return menuFramework_t::KeyDown(key);
 	}
 };
 static addressBookMenu_t addressBookMenu;
 
-static void Menu_AddressBook_f ()
+static void Menu_AddressBook_f()
 {
-	addressBookMenu.Push ();
+	addressBookMenu.Push();
 }
 
 /*
@@ -1912,42 +1912,42 @@ struct playerConfigMenu_t : menuFramework_t
 	static clientInfo_t ci;
 	static centity_t cent;
 
-	static void HandednessCallback (void *)
+	static void HandednessCallback(void *)
 	{
-		Cvar_SetInteger ("hand", handedness_box.curvalue);
+		Cvar_SetInteger("hand", handedness_box.curvalue);
 	}
 
-	static void RTypeCallback (void *)
+	static void RTypeCallback(void *)
 	{
-		Cvar_SetInteger ("railtype", rtype_box.curvalue);
+		Cvar_SetInteger("railtype", rtype_box.curvalue);
 	}
 
-	static void RColorCallback (void *)
+	static void RColorCallback(void *)
 	{
-		Cvar_SetInteger ("railcolor", rcolor_box.curvalue);
+		Cvar_SetInteger("railcolor", rcolor_box.curvalue);
 	}
 
-	static void RateCallback (void *)
+	static void RateCallback(void *)
 	{
 		if (rate_box.curvalue != ARRAY_COUNT(rate_tbl) - 1)
-			Cvar_SetInteger ("rate", rate_tbl[rate_box.curvalue]);
+			Cvar_SetInteger("rate", rate_tbl[rate_box.curvalue]);
 	}
 
-	static void ModelCallback (void *)
+	static void ModelCallback(void *)
 	{
 		playerModelInfo_t *info = &pmiList[model_box.curvalue];
 		skin_box.itemnames = info->skins.First();
 		skin_box.curvalue  = 0;
-		modelChangeTime = appMilliseconds ();
+		modelChangeTime = appMilliseconds();
 		ci.isValidModel = false;
 	}
 
-	static void SkinCallback (void *)
+	static void SkinCallback(void *)
 	{
 		ci.isValidModel = false;		// reload clientInfo_t for new skin/icon
 	}
 
-	bool Init ()
+	bool Init()
 	{
 		extern cvar_t *name, *skin;
 		char	currentModel[MAX_QPATH], currentSkin[MAX_QPATH], *path;
@@ -1956,36 +1956,36 @@ struct playerConfigMenu_t : menuFramework_t
 		static const char *colorNames[] = {"default", "red", "green", "yellow", "blue", "magenta", "cyan", "white", NULL};
 		static const char *railTypes[]  = {"original", "spiral", "rings", "beam", NULL};
 
-		memset (&ci, 0, sizeof(ci));
-		memset (&cent, 0, sizeof(cent));
+		memset(&ci, 0, sizeof(ci));
+		memset(&cent, 0, sizeof(cent));
 
-		if (!ScanPlayerModels ())
+		if (!ScanPlayerModels())
 		{
-			multiplayerMenu.SetStatusBar (S_YELLOW"No valid player models found");
+			multiplayerMenu.SetStatusBar(S_YELLOW"No valid player models found");
 			return false;
 		}
 
-		hand->Clamp (0, 2);
+		hand->Clamp(0, 2);
 
-		strcpy (currentModel, skin->string);
-		if (path = strchr (currentModel, '/'))
+		strcpy(currentModel, skin->string);
+		if (path = strchr(currentModel, '/'))
 		{
-			strcpy (currentSkin, path + 1);
+			strcpy(currentSkin, path + 1);
 			path[0] = 0;
 		}
 		else
 		{	// bad skin info - set default
-			strcpy (currentModel, "male");
-			strcpy (currentSkin, "grunt");
+			strcpy(currentModel, "male");
+			strcpy(currentSkin, "grunt");
 		}
 
 		// find current model/skin index
 		playerModelInfo_t *info;
 		int currentModelIndex, currentSkinIndex;
 		for (info = pmiList.First(), currentModelIndex = 0; info; info = pmiList.Next(info), currentModelIndex++)
-			if (!stricmp (info->name, currentModel))
+			if (!stricmp(info->name, currentModel))
 			{	// we have found model - find skin
-				currentSkinIndex = info->skins.IndexOf (currentSkin);
+				currentSkinIndex = info->skins.IndexOf(currentSkin);
 				if (currentSkinIndex < 0)	// not found
 					currentSkinIndex = 0;
 				break;
@@ -2007,9 +2007,9 @@ struct playerConfigMenu_t : menuFramework_t
 		name_field.y	= viddef.height * 20 / 240 - 20;
 		name_field.length		= 20;
 		name_field.visible_length = 20;
-		strcpy (name_field.buffer, name->string);
-		name_field.cursor = strlen (name->string);
-		AddItem (&name_field);
+		strcpy(name_field.buffer, name->string);
+		name_field.cursor = strlen(name->string);
+		AddItem(&name_field);
 
 		int y = viddef.height * 68 / 240;
 
@@ -2018,7 +2018,7 @@ struct playerConfigMenu_t : menuFramework_t
 		model_title.name = "model";
 		model_title.x	= -8;
 		model_title.y	= y+=10;
-		AddItem (&model_title);
+		AddItem(&model_title);
 
 		model_box.type = MTYPE_SPINCONTROL2;
 		model_box.x	= -56;
@@ -2027,14 +2027,14 @@ struct playerConfigMenu_t : menuFramework_t
 		model_box.cursor_offset = -48;
 		model_box.curvalue = currentModelIndex;
 		model_box.itemnames = pmiList.First();
-		AddItem (&model_box);
+		AddItem(&model_box);
 
 		// skin
 		skin_title.type = MTYPE_SEPARATOR;
 		skin_title.name = "skin";
 		skin_title.x   = -16;
 		skin_title.y	= y+=14;
-		AddItem (&skin_title);
+		AddItem(&skin_title);
 
 		skin_box.type	= MTYPE_SPINCONTROL2;
 		skin_box.x		= -56;
@@ -2043,67 +2043,67 @@ struct playerConfigMenu_t : menuFramework_t
 		skin_box.cursor_offset = -48;
 		skin_box.curvalue = currentSkinIndex;
 		skin_box.itemnames = info->skins.First();
-		AddItem (&skin_box);
+		AddItem(&skin_box);
 
 		// rail type
 		rtype_title.type = MTYPE_SEPARATOR;
 		rtype_title.name = "rail type";
 		rtype_title.x	= 24;
 		rtype_title.y	= y+=14;
-		AddItem (&rtype_title);
+		AddItem(&rtype_title);
 
 		rtype_box.type = MTYPE_SPINCONTROL;
 		rtype_box.x = -56;
 		rtype_box.y = y+=10;
 		rtype_box.cursor_offset = -48;
 		rtype_box.callback = RTypeCallback;
-		rtype_box.curvalue = Cvar_VariableInt ("railtype");
+		rtype_box.curvalue = Cvar_VariableInt("railtype");
 		rtype_box.itemnames = railTypes;
-		AddItem (&rtype_box);
+		AddItem(&rtype_box);
 
 		// rail color
 		rcolor_title.type = MTYPE_SEPARATOR;
 		rcolor_title.name = "rail color";
 		rcolor_title.x	= 32;
 		rcolor_title.y	= y+=14;
-		AddItem (&rcolor_title);
+		AddItem(&rcolor_title);
 
 		rcolor_box.type = MTYPE_SPINCONTROL;
 		rcolor_box.x = -56;
 		rcolor_box.y = y+=10;
 		rcolor_box.cursor_offset = -48;
 		rcolor_box.callback = RColorCallback;
-		rcolor_box.curvalue = Cvar_VariableInt ("railcolor");
+		rcolor_box.curvalue = Cvar_VariableInt("railcolor");
 		rcolor_box.itemnames = colorNames;
-		AddItem (&rcolor_box);
+		AddItem(&rcolor_box);
 
 		// handedness
 		hand_title.type = MTYPE_SEPARATOR;
 		hand_title.name = "handedness";
 		hand_title.x	= 32;
 		hand_title.y	= y+=14;
-		AddItem (&hand_title);
+		AddItem(&hand_title);
 
 		handedness_box.type = MTYPE_SPINCONTROL;
 		handedness_box.x = -56;
 		handedness_box.y = y+=10;
 		handedness_box.cursor_offset = -48;
 		handedness_box.callback = HandednessCallback;
-		handedness_box.curvalue = Cvar_VariableInt ("hand");
+		handedness_box.curvalue = Cvar_VariableInt("hand");
 		handedness_box.itemnames = handedness;
-		AddItem (&handedness_box);
+		AddItem(&handedness_box);
 
 		// rate
 		int i;
 		for (i = 0; i < ARRAY_COUNT(rate_tbl) - 1; i++)
-			if (Cvar_VariableInt ("rate") == rate_tbl[i])
+			if (Cvar_VariableInt("rate") == rate_tbl[i])
 				break;
 
 		rate_title.type = MTYPE_SEPARATOR;
 		rate_title.name = "connect speed";
 		rate_title.x	= 56;
 		rate_title.y	= y+=14;
-		AddItem (&rate_title);
+		AddItem(&rate_title);
 
 		rate_box.type	= MTYPE_SPINCONTROL;
 		rate_box.x		= -56;
@@ -2112,7 +2112,7 @@ struct playerConfigMenu_t : menuFramework_t
 		rate_box.callback = RateCallback;
 		rate_box.curvalue = i;
 		rate_box.itemnames = rate_names;
-		AddItem (&rate_box);
+		AddItem(&rate_box);
 
 		download_action.type = MTYPE_ACTION;
 		download_action.name = "download options";
@@ -2120,9 +2120,9 @@ struct playerConfigMenu_t : menuFramework_t
 		download_action.x = -24;
 		download_action.y = y+=14;
 		download_action.command = "menu_downloadoptions";
-		AddItem (&download_action);
+		AddItem(&download_action);
 
-		SetStatusBar (NULL);
+		SetStatusBar(NULL);
 		return true;
 	}
 
@@ -2132,7 +2132,7 @@ struct playerConfigMenu_t : menuFramework_t
 
 #define MODEL_DELAY	300
 
-	void Draw ()
+	void Draw()
 	{
 		static dlight_t dl[] = {
 			{{30, 100, 100}, {1, 1, 1}, 350},
@@ -2141,7 +2141,7 @@ struct playerConfigMenu_t : menuFramework_t
 //		sscanf(Cvar_VariableString("dl0"), "%f %f %f %f", VECTOR_ARG(&dl[0].origin), &dl[0].intensity);
 //		sscanf(Cvar_VariableString("dl1"), "%f %f %f %f", VECTOR_ARG(&dl[1].origin), &dl[1].intensity);
 
-		bool showModels = appMilliseconds () - modelChangeTime > MODEL_DELAY;
+		bool showModels = appMilliseconds() - modelChangeTime > MODEL_DELAY;
 
 		playerModelInfo_t *model = &pmiList[model_box.curvalue];
 		if (!model) return;
@@ -2149,32 +2149,32 @@ struct playerConfigMenu_t : menuFramework_t
 		if (!skin) return;
 
 		refdef_t refdef;
-		memset (&refdef, 0, sizeof (refdef));
+		memset(&refdef, 0, sizeof(refdef));
 		refdef.x      = viddef.width / 2;
 		refdef.y      = viddef.height * 6 / 25;
 		refdef.width  = viddef.width * 4 / 10 + 16;
 		refdef.height = viddef.width * 5 / 10;
 		refdef.fov_x  = refdef.width * 90 / viddef.width;
-		refdef.fov_y  = CalcFov (refdef.fov_x, refdef.width, refdef.height);
+		refdef.fov_y  = CalcFov(refdef.fov_x, refdef.width, refdef.height);
 		refdef.time   = cls.realtime / 1000.0f;
 
 		if (showModels && !ci.isValidModel)
 		{
 			// load new model
-			CL_LoadClientinfo (ci, va("menu\\%s/%s", model->name, skin->name), false);
+			CL_LoadClientinfo(ci, va("menu\\%s/%s", model->name, skin->name), false);
 			ci.fixedAll = true;		// do not rotate model parts one around another
 		}
 
 		if (ci.isValidModel)
 		{
 			clEntityState_t st;
-			st.SetAnim (LEGS_IDLE, TORSO_STAND);
+			st.SetAnim(LEGS_IDLE, TORSO_STAND);
 			cent.prev = st;
 			cent.current = st;
 			// setup base entity
-			// note: we will setup both frame numbers (for q2 models) and animation type (for q3 models)
+			// note: we will setup both frame numbers(for q2 models) and animation type(for q3 models)
 			entity_t base;
-			memset (&base, 0, sizeof(base));
+			memset(&base, 0, sizeof(base));
 			base.pos.origin[0] = 90;
 			base.pos.origin[2] = -6;
 			base.frame = (cls.realtime + 99) / 100 % (LAST_FRAME-FIRST_FRAME+1) + FIRST_FRAME;
@@ -2185,12 +2185,12 @@ struct playerConfigMenu_t : menuFramework_t
 			if (base.backlerp == 1.0f)
 				base.backlerp = 0.0;
 			base.angles[1] = cls.realtime / 20 % 360;
-			base.pos.axis.FromEuler (base.angles);
+			base.pos.axis.FromEuler(base.angles);
 			// create entities
 			entity_t e[16];
-			memset (&e, 0, sizeof(e));
+			memset(&e, 0, sizeof(e));
 			// setup for renderer
-			int numEnts = ParsePlayerEntity (cent, ci, &st, base, ARRAY_ARG(e), 0);
+			int numEnts = ParsePlayerEntity(cent, ci, &st, base, ARRAY_ARG(e), 0);
 //			refdef.areabits = NULL;
 			refdef.num_entities = numEnts;
 			refdef.entities = e;
@@ -2200,13 +2200,13 @@ struct playerConfigMenu_t : menuFramework_t
 		}
 		refdef.rdflags = RDF_NOWORLDMODEL;
 
-		menuFramework_t::Draw ();
-		RE_Fill (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
-		RE_RenderFrame (&refdef);
-		RE_DrawDetailedPic (x - 40, refdef.y, viddef.height * 32 / 240, viddef.height * 32 / 240, ci.IconName);
+		menuFramework_t::Draw();
+		RE_Fill(refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
+		RE_RenderFrame(&refdef);
+		RE_DrawDetailedPic(x - 40, refdef.y, viddef.height * 32 / 240, viddef.height * 32 / 240, ci.IconName);
 	}
 
-	const char * KeyDown (int key)
+	const char * KeyDown(int key)
 	{
 		if (key == K_ESCAPE || key == K_MOUSE2)
 		{
@@ -2227,19 +2227,19 @@ struct playerConfigMenu_t : menuFramework_t
 			}
 			// final color must be white; "i" points to string end
 			if (color != C_WHITE)
-				Cvar_Set ("name", va("%s"S_WHITE, name_field.buffer));
+				Cvar_Set("name", va("%s"S_WHITE, name_field.buffer));
 			else
-				Cvar_Set ("name", name_field.buffer);
+				Cvar_Set("name", name_field.buffer);
 
 			playerModelInfo_t *model = &pmiList[model_box.curvalue];
 			CStringItem *skin = &model->skins[skin_box.curvalue];
 			// set "skin" variable
-			Cvar_Set ("skin", va("%s/%s", model->name, skin->name));
+			Cvar_Set("skin", va("%s/%s", model->name, skin->name));
 
 			// free directory scan data
-			FreePlayerModelsInfo ();
+			FreePlayerModelsInfo();
 		}
-		return menuFramework_t::KeyDown (key);
+		return menuFramework_t::KeyDown(key);
 	}
 };
 static playerConfigMenu_t playerConfigMenu;
@@ -2257,9 +2257,9 @@ clientInfo_t playerConfigMenu_t::ci;
 centity_t playerConfigMenu_t::cent;
 
 
-static void Menu_PlayerConfig_f ()
+static void Menu_PlayerConfig_f()
 {
-	playerConfigMenu.Push ();
+	playerConfigMenu.Push();
 }
 
 
@@ -2314,7 +2314,7 @@ struct dmbrowseMenu_t : menuFramework_t
 	 * about freeing screenshots from imagelist - this will be done automatically when a
 	 * new level started (NOT IMPLEMENTED NOW !!) (registration sequence is less than new level sequence by 1 ...)
 	 */
-	bool Init ()
+	bool Init()
 	{
 		// free previous levelshots list
 		if (browse_list)
@@ -2347,21 +2347,21 @@ struct dmbrowseMenu_t : menuFramework_t
 
 		const char *path = NULL;
 		browse_list = new CFileList;
-		while (path = FS_NextPath (path))
+		while (path = FS_NextPath(path))
 		{
-			GFileSystem->List (va("%s/levelshots/*.pcx,*.tga,*.jpg", path), FS_FILE|FS_NOEXT, browse_list);	// images only
+			GFileSystem->List(va("%s/levelshots/*.pcx,*.tga,*.jpg", path), FS_FILE|FS_NOEXT, browse_list);	// images only
 			if (*browse_list) break;
 		}
 		for (TListIterator<CFileItem> item = *browse_list; item; ++item)
 		{
 			// screenshot found - check map presence
-			if (!GFileSystem->FileExists (va("maps/%s.bsp", item->name)))
+			if (!GFileSystem->FileExists(va("maps/%s.bsp", item->name)))
 				continue;
 
 			browse_map_names[thumbs.count++] = item->name;
 			if (thumbs.count == MAX_BROWSE_MAPS)
 			{
-				appWPrintf ("Maximum number of levelshots reached\n");
+				appWPrintf("Maximum number of levelshots reached\n");
 				break;
 			}
 		}
@@ -2376,11 +2376,11 @@ struct dmbrowseMenu_t : menuFramework_t
 		delete browse_list;
 		browse_list = NULL;
 
-		startserverMenu.SetStatusBar (S_YELLOW"No levelshots found");
+		startserverMenu.SetStatusBar(S_YELLOW"No levelshots found");
 		return false;
 	}
 
-	const char * KeyDown (int key)
+	const char * KeyDown(int key)
 	{
 		int	page = thumbs.cx * thumbs.cy;
 
@@ -2388,7 +2388,7 @@ struct dmbrowseMenu_t : menuFramework_t
 		{
 		case K_ESCAPE:
 		case K_MOUSE2:
-			m_current->Pop ();
+			m_current->Pop();
 			return menu_out_sound;
 
 		case K_DOWNARROW:
@@ -2436,7 +2436,7 @@ struct dmbrowseMenu_t : menuFramework_t
 		case K_KP_ENTER:
 		case K_ENTER:
 		case K_MOUSE1:
-			startserverMenu.StartServerFunc (browse_map_names[thumbs.current]);
+			startserverMenu.StartServerFunc(browse_map_names[thumbs.current]);
 			return NULL;
 		}
 
@@ -2457,29 +2457,29 @@ struct dmbrowseMenu_t : menuFramework_t
 		return menu_move_sound;
 	}
 
-	static void DrawThumbnail (int x, int y, int w, int h, const char *name, bool selected)
+	static void DrawThumbnail(int x, int y, int w, int h, const char *name, bool selected)
 	{
 		char	name2[256];
 
-		RE_Fill (x - THUMBNAIL_BORDER, y - THUMBNAIL_BORDER, w + THUMBNAIL_BORDER * 2,
+		RE_Fill(x - THUMBNAIL_BORDER, y - THUMBNAIL_BORDER, w + THUMBNAIL_BORDER * 2,
 				h + THUMBNAIL_BORDER * 2 + THUMBNAIL_TEXT, selected ? RGB(0,0.1,0.2) : RGB(0,0,0) /* blue/black */);
 
-		RE_DrawStretchPic (x, y, w, h, va("levelshots/%s", name));
+		RE_DrawStretchPic(x, y, w, h, va("levelshots/%s", name));
 		int max_width = w / CHAR_WIDTH;
-		strcpy (name2, name);
-		int text_width = strlen (name2);
+		strcpy(name2, name);
+		int text_width = strlen(name2);
 		if (text_width > max_width)
 		{
-			strcpy (&name2[max_width - 3], "...");		// make long names ends with "..."
+			strcpy(&name2[max_width - 3], "...");		// make long names ends with "..."
 			text_width = max_width;
 		}
-		DrawString (x + (w-CHAR_WIDTH*text_width) / 2, y + h + (THUMBNAIL_TEXT + THUMBNAIL_BORDER - 8) / 2, name2);
+		DrawString(x + (w-CHAR_WIDTH*text_width) / 2, y + h + (THUMBNAIL_TEXT + THUMBNAIL_BORDER - 8) / 2, name2);
 	}
 
-	static void DrawScroller (int x0, int y0, int w)
+	static void DrawScroller(int x0, int y0, int w)
 	{
 		for (int x = x0; x < x0 + w; x += CHAR_WIDTH)
-			RE_DrawChar (x, y0, 0, C_GREEN);
+			RE_DrawChar(x, y0, 0, C_GREEN);
 	}
 
 	void Draw ()
@@ -2490,7 +2490,7 @@ struct dmbrowseMenu_t : menuFramework_t
 				int i = thumbs.top + y * thumbs.cx + x;
 				if (i >= thumbs.count) continue;
 
-				DrawThumbnail (thumbs.x0 + x * thumbs.dx,
+				DrawThumbnail(thumbs.x0 + x * thumbs.dx,
 							   thumbs.y0 + y * thumbs.dy,
 							   thumbs.w, thumbs.h, browse_map_names[i], i == thumbs.current);
 			}
@@ -2498,9 +2498,9 @@ struct dmbrowseMenu_t : menuFramework_t
 		int w = thumbs.w * thumbs.cx;
 		int x = (viddef.width - w) / 2;
 		if (thumbs.top > 0)
-			DrawScroller (x, thumbs.y0 - CHAR_HEIGHT - THUMBNAIL_BORDER, w);
+			DrawScroller(x, thumbs.y0 - CHAR_HEIGHT - THUMBNAIL_BORDER, w);
 		if (thumbs.top + thumbs.cx * thumbs.cy < thumbs.count)
-			DrawScroller (x, thumbs.y0 + thumbs.cy * thumbs.dy - THUMBNAIL_BORDER * 2, w);
+			DrawScroller(x, thumbs.y0 + thumbs.cy * thumbs.dy - THUMBNAIL_BORDER * 2, w);
 	}
 };
 static dmbrowseMenu_t dmbrowseMenu;
@@ -2513,7 +2513,7 @@ thumbParams_t dmbrowseMenu_t::thumbs;
 
 static void Menu_DMBrowse_f ()
 {
-	dmbrowseMenu.Push ();
+	dmbrowseMenu.Push();
 }
 
 
@@ -2569,40 +2569,40 @@ struct videoMenu_t : menuFramework_t
 
 	static float old_gamma, old_contrast, old_bright;
 
-	static void ScreenSizeCallback (void *s)
+	static void ScreenSizeCallback(void *s)
 	{
 		menuSlider_t *slider = (menuSlider_t *) s;
-		Cvar_SetValue ("scr_viewsize", slider->curvalue * 10);
+		Cvar_SetValue("scr_viewsize", slider->curvalue * 10);
 	}
 
-	static void BrightnessCallback (void *s)
+	static void BrightnessCallback(void *s)
 	{
 		menuSlider_t *slider = (menuSlider_t *) s;
-		Cvar_SetValue ("r_gamma", slider->curvalue / (MAX_GAMMA - MIN_GAMMA));
+		Cvar_SetValue("r_gamma", slider->curvalue / (MAX_GAMMA - MIN_GAMMA));
 	}
 
-	static void ContrastCallback (void *s)
+	static void ContrastCallback(void *s)
 	{
 		menuSlider_t *slider = (menuSlider_t *) s;
-		Cvar_SetValue ("r_contrast", slider->curvalue / (MAX_CONTRAST - MIN_CONTRAST));
-		Cvar_SetValue ("r_brightness", slider->curvalue / (MAX_CONTRAST - MIN_CONTRAST));
+		Cvar_SetValue("r_contrast", slider->curvalue / (MAX_CONTRAST - MIN_CONTRAST));
+		Cvar_SetValue("r_brightness", slider->curvalue / (MAX_CONTRAST - MIN_CONTRAST));
 	}
 
-	static void ApplyChanges (void *)
+	static void ApplyChanges(void *)
 	{
 		bool modeChanded = false;
 
-		Cvar_SetInteger ("r_fullscreen", fs_box.curvalue);
-		Cvar_SetValue ("r_saturation", saturation.curvalue / 10.0);
-		Cvar_SetInteger ("gl_picmip", 3 - appRound (tq_slider.curvalue));
-		Cvar_SetInteger ("gl_finish", finish_box.curvalue);
-		Cvar_SetInteger ("gl_mode", mode_list.curvalue);
-		Cvar_SetInteger ("gl_fastsky", fastSky.curvalue);
-		Cvar_SetInteger ("gl_bitdepth", colorDepth.curvalue * 16);
-		Cvar_SetInteger ("gl_overbright", overbright.curvalue);
-		Cvar_SetInteger ("gl_textureBits", textureBits.curvalue * 16);
-		Cvar_SetInteger ("gl_vertexLight", lightStyle.curvalue);
-		Cvar_Set ("gl_texturemode", textureFilter.curvalue ? "trilinear" : "bilinear");
+		Cvar_SetInteger("r_fullscreen", fs_box.curvalue);
+		Cvar_SetValue("r_saturation", saturation.curvalue / 10.0);
+		Cvar_SetInteger("gl_picmip", 3 - appRound(tq_slider.curvalue));
+		Cvar_SetInteger("gl_finish", finish_box.curvalue);
+		Cvar_SetInteger("gl_mode", mode_list.curvalue);
+		Cvar_SetInteger("gl_fastsky", fastSky.curvalue);
+		Cvar_SetInteger("gl_bitdepth", colorDepth.curvalue * 16);
+		Cvar_SetInteger("gl_overbright", overbright.curvalue);
+		Cvar_SetInteger("gl_textureBits", textureBits.curvalue * 16);
+		Cvar_SetInteger("gl_vertexLight", lightStyle.curvalue);
+		Cvar_Set("gl_texturemode", textureFilter.curvalue ? "trilinear" : "bilinear");
 
 #define CHECK_UPDATE(var)		\
 	if (var->modified)			\
@@ -2624,18 +2624,18 @@ struct videoMenu_t : menuFramework_t
 		if (modeChanded)
 		{
 			Vid_Restart ();
-			M_ForceMenuOff ();
+			M_ForceMenuOff();
 		}
 		else
-			m_current->Pop ();
+			m_current->Pop();
 	}
 
-	static void CancelChanges (void *)
+	static void CancelChanges(void *)
 	{
-		Cvar_SetValue ("r_gamma", old_gamma);
-		Cvar_SetValue ("r_contrast", old_contrast);
-		Cvar_SetValue ("r_brightness", old_bright);
-		m_current->Pop ();
+		Cvar_SetValue("r_gamma", old_gamma);
+		Cvar_SetValue("r_contrast", old_contrast);
+		Cvar_SetValue("r_brightness", old_bright);
+		m_current->Pop();
 	}
 
 	bool Init ()
@@ -2669,9 +2669,9 @@ CVAR_BEGIN(vars)
 		CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE),
 		CVAR_VAR(gl_overbright, 2, CVAR_ARCHIVE)
 CVAR_END
-		Cvar_GetVars (ARRAY_ARG(vars));
+		Cvar_GetVars(ARRAY_ARG(vars));
 
-		mode_list.curvalue = Cvar_Get ("gl_mode", "3", CVAR_ARCHIVE)->integer;
+		mode_list.curvalue = Cvar_Get("gl_mode", "3", CVAR_ARCHIVE)->integer;
 
 		x = viddef.width / 2;
 		y = viddef.height / 2 - 58;
@@ -2685,73 +2685,73 @@ CVAR_END
 
 		int y = 0;
 		MENU_SPIN(mode_list, y+=10, "video mode", NULL, resolutions);
-		AddItem (&mode_list);
+		AddItem(&mode_list);
 		MENU_SLIDER(screensize_slider, y+=10, "screen size", ScreenSizeCallback, 4, 10);
 		screensize_slider.curvalue = scr_viewsize->value / 10;
-		AddItem (&screensize_slider);
+		AddItem(&screensize_slider);
 		MENU_SLIDER(brightness_slider, y+=10, "brightness", BrightnessCallback, MIN_GAMMA, MAX_GAMMA);
-		r_gamma->Clamp (0.5, 3);
+		r_gamma->Clamp(0.5, 3);
 		brightness_slider.curvalue = r_gamma->value * (MAX_GAMMA - MIN_GAMMA);
-		AddItem (&brightness_slider);
+		AddItem(&brightness_slider);
 		MENU_SLIDER(contrast_slider, y+=10, "contrast", ContrastCallback, MIN_CONTRAST, MAX_CONTRAST);
-		r_contrast->Clamp (0.5, 1.5);
+		r_contrast->Clamp(0.5, 1.5);
 		contrast_slider.curvalue = r_contrast->value * (MAX_CONTRAST - MIN_CONTRAST);
-		AddItem (&contrast_slider);
+		AddItem(&contrast_slider);
 		MENU_SLIDER(saturation, y+=10, "saturation", NULL, 0, 20);
-		r_saturation->Clamp (0, 2);
+		r_saturation->Clamp(0, 2);
 		saturation.curvalue = r_saturation->value * 10;
-		AddItem (&saturation);
+		AddItem(&saturation);
 		MENU_SPIN(fs_box, y+=10, "fullscreen", NULL, yesno_names);
 		fs_box.curvalue = r_fullscreen->integer;
-		AddItem (&fs_box);
+		AddItem(&fs_box);
 
 		y += 10;
 		MENU_SPIN(colorDepth, y+=10, "color depth", NULL, bits);
 		colorDepth.curvalue = gl_bitdepth->integer >> 4;
-		AddItem (&colorDepth);
+		AddItem(&colorDepth);
 		MENU_SPIN(overbright, y+=10, "gamma overbright", NULL, overbrightNames);
 		overbright.curvalue = gl_overbright->integer;
-		AddItem (&overbright);
+		AddItem(&overbright);
 		MENU_SPIN(lightStyle, y+=10, "lighting", NULL, lighting);
 		lightStyle.curvalue = gl_vertexLight->integer;
-		AddItem (&lightStyle);
+		AddItem(&lightStyle);
 		MENU_SPIN(fastSky, y+=10, "fast sky", NULL, yesno_names);
-		fastSky.curvalue = Cvar_Get ("gl_fastsky", "0", CVAR_ARCHIVE)->integer;
-		AddItem (&fastSky);
+		fastSky.curvalue = Cvar_Get("gl_fastsky", "0", CVAR_ARCHIVE)->integer;
+		AddItem(&fastSky);
 		MENU_SLIDER(tq_slider, y+=10, "texture detail", NULL, 0, 3);
 		tq_slider.curvalue = 3 - gl_picmip->integer;
-		AddItem (&tq_slider);
+		AddItem(&tq_slider);
 		MENU_SPIN(textureBits, y+=10, "texture quality", NULL, bits);
 		textureBits.curvalue = gl_textureBits->integer >> 4;
-		AddItem (&textureBits);
+		AddItem(&textureBits);
 		MENU_SPIN(textureFilter, y+=10, "texture filter", NULL, filters);
-		textureFilter.curvalue = stricmp (Cvar_Get ("gl_texturemode", "bilinear", CVAR_ARCHIVE)->string, "bilinear") ? 1 : 0;
-		AddItem (&textureFilter);
+		textureFilter.curvalue = stricmp(Cvar_Get("gl_texturemode", "bilinear", CVAR_ARCHIVE)->string, "bilinear") ? 1 : 0;
+		AddItem(&textureFilter);
 		MENU_SPIN(finish_box, y+=10, "sync every frame", NULL, yesno_names);
-		finish_box.curvalue = Cvar_Get ("gl_finish", "0", CVAR_ARCHIVE)->integer;
-		AddItem (&finish_box);
+		finish_box.curvalue = Cvar_Get("gl_finish", "0", CVAR_ARCHIVE)->integer;
+		AddItem(&finish_box);
 
 		y += 10;
 		MENU_ACTION(cancel_action, y+=10, "cancel", CancelChanges,NULL);
-		AddItem (&cancel_action);
+		AddItem(&cancel_action);
 
 		return true;
 	}
 
-	const char *KeyDown (int key)
+	const char *KeyDown(int key)
 	{
 		switch (key)
 		{
 		case K_ESCAPE:
 		case K_MOUSE2:
-			ApplyChanges (NULL);
+			ApplyChanges(NULL);
 			return NULL;
 		case K_KP_ENTER:
 		case K_ENTER:
-			if (!SelectItem ()) ApplyChanges (NULL);
+			if (!SelectItem()) ApplyChanges(NULL);
 			return menu_out_sound;
 		}
-		return menuFramework_t::KeyDown (key);
+		return menuFramework_t::KeyDown(key);
 	}
 };
 static videoMenu_t videoMenu;
@@ -2777,7 +2777,7 @@ float videoMenu_t::old_gamma, videoMenu_t::old_contrast, videoMenu_t::old_bright
 
 static void Menu_Video_f ()
 {
-	videoMenu.Push ();
+	videoMenu.Push();
 }
 
 
@@ -2791,7 +2791,7 @@ QUIT MENU
 
 struct quitMenu_t : menuFramework_t
 {
-	const char * KeyDown (int key)
+	const char * KeyDown(int key)
 	{
 		switch (key)
 		{
@@ -2817,20 +2817,20 @@ struct quitMenu_t : menuFramework_t
 
 	void Draw ()
 	{
-		CBasicImage *img = RE_RegisterPic ("pics/quit");
+		CBasicImage *img = RE_RegisterPic("pics/quit");
 		if (!img) return;
 		//!! can use img->Draw()
 		if (img->width >= 320 && img->width * 3 / 4 == img->height)		// this pic is for fullscreen in mode 320x240
-			RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "pics/quit");
+			RE_DrawDetailedPic(0, 0, viddef.width, viddef.height, "pics/quit");
 		else
-			RE_DrawPic (viddef.width / 2, viddef.height / 2, "pics/quit", ANCHOR_CENTER);
+			RE_DrawPic(viddef.width / 2, viddef.height / 2, "pics/quit", ANCHOR_CENTER);
 	}
 };
 static quitMenu_t quitMenu;
 
 static void Menu_Quit_f ()
 {
-	quitMenu.Push ();
+	quitMenu.Push();
 }
 
 
@@ -2849,13 +2849,13 @@ TEST MENU
 void attach (const entity_t &e1, entity_t &e2, const char *tag)
 {
 	CCoords lerped;		// get position modifier
-	e1.model->LerpTag (e1.frame, e1.oldframe, 0, tag, lerped);
-	e1.pos.UnTransformCoords (lerped, e2.pos);
+	e1.model->LerpTag(e1.frame, e1.oldframe, 0, tag, lerped);
+	e1.pos.UnTransformCoords(lerped, e2.pos);
 }
 
 struct testMenu_t : menuFramework_t
 {
-	const char * KeyDown (int key)
+	const char * KeyDown(int key)
 	{
 		switch (key)
 		{
@@ -2876,16 +2876,16 @@ struct testMenu_t : menuFramework_t
 		};
 
 		refdef_t refdef;
-		memset (&refdef, 0, sizeof (refdef));
+		memset(&refdef, 0, sizeof(refdef));
 		refdef.x = viddef.width / 2;
 		refdef.y = viddef.height * 6 / 25;
 		refdef.width = viddef.width * 4 / 10 + 16;
 		refdef.height = viddef.width * 5 / 10;
 		refdef.fov_x = refdef.width * 90 / viddef.width;
-		refdef.fov_y = CalcFov (refdef.fov_x, refdef.width, refdef.height);
+		refdef.fov_y = CalcFov(refdef.fov_x, refdef.width, refdef.height);
 		refdef.time = cls.realtime / 1000.0f;
 
-		memset (&e, 0, sizeof(e));
+		memset(&e, 0, sizeof(e));
 
 		const char *model_name = "visor";
 //		const char *model_name = "crash";
@@ -2893,24 +2893,24 @@ struct testMenu_t : menuFramework_t
 		// add legs model
 		e[0].angles[1] = cls.realtime / 20 % 360;	// rotate
 		e[0].pos.origin[0] = 130;
-		e[0].pos.axis.FromEuler (e[0].angles);		// compute legs axis
-		e[0].model = RE_RegisterModel (va("models/players/%s/lower.md3", model_name));
-		e[0].skin = RE_RegisterSkin (va("models/players/%s/blue", model_name));
+		e[0].pos.axis.FromEuler(e[0].angles);		// compute legs axis
+		e[0].model = RE_RegisterModel(va("models/players/%s/lower.md3", model_name));
+		e[0].skin = RE_RegisterSkin(va("models/players/%s/blue", model_name));
 		e[0].frame = e[0].oldframe = 220-63;	// legs frame
 
 		// add torso model
-		e[1].model = RE_RegisterModel (va("models/players/%s/upper.md3", model_name));
+		e[1].model = RE_RegisterModel(va("models/players/%s/upper.md3", model_name));
 		e[1].skin = e[0].skin;
 		e[1].frame = e[1].oldframe = 151;		// torso frame
 		attach (e[0], e[1], "tag_torso");
 
 		// add head model
-		e[2].model = RE_RegisterModel (va("models/players/%s/head.md3", model_name));
+		e[2].model = RE_RegisterModel(va("models/players/%s/head.md3", model_name));
 		e[2].skin = e[0].skin;
 		e[2].frame = e[2].oldframe = 0;
 		attach (e[1], e[2], "tag_head");
 
-		e[3].model = RE_RegisterModel ("models/weapons/g_rail/tris.md2");
+		e[3].model = RE_RegisterModel("models/weapons/g_rail/tris.md2");
 		e[3].skin = NULL;
 		e[3].frame = e[3].oldframe = 0;
 		attach (e[1], e[3], "tag_weapon");
@@ -2921,15 +2921,15 @@ struct testMenu_t : menuFramework_t
 		refdef.num_dlights = 1;//ARRAY_COUNT(dl);
 		refdef.rdflags = RDF_NOWORLDMODEL;
 
-		RE_Fill (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
-		RE_RenderFrame (&refdef);
+		RE_Fill(refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
+		RE_RenderFrame(&refdef);
 	}
 };
 static testMenu_t testMenu;
 
 static void Menu_Test_f ()
 {
-	testMenu.Push ();
+	testMenu.Push();
 }
 
 
@@ -2940,26 +2940,26 @@ static void Menu_Test_f ()
 	Menu registration
 -----------------------------------------------------------------------------*/
 
-void M_Init ()
+void M_Init()
 {
-	RegisterCommand ("menu_main", M_Menu_Main_f);
-	RegisterCommand ("menu_game", Menu_Game_f);
-		RegisterCommand ("menu_loadgame", Menu_LoadGame_f);
-		RegisterCommand ("menu_savegame", Menu_SaveGame_f);
-		RegisterCommand ("menu_joinserver", Menu_JoinServer_f);
-			RegisterCommand ("menu_addressbook", Menu_AddressBook_f);
-		RegisterCommand ("menu_startserver", Menu_StartServer_f);
-			RegisterCommand ("menu_dmoptions", Menu_DMOptions_f);
-			RegisterCommand ("menu_dmbrowse", Menu_DMBrowse_f);
-		RegisterCommand ("menu_playerconfig", Menu_PlayerConfig_f);
-			RegisterCommand ("menu_downloadoptions", Menu_DownloadOptions_f);
-		RegisterCommand ("menu_credits", Menu_Credits_f );
-	RegisterCommand ("menu_multiplayer", Menu_Multiplayer_f );
-	RegisterCommand ("menu_video", Menu_Video_f);
-	RegisterCommand ("menu_options", Menu_Options_f);
-		RegisterCommand ("menu_keys", Menu_Keys_f);
-	RegisterCommand ("menu_quit", Menu_Quit_f);
+	RegisterCommand("menu_main", M_Menu_Main_f);
+	RegisterCommand("menu_game", Menu_Game_f);
+		RegisterCommand("menu_loadgame", Menu_LoadGame_f);
+		RegisterCommand("menu_savegame", Menu_SaveGame_f);
+		RegisterCommand("menu_joinserver", Menu_JoinServer_f);
+			RegisterCommand("menu_addressbook", Menu_AddressBook_f);
+		RegisterCommand("menu_startserver", Menu_StartServer_f);
+			RegisterCommand("menu_dmoptions", Menu_DMOptions_f);
+			RegisterCommand("menu_dmbrowse", Menu_DMBrowse_f);
+		RegisterCommand("menu_playerconfig", Menu_PlayerConfig_f);
+			RegisterCommand("menu_downloadoptions", Menu_DownloadOptions_f);
+		RegisterCommand("menu_credits", Menu_Credits_f );
+	RegisterCommand("menu_multiplayer", Menu_Multiplayer_f );
+	RegisterCommand("menu_video", Menu_Video_f);
+	RegisterCommand("menu_options", Menu_Options_f);
+		RegisterCommand("menu_keys", Menu_Keys_f);
+	RegisterCommand("menu_quit", Menu_Quit_f);
 #if REGISTER_TEST
-	RegisterCommand ("menu_test", Menu_Test_f);
+	RegisterCommand("menu_test", Menu_Test_f);
 #endif
 }

@@ -56,21 +56,21 @@ struct menuFramework_t
 
 	void (*cursordraw) (menuFramework_t *m);
 
-	void	AddItem (menuCommon_t *item);
-	void	AdjustCursor (int dir);
-	void	Center ();
-	menuCommon_t *ItemAtCursor ();
-	bool	SelectItem ();
-	void	SetStatusBar (const char *string);
-	void	SlideItem (int dir);
-	int		TallySlots ();
+	void	AddItem(menuCommon_t *item);
+	void	AdjustCursor(int dir);
+	void	Center();
+	menuCommon_t *ItemAtCursor();
+	bool	SelectItem();
+	void	SetStatusBar(const char *string);
+	void	SlideItem(int dir);
+	int		TallySlots();
 	// menu opening/closing
-	void	Push ();
-	void	Pop ();
+	void	Push();
+	void	Pop();
 	// virtual functions
-	virtual bool Init ();
-	virtual void Draw ();
-	virtual const char * KeyDown (int key);
+	virtual bool Init();
+	virtual void Draw();
+	virtual const char * KeyDown(int key);
 };
 
 struct menuCommon_t

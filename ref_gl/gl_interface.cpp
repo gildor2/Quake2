@@ -77,11 +77,11 @@ static const texEnvSource_t texEnvSource[] = {
 -----------------------------------------------------------------------------*/
 
 
-void GL_Lock ()
+void GL_Lock()
 {
 	if (gl_state.locked) return;
 
-#define COPY(f1, f2)	memcpy (gl_state.f1, gl_state.f2, sizeof(gl_state.f1))
+#define COPY(f1, f2)	memcpy(gl_state.f1, gl_state.f2, sizeof(gl_state.f1))
 	COPY(newBinds, currentBinds);
 	COPY(newEnv, currentEnv);
 	COPY(newTexCoordEnabled, texCoordEnabled);
@@ -89,14 +89,14 @@ void GL_Lock ()
 	COPY(newEnvColor, texEnvColor);
 	COPY(newMipBias, mipBias);
 
-	memset (gl_state.newTCPointer, 0, sizeof(gl_state.newTCPointer));
+	memset(gl_state.newTCPointer, 0, sizeof(gl_state.newTCPointer));
 #undef COPY
 
 	gl_state.locked = true;
 }
 
 
-void GL_Unlock ()
+void GL_Unlock()
 {
 	if (!gl_state.locked) return;
 	gl_state.locked = false;
@@ -119,15 +119,15 @@ void GL_Unlock ()
 
 		if (gl_state.newBinds[tmu] != gl_state.currentBinds[tmu])
 		{
-			GL_SelectTexture (tmu);
-			GL_Bind (gl_state.newBinds[tmu]);
+			GL_SelectTexture(tmu);
+			GL_Bind(gl_state.newBinds[tmu]);
 		}
 		else if ((tgt = gl_state.newTextureTarget[tmu]) != gl_state.textureTarget[tmu])
 		{
-			GL_SelectTexture (tmu);
+			GL_SelectTexture(tmu);
 			if (gl_state.textureTarget[tmu])
-				glDisable (gl_state.textureTarget[tmu]);
-			if (tgt) glEnable (tgt);
+				glDisable(gl_state.textureTarget[tmu]);
+			if (tgt) glEnable(tgt);
 			gl_state.textureTarget[tmu] = tgt;
 		}
 
@@ -135,32 +135,32 @@ void GL_Unlock ()
 		{
 			if ((n ^ gl_state.currentEnv[tmu]) & texEnvInfo[n & TEXENV_FUNC_MASK].mask)
 			{
-				GL_SelectTexture (tmu);
-				GL_TexEnv (n);
+				GL_SelectTexture(tmu);
+				GL_TexEnv(n);
 			}
 		}
 		if ((v = gl_state.newMipBias[tmu]) != gl_state.mipBias[tmu])
 		{
-			GL_SelectTexture (tmu);
+			GL_SelectTexture(tmu);
 			gl_state.mipBias[tmu] = v;
-			glTexEnvf (GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, v);
+			glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, v);
 		}
 		if ((f = gl_state.newTexCoordEnabled[tmu]) != gl_state.texCoordEnabled[tmu])
 		{
-			GL_SelectTexture (tmu);
+			GL_SelectTexture(tmu);
 			gl_state.texCoordEnabled[tmu] = f;
-			if (f)	glEnableClientState (GL_TEXTURE_COORD_ARRAY);
-			else	glDisableClientState (GL_TEXTURE_COORD_ARRAY);
+			if (f)	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			else	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		}
 		if (gl_state.newTCPointer[tmu])
 		{
-			GL_SelectTexture (tmu);
-			glTexCoordPointer (2, GL_FLOAT, 0, gl_state.newTCPointer[tmu]);
+			GL_SelectTexture(tmu);
+			glTexCoordPointer(2, GL_FLOAT, 0, gl_state.newTCPointer[tmu]);
 		}
 		if (gl_state.newEnv[tmu] & TEXENV_ENVCOLOR && (c.rgba = gl_state.newEnvColor[tmu].rgba) != gl_state.texEnvColor[tmu].rgba)
 		{
-			GL_SelectTexture (tmu);
-			GL_TexEnvColor (&c);
+			GL_SelectTexture(tmu);
+			GL_TexEnvColor(&c);
 		}
 	}
 }
@@ -170,7 +170,7 @@ void GL_Unlock ()
 	Bind
 -----------------------------------------------------------------------------*/
 
-void GL_Bind (const image_t *tex)
+void GL_Bind(const image_t *tex)
 {
 	int		tmu;
 
@@ -184,7 +184,7 @@ void GL_Bind (const image_t *tex)
 			f = gl_skinMipBias->value;
 		else
 			f = 0;							//?? gl_defMipBias; mipmaps for GUI image?
-		GL_TexMipBias (f);
+		GL_TexMipBias(f);
 	}
 
 	if (tex && gl_nobind->integer && (gl_nobind->integer != 2 || tex->Name != "pics/conchars.pcx"))
@@ -209,7 +209,7 @@ void GL_Bind (const image_t *tex)
 	{
 		if (gl_state.textureTarget[tmu])
 		{
-			glDisable (gl_state.textureTarget[tmu]);
+			glDisable(gl_state.textureTarget[tmu]);
 			gl_state.textureTarget[tmu] = 0;
 		}
 	}
@@ -223,21 +223,21 @@ void GL_Bind (const image_t *tex)
 			{
 				LOG_STRING("// fix BUG001\n");
 				// bind any TEXTURE_2D texture within alpha channel
-				glBindTexture (GL_TEXTURE_2D, gl_dlightImage->texnum);
+				glBindTexture(GL_TEXTURE_2D, gl_dlightImage->texnum);
 			}
 			if (gl_state.textureTarget[tmu])
-				glDisable (gl_state.textureTarget[tmu]);
-			glEnable (tex->target);
+				glDisable(gl_state.textureTarget[tmu]);
+			glEnable(tex->target);
 			gl_state.textureTarget[tmu] = tex->target;
 		}
 		if (tex == gl_state.currentBinds[tmu]) return;
 
 		gl_state.currentBinds[tmu] = tex;
 		LOG_STRING(va("// GL_Bind(%s)\n", *tex->Name));
-		glBindTexture (tex->target, tex->texnum);
+		glBindTexture(tex->target, tex->texnum);
 #if MAX_DEBUG
-		GLenum err = glGetError ();
-		if (err) appWPrintf ("Bind: error with %s\n", *tex->Name);
+		GLenum err = glGetError();
+		if (err) appWPrintf("Bind: error with %s\n", *tex->Name);
 #endif
 		STAT(gl_stats.numBinds++);
 	}
@@ -245,15 +245,15 @@ void GL_Bind (const image_t *tex)
 
 
 // Bind image even if nobind active (i.e. for uploading image)
-void GL_BindForce (const image_t *tex)
+void GL_BindForce(const image_t *tex)
 {
 	int tmu = gl_state.currentTmu;
 
 	if (gl_state.textureTarget[tmu] != tex->target)
 	{
 		if (gl_state.textureTarget[tmu])
-			glDisable (gl_state.textureTarget[tmu]);
-		glEnable (tex->target);
+			glDisable(gl_state.textureTarget[tmu]);
+		glEnable(tex->target);
 		gl_state.textureTarget[tmu] = tex->target;
 	}
 
@@ -261,10 +261,10 @@ void GL_BindForce (const image_t *tex)
 
 	gl_state.currentBinds[tmu] = tex;
 	LOG_STRING(va("// GL_Bind(%s)\n", *tex->Name));
-	glBindTexture (tex->target, tex->texnum);
+	glBindTexture(tex->target, tex->texnum);
 #if MAX_DEBUG
-	GLenum err = glGetError ();
-	if (err) appWPrintf ("BindForce: error with %s\n", *tex->Name);
+	GLenum err = glGetError();
+	if (err) appWPrintf("BindForce: error with %s\n", *tex->Name);
 #endif
 	STAT(gl_stats.numBinds++);
 }
@@ -274,7 +274,7 @@ void GL_BindForce (const image_t *tex)
 	Multitexturing
 -----------------------------------------------------------------------------*/
 
-void GL_TexEnv (unsigned env)
+void GL_TexEnv(unsigned env)
 {
 	static const GLenum sourceRgb[4] = {GL_SOURCE0_RGB_ARB, GL_SOURCE1_RGB_ARB, GL_SOURCE2_RGB_ARB, GL_SOURCE3_RGB_NV};
 	static const GLenum sourceAlpha[4] = {GL_SOURCE0_ALPHA_ARB, GL_SOURCE1_ALPHA_ARB, GL_SOURCE2_ALPHA_ARB, GL_SOURCE3_ALPHA_NV};
@@ -303,15 +303,15 @@ void GL_TexEnv (unsigned env)
 	if (diff & TEXENV_FUNC_MASK)
 	{
 		// func is changed
-		glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, info->mode1);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, info->mode1);
 		if (!info->mode2) return;
 
-		glTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, info->mode2);
-		glTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, info->mode2);
+		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, info->mode2);
+		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, info->mode2);
 	}
 
 	if (diff & TEXENV_MUL2)
-		glTexEnvf (GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, (env & TEXENV_MUL2 ? 2 : 1));
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, (env & TEXENV_MUL2 ? 2 : 1));
 
 	unsigned mask = TEXENV_SRC0_MASK;
 	int shift = TEXENV_SRC0_SHIFT;
@@ -326,13 +326,13 @@ void GL_TexEnv (unsigned env)
 
 			if (src->src != prevSrc->src)
 			{
-				glTexEnvi (GL_TEXTURE_ENV, sourceRgb[i], src->src);
-				glTexEnvi (GL_TEXTURE_ENV, sourceAlpha[i], src->src);
+				glTexEnvi(GL_TEXTURE_ENV, sourceRgb[i], src->src);
+				glTexEnvi(GL_TEXTURE_ENV, sourceAlpha[i], src->src);
 			}
 			if (src->op_rgb != prevSrc->op_rgb)
-				glTexEnvi (GL_TEXTURE_ENV, operandRgb[i], src->op_rgb);
+				glTexEnvi(GL_TEXTURE_ENV, operandRgb[i], src->op_rgb);
 			if (src->op_a != prevSrc->op_a)
-				glTexEnvi (GL_TEXTURE_ENV, operandAlpha[i], src->op_a);
+				glTexEnvi(GL_TEXTURE_ENV, operandAlpha[i], src->op_a);
 		}
 		mask >>= TEXENV_SRC_BITS;
 		shift -= TEXENV_SRC_BITS;
@@ -340,7 +340,7 @@ void GL_TexEnv (unsigned env)
 }
 
 
-void GL_TexMipBias (float f)
+void GL_TexMipBias(float f)
 {
 	if (!GL_SUPPORT(QGL_EXT_TEXTURE_LOD_BIAS))
 		return;
@@ -352,11 +352,11 @@ void GL_TexMipBias (float f)
 	}
 	if (gl_state.mipBias[gl_state.newTmu] == f) return;
 	gl_state.mipBias[gl_state.newTmu] = f;
-	glTexEnvf (GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, f);
+	glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, f);
 }
 
 
-void GL_TexEnvColor (const color_t *c)
+void GL_TexEnvColor(const color_t *c)
 {
 	if (gl_state.locked)
 	{
@@ -376,11 +376,11 @@ void GL_TexEnvColor (const color_t *c)
 	color[1] = c->c[1] / 255.0f;
 	color[2] = c->c[2] / 255.0f;
 	color[3] = c->c[3] / 255.0f;
-	glTexEnvfv (GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, color);
+	glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, color);
 }
 
 
-void GL_SelectTexture (int tmu)
+void GL_SelectTexture(int tmu)
 {
 	if (gl_state.locked)
 	{
@@ -396,22 +396,22 @@ void GL_SelectTexture (int tmu)
 	{
 		// ARB_multitexture
 		tex = GL_TEXTURE0_ARB + tmu;
-		glActiveTextureARB (tex);
-		glClientActiveTextureARB (tex);	// affects gl[Enable|Disable]ClientState(GL_TEXTURE_COORD_ARRAY) and glTexCoordPointer() only
+		glActiveTextureARB(tex);
+		glClientActiveTextureARB(tex);	// affects gl[Enable|Disable]ClientState(GL_TEXTURE_COORD_ARRAY) and glTexCoordPointer() only
 	}
 	else
 	{
 		// SGIS_multitexture
 		tex = GL_TEXTURE0_SGIS + tmu;
-		glSelectTextureSGIS (tex);
-		glSelectTextureCoordSetSGIS (tex);
+		glSelectTextureSGIS(tex);
+		glSelectTextureCoordSetSGIS(tex);
 	}
 
 	gl_state.currentTmu = tmu;
 }
 
 
-void GL_TexCoordPointer (void *ptr)
+void GL_TexCoordPointer(void *ptr)
 {
 	if (gl_state.locked)
 	{
@@ -419,16 +419,16 @@ void GL_TexCoordPointer (void *ptr)
 		return;
 	}
 
-	glTexCoordPointer (2, GL_FLOAT, 0, ptr);
+	glTexCoordPointer(2, GL_FLOAT, 0, ptr);
 }
 
 
-void GL_SetMultitexture (int level)
+void GL_SetMultitexture(int level)
 {
 	int		i;
 
 	if (level > gl_config.maxActiveTextures)
-		appError ("R_SetMultitexture(%d > %d)", level, gl_config.maxActiveTextures);
+		appError("R_SetMultitexture(%d > %d)", level, gl_config.maxActiveTextures);
 
 	if (gl_state.locked)
 	{
@@ -448,38 +448,38 @@ void GL_SetMultitexture (int level)
 	for (i = level; i < gl_config.maxActiveTextures; i++)
 		if (gl_state.textureTarget[i] || gl_state.texCoordEnabled[i])
 		{
-			GL_SelectTexture (i);
-			GL_Bind (NULL);
+			GL_SelectTexture(i);
+			GL_Bind(NULL);
 			if (gl_state.texCoordEnabled[i])
 			{
-				glDisableClientState (GL_TEXTURE_COORD_ARRAY);
+				glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 				gl_state.texCoordEnabled[i] = false;
 			}
 		}
 	for (i = level - 1; i >= 0; i--)
 		if (!gl_state.texCoordEnabled[i])
 		{
-			GL_SelectTexture (i);
-			glEnableClientState (GL_TEXTURE_COORD_ARRAY);
+			GL_SelectTexture(i);
+			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 			gl_state.texCoordEnabled[i] = true;
 		}
-	GL_SelectTexture (0);
+	GL_SelectTexture(0);
 }
 
 
-void GL_DisableTexCoordArrays ()
+void GL_DisableTexCoordArrays()
 {
 	if (gl_state.locked)
 	{
-		memset (gl_state.newTexCoordEnabled, 0, sizeof(gl_state.newTexCoordEnabled));
+		memset(gl_state.newTexCoordEnabled, 0, sizeof(gl_state.newTexCoordEnabled));
 		return;
 	}
 
 	for (int i = 0; i < gl_config.maxActiveTextures; i++)
 		if (gl_state.texCoordEnabled[i])
 		{
-			GL_SelectTexture (i);
-			glDisableClientState (GL_TEXTURE_COORD_ARRAY);
+			GL_SelectTexture(i);
+			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 			gl_state.texCoordEnabled[i] = false;
 		}
 }
@@ -490,7 +490,7 @@ void GL_DisableTexCoordArrays ()
 -----------------------------------------------------------------------------*/
 
 
-void GL_CullFace (gl_cullMode_t mode)
+void GL_CullFace(gl_cullMode_t mode)
 {
 	if (gl_state.inverseCull && mode != CULL_NONE)
 		mode = (gl_cullMode_t)(mode ^ CULL_FRONT ^ CULL_BACK);
@@ -499,18 +499,18 @@ void GL_CullFace (gl_cullMode_t mode)
 		return;
 
 	if (mode == CULL_NONE)
-		glDisable (GL_CULL_FACE);
+		glDisable(GL_CULL_FACE);
 	else
 	{
-		glEnable (GL_CULL_FACE);
-		glCullFace (mode == CULL_FRONT ? GL_FRONT : GL_BACK);
+		glEnable(GL_CULL_FACE);
+		glCullFace(mode == CULL_FRONT ? GL_FRONT : GL_BACK);
 	}
 
 	gl_state.currentCullMode = mode;
 }
 
 
-void GL_DepthRange (gl_depthMode_t mode)
+void GL_DepthRange(gl_depthMode_t mode)
 {
 	static const float n[] = {0,	0,		0,		1};
 	static const float f[] = {0,  1.0/3,	1,		1};
@@ -518,13 +518,13 @@ void GL_DepthRange (gl_depthMode_t mode)
 	if (gl_state.currentDepthMode == mode)
 		return;
 
-	glDepthRange (n[mode], f[mode]);
+	glDepthRange(n[mode], f[mode]);
 
 	gl_state.currentDepthMode = mode;
 }
 
 
-void GL_State (unsigned state)
+void GL_State(unsigned state)
 {
 	static const GLenum blends[] = {
 		0,		// unused value (used for "no blend")
@@ -545,55 +545,55 @@ void GL_State (unsigned state)
 		if (state & GLSTATE_BLENDMASK)
 		{
 			if (!(gl_state.currentState & GLSTATE_BLENDMASK))
-				glEnable (GL_BLEND);
+				glEnable(GL_BLEND);
 			GLenum src = blends[(state & GLSTATE_SRCMASK) >> GLSTATE_SRCSHIFT];
 			GLenum dst = blends[(state & GLSTATE_DSTMASK) >> GLSTATE_DSTSHIFT];
-			glBlendFunc (src, dst);
+			glBlendFunc(src, dst);
 		}
 		else
-			glDisable (GL_BLEND);
+			glDisable(GL_BLEND);
 	}
 
 	if (diff & GLSTATE_ALPHAMASK)
 	{
 		unsigned m = state & GLSTATE_ALPHAMASK;
 		if (!m)
-			glDisable (GL_ALPHA_TEST);
+			glDisable(GL_ALPHA_TEST);
 		else
 		{
 			if (!(gl_state.currentState & GLSTATE_ALPHAMASK))
-				glEnable (GL_ALPHA_TEST);
+				glEnable(GL_ALPHA_TEST);
 			if (m == GLSTATE_ALPHA_GT0)
-				glAlphaFunc (GL_GREATER, 0.05f);	//?? 0.0f
+				glAlphaFunc(GL_GREATER, 0.05f);	//?? 0.0f
 			else if (m == GLSTATE_ALPHA_LT05)
-				glAlphaFunc (GL_LESS, 0.5f);
+				glAlphaFunc(GL_LESS, 0.5f);
 			else // if (m == GLSTATE_ALPHA_GE05)
-				glAlphaFunc (GL_GEQUAL, 0.5f);
+				glAlphaFunc(GL_GEQUAL, 0.5f);
 		}
 	}
 
 	if (diff & GLSTATE_DEPTHWRITE)
-		glDepthMask (state & GLSTATE_DEPTHWRITE ? GL_TRUE : GL_FALSE);
+		glDepthMask(state & GLSTATE_DEPTHWRITE ? GL_TRUE : GL_FALSE);
 
 	if (diff & GLSTATE_NODEPTHTEST)
 	{
 		if (state & GLSTATE_NODEPTHTEST)
-			glDisable (GL_DEPTH_TEST);
+			glDisable(GL_DEPTH_TEST);
 		else
-			glEnable (GL_DEPTH_TEST);
+			glEnable(GL_DEPTH_TEST);
 	}
 
 	if (diff & GLSTATE_DEPTHEQUALFUNC)
-		glDepthFunc (state & GLSTATE_DEPTHEQUALFUNC ? GL_EQUAL : GL_LEQUAL);
+		glDepthFunc(state & GLSTATE_DEPTHEQUALFUNC ? GL_EQUAL : GL_LEQUAL);
 
 	if (diff & GLSTATE_POLYGON_LINE)
-		glPolygonMode (GL_FRONT_AND_BACK, state & GLSTATE_POLYGON_LINE ? GL_LINE : GL_FILL);
+		glPolygonMode(GL_FRONT_AND_BACK, state & GLSTATE_POLYGON_LINE ? GL_LINE : GL_FILL);
 
 	gl_state.currentState = state;
 }
 
 
-void GL_EnableFog (bool enable)
+void GL_EnableFog(bool enable)
 {
 	if (!gl_fogMode || !gl_fog->integer) enable = false;
 	if (enable == gl_state.fogEnabled)
@@ -601,128 +601,128 @@ void GL_EnableFog (bool enable)
 
 	if (enable)
 	{
-		glEnable (GL_FOG);
-//		glHint (GL_FOG_HINT, GL_NICEST);
-		glFogf (GL_FOG_MODE, gl_fogMode);
-		glFogfv (GL_FOG_COLOR, gl_fogColor);
+		glEnable(GL_FOG);
+//		glHint(GL_FOG_HINT, GL_NICEST);
+		glFogf(GL_FOG_MODE, gl_fogMode);
+		glFogfv(GL_FOG_COLOR, gl_fogColor);
 		switch (gl_fogMode)
 		{
 		case GL_EXP:
 		case GL_EXP2:
-			glFogf (GL_FOG_DENSITY, gl_fogDensity);
+			glFogf(GL_FOG_DENSITY, gl_fogDensity);
 			break;
 		case GL_LINEAR:
-			glFogf (GL_FOG_START, gl_fogStart);
-			glFogf (GL_FOG_END, gl_fogEnd);
+			glFogf(GL_FOG_START, gl_fogStart);
+			glFogf(GL_FOG_END, gl_fogEnd);
 			break;
 		}
 		gl_state.fogEnabled = true;
 	}
 	else
 	{
-		glDisable (GL_FOG);
+		glDisable(GL_FOG);
 		gl_state.fogEnabled = false;
 	}
 }
 
 
-void GL_SetDefaultState ()
+void GL_SetDefaultState()
 {
-	memset (&gl_state, 0, sizeof(gl_state));
+	memset(&gl_state, 0, sizeof(gl_state));
 
-	glDisable (GL_CULL_FACE);
-	glDepthRange (0, 1);
+	glDisable(GL_CULL_FACE);
+	glDepthRange(0, 1);
 	gl_state.currentDepthMode = DEPTH_NORMAL;
-	glColor4f (1, 1, 1, 1);
+	glColor4f(1, 1, 1, 1);
 
 	// setup texturing
 	for (int i = 1; i < gl_config.maxActiveTextures; i++)
 	{
-		GL_SelectTexture (i);
-		glDisable (GL_TEXTURE_2D);
+		GL_SelectTexture(i);
+		glDisable(GL_TEXTURE_2D);
 		if (GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))
-			glDisable (GL_TEXTURE_RECTANGLE_NV);
+			glDisable(GL_TEXTURE_RECTANGLE_NV);
 		gl_state.currentEnv[i] = 0;
-		GL_TexEnv (TEXENV_REPLACE);
+		GL_TexEnv(TEXENV_REPLACE);
 	}
-	if (gl_config.maxActiveTextures > 1) GL_SelectTexture (0);
-	glDisable (GL_TEXTURE_2D);
+	if (gl_config.maxActiveTextures > 1) GL_SelectTexture(0);
+	glDisable(GL_TEXTURE_2D);
 	if (GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))
-		glDisable (GL_TEXTURE_RECTANGLE_NV);
+		glDisable(GL_TEXTURE_RECTANGLE_NV);
 	gl_state.currentEnv[0] = 0;
-	GL_TexEnv (TEXENV_MODULATE);
+	GL_TexEnv(TEXENV_MODULATE);
 
 	// prepare filter values for new images (images are not exists at this point)
-	GL_TextureMode (gl_texturemode->string);
+	GL_TextureMode(gl_texturemode->string);
 
 	// set GL_State to a corresponding zero values
-	glDisable (GL_BLEND);
-	glDisable (GL_ALPHA_TEST);
-	glDepthMask (GL_TRUE);
-	glEnable (GL_DEPTH_TEST);
-	glDepthFunc (GL_LEQUAL);
-	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
+	glDisable(GL_BLEND);
+	glDisable(GL_ALPHA_TEST);
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-	glEnable (GL_SCISSOR_TEST);
-	glShadeModel (GL_SMOOTH);
-	glEnableClientState (GL_VERTEX_ARRAY);
+	glEnable(GL_SCISSOR_TEST);
+	glShadeModel(GL_SMOOTH);
+	glEnableClientState(GL_VERTEX_ARRAY);
 }
 
 
-void GL_Set2DMode ()
+void GL_Set2DMode()
 {
 	if (gl_state.is2dMode)
 		return;
 
 	if (screenshotName && (screenshotFlags & SHOT_NO_2D))	// can move this to gl_main.cpp::RenderScene(), but this will wait for 3D
-		PerformScreenshot ();
+		PerformScreenshot();
 
-	LOG_STRING ("***** Set2DMode() *****\n");
-	glViewport (0, 0, vid_width, vid_height);
-	glScissor (0, 0, vid_width, vid_height);
-	glMatrixMode (GL_PROJECTION);
-	glLoadIdentity ();
-	glOrtho (0, vid_width, vid_height, 0, 0, 1);
-	glMatrixMode (GL_MODELVIEW);
-	glLoadIdentity ();
-	GL_State (BLEND(S_ALPHA,M_S_ALPHA)|GLSTATE_NODEPTHTEST);
-	GL_CullFace (CULL_NONE);
+	LOG_STRING("***** Set2DMode() *****\n");
+	glViewport(0, 0, vid_width, vid_height);
+	glScissor(0, 0, vid_width, vid_height);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, vid_width, vid_height, 0, 0, 1);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	GL_State(BLEND(S_ALPHA,M_S_ALPHA)|GLSTATE_NODEPTHTEST);
+	GL_CullFace(CULL_NONE);
 	gl_state.is2dMode = true;
 
 	gl_state.inverseCull = false;	//??
-//??	GL_CullFace (CULL_FRONT);
+//??	GL_CullFace(CULL_FRONT);
 }
 
 
 // Setup OpenGL as specified in active portal
-void GL_Set3DMode (viewPortal_t *port)
+void GL_Set3DMode(viewPortal_t *port)
 {
-	LOG_STRING ("*** GL_Set3DMode() ***\n");
+	LOG_STRING("*** GL_Set3DMode() ***\n");
 	gl_state.is2dMode = false;
-	glMatrixMode (GL_PROJECTION);
-	glLoadMatrixf (&port->projectionMatrix[0][0]);
-	glMatrixMode (GL_MODELVIEW);
-	glLoadMatrixf (&port->modelMatrix[0][0]);		// required for sky drawing (remove this comment ??)
+	glMatrixMode(GL_PROJECTION);
+	glLoadMatrixf(&port->projectionMatrix[0][0]);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadMatrixf(&port->modelMatrix[0][0]);		// required for sky drawing (remove this comment ??)
 
-	glViewport (port->x, port->y, port->w, port->h);
-	glScissor (port->x, port->y, port->w, port->h);
-	GL_State (GLSTATE_DEPTHWRITE);					// affects glClear(DEPTH)
+	glViewport(port->x, port->y, port->w, port->h);
+	glScissor(port->x, port->y, port->w, port->h);
+	GL_State(GLSTATE_DEPTHWRITE);					// affects glClear(DEPTH)
 
 	GLbitfield bits = GL_DEPTH_BUFFER_BIT;
 	if (gl_state.useFastSky && !(port->flags & RDF_NOWORLDMODEL))
 	{
 		bits |= GL_COLOR_BUFFER_BIT;
-		glClearColor (0, 0, 0, 1);
+		glClearColor(0, 0, 0, 1);
 	}
-	glClear (bits);
+	glClear(bits);
 
 	gl_state.inverseCull = false;
-	GL_CullFace (CULL_FRONT);
+	GL_CullFace(CULL_FRONT);
 }
 
 
 //!!!!! NOT HELPS
-void GL_ResetState ()
+void GL_ResetState()
 {
 #if 0
 	gl_state.currentTmu = -1;

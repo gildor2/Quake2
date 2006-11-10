@@ -2,17 +2,17 @@
 #if 0
 // using templates is very tedious - will require to use Bound(float,0,10) -> Bound(float,0.0f,10.0f)
 // (not double!) and even Bound(int,1,10) will give error abount ambiguous "int" and "unsigned" ...
-template<class T> inline T Max (const T a, const T b)
+template<class T> inline T Max(const T a, const T b)
 {
 	return (a >= b) ? a : b;
 }
 
-template<class T> inline T Min (const T a, const T b)
+template<class T> inline T Min(const T a, const T b)
 {
 	return (a <= b) ? a : b;
 }
 
-template<class T> inline T Bound (const T v, const T minval, const T maxval)
+template<class T> inline T Bound(const T v, const T minval, const T maxval)
 {
 	return v < minval ? minval : v > maxval ? maxval : v;
 }
@@ -26,23 +26,23 @@ template<class T> inline T Bound (const T v, const T minval, const T maxval)
 #define bound(a,minval,maxval)  ( ((a) > (minval)) ? ( ((a) < (maxval)) ? (a) : (maxval) ) : (minval) )
 
 // Align integer or pointer of any type
-template<class T> inline T Align (const T ptr, int alignment)
+template<class T> inline T Align(const T ptr, int alignment)
 {
 	return (T) (((unsigned)ptr + alignment - 1) & ~(alignment - 1));
 }
 
-template<class T> inline int SizeToAlign (const T ptr, int alignment)
+template<class T> inline int SizeToAlign(const T ptr, int alignment)
 {
-	return (unsigned)Align (ptr, alignment) - (unsigned)ptr;
+	return (unsigned)Align(ptr, alignment) - (unsigned)ptr;
 }
 
-template<class T> inline T OffsetPointer (const T ptr, int offset)
+template<class T> inline T OffsetPointer(const T ptr, int offset)
 {
 	return (T) ((unsigned)ptr + offset);
 }
 
 //?? make 2 functions: for float and for int; as CORE_API
-template<class T> inline int Sign (T value)
+template<class T> inline int Sign(T value)
 {
 	if (value < 0) return -1;
 	else if (value > 0) return 1;
@@ -50,7 +50,7 @@ template<class T> inline int Sign (T value)
 }
 
 
-template<class T> inline void Exchange (T& A, T& B)
+template<class T> inline void Exchange(T& A, T& B)
 {
 	const T tmp = A;
 	A = B;
@@ -58,23 +58,23 @@ template<class T> inline void Exchange (T& A, T& B)
 }
 
 
-template<class T> inline T Lerp (const T& A, const T& B, float Alpha)
+template<class T> inline T Lerp(const T& A, const T& B, float Alpha)
 {
 	return A + Alpha * (B-A);
 }
 
 
 /*
-template<class T> int Cmp (const T& A, const T& B)
+template<class T> int Cmp(const T& A, const T& B)
 {
-	return memcmp (&A, &B, sizeof(T));
+	return memcmp(&A, &B, sizeof(T));
 }
 */
 
 
-template<class T> inline void Zero (T& A)
+template<class T> inline void Zero(T& A)
 {
-	memset (&A, 0, sizeof(T));
+	memset(&A, 0, sizeof(T));
 }
 
 

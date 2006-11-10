@@ -11,7 +11,7 @@ cvar_t	*r_fullbright;
 cvar_t	*r_lightmap;
 
 
-void InitRendererVars ()
+void InitRendererVars()
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(r_fullscreen, 1, CVAR_ARCHIVE),
@@ -26,6 +26,6 @@ CVAR_BEGIN(vars)
 CVAR_END
 
 	EXEC_ONCE (
-		Cvar_GetVars (ARRAY_ARG(vars));
+		Cvar_GetVars(ARRAY_ARG(vars));
 	)
 }

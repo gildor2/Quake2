@@ -58,7 +58,7 @@ float		gl_fogStart, gl_fogEnd;
 #define FRUSTUM_ON				(FRUSTUM_INSIDE|FRUSTUM_OUTSIDE)
 
 
-static int Cull (CBox &b, int frustumMask)
+static int Cull(CBox &b, int frustumMask)
 {
 	if (!gl_frustumCull->integer)
 		return FRUSTUM_ON;
@@ -72,7 +72,7 @@ static int Cull (CBox &b, int frustumMask)
 	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 		if (frustumMask & (1 << i))
 		{
-			int tmp = b.OnPlaneSide (*pl);
+			int tmp = b.OnPlaneSide(*pl);
 			if (tmp == 2) return FRUSTUM_OUTSIDE;
 			if (tmp == 3) res = FRUSTUM_ON;
 		}
@@ -81,7 +81,7 @@ static int Cull (CBox &b, int frustumMask)
 
 
 // Uses entity to determine transformations
-static int TransformedCull (CBox &b, refEntity_t *e)
+static int TransformedCull(CBox &b, refEntity_t *e)
 {
 	if (!gl_frustumCull->integer)
 		return FRUSTUM_ON;
@@ -104,9 +104,9 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 
 		// transform frustum plane to entity coordinate system
 		CPlane pl;
-		e->coord.TransformPlane (*fr, pl);
+		e->coord.TransformPlane(*fr, pl);
 
-		switch (b.OnPlaneSide (pl))	// do not use BOX_ON_PLANE_SIDE -- useless (non-axial planes)
+		switch (b.OnPlaneSide(pl))	// do not use BOX_ON_PLANE_SIDE -- useless (non-axial planes)
 		{
 		case 1:
 			frustumMask &= ~mask;
@@ -129,7 +129,7 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 		tmp[0] = (i & 1) ? b.maxs[0] : b.mins[0];
 		tmp[1] = (i & 2) ? b.maxs[1] : b.mins[1];
 		tmp[2] = (i & 4) ? b.maxs[2] : b.mins[2];
-		e->coord.UnTransformPoint (tmp, *v);
+		e->coord.UnTransformPoint(tmp, *v);
 	}
 
 	// perform frustum culling
@@ -149,7 +149,7 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 		int side = 0;
 		for (j = 0, v = box; j < 8; j++, v++)
 		{	// loop by box verts
-			if (dot (*v, fr->normal) >= fr->dist)
+			if (dot(*v, fr->normal) >= fr->dist)
 				side |= FRUSTUM_INSIDE;
 			else
 				side |= FRUSTUM_OUTSIDE;
@@ -170,7 +170,7 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 }
 
 
-static int SphereCull (const CVec3 &origin, float radius, byte *frustumMask)
+static int SphereCull(const CVec3 &origin, float radius, byte *frustumMask)
 {
 	if (!gl_frustumCull->integer)
 	{
@@ -188,7 +188,7 @@ static int SphereCull (const CVec3 &origin, float radius, byte *frustumMask)
 	{	// loop by frustum planes
 		if (!(m & mask)) continue;
 
-		float dist = dot (origin, pl->normal) - pl->dist;
+		float dist = dot(origin, pl->normal) - pl->dist;
 		if (dist < -radius)
 			return FRUSTUM_OUTSIDE;
 		if (dist <= radius)
@@ -206,7 +206,7 @@ static int SphereCull (const CVec3 &origin, float radius, byte *frustumMask)
 
 
 // Reduced SphereCull()
-static int PointCull (const CVec3 &point, int frustumMask)
+static int PointCull(const CVec3 &point, int frustumMask)
 {
 	if (!gl_frustumCull->integer)
 		return FRUSTUM_INSIDE;
@@ -219,7 +219,7 @@ static int PointCull (const CVec3 &point, int frustumMask)
 	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 		if (frustumMask & (1 << i))
 		{
-			if (dot (point, pl->normal) - pl->dist < 0)
+			if (dot(point, pl->normal) - pl->dist < 0)
 				return FRUSTUM_OUTSIDE;
 		}
 	return FRUSTUM_INSIDE;
@@ -228,7 +228,7 @@ static int PointCull (const CVec3 &point, int frustumMask)
 
 #define NUM_TEST_BRUSHES	2
 
-static bool BoxOccluded (const refEntity_t *e, const CVec3 &size2)
+static bool BoxOccluded(const refEntity_t *e, const CVec3 &size2)
 {
 	float	mins2[2], maxs2[2];
 	CVec3	v, left, right;
@@ -244,7 +244,7 @@ static bool BoxOccluded (const refEntity_t *e, const CVec3 &size2)
 	if (e->size2[0] > dist || e->size2[1] > dist || e->size2[2] > dist) return false;
 
 	// project box to plane
-	if (!GetBoxRect (e, size2, mins2, maxs2))
+	if (!GetBoxRect(e, size2, mins2, maxs2))
 	{
 notOccluded:	// we use "goto" for unclock() + return false ...
 		STAT(unclock(gl_stats.occlTest));
@@ -252,31 +252,31 @@ notOccluded:	// we use "goto" for unclock() + return false ...
 	}
 
 	// top-left
-	VectorMA (e->center, mins2[0], vp.view.axis[1], left);
-	VectorMA (left, mins2[1], vp.view.axis[2], v);
+	VectorMA(e->center, mins2[0], vp.view.axis[1], left);
+	VectorMA(left, mins2[1], vp.view.axis[2], v);
 #if 0
 	static cvar_t *test=NULL;
-	EXEC_ONCE(test = Cvar_Get ("test","32"));
-	n = CM_BrushTrace (vp.view.origin, v, brushes, test->integer);
+	EXEC_ONCE(test = Cvar_Get("test","32"));
+	n = CM_BrushTrace(vp.view.origin, v, brushes, test->integer);
 #else
-	n = CM_BrushTrace (vp.view.origin, v, brushes, NUM_TEST_BRUSHES);
+	n = CM_BrushTrace(vp.view.origin, v, brushes, NUM_TEST_BRUSHES);
 #endif
 	if (!n) goto notOccluded;
 
 	// bottom-right (diagonal with 1st point)
-	VectorMA (e->center, maxs2[0], vp.view.axis[1], right);
-	VectorMA (right, maxs2[1], vp.view.axis[2], v);
-	n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
+	VectorMA(e->center, maxs2[0], vp.view.axis[1], right);
+	VectorMA(right, maxs2[1], vp.view.axis[2], v);
+	n = CM_RefineBrushTrace(vp.view.origin, v, brushes, n);
 	if (!n) goto notOccluded;
 
 	// bottom-left
-	VectorMA (left, maxs2[1], vp.view.axis[2], v);
-	n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
+	VectorMA(left, maxs2[1], vp.view.axis[2], v);
+	n = CM_RefineBrushTrace(vp.view.origin, v, brushes, n);
 	if (!n) goto notOccluded;
 
 	// top-right
-	VectorMA (right, mins2[1], vp.view.axis[2], v);
-	n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
+	VectorMA(right, mins2[1], vp.view.axis[2], v);
+	n = CM_RefineBrushTrace(vp.view.origin, v, brushes, n);
 	if (!n) goto notOccluded;
 
 	STAT(unclock(gl_stats.occlTest));
@@ -284,7 +284,7 @@ notOccluded:	// we use "goto" for unclock() + return false ...
 }
 
 
-static bool WorldBoxOccluded (const CBox &bounds)
+static bool WorldBoxOccluded(const CBox &bounds)
 {
 //	static cvar_t *test;
 //	if (!test) test=Cvar_Get("test","32");
@@ -301,9 +301,9 @@ static bool WorldBoxOccluded (const CBox &bounds)
 		v[2] = (i & 4) ? bounds.maxs[2] : bounds.mins[2];
 
 		if (i == 0)
-			n = CM_BrushTrace (vp.view.origin, v, brushes, NUM_TEST_BRUSHES);	// test->integer);
+			n = CM_BrushTrace(vp.view.origin, v, brushes, NUM_TEST_BRUSHES);	// test->integer);
 		else
-			n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
+			n = CM_RefineBrushTrace(vp.view.origin, v, brushes, n);
 		if (!n)
 		{
 			STAT(unclock(gl_stats.occlTest));
@@ -317,7 +317,7 @@ static bool WorldBoxOccluded (const CBox &bounds)
 }
 
 
-static void SetupModelMatrix (refEntity_t *e)
+static void SetupModelMatrix(refEntity_t *e)
 {
 	float	matrix[4][4];
 	int		i, j, k;
@@ -329,7 +329,7 @@ static void SetupModelMatrix (refEntity_t *e)
 	 *  a02   a12   a22     z
 	 *    0     0     0     1
 	 */
-	memset (matrix, 0, sizeof(matrix));
+	memset(matrix, 0, sizeof(matrix));
 	for (i = 0; i < 3; i++)
 		for (j = 0; j < 3; j++)
 			matrix[i][j] = e->coord.axis[i][j];
@@ -337,9 +337,9 @@ static void SetupModelMatrix (refEntity_t *e)
 	if (e->mirror)
 	{
 		// negate left axis (left<->right)
-		FNegate (matrix[1][0]);
-		FNegate (matrix[1][1]);
-		FNegate (matrix[1][2]);
+		FNegate(matrix[1][0]);
+		FNegate(matrix[1][1]);
+		FNegate(matrix[1][2]);
 	}
 
 	matrix[3][0] = e->coord.origin[0];
@@ -357,17 +357,17 @@ static void SetupModelMatrix (refEntity_t *e)
 		}
 	// set e.modelvieworg
 	// NOTE: in Q3 axis may be non-normalized, so, there result is divided by length(axis[i])
-	e->coord.TransformPoint (vp.view.origin, e->modelvieworg);
+	e->coord.TransformPoint(vp.view.origin, e->modelvieworg);
 }
 
 
 // Point trace to visible INLINE models; function based on CL_ClipMoveToEntities()
 // NOTE: can easily extend to any (invisible too) inline models (add flag "visibleOnly")
-static void ClipTraceToEntities (trace_t &tr, const CVec3 &start, const CVec3 &end, int brushmask)
+static void ClipTraceToEntities(trace_t &tr, const CVec3 &start, const CVec3 &end, int brushmask)
 {
 	CVec3	traceDir;
-	VectorSubtract (end, start, traceDir);
-	float traceLen = traceDir.NormalizeFast ();
+	VectorSubtract(end, start, traceDir);
+	float traceLen = traceDir.NormalizeFast();
 
 	refEntity_t *e = gl_entities + vp.firstEntity;
 	for (int i = 0; i < vp.numEntities; i++, e++)
@@ -378,23 +378,23 @@ static void ClipTraceToEntities (trace_t &tr, const CVec3 &start, const CVec3 &e
 			continue;
 
 		inlineModel_t *im = static_cast<inlineModel_t*>(e->model);
-		VectorSubtract (e->center, start, center2);
+		VectorSubtract(e->center, start, center2);
 
 		// collision detection: line vs sphere
-		float entPos = dot (center2, traceDir);
+		float entPos = dot(center2, traceDir);
 		if (entPos < -im->radius || entPos > traceLen + im->radius)
 			continue;		// too near / too far
 
-		VectorMA (center2, -entPos, traceDir, tmp);
-		float dist2 = dot (tmp, tmp);
+		VectorMA(center2, -entPos, traceDir, tmp);
+		float dist2 = dot(tmp, tmp);
 		if (dist2 >= im->radius * im->radius) continue;
 
 		// trace
 		trace_t	trace;
 		if (!e->worldMatrix)
-			CM_TransformedBoxTrace (trace, start, end, nullBox, im->headnode, brushmask, e->coord.origin, e->coord.axis);
+			CM_TransformedBoxTrace(trace, start, end, nullBox, im->headnode, brushmask, e->coord.origin, e->coord.axis);
 		else
-			CM_BoxTrace (trace, start, end, nullBox, im->headnode, brushmask);
+			CM_BoxTrace(trace, start, end, nullBox, im->headnode, brushmask);
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr.fraction)
 		{
@@ -415,7 +415,7 @@ static void ClipTraceToEntities (trace_t &tr, const CVec3 &start, const CVec3 &e
 
 
 // returns false when cylinder is outside frustum; modifies v1 and v2
-static bool CutCylinder (CVec3 &v1, CVec3 &v2, float radius)
+static bool CutCylinder(CVec3 &v1, CVec3 &v2, float radius)
 {
 	int		i;
 	CPlane *pl;
@@ -424,23 +424,23 @@ static bool CutCylinder (CVec3 &v1, CVec3 &v2, float radius)
 		float	frac;
 		CVec3	delta;
 
-		float dist1 = dot (v1, pl->normal) - pl->dist;				// pl->DistanceTo() w/o checking pl->type
-		float dist2 = dot (v2, pl->normal) - pl->dist;
+		float dist1 = dot(v1, pl->normal) - pl->dist;				// pl->DistanceTo() w/o checking pl->type
+		float dist2 = dot(v2, pl->normal) - pl->dist;
 		if (dist1 < -radius && dist2 < -radius) return false;		// cylinder is outside the view frustum
 
 		if (dist1 < -radius)
 		{	// modify v1 so dist1 == -radius
-			VectorSubtract (v1, v2, delta);			// v2 + delta = v1
+			VectorSubtract(v1, v2, delta);			// v2 + delta = v1
 //			frac = (dist2 - radius) / (dist2 - dist1);	-- test
 			frac = (dist2 + radius) / (dist2 - dist1);
-			VectorMA (v2, frac, delta, v1);
+			VectorMA(v2, frac, delta, v1);
 		}
 		else if (dist2 < -radius)
 		{	// modify v2 so dist2 == -radius
-			VectorSubtract (v2, v1, delta);			// v1 + delta = v2
+			VectorSubtract(v2, v1, delta);			// v1 + delta = v2
 //			frac = (dist1 - radius) / (dist1 - dist2);	-- test
 			frac = (dist1 + radius) / (dist1 - dist2);
-			VectorMA (v1, frac, delta, v2);
+			VectorMA(v1, frac, delta, v2);
 		}
 		// else - completely inside this plane
 	}
@@ -457,7 +457,7 @@ static bool CutCylinder (CVec3 &v1, CVec3 &v2, float radius)
 */
 
 // Find nearest to sphere center visible leaf, occupied by entity bounding sphere
-static CBspLeaf *SphereLeaf (const CVec3 &origin, float radius)
+static CBspLeaf *SphereLeaf(const CVec3 &origin, float radius)
 {
 	int		sptr = 0;
 	CBspNode *stack[MAX_TREE_DEPTH];
@@ -485,7 +485,7 @@ static CBspLeaf *SphereLeaf (const CVec3 &origin, float radius)
 			continue;
 		}
 
-		float dist = node->plane->DistanceTo (origin);
+		float dist = node->plane->DistanceTo(origin);
 		if (dist > radius)
 			node = node->children[0];	// side 1
 		else if (dist < -radius)		// use mradius = -radius for speedup ??
@@ -494,7 +494,7 @@ static CBspLeaf *SphereLeaf (const CVec3 &origin, float radius)
 		{
 			// both sides -- go origin's side first
 			// (what this will do: if localOrigin point is visible, return PointLeaf(org))
-			if (!IsNegative (dist))
+			if (!IsNegative(dist))
 			{
 				stack[sptr++] = node->children[1];
 				node = node->children[0];
@@ -511,7 +511,7 @@ static CBspLeaf *SphereLeaf (const CVec3 &origin, float radius)
 
 // Find nearest (by draw order) visible leaf, occupied by entity sphere,
 // or nearest to a sphere center leaf with alpha surfaces (if one)
-static CBspLeaf *AlphaSphereLeaf (const CVec3 &origin, float radius)
+static CBspLeaf *AlphaSphereLeaf(const CVec3 &origin, float radius)
 {
 	int sptr = 0;
 	CBspNode *stack[MAX_TREE_DEPTH];
@@ -550,7 +550,7 @@ static CBspLeaf *AlphaSphereLeaf (const CVec3 &origin, float radius)
 			continue;
 		}
 
-		float dist = node->plane->DistanceTo (origin);
+		float dist = node->plane->DistanceTo(origin);
 		if (dist > radius)
 			node = node->children[0];	// side 1
 		else if (dist < -radius)
@@ -559,7 +559,7 @@ static CBspLeaf *AlphaSphereLeaf (const CVec3 &origin, float radius)
 		{
 			// both sides -- go origin's side first
 			// (what this will do: if localOrigin point is visible, return PointLeaf(org))
-			if (!IsNegative (dist))
+			if (!IsNegative(dist))
 			{
 				stack[sptr++] = node->children[1];
 				node = node->children[0];
@@ -575,7 +575,7 @@ static CBspLeaf *AlphaSphereLeaf (const CVec3 &origin, float radius)
 
 
 // Find nearest (by draw order) visible leaf, occupied by beam
-static CBspLeaf *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
+static CBspLeaf *BeamLeaf(const CVec3 &v1, const CVec3 &v2)
 {
 	int sptr = 0;
 	struct {
@@ -632,10 +632,10 @@ static CBspLeaf *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
 		}
 
 		// node
-		float t1 = node->plane->DistanceTo (v1a);
-		float t2 = node->plane->DistanceTo (v2a);
-		int s1 = IsNegative (t1);
-		int s2 = IsNegative (t2);
+		float t1 = node->plane->DistanceTo(v1a);
+		float t2 = node->plane->DistanceTo(v2a);
+		int s1 = IsNegative(t1);
+		int s2 = IsNegative(t2);
 		if (!(s1 | s2))
 			node = node->children[0];		// side 1
 		else if (s1 & s2)
@@ -646,7 +646,7 @@ static CBspLeaf *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
 			float frac = t1 / (t1 - t2);	// t1 and t2 have different signs, so - |t1-t2| > |t1|, frac in [0..1] range
 			int side = t1 < t2;				// which side v1 on (child index)
 			CVec3	mid;
-			Lerp (v1a, v2a, frac, mid);
+			Lerp(v1a, v2a, frac, mid);
 			// Recurse(node->children[side^1],mid,v2a)  -- later
 			PUSH_NODE(node->children[side^1], mid, v2a);
 			// Recurse(node->children[side],v1a,mid)
@@ -664,18 +664,18 @@ static CBspLeaf *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
 /*------------------ Drawing entities --------------------*/
 
 //?? add ent==NULL for generated sprites (set currentEntity = ?); send fxTime as param (use when ent==NULL only)
-static void AddSurface (surfaceBase_t *surf, shader_t *shader, refEntity_t *ent = NULL, int numDlights = 0)
+static void AddSurface(surfaceBase_t *surf, shader_t *shader, refEntity_t *ent = NULL, int numDlights = 0)
 {
 	int entNum = currentEntity;
 	//?? !ent -- change! (should use fxTime)
 	if (!ent || (ent->worldMatrix && (!shader->dependOnTime || (ent->time == vp.time)) && !shader->dependOnEntity))
 		entNum = ENTITYNUM_WORLD;
 
-	AddSurfaceToPortal (surf, shader, entNum, numDlights);
+	AddSurfaceToPortal(surf, shader, entNum, numDlights);
 }
 
 
-static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask, refEntity_t *e)
+static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask, refEntity_t *e)
 {
 	int		j;
 	refDlight_t *dl;
@@ -709,7 +709,7 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 
 					if (cull != CULL_NONE)
 					{
-						float dist = pl->plane.DistanceTo (vieworg);
+						float dist = pl->plane.DistanceTo(vieworg);
 						if (cull == CULL_FRONT)
 						{
 							if (dist < -BACKFACE_EPSILON) CULL_SURF;
@@ -726,11 +726,11 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 				{
 					if (e->worldMatrix)
 					{
-						if (Cull (pl->bounds, frustumMask) == FRUSTUM_OUTSIDE) CULL_SURF;
+						if (Cull(pl->bounds, frustumMask) == FRUSTUM_OUTSIDE) CULL_SURF;
 					}
 					else
 					{
-						if (TransformedCull (pl->bounds, e) == FRUSTUM_OUTSIDE) CULL_SURF;
+						if (TransformedCull(pl->bounds, e) == FRUSTUM_OUTSIDE) CULL_SURF;
 					}
 				}
 #undef CULL_SURF
@@ -745,7 +745,7 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 
 					STAT(clock(gl_stats.dlightSurf));
 
-					sdl = pl->dlights = (surfDlight_t*)AllocDynamicMemory (sizeof(surfDlight_t) * MAX_DLIGHTS);
+					sdl = pl->dlights = (surfDlight_t*)AllocDynamicMemory(sizeof(surfDlight_t) * MAX_DLIGHTS);
 					if (!sdl) pl->dlightMask = 0;		// easiest way to break the loop below; speed does not matter here
 					for (j = 0, mask = 1, dl = vp.dlights; j < vp.numDlights; j++, dl++, mask <<= 1)
 						if (pl->dlightMask & mask)
@@ -756,16 +756,16 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 		continue;	\
 	}
 							CVec3 &dl_org = (e->worldMatrix) ? dl->origin : dl->modelOrg;
-							float dist = pl->plane.DistanceTo (dl_org);
+							float dist = pl->plane.DistanceTo(dl_org);
 							if (!gl_dlightBacks->integer && dist < -8) CULL_DLIGHT;
 							if (dist < 0) dist = -dist;
 
 							if (dist >= dl->intensity) CULL_DLIGHT;
 							float rad = dl->intensity * dl->intensity - dist * dist;
 							rad = SQRTFAST(rad);
-							float org0 = dot (dl_org, pl->axis[0]);
+							float org0 = dot(dl_org, pl->axis[0]);
 							if (org0 < pl->mins2[0] - rad || org0 > pl->maxs2[0] + rad) CULL_DLIGHT;
-							float org1 = dot (dl_org, pl->axis[1]);
+							float org1 = dot(dl_org, pl->axis[1]);
 							if (org1 < pl->mins2[1] - rad || org1 > pl->maxs2[1] + rad) CULL_DLIGHT;
 							// save dlight info
 							sdl->pos[0] = org0;
@@ -779,7 +779,7 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 						}
 #undef CULL_DLIGHT
 					if (pl->dlights)
-						ResizeDynamicMemory (pl->dlights, sizeof(surfDlight_t) * numDlights);
+						ResizeDynamicMemory(pl->dlights, sizeof(surfDlight_t) * numDlights);
 					if (numDlights)
 					{
 						STAT(gl_stats.dlightSurfs++);
@@ -793,7 +793,7 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 			}
 			break;
 		default:
-			DrawTextLeft ("unknows surface type", RGB(1, 0, 0));
+			DrawTextLeft("unknows surface type", RGB(1, 0, 0));
 			continue;
 		}
 		if (surf->shader->type != SHADERTYPE_SKY)
@@ -803,49 +803,49 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 			int entNum = currentEntity;
 			if (entNum != ENTITYNUM_WORLD && e->worldMatrix && !surf->shader->dependOnEntity)
 				entNum = ENTITYNUM_WORLD;
-			AddSurfaceToPortal (surf, surf->shader, entNum, numDlights);
+			AddSurfaceToPortal(surf, surf->shader, entNum, numDlights);
 		}
 		else if (surf->type == SURFACE_PLANAR)
-			AddSkySurface (static_cast<surfacePlanar_t*>(surf));
+			AddSkySurface(static_cast<surfacePlanar_t*>(surf));
 		else
-			DrawTextLeft (va("non-planar sky surface %s", *surf->shader->Name), RGB(1,0,0));	//?? make this load-time ?
+			DrawTextLeft(va("non-planar sky surface %s", *surf->shader->Name), RGB(1,0,0));	//?? make this load-time ?
 	}
 }
 
 
-bool model_t::InitEntity (entity_t *ent, refEntity_t *out)
+bool model_t::InitEntity(entity_t *ent, refEntity_t *out)
 {
 	return true;
 }
 
 
-void model_t::AddSurfaces (refEntity_t *e)
+void model_t::AddSurfaces(refEntity_t *e)
 {
 //??	if (developer->integer) -- cvar is not in renderer
-		DrawText3D (e->coord.origin, va("no model: %s", *e->model->Name), RGB(1,0,0));
+		DrawText3D(e->coord.origin, va("no model: %s", *e->model->Name), RGB(1,0,0));
 }
 
 
-const CBspLeaf *model_t::GetLeaf (refEntity_t *e)
+const CBspLeaf *model_t::GetLeaf(refEntity_t *e)
 {
-	return CM_FindLeaf (e->coord.origin);
+	return CM_FindLeaf(e->coord.origin);
 }
 
 
-void model_t::DrawLabel (refEntity_t *e)
+void model_t::DrawLabel(refEntity_t *e)
 {
-//	DrawText3D (e->center, va("origin: %g %g %g\nmodel: %s",
+//	DrawText3D(e->center, va("origin: %g %g %g\nmodel: %s",
 //		VECTOR_ARG(e->origin), name), RGB(0.4,0.1,0.2));
 }
 
 
-bool inlineModel_t::InitEntity (entity_t *ent, refEntity_t *out)
+bool inlineModel_t::InitEntity(entity_t *ent, refEntity_t *out)
 {
 	if (flags & CMODEL_NODRAW) return false;
 	CVec3 v;
-	bounds.GetCenter (v);
-	VectorSubtract (bounds.maxs, v, out->size2);		// half-size
-	out->coord.UnTransformPoint (v, out->center);
+	bounds.GetCenter(v);
+	VectorSubtract(bounds.maxs, v, out->size2);		// half-size
+	out->coord.UnTransformPoint(v, out->center);
 	out->radius = radius;
 	if (color.c[3] != 255)
 	{
@@ -856,7 +856,7 @@ bool inlineModel_t::InitEntity (entity_t *ent, refEntity_t *out)
 }
 
 
-void inlineModel_t::AddSurfaces (refEntity_t *e)
+void inlineModel_t::AddSurfaces(refEntity_t *e)
 {
 	int		i;
 	refDlight_t *dl;
@@ -867,13 +867,13 @@ void inlineModel_t::AddSurfaces (refEntity_t *e)
 	for (i = 0, dl = vp.dlights, mask = 1; i < vp.numDlights; i++, dl++, mask <<= 1)
 	{
 		CVec3	tmp;
-		VectorSubtract (e->center, dl->origin, tmp);
-		float dist2 = dot (tmp, tmp);
+		VectorSubtract(e->center, dl->origin, tmp);
+		float dist2 = dot(tmp, tmp);
 		float dist2min = radius + dl->intensity;
 		dist2min = dist2min * dist2min;
 		if (dist2 >= dist2min) continue;	// too far
 
-		if (!e->worldMatrix) e->coord.TransformPoint (dl->origin, dl->modelOrg);
+		if (!e->worldMatrix) e->coord.TransformPoint(dl->origin, dl->modelOrg);
 		dlightMask |= mask;
 	}
 	// mark surfaces
@@ -885,34 +885,34 @@ void inlineModel_t::AddSurfaces (refEntity_t *e)
 			surf->dlightFrame = drawFrame;
 			surf->dlightMask = dlightMask;
 		}
-	AddBspSurfaces (faces, numFaces, e->frustumMask, e);
+	AddBspSurfaces(faces, numFaces, e->frustumMask, e);
 }
 
 
-const CBspLeaf *inlineModel_t::GetLeaf (refEntity_t *e)
+const CBspLeaf *inlineModel_t::GetLeaf(refEntity_t *e)
 {
 	e->frustumMask = 0xFF;		// for updating
-	int ret = SphereCull (e->center, e->radius, &e->frustumMask);
+	int ret = SphereCull(e->center, e->radius, &e->frustumMask);
 	// try to cull bounding sphere (faster than box cull)
 	if (ret == FRUSTUM_OUTSIDE)
 		return NULL;
 	// frustum culling (entire model)
 	if (ret & FRUSTUM_CENTER_OUTSIDE)
-		if (TransformedCull (bounds, e) == FRUSTUM_OUTSIDE)
+		if (TransformedCull(bounds, e) == FRUSTUM_OUTSIDE)
 			return NULL;
 
-	return SphereLeaf (e->center, e->radius);
+	return SphereLeaf(e->center, e->radius);
 }
 
 
-void inlineModel_t::DrawLabel (refEntity_t *e)
+void inlineModel_t::DrawLabel(refEntity_t *e)
 {
-	DrawText3D (e->center, va("origin: %g %g %g\nbmodel: %s\nflags: $%X",
+	DrawText3D(e->center, va("origin: %g %g %g\nbmodel: %s\nflags: $%X",
 		VECTOR_ARG(e->coord.origin), *Name, e->flags), RGB(0.1,0.4,0.2));
 }
 
 
-bool md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
+bool md3Model_t::InitEntity(entity_t *ent, refEntity_t *out)
 {
 	if (!numSurfaces) return false;
 
@@ -920,13 +920,13 @@ bool md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	if (out->frame >= numFrames || out->frame < 0)
 	{
 		//?? developer only
-		DrawTextLeft (va("md3Model_t::InitEntity: no frame %d in %s\n", out->frame, *Name), RGB(1,0,0));
+		DrawTextLeft(va("md3Model_t::InitEntity: no frame %d in %s\n", out->frame, *Name), RGB(1,0,0));
 		out->frame = out->oldFrame = 0;
 	}
 	if (out->oldFrame >= numFrames || out->oldFrame < 0)
 	{
 		//?? developer only
-		DrawTextLeft (va("md3Model_t::InitEntity: no frame %d in %s\n", out->oldFrame, *Name), RGB(1,0,0));
+		DrawTextLeft(va("md3Model_t::InitEntity: no frame %d in %s\n", out->oldFrame, *Name), RGB(1,0,0));
 		out->frame = out->oldFrame = 0;
 	}
 	md3Frame_t *frame1 = frames + out->frame;
@@ -935,27 +935,27 @@ bool md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	CVec3 center1, center2;
 	if (out->drawScale != 1)
 	{
-		VectorScale (frame1->localOrigin, out->drawScale, center1);
-		VectorScale (frame2->localOrigin, out->drawScale, center2);
+		VectorScale(frame1->localOrigin, out->drawScale, center1);
+		VectorScale(frame2->localOrigin, out->drawScale, center2);
 	}
 	else
 	{
 		center1 = frame1->localOrigin;
 		center2 = frame2->localOrigin;
 	}
-	out->coord.UnTransformPoint (center1, center1);
-	out->coord.UnTransformPoint (center2, center2);
-	Lerp (center1, center2, out->backLerp, out->center);
+	out->coord.UnTransformPoint(center1, center1);
+	out->coord.UnTransformPoint(center2, center2);
+	Lerp(center1, center2, out->backLerp, out->center);
 	// lerp radius
-	out->radius = Lerp (frame1->radius, frame2->radius, out->backLerp) * out->drawScale;
+	out->radius = Lerp(frame1->radius, frame2->radius, out->backLerp) * out->drawScale;
 	// compute mins/maxs (lerp ??)
 #if 0
 	//!!!! HERE: use frame bounding sphere for gl_showbboxes visualization
 	out->size2[0] = out->size2[1] = out->size2[2] = frame1->radius * out->drawScale;
 #else
-	VectorSubtract (frame1->bounds.maxs, frame1->localOrigin, out->size2);
+	VectorSubtract(frame1->bounds.maxs, frame1->localOrigin, out->size2);
 	if (out->drawScale != 1)
-		out->size2.Scale (out->drawScale);
+		out->size2.Scale(out->drawScale);
 #endif
 	if (ent->skin && ent->skin->numSurfs == 1 && ent->skin->surf[0].Name[0] == 0)
 		out->customShader = static_cast<shader_t*>(ent->skin->surf[0].shader);
@@ -965,7 +965,7 @@ bool md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 
 //#define SHOW_MD3_SURFS	1
 
-void md3Model_t::AddSurfaces (refEntity_t *e)
+void md3Model_t::AddSurfaces(refEntity_t *e)
 {
 #if SHOW_MD3_SURFS
 	DrawTextLeft(va("%s: custSh=%s skin=%X skinNum=%d", *Name, e->customShader ? *e->customShader->Name : "NULL", e->skin, e->skinNum));
@@ -988,7 +988,7 @@ void md3Model_t::AddSurfaces (refEntity_t *e)
 				{
 					shader = static_cast<shader_t*>(e->skin->surf[j].shader);
 #if SHOW_MD3_SURFS
-					DrawTextLeft (va("  %s for %s", *shader->Name, *s->Name));
+					DrawTextLeft(va("  %s for %s", *shader->Name, *s->Name));
 #endif
 					break;
 				}
@@ -996,7 +996,7 @@ void md3Model_t::AddSurfaces (refEntity_t *e)
 			{
 				// it seems, this surface not listed (or "nodraw" shader used) -- skip it
 #if SHOW_MD3_SURFS
-				DrawTextLeft (va("  skip: %s", *s->Name));
+				DrawTextLeft(va("  skip: %s", *s->Name));
 #endif
 				continue;
 			}
@@ -1005,34 +1005,34 @@ void md3Model_t::AddSurfaces (refEntity_t *e)
 			shader = s->shaders[e->skinNum];
 
 		if (!shader && s->numShaders) shader = s->shaders[0];
-		if (!shader) shader = FindShader ("*identityLight", SHADER_SKIN); // white + diffuse lighting
+		if (!shader) shader = FindShader("*identityLight", SHADER_SKIN); // white + diffuse lighting
 
 		if (e->flags & RF_TRANSLUCENT)
-			shader = GetAlphaShader (shader);
+			shader = GetAlphaShader(shader);
 		// draw surface
-		AddSurface (s, shader, e);
+		AddSurface(s, shader, e);
 	}
 }
 
 
-const CBspLeaf *md3Model_t::GetLeaf (refEntity_t *e)
+const CBspLeaf *md3Model_t::GetLeaf(refEntity_t *e)
 {
-	if (SphereCull (e->center, e->radius, NULL) == FRUSTUM_OUTSIDE)
+	if (SphereCull(e->center, e->radius, NULL) == FRUSTUM_OUTSIDE)
 		return NULL;
-	return SphereLeaf (e->center, e->radius);
+	return SphereLeaf(e->center, e->radius);
 }
 
 
-void md3Model_t::DrawLabel (refEntity_t *e)
+void md3Model_t::DrawLabel(refEntity_t *e)
 {
-	DrawText3D (e->center, va("origin: %g %g %g\nmd3: %s\nskin: %s\nflags: $%X  scale: %g",
+	DrawText3D(e->center, va("origin: %g %g %g\nmd3: %s\nskin: %s\nflags: $%X  scale: %g",
 		VECTOR_ARG(e->coord.origin), *Name, e->customShader ? *e->customShader->Name : "(default)", e->flags, e->drawScale),
 		RGB(0.1,0.4,0.2));
 		//?? incorrect skin info for md3 multi-surface models
 }
 
 
-bool sprModel_t::InitEntity (entity_t *ent, refEntity_t *out)
+bool sprModel_t::InitEntity(entity_t *ent, refEntity_t *out)
 {
 	out->center      = out->coord.origin;
 	out->radius      = radius;
@@ -1041,9 +1041,9 @@ bool sprModel_t::InitEntity (entity_t *ent, refEntity_t *out)
 }
 
 
-void sprModel_t::AddSurfaces (refEntity_t *e)
+void sprModel_t::AddSurfaces(refEntity_t *e)
 {
-	surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+	surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory(sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 	if (!p)		// out of dynamic memory
 		return;
 	CALL_CONSTRUCTOR(p);
@@ -1053,12 +1053,12 @@ void sprModel_t::AddSurfaces (refEntity_t *e)
 	sprFrame_t *frame = &frames[e->frame % numFrames];
 	// setup xyz
 	CVec3	down, up2;
-	VectorMA (e->coord.origin, -frame->localOrigin[1], vp.view.axis[2], down);
-	VectorMA (down, -frame->localOrigin[0], vp.view.axis[1], p->verts[0].xyz);	// 0
-	VectorMA (down, frame->width - frame->localOrigin[0], vp.view.axis[1], p->verts[1].xyz);	// 1
-	VectorScale (vp.view.axis[2], frame->height, up2);
-	VectorAdd (p->verts[0].xyz, up2, p->verts[3].xyz);	// 3
-	VectorAdd (p->verts[1].xyz, up2, p->verts[2].xyz);	// 2
+	VectorMA(e->coord.origin, -frame->localOrigin[1], vp.view.axis[2], down);
+	VectorMA(down, -frame->localOrigin[0], vp.view.axis[1], p->verts[0].xyz);	// 0
+	VectorMA(down, frame->width - frame->localOrigin[0], vp.view.axis[1], p->verts[1].xyz);	// 1
+	VectorScale(vp.view.axis[2], frame->height, up2);
+	VectorAdd(p->verts[0].xyz, up2, p->verts[3].xyz);	// 3
+	VectorAdd(p->verts[1].xyz, up2, p->verts[2].xyz);	// 2
 
 	// setup st
 	p->verts[0].st[0] = p->verts[3].st[0] = 1;
@@ -1071,25 +1071,25 @@ void sprModel_t::AddSurfaces (refEntity_t *e)
 		color |= RGBA(0,0,0,1);						// make it non-transparent
 	p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color;
 
-	AddSurface (p, frame->shader, e);
+	AddSurface(p, frame->shader, e);
 }
 
 
-const CBspLeaf *sprModel_t::GetLeaf (refEntity_t *e)
+const CBspLeaf *sprModel_t::GetLeaf(refEntity_t *e)
 {
-	return AlphaSphereLeaf (e->coord.origin, e->radius);
+	return AlphaSphereLeaf(e->coord.origin, e->radius);
 }
 
 
-static void AddBeamSurfaces (const beam_t *b)
+static void AddBeamSurfaces(const beam_t *b)
 {
 	CVec3	viewDir, tmp;
 
 	// compute level of detail
-	VectorSubtract (b->drawStart, vp.view.origin, viewDir);
-	float z1 = dot (viewDir, vp.view.axis[0]);	// beamStart.Z
-	VectorSubtract (b->drawEnd, vp.view.origin, tmp);
-	float z2 = dot (tmp, vp.view.axis[0]);		// beamEnd.Z
+	VectorSubtract(b->drawStart, vp.view.origin, viewDir);
+	float z1 = dot(viewDir, vp.view.axis[0]);	// beamStart.Z
+	VectorSubtract(b->drawEnd, vp.view.origin, tmp);
+	float z2 = dot(tmp, vp.view.axis[0]);		// beamEnd.Z
 	float size = min(z1, z2);
 
 	size = b->radius * 200 / (size * vp.fov_scale);
@@ -1098,14 +1098,14 @@ static void AddBeamSurfaces (const beam_t *b)
 
 	// compute beam axis
 	CVec3	axis[3];		// length, width, depth
-	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
-	axis[0].NormalizeFast ();
-	cross (axis[0], viewDir, axis[1]);
-	axis[1].NormalizeFast ();
-	cross (axis[0], axis[1], axis[2]);			// already normalized
+	VectorSubtract(b->drawEnd, b->drawStart, axis[0]);
+	axis[0].NormalizeFast();
+	cross(axis[0], viewDir, axis[1]);
+	axis[1].NormalizeFast();
+	cross(axis[0], axis[1], axis[2]);			// already normalized
 
 	CVec3	dir1, dir2;
-	VectorScale (axis[1], b->radius, dir2);
+	VectorScale(axis[1], b->radius, dir2);
 	float angle = 0;
 	float angleStep = 0.5f / numParts;			// 0.5 -- PI/2
 	color_t	color;
@@ -1114,7 +1114,7 @@ static void AddBeamSurfaces (const beam_t *b)
 	for (int i = 0; i < numParts; i++)
 	{
 		//!! use SURF_TRISURF to allocate all parts in one surface with shared verts
-		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory(sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p)		// out of dynamic memory
 			return;
 		CALL_CONSTRUCTOR(p);
@@ -1126,14 +1126,14 @@ static void AddBeamSurfaces (const beam_t *b)
 		angle += angleStep;
 		float sx = SIN_FUNC(angle) * b->radius;
 		float cx = COS_FUNC(angle) * b->radius;
-		VectorScale (axis[1], cx, dir2);
-		VectorMA (dir2, sx, axis[2]);
+		VectorScale(axis[1], cx, dir2);
+		VectorMA(dir2, sx, axis[2]);
 
 		// setup xyz
-		VectorAdd (b->drawStart, dir1, p->verts[0].xyz);
-		VectorAdd (b->drawEnd,   dir1, p->verts[1].xyz);
-		VectorAdd (b->drawStart, dir2, p->verts[3].xyz);
-		VectorAdd (b->drawEnd,   dir2, p->verts[2].xyz);
+		VectorAdd(b->drawStart, dir1, p->verts[0].xyz);
+		VectorAdd(b->drawEnd,   dir1, p->verts[1].xyz);
+		VectorAdd(b->drawStart, dir2, p->verts[3].xyz);
+		VectorAdd(b->drawEnd,   dir2, p->verts[2].xyz);
 
 		// setup st
 		p->verts[0].st[0] = p->verts[3].st[0] = 1;
@@ -1144,7 +1144,7 @@ static void AddBeamSurfaces (const beam_t *b)
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color.rgba;
 
 		//!! can be different shader to provide any types of lined particles
-		AddSurface (p, gl_identityLightShader2);
+		AddSurface(p, gl_identityLightShader2);
 	}
 }
 
@@ -1153,30 +1153,30 @@ static void AddBeamSurfaces (const beam_t *b)
 #define CYLINDER_FIX_ALPHA		1
 #define MIN_FIXED_ALPHA			0.2f
 
-static void AddCylinderSurfaces (const beam_t *b)
+static void AddCylinderSurfaces(const beam_t *b)
 {
 	CVec3	viewDir;
-	CVec3	axis[3];		// length, width, depth
+	CVec3	axis[3];							// length, width, depth
 
 	//?? cumpute LOD
-	VectorSubtract (b->drawStart, vp.view.origin, viewDir);
+	VectorSubtract(b->drawStart, vp.view.origin, viewDir);
 	// compute beam axis
-	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
-	float len = axis[0].NormalizeFast ();
-	cross (axis[0], viewDir, axis[1]);
-	axis[1].NormalizeFast ();
-	cross (axis[0], axis[1], axis[2]);				// already normalized
+	VectorSubtract(b->drawEnd, b->drawStart, axis[0]);
+	float len = axis[0].NormalizeFast();
+	cross(axis[0], viewDir, axis[1]);
+	axis[1].NormalizeFast();
+	cross(axis[0], axis[1], axis[2]);			// already normalized
 
-	float st0 = VectorDistance (b->drawEnd, b->end);
+	float st0 = VectorDistance(b->drawEnd, b->end);
 
 #if CYLINDER_FIX_ALPHA
 	// compute minimal distance to beam
-	float f = dot (viewDir, axis[0]);
+	float f = dot(viewDir, axis[0]);
 	CVec3 v;
-	VectorMA (b->drawStart, -f, axis[0], v);		// v is a nearest point on beam line
-	VectorSubtract (v, vp.view.origin, v);
-	f = dot (v, v);
-	f = SQRTFAST(f);								// distance to line
+	VectorMA(b->drawStart, -f, axis[0], v);		// v is a nearest point on beam line
+	VectorSubtract(v, vp.view.origin, v);
+	f = dot(v, v);
+	f = SQRTFAST(f);							// distance to line
 	float fixAngle;
 	if (f <= b->radius)
 		fixAngle = -1;
@@ -1206,7 +1206,7 @@ static void AddCylinderSurfaces (const beam_t *b)
 			break;
 		}
 
-		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory(sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p)		// out of dynamic memory
 			return;
 		CALL_CONSTRUCTOR(p);
@@ -1225,19 +1225,19 @@ static void AddCylinderSurfaces (const beam_t *b)
 
 		sx = SIN_FUNC(anglePrev) * b->radius;
 		cx = COS_FUNC(anglePrev) * b->radius;
-		VectorScale (axis[1], cx, dir1);
-		VectorMA (dir1, sx, axis[2]);
+		VectorScale(axis[1], cx, dir1);
+		VectorMA(dir1, sx, axis[2]);
 
 		sx = SIN_FUNC(angle) * b->radius;
 		cx = COS_FUNC(angle) * b->radius;
-		VectorScale (axis[1], cx, dir2);
-		VectorMA (dir2, sx, axis[2]);
+		VectorScale(axis[1], cx, dir2);
+		VectorMA(dir2, sx, axis[2]);
 
 		// setup xyz
-		VectorAdd (b->drawStart, dir1, p->verts[0].xyz);
-		VectorAdd (b->drawEnd,   dir1, p->verts[1].xyz);
-		VectorAdd (b->drawStart, dir2, p->verts[3].xyz);
-		VectorAdd (b->drawEnd,   dir2, p->verts[2].xyz);
+		VectorAdd(b->drawStart, dir1, p->verts[0].xyz);
+		VectorAdd(b->drawEnd,   dir1, p->verts[1].xyz);
+		VectorAdd(b->drawStart, dir2, p->verts[3].xyz);
+		VectorAdd(b->drawEnd,   dir2, p->verts[2].xyz);
 
 		p->verts[0].st[1] = p->verts[3].st[1] = len + st0;
 		p->verts[1].st[1] = p->verts[2].st[1] = st0;
@@ -1253,50 +1253,50 @@ static void AddCylinderSurfaces (const beam_t *b)
 
 			if (i < CYLINDER_PARTS / 2)
 			{	// angles in -0.25..0.25 range
-				a1 = fabs (anglePrev - fixAngle);
-				a2 = fabs (angle - fixAngle);
+				a1 = fabs(anglePrev - fixAngle);
+				a2 = fabs(angle - fixAngle);
 			}
 			else
 			{	// angles in 0.25..0.72 range
-				a1 = fabs (anglePrev - 0.5f + fixAngle);
-				a2 = fabs (angle - 0.5f + fixAngle);
+				a1 = fabs(anglePrev - 0.5f + fixAngle);
+				a2 = fabs(angle - 0.5f + fixAngle);
 			}
 			if (a1 > 0.25f) a1 = 0.25f;
 			if (a2 > 0.25f) a2 = 0.25f;
-			a1 = Lerp (MIN_FIXED_ALPHA, 1.0f, a1 * 4);
-			a2 = Lerp (MIN_FIXED_ALPHA, 1.0f, a2 * 4);
+			a1 = Lerp(MIN_FIXED_ALPHA, 1.0f, a1 * 4);
+			a2 = Lerp(MIN_FIXED_ALPHA, 1.0f, a2 * 4);
 
-			p->verts[0].c.c[3] = p->verts[1].c.c[3] = appRound (b->color.c[3] * a1);
-			p->verts[2].c.c[3] = p->verts[3].c.c[3] = appRound (b->color.c[3] * a2);
+			p->verts[0].c.c[3] = p->verts[1].c.c[3] = appRound(b->color.c[3] * a1);
+			p->verts[2].c.c[3] = p->verts[3].c.c[3] = appRound(b->color.c[3] * a2);
 		}
 #endif
 
-		AddSurface (p, static_cast<shader_t*>(b->shader));
+		AddSurface(p, static_cast<shader_t*>(b->shader));
 	}
 }
 
 
 #define BEAM_PARTS	3		// 1 - flat
 
-static void AddStarBeam (const beam_t *b)
+static void AddStarBeam(const beam_t *b)
 {
 	CVec3	viewDir;
 	CVec3	axis[3];		// length, width, depth
 
-	VectorSubtract (b->drawStart, vp.view.origin, viewDir);
+	VectorSubtract(b->drawStart, vp.view.origin, viewDir);
 	// compute beam axis
-	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
-	float len = axis[0].NormalizeFast ();
-	cross (axis[0], viewDir, axis[1]);
-	axis[1].NormalizeFast ();
-	cross (axis[0], axis[1], axis[2]);			// already normalized
+	VectorSubtract(b->drawEnd, b->drawStart, axis[0]);
+	float len = axis[0].NormalizeFast();
+	cross(axis[0], viewDir, axis[1]);
+	axis[1].NormalizeFast();
+	cross(axis[0], axis[1], axis[2]);			// already normalized
 
-	float st0 = VectorDistance (b->drawEnd, b->end);
+	float st0 = VectorDistance(b->drawEnd, b->end);
 
 	float angle = 0;
 	for (int i = 0; i < BEAM_PARTS; i++)
 	{
-		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory(sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p)		// out of dynamic memory
 			return;
 		CALL_CONSTRUCTOR(p);
@@ -1306,17 +1306,17 @@ static void AddStarBeam (const beam_t *b)
 		float sx = SIN_FUNC(angle) * b->radius;
 		float cx = COS_FUNC(angle) * b->radius;
 		CVec3	dir1, dir2;
-		VectorScale (axis[1], cx, dir1);
-		VectorMA (dir1, sx, axis[2]);
-		VectorNegate (dir1, dir2);
+		VectorScale(axis[1], cx, dir1);
+		VectorMA(dir1, sx, axis[2]);
+		VectorNegate(dir1, dir2);
 
 		angle += 0.5f / BEAM_PARTS;
 
 		// setup xyz
-		VectorAdd (b->drawStart, dir1, p->verts[0].xyz);
-		VectorAdd (b->drawEnd,   dir1, p->verts[1].xyz);
-		VectorAdd (b->drawStart, dir2, p->verts[3].xyz);
-		VectorAdd (b->drawEnd,   dir2, p->verts[2].xyz);
+		VectorAdd(b->drawStart, dir1, p->verts[0].xyz);
+		VectorAdd(b->drawEnd,   dir1, p->verts[1].xyz);
+		VectorAdd(b->drawStart, dir2, p->verts[3].xyz);
+		VectorAdd(b->drawEnd,   dir2, p->verts[2].xyz);
 
 		p->verts[0].st[1] = p->verts[3].st[1] = len + st0;
 		p->verts[1].st[1] = p->verts[2].st[1] = st0;
@@ -1325,7 +1325,7 @@ static void AddStarBeam (const beam_t *b)
 
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = b->color.rgba;
 
-		AddSurface (p, static_cast<shader_t*>(b->shader));
+		AddSurface(p, static_cast<shader_t*>(b->shader));
 	}
 }
 
@@ -1333,7 +1333,7 @@ static void AddStarBeam (const beam_t *b)
 /*------------------ Drawing world -------------------*/
 
 
-static const CBspLeaf *WalkBspTree ()
+static const CBspLeaf *WalkBspTree()
 {
 	guard(WalkBspTree);
 
@@ -1382,7 +1382,7 @@ static const CBspLeaf *WalkBspTree ()
 #define CULL_NODE(bit)	\
 			if (frustumMask & (1<<bit))	\
 			{							\
-				switch (node->bounds.OnPlaneSide (vp.frustum[bit])) {	\
+				switch (node->bounds.OnPlaneSide(vp.frustum[bit])) {	\
 				case 1:					\
 					frustumMask &= ~(1<<bit);	\
 					break;				\
@@ -1412,31 +1412,31 @@ static const CBspLeaf *WalkBspTree ()
 			 *   2. its faster to cull every node, than cull every leaf
 			 */
 			if (gl_oCull->integer == 2)
-				occl = WorldBoxOccluded (node->bounds);
+				occl = WorldBoxOccluded(node->bounds);
 			else
 			{	// >= 3
 				static refEntity_t ent;		// just zeroed entity
 				CVec3	v, h;
 
-				node->bounds.GetCenter (ent.center);		//?? can pre-compute on map loading
-				VectorSubtract (node->bounds.maxs, ent.center, ent.size2);
+				node->bounds.GetCenter(ent.center);		//?? can pre-compute on map loading
+				VectorSubtract(node->bounds.maxs, ent.center, ent.size2);
 				ent.worldMatrix = true;
-				occl = BoxOccluded (&ent, ent.size2);
+				occl = BoxOccluded(&ent, ent.size2);
 				if (occl && gl_oCull->integer == 4)
 				{
 					float	mins2[2], maxs2[2];
 
-					GetBoxRect (&ent, ent.size2, mins2, maxs2);
-					VectorMA (ent.center, mins2[0], vp.view.axis[1], h);
-					VectorMA (h, mins2[1], vp.view.axis[2], v);
+					GetBoxRect(&ent, ent.size2, mins2, maxs2);
+					VectorMA(ent.center, mins2[0], vp.view.axis[1], h);
+					VectorMA(h, mins2[1], vp.view.axis[2], v);
 #if 1
 					DrawText3D(v, "*", RGB(0.2,0.6,0.1));
-					VectorMA (h, maxs2[1], vp.view.axis[2], v);
+					VectorMA(h, maxs2[1], vp.view.axis[2], v);
 					DrawText3D(v, "*", RGB(0.2,0.6,0.1));
-					VectorMA (ent.center, maxs2[0], vp.view.axis[1], h);
-					VectorMA (h, mins2[1], vp.view.axis[2], v);
+					VectorMA(ent.center, maxs2[0], vp.view.axis[1], h);
+					VectorMA(h, mins2[1], vp.view.axis[2], v);
 					DrawText3D(v, "*", RGB(0.2,0.6,0.1));
-					VectorMA (h, maxs2[1], vp.view.axis[2], v);
+					VectorMA(h, maxs2[1], vp.view.axis[2], v);
 					DrawText3D(v, "*", RGB(0.2,0.6,0.1));
 #else
 					DrawText3D(v, va("(%d: %gx%gx%g)", sptr, ent.maxs[0]*2,ent.maxs[1]*2,ent.maxs[2]*2), RGB(0.3,0.9,0.2));
@@ -1452,7 +1452,7 @@ static const CBspLeaf *WalkBspTree ()
 			// stats
 			if (frm != drawFrame)
 			{
-				DrawTextLeft (va("occl: %d", tests));
+				DrawTextLeft(va("occl: %d", tests));
 				frm = drawFrame;
 				tests = 0;
 			}
@@ -1475,13 +1475,13 @@ static const CBspLeaf *WalkBspTree ()
 				for (i = 0, dl = vp.dlights, mask = 1; i < MAX_DLIGHTS; i++, dl++, mask <<= 1)
 				{
 					if (!(dlightMask & mask)) continue;
-					d = node->plane->DistanceTo (dl->origin);
+					d = node->plane->DistanceTo(dl->origin);
 					if (d > -dl->intensity) dlight0 |= mask;
 					if (d < dl->intensity) dlight1 |= mask;
 				}
 			}
 
-			if (node->plane->DistanceTo (vp.view.origin) < 0)
+			if (node->plane->DistanceTo(vp.view.origin) < 0)
 			{
 				// ch[0], then ch[1]
 				PUSH_NODE(node->children[1], dlight1);
@@ -1556,7 +1556,7 @@ static const CBspLeaf *WalkBspTree ()
 }
 
 
-static void DrawEntities (int firstEntity, int numEntities)
+static void DrawEntities(int firstEntity, int numEntities)
 {
 	guard(DrawEntities);
 
@@ -1570,22 +1570,22 @@ static void DrawEntities (int firstEntity, int numEntities)
 			if (e->flags & RF_BBOX)
 			{
 				// just add surface and continue
-				surfaceEntity_t *surf = (surfaceEntity_t*)AllocDynamicMemory (sizeof(surfaceEntity_t));
+				surfaceEntity_t *surf = (surfaceEntity_t*)AllocDynamicMemory(sizeof(surfaceEntity_t));
 				if (surf)
 				{
 					CALL_CONSTRUCTOR(surf);
 					surf->entity = e;
-					AddSurfaceToPortal (surf, gl_entityShader, ENTITYNUM_WORLD);
+					AddSurfaceToPortal(surf, gl_entityShader, ENTITYNUM_WORLD);
 				}
 			}
 			else
-				DrawText3D (e->coord.origin, va("* bad ent %d: f=%X", i, e->flags), RGB(1,0,0));
+				DrawText3D(e->coord.origin, va("* bad ent %d: f=%X", i, e->flags), RGB(1,0,0));
 			continue;
 		}
 
 		if (!r_drawentities->integer) continue;		// do not draw entities with model in this mode
 
-		const CBspLeaf *leaf = e->model->GetLeaf (e);
+		const CBspLeaf *leaf = e->model->GetLeaf(e);
 		if (!leaf)
 		{
 			// entity do not occupy any visible leafs
@@ -1595,25 +1595,25 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 		// calc model distance
 		CVec3 delta;
-		VectorSubtract (e->center, vp.view.origin, delta);
-		float dist2 = e->dist2 = dot (delta, vp.view.axis[0]);	// get Z-coordinate
+		VectorSubtract(e->center, vp.view.origin, delta);
+		float dist2 = e->dist2 = dot(delta, vp.view.axis[0]);	// get Z-coordinate
 
 		// occlusion culling
 		if (e->model && gl_oCull->integer && !(e->flags & RF_DEPTHHACK) &&
 			(e->model->type == MODEL_INLINE || e->model->type == MODEL_MD3))
 			//?? sprites too (depend on size/dist; use 4 its points to cull)
 		{
-			if (BoxOccluded (e, e->size2))
+			if (BoxOccluded(e, e->size2))
 			{
 				if (gl_labels->integer == 2)
-					DrawText3D (e->center, va("occluded\n%s", *e->model->Name), RGB(0.1,0.2,0.4));
+					DrawText3D(e->center, va("occluded\n%s", *e->model->Name), RGB(0.1,0.2,0.4));
 				STAT(gl_stats.ocullEnts++);
 				continue;
 			}
 		}
 
 		if (e->model && gl_labels->integer)
-			e->model->DrawLabel (e);
+			e->model->DrawLabel(e);
 
 		e->visible = true;
 
@@ -1642,14 +1642,14 @@ static void DrawEntities (int firstEntity, int numEntities)
 			e->drawNext = NULL;
 		}
 
-		if (e->model) SetupModelMatrix (e);
+		if (e->model) SetupModelMatrix(e);
 	}
 
 	unguard;
 }
 
 
-static void DrawParticles ()
+static void DrawParticles()
 {
 	const CBspLeaf *leaf;
 
@@ -1671,7 +1671,7 @@ static void DrawParticles ()
 	{
 		b->drawStart = b->start;
 		b->drawEnd = b->end;
-		if (!CutCylinder (b->drawStart, b->drawEnd, b->radius))
+		if (!CutCylinder(b->drawStart, b->drawEnd, b->radius))
 		{
 			STAT(gl_stats.cullParts++);
 			continue;
@@ -1679,9 +1679,9 @@ static void DrawParticles ()
 		else
 		{
 			CVec3	center;
-			VectorAdd (b->drawStart, b->drawEnd, center);
-			center.Scale (0.5f);
-			leaf = BeamLeaf (b->drawStart, b->drawEnd);
+			VectorAdd(b->drawStart, b->drawEnd, center);
+			center.Scale(0.5f);
+			leaf = BeamLeaf(b->drawStart, b->drawEnd);
 		}
 
 		if (leaf)
@@ -1702,7 +1702,7 @@ static void DrawParticles ()
 #define FLARE_FADE		0.2		// Cvar_VariableValue("flare")
 #define SUN_DRAWDIST	32
 
-static void DrawFlares ()
+static void DrawFlares()
 {
 	for (gl_flare_t *f = map.flares; f ; f = f->next)
 	{
@@ -1742,11 +1742,11 @@ static void DrawFlares ()
 				if (i > 0) continue;					// should not happens ...
 				// compute flare origin
 				CVec3 tmp;
-				im->bounds.GetCenter (tmp);
+				im->bounds.GetCenter(tmp);
 				// flarePos = e->center - im->center + flarePos
-				VectorSubtract (e->center, tmp, tmp);
-				flarePos.Add (tmp);
-//				DrawTextLeft (va("flare shift: %g %g %g -> flarePos: %g %g %g", VECTOR_ARG(tmp), VECTOR_ARG(flarePos)));
+				VectorSubtract(e->center, tmp, tmp);
+				flarePos.Add(tmp);
+//				DrawTextLeft(va("flare shift: %g %g %g -> flarePos: %g %g %g", VECTOR_ARG(tmp), VECTOR_ARG(flarePos)));
 			}
 			// perform PVS cull for flares with radius 0 (if flare have radius > 0
 			// it (mostly) will be placed inside invisible (solid) leaf)
@@ -1757,20 +1757,20 @@ static void DrawFlares ()
 			// sun flare
 			if (gl_state.useFastSky || gl_skyShader == gl_defaultSkyShader)
 				continue;	// no flare with this sky
-			VectorMA (vp.view.origin, SUN_DRAWDIST, f->origin, flarePos);
+			VectorMA(vp.view.origin, SUN_DRAWDIST, f->origin, flarePos);
 			scale = f->size * SUN_DRAWDIST / (2 * FLARE_DIST1);
 		}
 
 		// should perform frustum culling even if flare not in PVS:
 		// can be occluded / outside frustum -- fade / hide
-		if (PointCull (flarePos, (f->owner || cull || f->radius < 0) ? MAX_FRUSTUM_MASK : f->leaf->ex->frustumMask) == FRUSTUM_OUTSIDE)
+		if (PointCull(flarePos, (f->owner || cull || f->radius < 0) ? MAX_FRUSTUM_MASK : f->leaf->ex->frustumMask) == FRUSTUM_OUTSIDE)
 		{
 			STAT(gl_stats.cullFlares++);				// outside frustum - do not fade
 			continue;
 		}
 		if (f->radius > 0)
 		{
-			if (!SphereLeaf (flarePos, f->radius)) cull = true;
+			if (!SphereLeaf(flarePos, f->radius)) cull = true;
 		}
 
 		color.rgba = f->color.rgba;
@@ -1783,8 +1783,8 @@ static void DrawFlares ()
 
 			// get Z-coordinate
 			CVec3 tmp;
-			VectorSubtract (flarePos, vp.view.origin, tmp);
-			float dist = dot (tmp, vp.view.axis[0]);
+			VectorSubtract(flarePos, vp.view.origin, tmp);
+			float dist = dot(tmp, vp.view.axis[0]);
 
 			if (dist < FLARE_DIST0)			// too near - do not fade
 			{
@@ -1792,7 +1792,7 @@ static void DrawFlares ()
 				continue;
 			}
 			if (dist < FLARE_DIST1)
-				style = appRound (style * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0));
+				style = appRound(style * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0));
 //				scale = scale * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0);
 			else if (dist > FLARE_DIST2)
 				scale = scale * dist / FLARE_DIST2;
@@ -1807,18 +1807,18 @@ static void DrawFlares ()
 			// check visibility with trace
 			if (f->radius >= 0)
 			{
-				CM_BoxTrace (trace, vp.view.origin, flarePos, nullBox, 0, CONTENTS_SOLID);
-				ClipTraceToEntities (trace, vp.view.origin, flarePos, CONTENTS_SOLID);
-				if (trace.fraction < 1 && (f->radius <= 0 || (VectorDistance (trace.endpos, flarePos) > f->radius)))
+				CM_BoxTrace(trace, vp.view.origin, flarePos, nullBox, 0, CONTENTS_SOLID);
+				ClipTraceToEntities(trace, vp.view.origin, flarePos, CONTENTS_SOLID);
+				if (trace.fraction < 1 && (f->radius <= 0 || (VectorDistance(trace.endpos, flarePos) > f->radius)))
 					cull = true;
 			}
 			else
 			{	// sun flare
 				CVec3	tracePos;
 
-				VectorMA (vp.view.origin, BIG_NUMBER, f->origin, tracePos);
-				CM_BoxTrace (trace, vp.view.origin, tracePos, nullBox, 0, CONTENTS_SOLID);
-				ClipTraceToEntities (trace, vp.view.origin, tracePos, CONTENTS_SOLID);
+				VectorMA(vp.view.origin, BIG_NUMBER, f->origin, tracePos);
+				CM_BoxTrace(trace, vp.view.origin, tracePos, nullBox, 0, CONTENTS_SOLID);
+				ClipTraceToEntities(trace, vp.view.origin, tracePos, CONTENTS_SOLID);
 				if (!(trace.fraction < 1 && trace.surface->flags & SURF_SKY))
 					cull = true;
 			}
@@ -1841,19 +1841,19 @@ static void DrawFlares ()
 		}
 
 		// alloc surface
-		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory(sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p) return;
 		CALL_CONSTRUCTOR(p);
 
 		p->numVerts = 4;
 
 		// setup xyz
-		VectorMA (flarePos, -scale, vp.view.axis[2], tmp);			// down
-		VectorMA (tmp, -scale, vp.view.axis[1], p->verts[0].xyz);	// 0
-		VectorMA (tmp, scale, vp.view.axis[1], p->verts[1].xyz);	// 1
-		VectorScale (vp.view.axis[2], scale * 2, tmp);				// up-down
-		VectorAdd (p->verts[0].xyz, tmp, p->verts[3].xyz);			// 3
-		VectorAdd (p->verts[1].xyz, tmp, p->verts[2].xyz);			// 2
+		VectorMA(flarePos, -scale, vp.view.axis[2], tmp);			// down
+		VectorMA(tmp, -scale, vp.view.axis[1], p->verts[0].xyz);	// 0
+		VectorMA(tmp, scale, vp.view.axis[1], p->verts[1].xyz);	// 1
+		VectorScale(vp.view.axis[2], scale * 2, tmp);				// up-down
+		VectorAdd(p->verts[0].xyz, tmp, p->verts[3].xyz);			// 3
+		VectorAdd(p->verts[1].xyz, tmp, p->verts[2].xyz);			// 2
 
 		// setup st
 		p->verts[0].st[0] = p->verts[3].st[0] = 1;
@@ -1875,43 +1875,43 @@ static void DrawFlares ()
 		}
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color.rgba;
 
-		AddSurfaceToPortal (p, gl_flareShader, ENTITYNUM_WORLD);
+		AddSurfaceToPortal(p, gl_flareShader, ENTITYNUM_WORLD);
 	}
 
 	STAT(gl_stats.flares = map.numFlares);
 }
 
 
-static void DrawBspSequence (const CBspLeaf *leaf)
+static void DrawBspSequence(const CBspLeaf *leaf)
 {
 	guard(DrawBspSequence);
 
 	for ( ; leaf; leaf = leaf->ex->drawNext)
 	{
 		// update world bounding box
-		vp.bounds.Expand (leaf->bounds);
+		vp.bounds.Expand(leaf->bounds);
 		// add leafFaces to draw list
 		currentEntity = ENTITYNUM_WORLD;
-		AddBspSurfaces (leaf->ex->faces, leaf->numFaces, leaf->ex->frustumMask, &gl_entities[ENTITYNUM_WORLD]);
+		AddBspSurfaces(leaf->ex->faces, leaf->numFaces, leaf->ex->frustumMask, &gl_entities[ENTITYNUM_WORLD]);
 
 		/*---------- draw leaf entities -----------*/
 
 		for (refEntity_t *e = leaf->ex->drawEntity; e; e = e->drawNext)
 		{
 			currentEntity = e - gl_entities;
-			if (e->model) e->model->AddSurfaces (e);
+			if (e->model) e->model->AddSurfaces(e);
 		}
 
 		/*------------ draw particles -------------*/
 
 		if (leaf->ex->drawParticle)
 		{
-			surfaceParticle_t *surf = (surfaceParticle_t*) AllocDynamicMemory (sizeof(surfaceParticle_t));
+			surfaceParticle_t *surf = (surfaceParticle_t*) AllocDynamicMemory(sizeof(surfaceParticle_t));
 			if (surf)
 			{
 				CALL_CONSTRUCTOR(surf);
 				surf->part = leaf->ex->drawParticle;
-				AddSurfaceToPortal (surf, gl_particleShader, ENTITYNUM_WORLD);
+				AddSurfaceToPortal(surf, gl_particleShader, ENTITYNUM_WORLD);
 			}
 		}
 
@@ -1920,13 +1920,13 @@ static void DrawBspSequence (const CBspLeaf *leaf)
 			switch (b->type)
 			{
 			case BEAM_STANDARD:
-				AddBeamSurfaces (b);
+				AddBeamSurfaces(b);
 				break;
 			case BEAM_STAR:
-				AddStarBeam (b);
+				AddStarBeam(b);
 				break;
 			case BEAM_CYLINDER:
-				AddCylinderSurfaces (b);
+				AddCylinderSurfaces(b);
 				break;
 			}
 		}
@@ -1938,14 +1938,14 @@ static void DrawBspSequence (const CBspLeaf *leaf)
 
 //?? rename: VisSetup() or MarkNodes() (more correct, than MarkLeaves) or MarkBsp() ...
 //?? NOTE: this function is slow in comparision with whole frontend
-static void MarkLeaves ()
+static void MarkLeaves()
 {
 	int		i;
 	CBspNode *n;
 	CBspLeaf *l;
 
 	// determine the vieworg cluster
-	int cluster = CM_FindLeaf (vp.view.origin)->cluster;
+	int cluster = CM_FindLeaf(vp.view.origin)->cluster;
 	// if cluster or areamask changed -- re-mark visible leaves
 	if (viewCluster == cluster && !forceVisMap) return;
 
@@ -1965,7 +1965,7 @@ static void MarkLeaves ()
 
 	// use visinfo to mark nodes
 	STAT(gl_stats.visLeafs = 0);
-	const byte *row = CM_ClusterPVS (cluster);
+	const byte *row = CM_ClusterPVS(cluster);
 	for (i = 0, l = bspfile.leafs; i < bspfile.numLeafs; i++, l++)
 	{
 		int cl = l->cluster;
@@ -1984,18 +1984,18 @@ static void MarkLeaves ()
 }
 
 
-void AddEntity (entity_t *ent)
+void AddEntity(entity_t *ent)
 {
 	if (gl_numEntities >= MAX_GLENTITIES)
 	{
-		appWPrintf ("R_AddEntity: MAX_GLENTITIES hit\n");
+		appWPrintf("R_AddEntity: MAX_GLENTITIES hit\n");
 		return;
 	}
 
 	bool mirror = (ent->flags & RF_MIRROR) != 0;
 
 	refEntity_t *out = &gl_entities[gl_numEntities];
-	memset (out, 0, sizeof(refEntity_t));
+	memset(out, 0, sizeof(refEntity_t));
 
 	// common fields
 	out->flags = ent->flags;
@@ -2004,7 +2004,7 @@ void AddEntity (entity_t *ent)
 	out->time  = vp.time - ent->time;
 	if (out->time < 0)
 	{
-		DrawTextLeft (va("ent.time > time for %s\n", ent->model ? *ent->model->Name : "(no model)"));
+		DrawTextLeft(va("ent.time > time for %s\n", ent->model ? *ent->model->Name : "(no model)"));
 		out->time = 0;
 	}
 
@@ -2014,8 +2014,8 @@ void AddEntity (entity_t *ent)
 #if 0
 		-- does not works: vec=={1,0,0} may be represented in memory as {1,0,-0} (-0 is 0x80000000)
 		-- note: fast FNegate(0) => -0 is not a reason of this!
-		if (!memcmp (&ent->pos.origin, &nullVec3, sizeof(CVec3)) &&
-			!memcmp (&ent->pos.axis, &identAxis, sizeof(CAxis)))
+		if (!memcmp(&ent->pos.origin, &nullVec3, sizeof(CVec3)) &&
+			!memcmp(&ent->pos.axis, &identAxis, sizeof(CAxis)))
 			out->worldMatrix = true;
 		else
 			out->worldMatrix = false;
@@ -2049,10 +2049,10 @@ void AddEntity (entity_t *ent)
 		out->customShader = static_cast<shader_t*>(ent->customShader);
 		out->skin      = ent->skin;
 		out->skinNum   = ent->skinnum;				//?? check skinnum in [0..model.numSkins-1]
-		out->shaderColor.c[3] = appRound (ent->alpha * 255);	//?? use color.c[3]
+		out->shaderColor.c[3] = appRound(ent->alpha * 255);	//?? use color.c[3]
 
 		// model-specific code and calculate model center
-		if (!out->model->InitEntity (ent, out))
+		if (!out->model->InitEntity(ent, out))
 			return;
 	}
 	else if (ent->flags & RF_BBOX)
@@ -2064,11 +2064,11 @@ void AddEntity (entity_t *ent)
 }
 
 
-void AddDlight (dlight_t *dl)
+void AddDlight(dlight_t *dl)
 {
 	if (gl_numDlights >= MAX_GLDLIGHTS)
 	{
-		appWPrintf ("R_AddDlight: MAX_GLDLIGHTS hit\n");
+		appWPrintf("R_AddDlight: MAX_GLDLIGHTS hit\n");
 		return;
 	}
 	refDlight_t *out = &gl_dlights[gl_numDlights++];
@@ -2106,7 +2106,7 @@ void AddDlight (dlight_t *dl)
 /*--------------------------------------------------------------*/
 
 
-void DrawPortal ()
+void DrawPortal()
 {
 	guardSlow(DrawPortal);
 	int		i;
@@ -2117,34 +2117,34 @@ void DrawPortal ()
 		drawFrame++;
 
 		// setup world entity
-		memset (&gl_entities[ENTITYNUM_WORLD], 0, sizeof(refEntity_t));
+		memset(&gl_entities[ENTITYNUM_WORLD], 0, sizeof(refEntity_t));
 		gl_entities[ENTITYNUM_WORLD].modelvieworg = vp.view.origin;
 		gl_entities[ENTITYNUM_WORLD].coord.axis   = identAxis;
 		gl_entities[ENTITYNUM_WORLD].worldMatrix  = true;
 
-		ClearSky ();
-		MarkLeaves ();
-		vp.bounds.Clear ();
-		const CBspLeaf *firstLeaf = WalkBspTree ();
-		DrawEntities (vp.firstEntity, vp.numEntities);
-		DrawParticles ();
+		ClearSky();
+		MarkLeaves();
+		vp.bounds.Clear();
+		const CBspLeaf *firstLeaf = WalkBspTree();
+		DrawEntities(vp.firstEntity, vp.numEntities);
+		DrawParticles();
 
-		DrawBspSequence (firstLeaf);
+		DrawBspSequence(firstLeaf);
 		if (gl_flares->integer && gl_flareShader)
-			DrawFlares ();
+			DrawFlares();
 	}
 	else
 		for (i = 0, e = gl_entities + vp.firstEntity; i < vp.numEntities; i++, e++)
 		{
 			if (!e->model) continue;
 
-			SetupModelMatrix (e);
+			SetupModelMatrix(e);
 
 			currentEntity = e - gl_entities;
 			if (e->model)
 			{
 				e->visible = true;
-				e->model->AddSurfaces (e);
+				e->model->AddSurfaces(e);
 			}
 		}
 	unguardSlow;

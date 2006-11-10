@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 server_static_t	svs;				// persistant server info
 server_t		sv;					// local server
 
-int SV_FindIndex (const char *name, int start, int max, bool create)
+int SV_FindIndex(const char *name, int start, int max, bool create)
 {
 	guard(SV_FindIndex);
 
@@ -39,17 +39,17 @@ int SV_FindIndex (const char *name, int start, int max, bool create)
 		return 0;
 
 	if (i == max)
-		Com_DropError ("SV_FindIndex(%s): overflow (max=%d)", name, max);
+		Com_DropError("SV_FindIndex(%s): overflow (max=%d)", name, max);
 
-	strncpy (sv.configstrings[start+i], name, sizeof(sv.configstrings[i]));		//?? not NULL-terminated ?
+	strncpy(sv.configstrings[start+i], name, sizeof(sv.configstrings[i]));		//?? not NULL-terminated ?
 
 	if (sv.state != ss_loading)
 	{	// send the update to everyone
-		sv.multicast.Clear ();
-		MSG_WriteChar (&sv.multicast, svc_configstring);
-		MSG_WriteShort (&sv.multicast, start+i);
-		MSG_WriteString (&sv.multicast, name);
-		SV_MulticastOld (nullVec3, MULTICAST_ALL_R);
+		sv.multicast.Clear();
+		MSG_WriteChar(&sv.multicast, svc_configstring);
+		MSG_WriteShort(&sv.multicast, start+i);
+		MSG_WriteString(&sv.multicast, name);
+		SV_MulticastOld(nullVec3, MULTICAST_ALL_R);
 	}
 
 	return i;
@@ -57,25 +57,25 @@ int SV_FindIndex (const char *name, int start, int max, bool create)
 }
 
 
-int SV_ModelIndex (const char *name)
+int SV_ModelIndex(const char *name)
 {
-	return SV_FindIndex (name, CS_MODELS, MAX_MODELS, true);
+	return SV_FindIndex(name, CS_MODELS, MAX_MODELS, true);
 }
 
-int SV_SoundIndex (const char *name)
+int SV_SoundIndex(const char *name)
 {
-	return SV_FindIndex (name, CS_SOUNDS, MAX_SOUNDS, true);
+	return SV_FindIndex(name, CS_SOUNDS, MAX_SOUNDS, true);
 }
 
-int SV_ImageIndex (const char *name)
+int SV_ImageIndex(const char *name)
 {
-	return SV_FindIndex (name, CS_IMAGES, MAX_IMAGES, true);
+	return SV_FindIndex(name, CS_IMAGES, MAX_IMAGES, true);
 }
 
 
 // Entity baselines are used to compress the update messages to the clients -- only
 // the fields that differ from the baseline will be transmitted
-void SV_CreateBaseline ()
+void SV_CreateBaseline()
 {
 	for (int e = 1; e < ge->num_edicts ; e++)
 	{
@@ -90,12 +90,12 @@ void SV_CreateBaseline ()
 		edict->s.old_origin = edict->s.origin;
 		static_cast<entity_state_t&>(sv.baselines[e]) = edict->s;
 		// set extended fields (not set by game)
-		sv.baselines[e].SetAnim (LEGS_IDLE, TORSO_STAND);
+		sv.baselines[e].SetAnim(LEGS_IDLE, TORSO_STAND);
 	}
 }
 
 
-static void SV_CheckForSavegame ()
+static void SV_CheckForSavegame()
 {
 	if (sv_noreload->integer)
 		return;
@@ -103,14 +103,14 @@ static void SV_CheckForSavegame ()
 	if (sv_deathmatch->integer)
 		return;
 
-	if (!GFileSystem->FileExists (va("./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name),
+	if (!GFileSystem->FileExists(va("./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name),
 		FS_OS))
 		return;
 
-	SV_ClearWorld ();
+	SV_ClearWorld();
 
 	// get configstrings and areaportals
-	SV_ReadLevelFile ();
+	SV_ReadLevelFile();
 
 	if (!sv.loadgame)
 	{	// coming back to a level after being in a different
@@ -124,7 +124,7 @@ static void SV_CheckForSavegame ()
 		previousState = sv.state;				// PGM
 		sv.state = ss_loading;					// PGM
 		for (int i = 0; i < 100; i++)
-			ge->RunFrame ();
+			ge->RunFrame();
 
 		sv.state = previousState;				// PGM
 	}
@@ -132,7 +132,7 @@ static void SV_CheckForSavegame ()
 
 
 // Change the server to a new map, taking all connected clients along with it.
-void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate, bool attractloop, bool loadgame)
+void SV_SpawnServer(char *server, char *spawnpoint, server_state_t serverstate, bool attractloop, bool loadgame)
 {
 	int			i;
 	unsigned	checksum;
@@ -140,36 +140,36 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	guard(SV_SpawnServer);
 
 	if (attractloop)
-		Cvar_Set ("paused", "0");
+		Cvar_Set("paused", "0");
 
-	appPrintf ("\n------ Server initialization -------\n");
+	appPrintf("\n------ Server initialization -------\n");
 
-	Com_DPrintf ("SpawnServer: %s\n",server);
+	Com_DPrintf("SpawnServer: %s\n",server);
 	if (sv.rdemofile)
 		delete sv.rdemofile;
 
 	svs.spawncount++;		// any partially connected client will be restarted
 	sv.state = ss_dead;
-	Com_SetServerState (sv.state);
+	Com_SetServerState(sv.state);
 
 	// wipe the entire per-level structure
-	memset (&sv, 0, sizeof(sv));
+	memset(&sv, 0, sizeof(sv));
 	svs.realtime  = 0;
 	svs.realtimef = 0;
 	sv.loadgame    = loadgame;
 	sv.attractloop = attractloop;
 
 	// save name for levels that don't set message
-	strcpy (sv.configstrings[CS_NAME], server);
+	strcpy(sv.configstrings[CS_NAME], server);
 
 	// choose air acceleration
 	pm_airaccelerate = (sv_deathmatch->integer) ? sv_airaccelerate->value : 0;
-	appSprintf (ARRAY_ARG(sv.configstrings[CS_AIRACCEL]), "%g", pm_airaccelerate);
+	appSprintf(ARRAY_ARG(sv.configstrings[CS_AIRACCEL]), "%g", pm_airaccelerate);
 
-	sv.multicast.Init (sv.multicast_buf, sizeof(sv.multicast_buf));
-	sv.multicastNew.Init (sv.multicast_bufNew, sizeof(sv.multicast_bufNew));
+	sv.multicast.Init(sv.multicast_buf, sizeof(sv.multicast_buf));
+	sv.multicastNew.Init(sv.multicast_bufNew, sizeof(sv.multicast_bufNew));
 
-	strcpy (sv.name, server);
+	strcpy(sv.name, server);
 
 	// leave slots at start for clients only
 	for (i = 0; i < sv_maxclients->integer; i++)
@@ -182,30 +182,30 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 
 	sv.time = 1000;
 
-	strcpy (sv.name, server);
-	strcpy (sv.configstrings[CS_NAME], server);
+	strcpy(sv.name, server);
+	strcpy(sv.configstrings[CS_NAME], server);
 
 	if (serverstate != ss_game)
 	{
-		sv.models[1] = CM_LoadMap ("", false, &checksum);	// no real map
+		sv.models[1] = CM_LoadMap("", false, &checksum);	// no real map
 	}
 	else
 	{
-		appSprintf (sv.configstrings[CS_MODELS+1], sizeof(sv.configstrings[CS_MODELS+1]), "maps/%s.bsp", server);
-		sv.models[1] = CM_LoadMap (sv.configstrings[CS_MODELS+1], false, &checksum);
+		appSprintf(sv.configstrings[CS_MODELS+1], sizeof(sv.configstrings[CS_MODELS+1]), "maps/%s.bsp", server);
+		sv.models[1] = CM_LoadMap(sv.configstrings[CS_MODELS+1], false, &checksum);
 	}
-	appSprintf (sv.configstrings[CS_MAPCHECKSUM], sizeof(sv.configstrings[CS_MAPCHECKSUM]), "%d", checksum);
+	appSprintf(sv.configstrings[CS_MAPCHECKSUM], sizeof(sv.configstrings[CS_MAPCHECKSUM]), "%d", checksum);
 
 	// clear physics interaction links
-	SV_ClearWorld ();
+	SV_ClearWorld();
 	// add inline models (skip some models, not needed by game)
 	int modelIndex = 1;
 	for (i = 1; i < bspfile.numModels; i++)
 	{
-		CBspModel *model = CM_InlineModel (i);
+		CBspModel *model = CM_InlineModel(i);
 		if (!(model->flags & CMODEL_LOCAL))
 		{
-			appSprintf (sv.configstrings[CS_MODELS+1+modelIndex], sizeof(sv.configstrings[0]), "*%d", i);
+			appSprintf(sv.configstrings[CS_MODELS+1+modelIndex], sizeof(sv.configstrings[0]), "*%d", i);
 			sv.models[modelIndex+1] = model;
 			modelIndex++;
 		}
@@ -216,61 +216,61 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	// precache and static commands can be issued during
 	// map initialization
 	sv.state = ss_loading;
-	Com_SetServerState (sv.state);
+	Com_SetServerState(sv.state);
 
 	// load and spawn all other entities
 	guard(ge.SpawnEntities);
-	ge->SpawnEntities (sv.name, bspfile.entStr, spawnpoint);
+	ge->SpawnEntities(sv.name, bspfile.entStr, spawnpoint);
 	unguard;
 
 	// run two frames to allow everything to settle
-	ge->RunFrame ();
-	ge->RunFrame ();
+	ge->RunFrame();
+	ge->RunFrame();
 
 	// all precaches are complete
 	sv.state = serverstate;
-	Com_SetServerState (sv.state);
+	Com_SetServerState(sv.state);
 
 	// create a baseline for more efficient communications
-	SV_CreateBaseline ();
+	SV_CreateBaseline();
 
 	// check for a savegame
-	SV_CheckForSavegame ();
+	SV_CheckForSavegame();
 
 	// set serverinfo variable
-	Cvar_FullSet ("mapname", sv.name, CVAR_SERVERINFO|CVAR_NOSET);
+	Cvar_FullSet("mapname", sv.name, CVAR_SERVERINFO|CVAR_NOSET);
 
-	appPrintf ("------------------------------------\n");
+	appPrintf("------------------------------------\n");
 
 	unguard;
 }
 
 
 // A brand new game has been started
-void SV_InitGame ()
+void SV_InitGame()
 {
 	guard(SV_InitGame);
 
 	if (svs.initialized)
 	{
 		// cause any connected clients to reconnect
-		SV_Shutdown ("Server restarted\n", true);
+		SV_Shutdown("Server restarted\n", true);
 	}
 	else if (!DEDICATED)
 	{
 		// make sure the client is down
-		CL_Drop ();
-		SCR_BeginLoadingPlaque (true);
+		CL_Drop();
+		SCR_BeginLoadingPlaque(true);
 	}
 
-	SV_InitVars ();		// called for unlocking latched vars
+	SV_InitVars();		// called for unlocking latched vars
 
 	svs.initialized = true;
 
 	if (sv_coop->integer && sv_deathmatch->integer)
 	{
-		appWPrintf ("\"deathmatch\" and \"coop\" both set, disabling \"coop\"\n");
-		Cvar_ForceSet ("coop", "0");
+		appWPrintf("\"deathmatch\" and \"coop\" both set, disabling \"coop\"\n");
+		Cvar_ForceSet("coop", "0");
 	}
 
 	// dedicated servers are can't be single player and are usually DM
@@ -278,24 +278,24 @@ void SV_InitGame ()
 	if (DEDICATED)
 	{
 		if (!sv_coop->integer)
-			Cvar_ForceSet ("deathmatch", "1");
+			Cvar_ForceSet("deathmatch", "1");
 	}
 
 	// init clients
 	if (sv_deathmatch->integer)
 	{
 		if (sv_maxclients->integer <= 1)
-			Cvar_ForceSet ("maxclients", "8");
+			Cvar_ForceSet("maxclients", "8");
 		else if (sv_maxclients->integer > MAX_CLIENTS)
-			Cvar_ForceSet ("maxclients", STR(MAX_CLIENTS));
+			Cvar_ForceSet("maxclients", STR(MAX_CLIENTS));
 	}
 	else if (sv_coop->integer)
 	{
 		if (sv_maxclients->integer <= 1 || sv_maxclients->integer > 4)
-			Cvar_ForceSet ("maxclients", "4");
+			Cvar_ForceSet("maxclients", "4");
 	}
 	else	// non-deathmatch, non-coop is one player
-		Cvar_ForceSet ("maxclients", "1");
+		Cvar_ForceSet("maxclients", "1");
 
 	svs.spawncount          = rand();
 	svs.clients             = new client_t [sv_maxclients->integer];
@@ -303,26 +303,26 @@ void SV_InitGame ()
 	svs.client_entities     = new entityStateEx_t [svs.num_client_entities];
 
 	// init network stuff
-	NET_Config (sv_maxclients->integer > 1);
+	NET_Config(sv_maxclients->integer > 1);
 
 	// heartbeats will always be sent to the id master
 	svs.last_heartbeat = -BIG_NUMBER;		// send immediately
-	NET_StringToAdr ("192.246.40.37:" STR(PORT_MASTER), &master_adr[0]);
+	NET_StringToAdr("192.246.40.37:" STR(PORT_MASTER), &master_adr[0]);
 
 	// init game
 	if (!sv.attractloop)
 	{
-		SV_InitGameLibrary (false);
+		SV_InitGameLibrary(false);
 		for (int i = 0; i < sv_maxclients->integer; i++)
 		{
 			edict_t	*ent = EDICT_NUM(i+1);
 			ent->s.number = i+1;
 			svs.clients[i].edict = ent;
-			memset (&svs.clients[i].lastcmd, 0, sizeof(svs.clients[i].lastcmd));
+			memset(&svs.clients[i].lastcmd, 0, sizeof(svs.clients[i].lastcmd));
 		}
 	}
 	else
-		SV_InitGameLibrary (true);
+		SV_InitGameLibrary(true);
 
 	unguard;
 }
@@ -344,7 +344,7 @@ another level:
 	map tram.cin+jail_e3
 ======================
 */
-void SV_Map (bool attractloop, const char *levelstring, bool loadgame)
+void SV_Map(bool attractloop, const char *levelstring, bool loadgame)
 {
 	char	level[MAX_QPATH], spawnpoint[MAX_QPATH], *s;
 	server_state_t newState;
@@ -353,58 +353,58 @@ void SV_Map (bool attractloop, const char *levelstring, bool loadgame)
 	sv.attractloop = attractloop;
 
 	if (sv.state == ss_dead && !sv.loadgame)
-		SV_InitGame ();			// the game is just starting
+		SV_InitGame();			// the game is just starting
 
-	strcpy (level, levelstring);
+	strcpy(level, levelstring);
 
 	// if there is a '+' in the map, set nextserver to the remainder
-	if (s = strchr (level, '+'))
+	if (s = strchr(level, '+'))
 	{
 		*s = 0;
-		Cvar_Set ("nextserver", va("gamemap \"%s\"", s+1));
+		Cvar_Set("nextserver", va("gamemap \"%s\"", s+1));
 	}
 	else
-		Cvar_Set ("nextserver", "");
+		Cvar_Set("nextserver", "");
 	// if there is a $, use the remainder as a spawnpoint
 	spawnpoint[0] = 0;
-	if (s = strchr (level, '$'))
+	if (s = strchr(level, '$'))
 	{
 		*s = 0;
-		strcpy (spawnpoint, s+1);
+		strcpy(spawnpoint, s+1);
 	}
 
 	//ZOID special hack for end game screen in coop mode
 	if (sv_coop->integer && !stricmp(level, "victory.pcx"))	//??
-		Cvar_Set ("nextserver", "gamemap \"*base1\"");
+		Cvar_Set("nextserver", "gamemap \"*base1\"");
 
 	// skip the end-of-unit flag if necessary
 	if (level[0] == '*')
-		strcpy (level, level+1);
+		strcpy(level, level+1);
 
 	newState = ss_game;
-	int len = strlen (level);
+	int len = strlen(level);
 	if (len > 4)
 	{
 		const char *ext = level+len-4;
-		if (!strcmp (ext, ".cin"))
+		if (!strcmp(ext, ".cin"))
 			newState = ss_cinematic;
-		else if (!strcmp (ext, ".dm2"))
+		else if (!strcmp(ext, ".dm2"))
 			newState = ss_demo;
-		else if (!strcmp (ext, ".pcx") || !strcmp (ext, ".tga") || !strcmp (ext, ".jpg"))
+		else if (!strcmp(ext, ".pcx") || !strcmp(ext, ".tga") || !strcmp(ext, ".jpg"))
 			newState = ss_pic;
 	}
 
-	if (!DEDICATED) SCR_BeginLoadingPlaque (true);		// for local system
-	SV_BroadcastCommand ("changing\n");
+	if (!DEDICATED) SCR_BeginLoadingPlaque(true);		// for local system
+	SV_BroadcastCommand("changing\n");
 	if (newState == ss_game)
 	{
-		SV_SendClientMessages ();
-		SV_SpawnServer (level, spawnpoint, ss_game, attractloop, loadgame);
-		Cbuf_CopyToDefer ();	//!! just use paused execution (pause in buffer)
+		SV_SendClientMessages();
+		SV_SpawnServer(level, spawnpoint, ss_game, attractloop, loadgame);
+		Cbuf_CopyToDefer();	//!! just use paused execution (pause in buffer)
 	}
 	else
 	{
-		SV_SpawnServer (level, spawnpoint, newState, attractloop, loadgame);
+		SV_SpawnServer(level, spawnpoint, newState, attractloop, loadgame);
 	}
-	SV_BroadcastCommand ("reconnect\n");
+	SV_BroadcastCommand("reconnect\n");
 }

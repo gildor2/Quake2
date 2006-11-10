@@ -8,7 +8,7 @@ class CRenderModel
 public:
 	TString<64>	Name;
 	// return "false" when tag not found
-	virtual bool LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const = 0;
+	virtual bool LerpTag(int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const = 0;
 };
 
 
@@ -17,7 +17,7 @@ class CBasicImage
 public:
 	TString<64> Name;
 	short	width, height;
-	virtual void Reload () = 0;
+	virtual void Reload() = 0;
 };
 
 
@@ -32,7 +32,7 @@ private:
 public:
 	int numSurfs;
 	CSkinnedSurface surf[32];		// MAX_MD3_SURFACES == 32; should be [numSurfs]
-	inline bool IsValid ()
+	inline bool IsValid()
 	{
 		return numSurfs > 0;
 	}
@@ -189,7 +189,7 @@ struct refdef_t
 
 /*-------------------- Common renderer cvars -----------------------------*/
 
-void InitRendererVars ();
+void InitRendererVars();
 
 extern	cvar_t	*r_fullscreen;
 extern	cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
@@ -207,14 +207,14 @@ typedef	bool (*CreateDynRenderer_t) (const refImport_t *, refExport_t *);
 #if !STATIC_BUILD
 
 #define RENDERER_EXPORT		\
-	extern "C" DLL_EXPORT bool CreateRenderer (const refImport_t *rimp, refExport_t *rexp) \
+	extern "C" DLL_EXPORT bool CreateRenderer(const refImport_t *rimp, refExport_t *rexp) \
 	{						\
 		if (rimp.struc_size != sizeof(refImport_t) || \
 			rexp->struc_size != sizeof(refExport_t)) \
 			return false;	\
 		ri = *rimp;			\
 		*rexp = re;			\
-		InitRendererVars ();\
+		InitRendererVars();\
 		return true;		\
 	}
 

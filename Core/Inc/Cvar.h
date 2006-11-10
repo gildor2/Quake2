@@ -97,17 +97,17 @@ public:
 	char	*resetString;			// default cvar value (unset for user-created vars)
 	int		integer;				// atoi(string)
 	cvar_t	*hashNext;
-	int		stringLength;			// size of buffer, allocated for holding var->string (or 0 if var->buf used)
+	int		stringLength;			// size of buffer, allocated for holding var->string(or 0 if var->buf used)
 	char	buf[CVAR_BUFFER_SIZE];
 	// Functions
-	void Set (int value);
-	void Set (float value);
-	void Set (const char *value);
+	void Set(int value);
+	void Set(float value);
+	void Set(const char *value);
 };
 
 
-CORE_API cvar_t *Cvar_Get (const char *name, const char *value, unsigned flags = 0);
+CORE_API cvar_t *Cvar_Get(const char *name, const char *value, unsigned flags = 0);
 
-CORE_API cvar_t *Cvar_Set (const char *name, int *value);
-CORE_API cvar_t *Cvar_Set (const char *name, float *value);
-CORE_API cvar_t *Cvar_Set (const char *name, const char *value);
+CORE_API cvar_t *Cvar_Set(const char *name, int *value);
+CORE_API cvar_t *Cvar_Set(const char *name, float *value);
+CORE_API cvar_t *Cvar_Set(const char *name, const char *value);

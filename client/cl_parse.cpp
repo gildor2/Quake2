@@ -52,16 +52,16 @@ const char *svc_strings[svc_last] =
 	Server connecting messages
 -----------------------------------------------------------------------------*/
 
-static void ParseServerData ()
+static void ParseServerData()
 {
-	Com_DPrintf ("Serverdata packet received.\n");
+	Com_DPrintf("Serverdata packet received.\n");
 
 	// wipe the client_state_t struct
-	CL_ClearState ();
+	CL_ClearState();
 	cls.state = ca_connected;
 
 	// parse protocol version number
-	int i = MSG_ReadLong (&net_message);
+	int i = MSG_ReadLong(&net_message);
 	cls.serverProtocol = i;
 
 	if (Com_ServerState() == ss_demo)
@@ -69,43 +69,43 @@ static void ParseServerData ()
 		if (cls.serverProtocol < 0)
 		{
 			cls.serverProtocol = -cls.serverProtocol;
-			Com_DPrintf ("demo recorded with extended protocol\n");
+			Com_DPrintf("demo recorded with extended protocol\n");
 		}
 		else
 		{
 			cls.newprotocol = false;
-			Com_DPrintf ("demo recorded with protocol %d\n", cls.serverProtocol);
+			Com_DPrintf("demo recorded with protocol %d\n", cls.serverProtocol);
 		}
 		// here: if serverProtocol != PROTOCOL_VERSION -- allow demo to play
 	}
 	else if (i != PROTOCOL_VERSION)
-		Com_DropError ("Server returned version %d <> " STR(PROTOCOL_VERSION), i);
+		Com_DropError("Server returned version %d <> " STR(PROTOCOL_VERSION), i);
 
-	cl.servercount = MSG_ReadLong (&net_message);
-	cl.attractloop = MSG_ReadByte (&net_message) != 0;
+	cl.servercount = MSG_ReadLong(&net_message);
+	cl.attractloop = MSG_ReadByte(&net_message) != 0;
 
 	// game directory
-	const char *str = MSG_ReadString (&net_message);
-	appStrncpyz (cl.gamedir, str, sizeof(cl.gamedir));
+	const char *str = MSG_ReadString(&net_message);
+	appStrncpyz(cl.gamedir, str, sizeof(cl.gamedir));
 	//?? Cvar_Set() -- will not change gamedir at all ("for next game"); Cvar_ForceSet() -- will change gamedir even when playing demos
 	//?? best way: detect server's game before connection, and change when needed (may be, display warning for user)
 	if (!cl.attractloop)	// not in demos ...
-		Cvar_ForceSet ("game", str);
+		Cvar_ForceSet("game", str);
 
 	// parse player entity number
-	cl.playernum = MSG_ReadShort (&net_message);
+	cl.playernum = MSG_ReadShort(&net_message);
 
 	// get the full level name
-	str = MSG_ReadString (&net_message);
+	str = MSG_ReadString(&net_message);
 
 	if (cl.playernum == -1)
 	{	// playing a cinematic or showing a pic, not a level
-		SCR_PlayCinematic (str);
+		SCR_PlayCinematic(str);
 	}
 	else
 	{
-		appPrintf (S_RED"\n\n====================================\n\n");
-		appPrintf (S_RED"%s\n", str);			// display map message
+		appPrintf(S_RED"\n\n====================================\n\n");
+		appPrintf(S_RED"%s\n", str);			// display map message
 
 		// need to prep renderer at next oportunity
 		cl.rendererReady = false;
@@ -113,89 +113,89 @@ static void ParseServerData ()
 }
 
 
-static void ParseBaseline ()
+static void ParseBaseline()
 {
 	clEntityState_t nullstate;
-	memset (&nullstate, 0, sizeof(nullstate));
+	memset(&nullstate, 0, sizeof(nullstate));
 
 	unsigned	bits;
-	int newnum = MSG_ReadEntityBits (&net_message, &bits, NULL);
-	CL_ParseDelta (&nullstate, &cl_entities[newnum].baseline, newnum, bits, true);
+	int newnum = MSG_ReadEntityBits(&net_message, &bits, NULL);
+	CL_ParseDelta(&nullstate, &cl_entities[newnum].baseline, newnum, bits, true);
 }
 
 
-void CL_ParseClientinfo (int player)
+void CL_ParseClientinfo(int player)
 {
 	clientInfo_t &ci = cl.clientInfo[player];
-	CL_LoadClientinfo (ci, cl.configstrings[player+CS_PLAYERSKINS]);
+	CL_LoadClientinfo(ci, cl.configstrings[player+CS_PLAYERSKINS]);
 
 	if (ci.isQ3model && !cls.newprotocol)
 	{
-		appWPrintf ("No extended protocol support.\nForce player %s to use base model\n", *ci.PlayerName);
+		appWPrintf("No extended protocol support.\nForce player %s to use base model\n", *ci.PlayerName);
 		ci.isValidModel = false;
 	}
 	if (!ci.isValidModel)
-		CL_LoadClientinfo (ci, va("%s\\male/grunt", *ci.PlayerName));
+		CL_LoadClientinfo(ci, va("%s\\male/grunt", *ci.PlayerName));
 	if (gender_auto->integer && player == cl.playernum)
 	{
 //		Com_Drintf("Fix gender: [%d]=%c\n",cl.playernum,cl.clientInfo[cl.playernum].modelGender);
-		Cvar_Set ("gender", ci.modelGender == 'f' ? "female" : "male");
+		Cvar_Set("gender", ci.modelGender == 'f' ? "female" : "male");
 		gender->modified = false;
 	}
 }
 
 
-void CL_UpdatePlayerClientInfo ()
+void CL_UpdatePlayerClientInfo()
 {
-	appSprintf (ARRAY_ARG(cl.configstrings[CS_PLAYERSKINS+cl.playernum]),
+	appSprintf(ARRAY_ARG(cl.configstrings[CS_PLAYERSKINS+cl.playernum]),
 		"%s\\%s", Cvar_VariableString("name"), Cvar_VariableString("skin"));
-	CL_ParseClientinfo (cl.playernum);
+	CL_ParseClientinfo(cl.playernum);
 }
 
 
-static void ParseConfigString ()
+static void ParseConfigString()
 {
 	// read configstring index
-	int i = MSG_ReadShort (&net_message);
+	int i = MSG_ReadShort(&net_message);
 	if (i < 0 || i >= MAX_CONFIGSTRINGS)
-		Com_DropError ("bad configstring #: %d", i);
+		Com_DropError("bad configstring #: %d", i);
 	// remember old string value (used for detection of clientinfo changes)
 	char olds[MAX_QPATH];
-	appStrncpyz (olds, cl.configstrings[i], sizeof(olds));
+	appStrncpyz(olds, cl.configstrings[i], sizeof(olds));
 	// read new configstring
 	char *s = cl.configstrings[i];
-	strcpy (s, MSG_ReadString (&net_message));
+	strcpy(s, MSG_ReadString(&net_message));
 
 	// process string
 	if (i >= CS_LIGHTS && i < CS_LIGHTS+MAX_LIGHTSTYLES)
-		CL_SetLightstyle (i - CS_LIGHTS, s);
+		CL_SetLightstyle(i - CS_LIGHTS, s);
 	else if (i == CS_CDTRACK)
 	{
 		if (cl.rendererReady)
-			CDAudio_Play (atoi(s), true);
+			CDAudio_Play(atoi(s), true);
 	}
 	else if (i >= CS_MODELS && i < CS_MODELS+MAX_MODELS)
 	{
 		if (cl.rendererReady)
 		{
-			cl.model_draw[i-CS_MODELS] = RE_RegisterModel (s);
-			cl.model_clip[i-CS_MODELS] = (s[0] == '*') ? CM_InlineModel (s) : NULL;
+			cl.model_draw[i-CS_MODELS] = RE_RegisterModel(s);
+			cl.model_clip[i-CS_MODELS] = (s[0] == '*') ? CM_InlineModel(s) : NULL;
 		}
 	}
 	else if (i >= CS_SOUNDS && i < CS_SOUNDS+MAX_SOUNDS)
 	{
 		if (cl.rendererReady)
-			cl.sound_precache[i-CS_SOUNDS] = S_RegisterSound (s);
+			cl.sound_precache[i-CS_SOUNDS] = S_RegisterSound(s);
 	}
 	else if (i >= CS_IMAGES && i < CS_IMAGES+MAX_IMAGES)
 	{
 		if (cl.rendererReady)
-			cl.image_precache[i-CS_IMAGES] = RE_RegisterPic (va("pics/%s", s));
+			cl.image_precache[i-CS_IMAGES] = RE_RegisterPic(va("pics/%s", s));
 	}
 	else if (i >= CS_PLAYERSKINS && i < CS_PLAYERSKINS+MAX_CLIENTS)
 	{
 		if (cl.rendererReady && strcmp(olds, s))
-			CL_ParseClientinfo (i-CS_PLAYERSKINS);
+			CL_ParseClientinfo(i-CS_PLAYERSKINS);
 	}
 }
 
@@ -204,14 +204,14 @@ static void ParseConfigString ()
 	In-game server messages
 -----------------------------------------------------------------------------*/
 
-static void ParseStartSoundPacket ()
+static void ParseStartSoundPacket()
 {
-	int flags     = MSG_ReadByte (&net_message);
-	int sound_num = MSG_ReadByte (&net_message);
+	int flags     = MSG_ReadByte(&net_message);
+	int sound_num = MSG_ReadByte(&net_message);
 
-	float volume =      (flags & SND_VOLUME)      ? MSG_ReadByte (&net_message) / 255.0 : DEFAULT_SOUND_PACKET_VOLUME;
-	float attenuation = (flags & SND_ATTENUATION) ? MSG_ReadByte (&net_message) / 64.0 : DEFAULT_SOUND_PACKET_ATTENUATION;
-	float ofs =         (flags & SND_OFFSET)      ? MSG_ReadByte (&net_message) / 1000.0 : 0;
+	float volume =      (flags & SND_VOLUME)      ? MSG_ReadByte(&net_message) / 255.0 : DEFAULT_SOUND_PACKET_VOLUME;
+	float attenuation = (flags & SND_ATTENUATION) ? MSG_ReadByte(&net_message) / 64.0 : DEFAULT_SOUND_PACKET_ATTENUATION;
+	float ofs =         (flags & SND_OFFSET)      ? MSG_ReadByte(&net_message) / 1000.0 : 0;
 
 	int channel, ent;
 	if (flags & SND_ENT)
@@ -219,7 +219,7 @@ static void ParseStartSoundPacket ()
 		channel = MSG_ReadShort(&net_message);
 		ent = channel>>3;
 		if (ent > MAX_EDICTS)
-			Com_DropError ("ParseStartSoundPacket: ent = %i", ent);
+			Com_DropError("ParseStartSoundPacket: ent = %i", ent);
 
 		channel &= 7;
 	}
@@ -230,7 +230,7 @@ static void ParseStartSoundPacket ()
 	CVec3	*pos;
 	if (flags & SND_POS)
 	{	// positioned in space
-		MSG_ReadPos (&net_message, pos_v);
+		MSG_ReadPos(&net_message, pos_v);
 		pos = &pos_v;
 	}
 	else	// use entity number
@@ -239,38 +239,38 @@ static void ParseStartSoundPacket ()
 	if (!cl.sound_precache[sound_num])
 		return;
 
-	S_StartSound (pos, ent, channel, cl.sound_precache[sound_num], volume, attenuation, ofs);
+	S_StartSound(pos, ent, channel, cl.sound_precache[sound_num], volume, attenuation, ofs);
 }
 
 
-static void AddNetgraph ()
+static void AddNetgraph()
 {
 	int		i;
 
 	for (i = 0; i < cls.netchan.dropped; i++)
-		SCR_DebugGraph (30, 0x40);
+		SCR_DebugGraph(30, 0x40);
 
 	for (i = 0; i < cl.surpressCount ; i++)
-		SCR_DebugGraph (30, 0xDF);
+		SCR_DebugGraph(30, 0xDF);
 
 	// see what the latency was on this packet
 	int in = cls.netchan.incoming_acknowledged & (CMD_BACKUP-1);
 	int ping = (cls.realtime - cl.cmd_time[in]) / 30;
 	if (ping > 30) ping = 30;
-	SCR_DebugGraph (ping, 0xD0);
+	SCR_DebugGraph(ping, 0xD0);
 }
 
 
-void CL_ParseServerMessage ()
+void CL_ParseServerMessage()
 {
 	int cmd = svc_bad;
 	guard(CL_ParseServerMessage);
 
 	// if recording demos, copy the message out
 	if (cl_shownet->integer == 1)
-		appPrintf ("%d ",net_message.cursize);
+		appPrintf("%d ",net_message.cursize);
 	else if (cl_shownet->integer >= 2)
-		appPrintf ("------------------\n");
+		appPrintf("------------------\n");
 
 	// parse the message
 	while (true)
@@ -278,11 +278,11 @@ void CL_ParseServerMessage ()
 		const char *s;
 		if (net_message.readcount > net_message.cursize)
 		{
-			Com_DropError ("CL_ParseServerMessage: Bad server message");
+			Com_DropError("CL_ParseServerMessage: Bad server message");
 			break;
 		}
 
-		cmd = MSG_ReadByte (&net_message);
+		cmd = MSG_ReadByte(&net_message);
 
 		if (cmd == -1)
 		{
@@ -291,7 +291,7 @@ void CL_ParseServerMessage ()
 		}
 
 		if (cmd >= svc_last)
-			Com_DropError ("bad net cmd %d", cmd);
+			Com_DropError("bad net cmd %d", cmd);
 
 		if (cl_shownet->integer >= 2)
 			SHOWNET(svc_strings[cmd]);
@@ -304,15 +304,15 @@ void CL_ParseServerMessage ()
 
 		case svc_disconnect:
 			// either client kicked/banned (dropped from server), or server was quit
-			Com_DropError (NULL);	// no message
+			Com_DropError(NULL);	// no message
 			break;
 
 		case svc_reconnect:
-			appPrintf ("Server disconnected, reconnecting\n");
+			appPrintf("Server disconnected, reconnecting\n");
 			if (cls.download)
 			{
 				//ZOID, close download
-				fclose (cls.download);
+				fclose(cls.download);
 				cls.download = NULL;
 			}
 			cls.state = ca_connecting;
@@ -320,39 +320,39 @@ void CL_ParseServerMessage ()
 			break;
 
 		case svc_print:
-			if (MSG_ReadByte (&net_message) == PRINT_CHAT)
+			if (MSG_ReadByte(&net_message) == PRINT_CHAT)
 			{
-				S_StartLocalSound ("misc/talk.wav");
+				S_StartLocalSound("misc/talk.wav");
 				s = S_GREEN;
 			}
 			else
 				s = "";
-			appPrintf ("%s%s", s, MSG_ReadString (&net_message));
+			appPrintf("%s%s", s, MSG_ReadString(&net_message));
 			break;
 
 		case svc_centerprint:
-			SCR_CenterPrint (MSG_ReadString (&net_message));
+			SCR_CenterPrint(MSG_ReadString(&net_message));
 			break;
 
 		case svc_stufftext:
-			s = MSG_ReadString (&net_message);
-			if (cl.attractloop && (memcmp (s, "precache", 8) && memcmp (s, "changing", 8) && memcmp (s, "reconnect", 9)))
+			s = MSG_ReadString(&net_message);
+			if (cl.attractloop && (memcmp(s, "precache", 8) && memcmp(s, "changing", 8) && memcmp(s, "reconnect", 9)))
 			// demo playback: allow special stufftext only (should disable messages from demofile and allow local !!)
 			{
-				Com_DPrintf ("stuff (disabled): %s\n", s);
+				Com_DPrintf("stuff (disabled): %s\n", s);
 				break;
 			}
-			Com_DPrintf ("stufftext: %s\n", s);
-			Cbuf_AddText (s);
+			Com_DPrintf("stufftext: %s\n", s);
+			Cbuf_AddText(s);
 			break;
 
 		case svc_serverdata:
-			Cbuf_Execute ();		// make sure any stuffed commands are done
-			ParseServerData ();
+			Cbuf_Execute();		// make sure any stuffed commands are done
+			ParseServerData();
 			break;
 
 		case svc_configstring:
-			ParseConfigString ();
+			ParseConfigString();
 			break;
 
 		case svc_sound:
@@ -360,58 +360,58 @@ void CL_ParseServerMessage ()
 			break;
 
 		case svc_spawnbaseline:
-			ParseBaseline ();
+			ParseBaseline();
 			break;
 
 		case svc_temp_entity:
-			CL_ParseTEnt ();
+			CL_ParseTEnt();
 			break;
 
 		case svc_muzzleflash:
-			CL_ParseMuzzleFlash ();
+			CL_ParseMuzzleFlash();
 			break;
 
 		case svc_muzzleflash2:
-			CL_ParseMuzzleFlash2 ();
+			CL_ParseMuzzleFlash2();
 			break;
 
 		case svc_download:
-			CL_ParseDownload ();
+			CL_ParseDownload();
 			break;
 
 		case svc_frame:
-			CL_ParseFrame ();
+			CL_ParseFrame();
 			break;
 
 		case svc_inventory:
 			{
 				for (int i = 0; i < MAX_ITEMS; i++)
-					cl.inventory[i] = MSG_ReadShort (&net_message);
+					cl.inventory[i] = MSG_ReadShort(&net_message);
 			}
 			break;
 
 		case svc_layout:
-			s = MSG_ReadString (&net_message);
-			appStrncpyz (cl.layout, s, sizeof(cl.layout));
+			s = MSG_ReadString(&net_message);
+			appStrncpyz(cl.layout, s, sizeof(cl.layout));
 			break;
 
 		case svc_playerinfo:
 		case svc_packetentities:
 		case svc_deltapacketentities:
-			Com_DropError ("Out of place frame data");
+			Com_DropError("Out of place frame data");
 			break;
 
 		default:
-			Com_DropError ("CL_ParseServerMessage: bad server message %s", svc_strings[cmd]);
+			Com_DropError("CL_ParseServerMessage: bad server message %s", svc_strings[cmd]);
 		}
 	}
 
-	AddNetgraph ();
+	AddNetgraph();
 
 	// we don't know if it is ok to save a demo message until
 	// after we have parsed the frame
 	if (cls.demorecording && !cls.demowaiting)
-		CL_WriteDemoMessage ();
+		CL_WriteDemoMessage();
 
 	unguardf(("cmd=%s", svc_strings[cmd]));
 }

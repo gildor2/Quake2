@@ -24,8 +24,8 @@ namespace OpenGLDrv {
 
 // forwards
 // debug
-static bool DrawTriangles ();
-static bool DrawNormals ();
+static bool DrawTriangles();
+static bool DrawNormals();
 
 
 /*-----------------------------------------------------------------------------
@@ -74,7 +74,7 @@ static surfaceInfo_t *sortedSurfaces[MAX_SCENE_SURFACES];
 	Process deforms, ...gens etc.
 -----------------------------------------------------------------------------*/
 
-static void ProcessShaderDeforms (shader_t *sh)
+static void ProcessShaderDeforms(shader_t *sh)
 {
 	int		i, j;
 	const deformParms_t *deform;
@@ -104,16 +104,16 @@ static void ProcessShaderDeforms (shader_t *sh)
 						for (k = 0; k < ex->numVerts; k++, vec++)
 						{
 							float f = PERIODIC_FUNC(table, t + deform->waveDiv * (vec->xyz[0] + vec->xyz[1] + vec->xyz[2])) * P.amp + P.base;
-							VectorMA (vec->xyz, f, norm);
+							VectorMA(vec->xyz, f, norm);
 						}
 					}
 					else
 					{
 						// used for "outline shield" effect (move vertex in direction of normal in constant amount == deform->wave.base)
 						CVec3 delta;
-						VectorScale (norm, P.base, delta);
+						VectorScale(norm, P.base, delta);
 						for (k = 0; k < ex->numVerts; k++, vec++)
-							vec->xyz.Add (delta);
+							vec->xyz.Add(delta);
 					}
 				}
 #undef P
@@ -124,9 +124,9 @@ static void ProcessShaderDeforms (shader_t *sh)
 #define P deform->moveWave
 				float f = PERIODIC_FUNC(mathFuncs[P.type], P.freq * vp.time + P.phase) * P.amp + P.base;
 				CVec3 delta;
-				VectorScale (deform->move, f, delta);
+				VectorScale(deform->move, f, delta);
 				for (j = 0; j < gl_numVerts; j++, vec++)
-					vec->xyz.Add (delta);
+					vec->xyz.Add(delta);
 #undef P
 			}
 			break;
@@ -141,7 +141,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 					{
 						//?? taken from Q3; change function?
 						float f = SIN_FUNC((f0 + tex->tex[0] * deform->bulgeWidth) / (M_PI * 2)) * deform->bulgeHeight;
-						VectorMA (vec->xyz, f, norm);
+						VectorMA(vec->xyz, f, norm);
 					}
 				}
 			}
@@ -151,7 +151,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 				// autoSprite deform require quads
 				if (gl_numVerts & 3 || gl_numIndexes != gl_numVerts / 2 * 3)
 				{
-					DrawTextLeft (va("Incorrect surface for AUTOSPRITE in %s", *currentShader->Name), RGB(1,0,0));	//?? developer
+					DrawTextLeft(va("Incorrect surface for AUTOSPRITE in %s", *currentShader->Name), RGB(1,0,0));	//?? developer
 					break;
 				}
 				// rotate view axis to model coords
@@ -159,7 +159,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 				if (currentEntity->worldMatrix)
 					mViewAxis = vp.view.axis;
 				else
-					currentEntity->coord.axis.TransformAxis (vp.view.axis, mViewAxis);
+					currentEntity->coord.axis.TransformAxis(vp.view.axis, mViewAxis);
 				// process vertices
 				bufTexCoordSrc_t *tex = &srcTexCoord[0];
 				int *idx = gl_indexesArray;
@@ -169,43 +169,43 @@ static void ProcessShaderDeforms (shader_t *sh)
 					// find middle point
 					CVec3 center = vec[0].xyz;
 					for (int k = 1; k < 4; k++)
-						center.Add (vec[k].xyz);
-					center.Scale (1.0f/4);								// average
+						center.Add(vec[k].xyz);
+					center.Scale(1.0f/4);								// average
 #if 0
 					// compute current quad axis
 					CVec3 axis_s, axis_t;
-					VectorSubtract (vec[0].xyz, vec[2].xyz, axis_s);
-					axis_s.NormalizeFast ();
-					VectorSubtract (vec[3].xyz, vec[0].xyz, axis_t);
-					VectorMA (axis_t, -dot(axis_t, axis_s), axis_s);	// make axis_t to be orthogonal to axis_s
-					axis_t.NormalizeFast ();
+					VectorSubtract(vec[0].xyz, vec[2].xyz, axis_s);
+					axis_s.NormalizeFast();
+					VectorSubtract(vec[3].xyz, vec[0].xyz, axis_t);
+					VectorMA(axis_t, -dot(axis_t, axis_s), axis_s);	// make axis_t to be orthogonal to axis_s
+					axis_t.NormalizeFast();
 					// rotate each vertex
 					for (k = 0; k < 4; k++, vec++)
 					{
 						CVec3 tmp;
-						VectorSubtract (vec->xyz, center, tmp);
+						VectorSubtract(vec->xyz, center, tmp);
 						float s = dot(tmp, axis_s);
 						float t = dot(tmp, axis_t);
-						VectorMA (center, s, mViewAxis[1], tmp);
-						VectorMA (tmp,    t, mViewAxis[2], vec->xyz);
+						VectorMA(center, s, mViewAxis[1], tmp);
+						VectorMA(tmp,    t, mViewAxis[2], vec->xyz);
 					}
 #else
 					// assume source shape is square
 					CVec3 tmp;
-					VectorSubtract (vec[0].xyz, center, tmp);
+					VectorSubtract(vec[0].xyz, center, tmp);
 					// square side = sqrt(dot(tmp,tmp)) / sqrt(2) = sqrt(dot(tmp,tmp)/2)
 					float radius = dot(tmp,tmp) / 2;
 					radius = SQRTFAST(radius);
 					// compute vertexes
-					VectorMA (center,  radius, mViewAxis[1], tmp);		// right
-					VectorMA (tmp,     radius, mViewAxis[2], vec->xyz);
+					VectorMA(center,  radius, mViewAxis[1], tmp);		// right
+					VectorMA(tmp,     radius, mViewAxis[2], vec->xyz);
 					vec++;
-					VectorMA (tmp,    -radius, mViewAxis[2], vec->xyz);
+					VectorMA(tmp,    -radius, mViewAxis[2], vec->xyz);
 					vec++;
-					VectorMA (center, -radius, mViewAxis[1], tmp);		// left
-					VectorMA (tmp,    -radius, mViewAxis[2], vec->xyz);
+					VectorMA(center, -radius, mViewAxis[1], tmp);		// left
+					VectorMA(tmp,    -radius, mViewAxis[2], vec->xyz);
 					vec++;
-					VectorMA (tmp,     radius, mViewAxis[2], vec->xyz);
+					VectorMA(tmp,     radius, mViewAxis[2], vec->xyz);
 					vec++;
 					// recompute texcoords
 					tex->tex[0] = 0; tex->tex[1] = 0; tex++;
@@ -218,9 +218,9 @@ static void ProcessShaderDeforms (shader_t *sh)
 #endif
 				}
 				// store normals
-				mViewAxis[0].Negate ();
+				mViewAxis[0].Negate();
 				for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
-					ex->normal.Zero ();
+					ex->normal.Zero();
 			}
 			break;
 		//?? other types: AUTOSPRITE2, NORMAL, PROJECTION_SHADOW (?)
@@ -229,7 +229,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 }
 
 
-static void GenerateColorArray (shaderStage_t *st)
+static void GenerateColorArray(shaderStage_t *st)
 {
 	int		i;
 	color_t	*src, *dst;
@@ -249,7 +249,7 @@ static void GenerateColorArray (shaderStage_t *st)
 		}
 		break;
 	case RGBGEN_EXACT_VERTEX:
-		memcpy (dst, src, gl_numVerts * sizeof(color_t));
+		memcpy(dst, src, gl_numVerts * sizeof(color_t));
 		break;
 	case RGBGEN_VERTEX:
 		for (i = 0; i < gl_numVerts; i++, src++, dst++)
@@ -295,10 +295,10 @@ static void GenerateColorArray (shaderStage_t *st)
 		}
 		break;
 	case RGBGEN_DIFFUSE:
-		DiffuseLight (dst, 1);
+		DiffuseLight(dst, 1);
 		break;
 	case RGBGEN_HALF_DIFFUSE:
-		DiffuseLight (dst, 0.5f);
+		DiffuseLight(dst, 0.5f);
 		break;
 	// other types: FOG
 	}
@@ -338,12 +338,12 @@ static void GenerateColorArray (shaderStage_t *st)
 
 			if (st->alphaGenType == ALPHAGEN_DOT)
 			{
-				min   = appRound (st->alphaMin * 255);
+				min   = appRound(st->alphaMin * 255);
 				scale = (st->alphaMax - st->alphaMin) * 255;
 			}
 			else
 			{
-				min   = appRound (st->alphaMax * 255);
+				min   = appRound(st->alphaMax * 255);
 				scale = (st->alphaMin - st->alphaMax) * 255;
 			}
 			bufVertex_t *vec = vb->verts;
@@ -353,16 +353,16 @@ static void GenerateColorArray (shaderStage_t *st)
 				for (i = 0; i < ex->numVerts; i++, vec++, dst++)
 				{
 					CVec3	v;
-					VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
-					v.NormalizeFast ();
-					float d = dot (v, norm);
+					VectorSubtract(currentEntity->modelvieworg, vec->xyz, v);
+					v.NormalizeFast();
+					float d = dot(v, norm);
 #if 0
 					d = d * d;
-					dst->c[3] = appRound (d * scale) + min;
+					dst->c[3] = appRound(d * scale) + min;
 #else
 //					if (d < 0)	dst->c[3] = 0;
-//					else		dst->c[3] = appRound (d * scale) + min;
-					dst->c[3] = bound (appRound (d * scale) + min, 0, 255);
+//					else		dst->c[3] = appRound(d * scale) + min;
+					dst->c[3] = bound(appRound(d * scale) + min, 0, 255);
 #endif
 				}
 			}
@@ -382,23 +382,23 @@ static void GenerateColorArray (shaderStage_t *st)
 					CVec3 v;
 					// compute direction from vertex to light source
 					static const CVec3 lightOrigin = {-960, 1980, 96};	//!! should use major light from DiffuseLight(), when using for model
-					VectorSubtract (lightOrigin, vec->xyz, v);
-					v.NormalizeFast ();
+					VectorSubtract(lightOrigin, vec->xyz, v);
+					v.NormalizeFast();
 					// compute reflection vector: refl = dot(v,norm)*2*norm - v
 					CVec3 refl;
 					VectorScale(norm, dot(v,norm)*2, refl);
 					refl.Sub(v);
 					// compute amount of light, reflected to viewer
-					VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
-					v.NormalizeFast ();
-					float f = dot (refl, v);
+					VectorSubtract(currentEntity->modelvieworg, vec->xyz, v);
+					v.NormalizeFast();
+					float f = dot(refl, v);
 					if (f < 0)
 						f = 0;
 					else
 					{
 						f *= f; f *= f;
 					}
-					dst->c[3] = bound (appRound (f * 255), 0, 255);
+					dst->c[3] = bound(appRound(f * 255), 0, 255);
 				}
 			}
 		}
@@ -410,9 +410,9 @@ static void GenerateColorArray (shaderStage_t *st)
 			for (i = 0; i < gl_numVerts; i++, vec++, dst++)
 			{
 				CVec3 v;
-				VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
-				int f = appRound (v.NormalizeFast () * denom);
-				dst->c[3] = bound (f, 0, 255);
+				VectorSubtract(currentEntity->modelvieworg, vec->xyz, v);
+				int f = appRound(v.NormalizeFast() * denom);
+				dst->c[3] = bound(f, 0, 255);
 			}
 		}
 		break;
@@ -422,12 +422,12 @@ static void GenerateColorArray (shaderStage_t *st)
 }
 
 
-static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *tex)
+static void GenerateTexCoordArray(shaderStage_t *st, int tmu, const image_t *tex)
 {
 	guard(GenerateTexCoordArray);
 
 	if (tex && tex->target == GL_TEXTURE_RECTANGLE_NV && st->tcGenType != TCGEN_TEXTURE)
-		Com_DropError ("shader %s uses TEXTURE_RECTANGLE with not \"tcGen texture\"", *currentShader->Name);
+		Com_DropError("shader %s uses TEXTURE_RECTANGLE with not \"tcGen texture\"", *currentShader->Name);
 
 	int j, k;
 	// process tcGen
@@ -491,8 +491,8 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *te
 					CVec3 *axis = ex->axis;	// -> CVec3[2]
 					for (k = 0; k < ex->numVerts; k++, vec++, dst++)
 					{
-						VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
-						v.NormalizeFast ();
+						VectorSubtract(currentEntity->modelvieworg, vec->xyz, v);
+						v.NormalizeFast();
 						dst->tex[0] = (dot(v, axis[0]) - 1) / 2;
 						dst->tex[1] = (dot(v, axis[1]) - 1) / 2;
 					}
@@ -502,9 +502,9 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *te
 					CVec3 &norm = ex->normal;
 					for (k = 0; k < ex->numVerts; k++, vec++, dst++)
 					{
-						VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
-						v.NormalizeFast ();
-						float d = dot (v, norm) * 2;
+						VectorSubtract(currentEntity->modelvieworg, vec->xyz, v);
+						v.NormalizeFast();
+						float d = dot(v, norm) * 2;
 						dst->tex[0] = (d * norm[1] - v[1] + 1) / 2;
 						dst->tex[1] = (d * norm[2] - v[2] + 1) / 2;
 					}
@@ -519,8 +519,8 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *te
 			CVec3 v1 = st->tcGenVec[1];
 			for (j = 0; j < gl_numVerts; j++, vec++, dst++)
 			{
-				dst->tex[0] = dot (vec->xyz, v0);
-				dst->tex[1] = dot (vec->xyz, v1);
+				dst->tex[0] = dot(vec->xyz, v0);
+				dst->tex[1] = dot(vec->xyz, v1);
 			}
 		}
 		break;
@@ -539,8 +539,8 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *te
 				float invRadius = 0.5f / sdl->radius;
 				for (k = 0; k < ex->numVerts; k++, dst++, vec++)
 				{
-					dst->tex[0] = (dot (vec->xyz, sdl->axis[0]) - sdl->pos[0]) * invRadius + 0.5f;
-					dst->tex[1] = (dot (vec->xyz, sdl->axis[1]) - sdl->pos[1]) * invRadius + 0.5f;
+					dst->tex[0] = (dot(vec->xyz, sdl->axis[0]) - sdl->pos[0]) * invRadius + 0.5f;
+					dst->tex[1] = (dot(vec->xyz, sdl->axis[1]) - sdl->pos[1]) * invRadius + 0.5f;
 				}
 			}
 		}
@@ -560,9 +560,9 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *te
 			if (tcmod->type == TCMOD_SCROLL)
 			{
 				f1 = tcmod->sSpeed * vp.time;
-				f1 = f1 - appFloor (f1);		// frac(f1)
+				f1 = f1 - appFloor(f1);		// frac(f1)
 				f2 = tcmod->tSpeed * vp.time;
-				f2 = f2 - appFloor (f2);		// frac(f2)
+				f2 = f2 - appFloor(f2);		// frac(f2)
 			}
 			else
 			{
@@ -723,7 +723,7 @@ static int			numRenderPasses;
 
 //!! separate copy-stages and combine-with-multitexture to different funcs (make few mtex funcs for different extensions ?)
 //?? and: rename this func
-static void PreprocessShader (shader_t *sh)
+static void PreprocessShader(shader_t *sh)
 {
 	int		i;
 	shaderStage_t *stage;
@@ -733,7 +733,7 @@ static void PreprocessShader (shader_t *sh)
 	bool spy = false;
 	const char *mask = gl_spyShader->string;
 	if ((mask[0] && mask[1]) || mask[0] == '*')		// string >= 2 chars or "*"
-		spy = appMatchWildcard (sh->Name, mask, false);
+		spy = appMatchWildcard(sh->Name, mask, false);
 #endif
 
 	int debugMode = 0;
@@ -742,7 +742,7 @@ static void PreprocessShader (shader_t *sh)
 
 	st = tmpSt;
 	numTmpStages = 0;
-	memset (tmpSt, 0, sizeof(tmpSt));				// initialize all fields with zeros
+	memset(tmpSt, 0, sizeof(tmpSt));				// initialize all fields with zeros
 
 	// get lightmap stage (should be first ??)
 	shaderStage_t *lmStage = NULL;
@@ -832,7 +832,7 @@ static void PreprocessShader (shader_t *sh)
 		{
 			int n;
 			if (currentEntity == &gl_entities[ENTITYNUM_WORLD] || !stage->frameFromEntity)
-				n = appFloor (vp.time * stage->animMapFreq);
+				n = appFloor(vp.time * stage->animMapFreq);
 			else
 				n = currentEntity->frame;
 			const image_t *img = st->mapImage[0] = stage->mapImage[n % stage->numAnimTextures];
@@ -928,7 +928,7 @@ static void PreprocessShader (shader_t *sh)
 #define P st->rgbGenWave
 				float c1 = PERIODIC_FUNC(mathFuncs[P.type], P.freq * vp.time + P.phase) * P.amp + P.base;
 #undef P
-				int c2 = appRound (c1 * 255);
+				int c2 = appRound(c1 * 255);
 				int	c3;
 #define STEP(n)							\
 	c3 = c2 * st->rgbaConst.c[n] >> 8;	\
@@ -939,9 +939,9 @@ static void PreprocessShader (shader_t *sh)
 			}
 			break;
 		case RGBGEN_GLOBAL_FOG:
-			st->rgbaConst.c[0] = appFloor (gl_fogColor[0] * gl_config.identityLightValue);
-			st->rgbaConst.c[1] = appFloor (gl_fogColor[1] * gl_config.identityLightValue);
-			st->rgbaConst.c[2] = appFloor (gl_fogColor[2] * gl_config.identityLightValue);
+			st->rgbaConst.c[0] = appFloor(gl_fogColor[0] * gl_config.identityLightValue);
+			st->rgbaConst.c[1] = appFloor(gl_fogColor[1] * gl_config.identityLightValue);
+			st->rgbaConst.c[2] = appFloor(gl_fogColor[2] * gl_config.identityLightValue);
 			st->rgbGenType = RGBGEN_CONST;
 			break;
 		case RGBGEN_DIFFUSE:
@@ -954,7 +954,7 @@ static void PreprocessShader (shader_t *sh)
 				}
 				else
 				{
-					LightForEntity (currentEntity);
+					LightForEntity(currentEntity);
 					if (GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE) &&
 						!gl_config.overbright &&		// allows double brightness by itself
 						i == 0)			//?? should analyze blend: can be 'src'=='no blend' or 'src*dst'
@@ -984,7 +984,7 @@ static void PreprocessShader (shader_t *sh)
 #define P st->alphaGenWave
 				float c1 = PERIODIC_FUNC(mathFuncs[P.type], P.freq * vp.time + P.phase) * P.amp + P.base;
 #undef P
-				int c2 = appRound (c1 * 255);
+				int c2 = appRound(c1 * 255);
 				st->rgbaConst.c[3] = bound(c2, 0, 255);
 				st->alphaGenType = ALPHAGEN_CONST;
 			}
@@ -996,10 +996,10 @@ static void PreprocessShader (shader_t *sh)
 	}
 
 	if (!numTmpStages)
-		DrawTextLeft (va("R_PreprocessShader(%s): 0 stages", *currentShader->Name), RGB(1,0,0));
+		DrawTextLeft(va("R_PreprocessShader(%s): 0 stages", *currentShader->Name), RGB(1,0,0));
 
 	if (numTmpStages > MAX_RENDER_PASSES)
-		appError ("R_PreprocessShader: numStages too large (%d)", numTmpStages);
+		appError("R_PreprocessShader: numStages too large (%d)", numTmpStages);
 
 	renderPass_t *pass = renderPasses;
 	st = tmpSt;
@@ -1257,37 +1257,37 @@ static void PreprocessShader (shader_t *sh)
 #undef LOG_PP
 
 
-void BK_FlushShader ()
+void BK_FlushShader()
 {
 	guard(BK_FlushShader);
 
 	if (!gl_numIndexes) return;					// buffer is empty
 	if (!currentShader->numStages) return;		// wrong shader?
 
-//	DrawTextLeft (va("FlushShader(%s, %d, %d)\n", *currentShader->Name, gl_numVerts, gl_numIndexes));//!!!
-	LOG_STRING (va("*** FlushShader(%s, %d, %d) ***\n", *currentShader->Name, gl_numVerts, gl_numIndexes));
+//	DrawTextLeft(va("FlushShader(%s, %d, %d)\n", *currentShader->Name, gl_numVerts, gl_numIndexes));//!!!
+	LOG_STRING(va("*** FlushShader(%s, %d, %d) ***\n", *currentShader->Name, gl_numVerts, gl_numIndexes));
 
-	PreprocessShader (currentShader);
+	PreprocessShader(currentShader);
 
 	/*------------- prepare renderer --------------*/
 
-	ProcessShaderDeforms (currentShader);
-	glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
+	ProcessShaderDeforms(currentShader);
+	glVertexPointer(3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
 
-	GL_CullFace (currentShader->cullMode);
+	GL_CullFace(currentShader->cullMode);
 	if (currentShader->usePolygonOffset)			//?? not yet used
 	{
-		glEnable (GL_POLYGON_OFFSET_FILL);
+		glEnable(GL_POLYGON_OFFSET_FILL);
 		//?? use cvars for units/factor
-		glPolygonOffset (-1, -2);
+		glPolygonOffset(-1, -2);
 	}
 
 	if (/*numRenderPasses > 1 &&*/ glLockArraysEXT)	//?? GF FX5200 + det.56.72 have geometry bugs when mixing non-CVA/CVA rendering (disappear with gl_showTris=1)
 	{
 		// do not lock texcoords and colors
-		glDisableClientState (GL_COLOR_ARRAY);
-		GL_DisableTexCoordArrays ();
-		glLockArraysEXT (0, gl_numVerts);
+		glDisableClientState(GL_COLOR_ARRAY);
+		GL_DisableTexCoordArrays();
+		glLockArraysEXT(0, gl_numVerts);
 	}
 
 	/*---------------- draw stages ----------------*/
@@ -1295,62 +1295,62 @@ void BK_FlushShader ()
 	renderPass_t *pass;
 	for (i = 0, pass = renderPasses; i < numRenderPasses; i++, pass++)
 	{
-		LOG_STRING (va("-- pass %d (mtex %d) --\n", i+1, pass->numStages));
-		GL_Lock ();
-		GL_SetMultitexture (pass->numStages);
+		LOG_STRING(va("-- pass %d (mtex %d) --\n", i+1, pass->numStages));
+		GL_Lock();
+		GL_SetMultitexture(pass->numStages);
 
 		int j;
 		tempStage_t *st;
 		for (j = 0, st = pass->stages; j < pass->numStages; j++, st++)
 		{
-			GL_SelectTexture (j);
-			GL_TexEnv (st->texEnv);
-			GL_TexEnvColor (&st->rgbaConst);
-			GL_Bind (st->mapImage[0]);
-			GenerateTexCoordArray (st, j, st->mapImage[0]);
-			GL_TexCoordPointer (vb->texCoord[j]);
+			GL_SelectTexture(j);
+			GL_TexEnv(st->texEnv);
+			GL_TexEnvColor(&st->rgbaConst);
+			GL_Bind(st->mapImage[0]);
+			GenerateTexCoordArray(st, j, st->mapImage[0]);
+			GL_TexCoordPointer(vb->texCoord[j]);
 		}
 
 		//------ setup color arrays / constant ------
 		shaderStage_t *stage = pass->colorStage;
 		if (stage->rgbGenType != RGBGEN_CONST || stage->alphaGenType != ALPHAGEN_CONST)
 		{
-			GenerateColorArray (stage);
-			glEnableClientState (GL_COLOR_ARRAY);
-			glColorPointer (4, GL_UNSIGNED_BYTE, 0, vb->color);
+			GenerateColorArray(stage);
+			glEnableClientState(GL_COLOR_ARRAY);
+			glColorPointer(4, GL_UNSIGNED_BYTE, 0, vb->color);
 		}
 		else
 		{
-			glDisableClientState (GL_COLOR_ARRAY);
-			glColor4ubv (stage->rgbaConst.c);
+			glDisableClientState(GL_COLOR_ARRAY);
+			glColor4ubv(stage->rgbaConst.c);
 		}
 
-		GL_State (pass->glState);
-		GL_Unlock ();
+		GL_State(pass->glState);
+		GL_Unlock();
 
 		//!! glFog does not works with multi-pass rendering
 		//!! + doesn't works, when scr_viewsize!=100
 		if (i == numRenderPasses - 1 && gl_state.haveFullScreen3d && !gl_showFillRate->integer
 			&& currentShader->type == SHADERTYPE_NORMAL && !gl_state.is2dMode)
-			GL_EnableFog (true);	//!!! else GL_DisableFog()!!!
+			GL_EnableFog(true);	//!!! else GL_DisableFog()!!!
 
-		glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
+		glDrawElements(GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
 	}
 
 	/*----------------- finalize ------------------*/
 
 	if (/*numRenderPasses > 1 &&*/ glUnlockArraysEXT)	//?? ...
-		glUnlockArraysEXT ();
+		glUnlockArraysEXT();
 
 	if (currentShader->usePolygonOffset)
-		glDisable (GL_POLYGON_OFFSET_FILL);
+		glDisable(GL_POLYGON_OFFSET_FILL);
 
 	// debug
 	if (!gl_state.is2dMode)
 	{
 #if !NO_DEBUG
-		DrawTriangles ();
-		DrawNormals ();
+		DrawTriangles();
+		DrawNormals();
 #endif
 		STAT(gl_stats.tris   += gl_numIndexes * numTmpStages / 3);
 		STAT(gl_stats.trisMT += gl_numIndexes * numRenderPasses / 3);
@@ -1365,14 +1365,14 @@ void BK_FlushShader ()
 }
 
 
-static void SetCurrentShader (shader_t *shader)
+static void SetCurrentShader(shader_t *shader)
 {
 	if (gl_numVerts && gl_numIndexes)
 		// we can get situation, when verts==2 and inds==0 due to geometry simplification -- this is OK (??)
 		// sample: map "actmet", inside building with rotating glass doors, floor 2: exotic lamp (nested cilinders with alpha)
 	{
-		DrawTextLeft ("SetCurrentShader() without flush!", RGB(1,0,0));
-		appWPrintf ("SetCurrentShader(%s) without flush (old: %s, %d verts, %d inds)\n",
+		DrawTextLeft("SetCurrentShader() without flush!", RGB(1,0,0));
+		appWPrintf("SetCurrentShader(%s) without flush (old: %s, %d verts, %d inds)\n",
 			*shader->Name, *currentShader->Name, gl_numVerts, gl_numIndexes);
 	}
 	currentShader = shader;
@@ -1380,13 +1380,13 @@ static void SetCurrentShader (shader_t *shader)
 }
 
 
-static void ReserveVerts (int verts, int inds)
+static void ReserveVerts(int verts, int inds)
 {
 	if (gl_numIndexes + inds > MAX_INDEXES || gl_numVerts + verts > MAX_VERTEXES)
-		BK_FlushShader ();
+		BK_FlushShader();
 
-	if (verts > MAX_VERTEXES)	Com_DropError ("ReserveVerts: %d > MAX_VERTEXES", verts);
-	if (inds > MAX_INDEXES)		Com_DropError ("ReserveVerts: %d > MAX_INDEXES", inds);
+	if (verts > MAX_VERTEXES)	Com_DropError("ReserveVerts: %d > MAX_VERTEXES", verts);
+	if (inds > MAX_INDEXES)		Com_DropError("ReserveVerts: %d > MAX_INDEXES", inds);
 }
 
 
@@ -1394,7 +1394,7 @@ static void ReserveVerts (int verts, int inds)
 	Scene
 -----------------------------------------------------------------------------*/
 
-static void CheckDynamicLightmap (surfacePlanar_t *surf)
+static void CheckDynamicLightmap(surfacePlanar_t *surf)
 {
 	if (!gl_dynamic->integer)
 		return;
@@ -1428,7 +1428,7 @@ static void CheckDynamicLightmap (surfacePlanar_t *surf)
 			dl->modulate[i] = vp.lightStyles[dl->style[i]].value;
 		if (dlightUpdate) dl->modulate[0]--;	// force to update vertex lightmap when dlight disappear
 
-		UpdateDynamicLightmap (surf, updateType == 1, surf->dlightMask);
+		UpdateDynamicLightmap(surf, updateType == 1, surf->dlightMask);
 	}
 }
 
@@ -1437,9 +1437,9 @@ static void CheckDynamicLightmap (surfacePlanar_t *surf)
 	3D tesselators
 -----------------------------------------------------------------------------*/
 
-void surfacePlanar_t::Tesselate (refEntity_t &ent)
+void surfacePlanar_t::Tesselate(refEntity_t &ent)
 {
-	ReserveVerts (numVerts, numIndexes);
+	ReserveVerts(numVerts, numIndexes);
 
 	int firstVert = gl_numVerts;
 	gl_numVerts += numVerts;
@@ -1478,12 +1478,12 @@ void surfacePlanar_t::Tesselate (refEntity_t &ent)
 }
 
 
-void surfacePoly_t::Tesselate (refEntity_t &ent)
+void surfacePoly_t::Tesselate(refEntity_t &ent)
 {
 	int		i;
 
 	int numIdx = (numVerts - 2) * 3;
-	ReserveVerts (numVerts, numIdx);
+	ReserveVerts(numVerts, numIdx);
 
 	int firstVert = gl_numVerts;
 	gl_numVerts += numVerts;
@@ -1494,7 +1494,7 @@ void surfacePoly_t::Tesselate (refEntity_t &ent)
 	ex->numVerts = numVerts;
 	ex->axis     = NULL;
 	ex->dlight   = NULL;
-	ex->normal.Zero ();				// normal = {0,0,0} - compute light for point
+	ex->normal.Zero();				// normal = {0,0,0} - compute light for point
 
 	bufVertex_t *v = &vb->verts[firstVert];
 	bufTexCoordSrc_t *t = &srcTexCoord[firstVert];
@@ -1523,18 +1523,18 @@ void surfacePoly_t::Tesselate (refEntity_t &ent)
 }
 
 
-void surfaceMd3_t::Tesselate (refEntity_t &ent)
+void surfaceMd3_t::Tesselate(refEntity_t &ent)
 {
 	int		i;
 
 	// it is rather impossible, that single md3 surface will be painted twice for the same
 	// entity, but algorithm below will be simpler, when we ensure filling EMPTY vertex buffer ...
-	BK_FlushShader ();
+	BK_FlushShader();
 
 	STAT(clock(gl_stats.meshTess));
 
 	int numIdx = numTris * 3;
-	ReserveVerts (numVerts, numIdx);
+	ReserveVerts(numVerts, numIdx);
 
 	gl_numVerts   = numVerts;
 	gl_numIndexes = numIdx;
@@ -1597,7 +1597,7 @@ void surfaceMd3_t::Tesselate (refEntity_t &ent)
 
 	//!! vertex color (should not use "RGBGEN_VERTEX", or use another function to generate color; see UberEngine)
 	// fill rgba=(1,1,1,1)
-	memset (srcVertexColor, 0xFF, sizeof(int) * numVerts);
+	memset(srcVertexColor, 0xFF, sizeof(int) * numVerts);
 
 	/*----------- copy texcoords -------------*/
 	bufTexCoordSrc_t *t = srcTexCoord;
@@ -1609,7 +1609,7 @@ void surfaceMd3_t::Tesselate (refEntity_t &ent)
 	}
 
 	/*------------ copy indexes --------------*/
-	memcpy (gl_indexesArray, indexes, sizeof(int) * numIdx);
+	memcpy(gl_indexesArray, indexes, sizeof(int) * numIdx);
 
 	STAT(unclock(gl_stats.meshTess));
 }
@@ -1621,31 +1621,31 @@ void surfaceMd3_t::Tesselate (refEntity_t &ent)
 
 #if !NO_DEBUG
 
-static void FlashColor ()
+static void FlashColor()
 {
-	int i = appRound (vp.time / 3 * TABLE_SIZE);
-	glColor3f (sinTable[i & TABLE_MASK] / 2 + 0.5,
+	int i = appRound(vp.time / 3 * TABLE_SIZE);
+	glColor3f(sinTable[i & TABLE_MASK] / 2 + 0.5,
 			   sinTable[i + 100 & TABLE_MASK] / 2 + 0.5,
 			   sinTable[600 - i & TABLE_MASK] / 2 + 0.5);
 }
 
 
 // draw entity bounding boxes
-static void DrawBBoxes ()
+static void DrawBBoxes()
 {
 	int		i;
 	refEntity_t *ent;
 
 	// common GL setup
-	glLoadMatrixf (&vp.modelMatrix[0][0]);		// world matrix
-	GL_SetMultitexture (0);		// disable texturing with all tmu's
-	glDisableClientState (GL_COLOR_ARRAY);
+	glLoadMatrixf(&vp.modelMatrix[0][0]);		// world matrix
+	GL_SetMultitexture(0);		// disable texturing with all tmu's
+	glDisableClientState(GL_COLOR_ARRAY);
 
 	if (gl_showbboxes->integer == 2)
-		FlashColor ();
+		FlashColor();
 	else
-		glColor3f (0.6, 0.6, 0.2);
-	GL_State (0);
+		glColor3f(0.6, 0.6, 0.2);
+	GL_State(0);
 
 	/*-------- draw bounding boxes --------*/
 	for (i = 0, ent = gl_entities + vp.firstEntity; i < vp.numEntities; i++, ent++)
@@ -1667,33 +1667,33 @@ static void DrawBBoxes ()
 		{
 			float	mins2[2], maxs2[2];
 
-			if (GetBoxRect (ent, ent->size2, mins2, maxs2))
+			if (GetBoxRect(ent, ent->size2, mins2, maxs2))
 			{
 				CVec3	h;
 				static const int idx2[4] = {0, 2, 3, 1};
 
-				VectorMA (ent->center, mins2[0], vp.view.axis[1], h);
-				VectorMA (h, mins2[1], vp.view.axis[2], v[0].xyz);
-				VectorMA (h, maxs2[1], vp.view.axis[2], v[1].xyz);
-				VectorMA (ent->center, maxs2[0], vp.view.axis[1], h);
-				VectorMA (h, mins2[1], vp.view.axis[2], v[2].xyz);
-				VectorMA (h, maxs2[1], vp.view.axis[2], v[3].xyz);
+				VectorMA(ent->center, mins2[0], vp.view.axis[1], h);
+				VectorMA(h, mins2[1], vp.view.axis[2], v[0].xyz);
+				VectorMA(h, maxs2[1], vp.view.axis[2], v[1].xyz);
+				VectorMA(ent->center, maxs2[0], vp.view.axis[1], h);
+				VectorMA(h, mins2[1], vp.view.axis[2], v[2].xyz);
+				VectorMA(h, maxs2[1], vp.view.axis[2], v[3].xyz);
 
-				GL_State (GLSTATE_POLYGON_LINE);
-				GL_DepthRange (DEPTH_NEAR);
-				glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
-				glColor3f (0.5, 0.1, 0.1);
-				glDrawElements (GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
+				GL_State(GLSTATE_POLYGON_LINE);
+				GL_DepthRange(DEPTH_NEAR);
+				glVertexPointer(3, GL_FLOAT, sizeof(bufVertex_t), v);
+				glColor3f(0.5, 0.1, 0.1);
+				glDrawElements(GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
 
-				GL_State (BLEND(S_ALPHA,M_S_ALPHA));
-				GL_DepthRange (DEPTH_NORMAL);
+				GL_State(BLEND(S_ALPHA,M_S_ALPHA));
+				GL_DepthRange(DEPTH_NORMAL);
 				if (!ent->worldMatrix)
-					glColor4f (0.1, 0.1, 0.3, 0.4);
+					glColor4f(0.1, 0.1, 0.3, 0.4);
 				else
-					glColor4f (0.5, 0.1, 0.1, 0.4);
-				glDrawElements (GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
+					glColor4f(0.5, 0.1, 0.1, 0.4);
+				glDrawElements(GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
 
-				glColor3f (0.6, 0.6, 0.2);
+				glColor3f(0.6, 0.6, 0.2);
 			}
 		}
 #endif
@@ -1707,91 +1707,91 @@ static void DrawBBoxes ()
 
 			// project point to a world coordinate system
 			if (!ent->worldMatrix)
-				UnTransformPoint (ent->center, ent->coord.axis, tmp, v[j].xyz);
+				UnTransformPoint(ent->center, ent->coord.axis, tmp, v[j].xyz);
 			else
-				VectorAdd (ent->center, tmp, v[j].xyz);
+				VectorAdd(ent->center, tmp, v[j].xyz);
 		}
 
 		// draw it
 		if (gl_showbboxes->integer == 3)
 		{
 			if (!ent->worldMatrix)
-				glColor3f (0.6, 0.6, 0.2);
+				glColor3f(0.6, 0.6, 0.2);
 			else
-				glColor3f (0.2, 0.8, 0.2);
+				glColor3f(0.2, 0.8, 0.2);
 		}
-		glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
-		glDrawElements (GL_LINES, 24, GL_UNSIGNED_INT, inds);
+		glVertexPointer(3, GL_FLOAT, sizeof(bufVertex_t), v);
+		glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, inds);
 	}
 }
 
 
-static bool DrawTriangles ()
+static bool DrawTriangles()
 {
 	if (!gl_showTris->integer) return false;
 
 	gl_depthMode_t prevDepth = gl_state.currentDepthMode;
-	GL_SetMultitexture (0);		// disable texturing
+	GL_SetMultitexture(0);		// disable texturing
 	if (gl_showTris->integer - 1 & 1)
-		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);	// use depth test
+		GL_State(GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);	// use depth test
 	else
 	{
 		// no depth test
-		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
-		GL_DepthRange (DEPTH_NEAR);
+		GL_State(GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
+		GL_DepthRange(DEPTH_NEAR);
 	}
 	// setup colors
 	if (gl_showTris->integer - 1 & 2)
-		FlashColor ();
+		FlashColor();
 	else
-		glColor3f (0, 0, 0);
-	glDisableClientState (GL_COLOR_ARRAY);
+		glColor3f(0, 0, 0);
+	glDisableClientState(GL_COLOR_ARRAY);
 	// draw
-	glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
+	glDrawElements(GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
 	// restore state
-	GL_DepthRange (prevDepth);
+	GL_DepthRange(prevDepth);
 
 	return true;
 }
 
 
-static bool DrawNormals ()
+static bool DrawNormals()
 {
 	if (!gl_showNormals->integer) return false;
 
 	gl_depthMode_t prevDepth = gl_state.currentDepthMode;
-	GL_SetMultitexture (0);		// disable texturing
+	GL_SetMultitexture(0);		// disable texturing
 	if (gl_showNormals->integer - 1 & 1)
-		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);	// use depth test
+		GL_State(GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);	// use depth test
 	else
 	{
 		// no depth test
-		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
-		GL_DepthRange (DEPTH_NEAR);
+		GL_State(GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
+		GL_DepthRange(DEPTH_NEAR);
 	}
 	// setup colors
 	if (gl_showNormals->integer - 1 & 2)
-		FlashColor ();
+		FlashColor();
 	else
-		glColor3f (0, 0, 0);
-	glDisableClientState (GL_COLOR_ARRAY);
+		glColor3f(0, 0, 0);
+	glDisableClientState(GL_COLOR_ARRAY);
 	// draw
-	glBegin (GL_LINES);
+	glBegin(GL_LINES);
 	bufVertex_t *vec = vb->verts;
 	const bufExtra_t *ex = gl_extra;
 	for (int i = 0; i < gl_numExtra; i++, ex++)
 	{
 		for (int j = 0; j < ex->numVerts; j++, vec++)
 		{
-			glVertex3fv (vec->xyz.v);
+			glVertex3fv(vec->xyz.v);
 			CVec3 vec2;
-			VectorAdd (vec->xyz, ex->normal, vec2);
-			glVertex3fv (vec2.v);
+			VectorAdd(vec->xyz, ex->normal, vec2);
+			glVertex3fv(vec2.v);
 		}
 	}
-	glEnd ();
+	glEnd();
 	// restore state
-	GL_DepthRange (prevDepth);
+	GL_DepthRange(prevDepth);
 
 	return true;
 }
@@ -1802,7 +1802,7 @@ static const CBrush	*drawBrushes[256];
 static const char	*brushLabels[256];
 static int			brushNums[256];
 
-void DrawBrush (const CBrush *brush, const char *label, int num)
+void DrawBrush(const CBrush *brush, const char *label, int num)
 {
 	if (!brush) return;
 	if (numDrawBrushes >= ARRAY_COUNT(drawBrushes)) return; // array full
@@ -1819,16 +1819,16 @@ void DrawBrush (const CBrush *brush, const char *label, int num)
 }
 
 
-static void DrawBrushes ()
+static void DrawBrushes()
 {
 	if (!numDrawBrushes) return;
 
-	glLoadMatrixf (&vp.modelMatrix[0][0]);
-	GL_SetMultitexture (0);
-	GL_CullFace (CULL_NONE);
-	GL_State (BLEND(/*S_ALPHA,M_S_ALPHA*/1,1)|GLSTATE_DEPTHWRITE);
-	GL_DepthRange (DEPTH_NEAR);
-	glDisableClientState (GL_COLOR_ARRAY);
+	glLoadMatrixf(&vp.modelMatrix[0][0]);
+	GL_SetMultitexture(0);
+	GL_CullFace(CULL_NONE);
+	GL_State(BLEND(/*S_ALPHA,M_S_ALPHA*/1,1)|GLSTATE_DEPTHWRITE);
+	GL_DepthRange(DEPTH_NEAR);
+	glDisableClientState(GL_COLOR_ARRAY);
 
 	for (int i = 0; i < numDrawBrushes; i++)
 	{
@@ -1839,26 +1839,26 @@ static void DrawBrushes ()
 		for (CBrushSide *s = drawBrush->sides; s; s = s->next)
 		{
 			if (!s->verts) continue;	// empty brush side
-			glColor4f (0.1, 0.1, 0.3, 0.4);
-			glBegin (GL_TRIANGLE_FAN);
+			glColor4f(0.1, 0.1, 0.3, 0.4);
+			glBegin(GL_TRIANGLE_FAN);
 			CBrushVert *v;
 			for (v = s->verts; v; v = v->next)
 			{
-				glVertex3f (VECTOR_ARG((*v->v)));
+				glVertex3f(VECTOR_ARG((*v->v)));
 				// compute center
 				numVerts++;
-				center.Add (*v->v);
+				center.Add(*v->v);
 			}
-			glEnd ();
-			glColor3f (1,0,0);
-			glBegin (GL_LINE_LOOP);
+			glEnd();
+			glColor3f(1,0,0);
+			glBegin(GL_LINE_LOOP);
 			for (v = s->verts; v; v = v->next)
-				glVertex3f (VECTOR_ARG((*v->v)));
-			glEnd ();
+				glVertex3f(VECTOR_ARG((*v->v)));
+			glEnd();
 		}
 		// label
-		center.Scale (1.0f / numVerts);
-		DrawText3D (center, va("%s %d", brushLabels[i], brushNums[i]), RGB(0,0,0));
+		center.Scale(1.0f / numVerts);
+		DrawText3D(center, va("%s %d", brushLabels[i], brushNums[i]), RGB(0,0,0));
 	}
 	// next-frame brushes should be added again
 	numDrawBrushes = 0;
@@ -1867,7 +1867,7 @@ static void DrawBrushes ()
 #endif // NO_DEBUG
 
 
-void surfaceEntity_t::Tesselate (refEntity_t &ent)
+void surfaceEntity_t::Tesselate(refEntity_t &ent)
 {
 	if (entity->flags & RF_BBOX)
 	{
@@ -1878,10 +1878,10 @@ void surfaceEntity_t::Tesselate (refEntity_t &ent)
 			0,4, 1,5, 3,7, 2,6	// connectors
 		};
 
-		GL_SetMultitexture (0);		// disable texturing with all tmu's
-		glDisableClientState (GL_COLOR_ARRAY);
-		glColor4ubv (entity->shaderColor.c);
-		GL_State (0);
+		GL_SetMultitexture(0);		// disable texturing with all tmu's
+		glDisableClientState(GL_COLOR_ARRAY);
+		glColor4ubv(entity->shaderColor.c);
+		GL_State(0);
 
 		// generate verts
 		for (int i = 0; i < 8; i++)
@@ -1891,14 +1891,14 @@ void surfaceEntity_t::Tesselate (refEntity_t &ent)
 			tmp[1] = (i & 2) ? entity->size2[1] : -entity->size2[1];
 			tmp[2] = (i & 4) ? entity->size2[2] : -entity->size2[2];
 			// project point to a world coordinate system
-			entity->coord.UnTransformPoint (tmp, v[i].xyz);
+			entity->coord.UnTransformPoint(tmp, v[i].xyz);
 		}
 		// draw it
-		glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
-		glDrawElements (GL_LINES, 24, GL_UNSIGNED_INT, inds);
+		glVertexPointer(3, GL_FLOAT, sizeof(bufVertex_t), v);
+		glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, inds);
 	}
 	else
-		DrawTextLeft (va("Unknown ent surf flags: %X", entity->flags), RGB(1,0,0));
+		DrawTextLeft(va("Unknown ent surf flags: %X", entity->flags), RGB(1,0,0));
 }
 
 
@@ -1907,25 +1907,25 @@ void surfaceEntity_t::Tesselate (refEntity_t &ent)
 	Drawing the scene
 -----------------------------------------------------------------------------*/
 
-void surfaceParticle_t::Tesselate (refEntity_t &ent)
+void surfaceParticle_t::Tesselate(refEntity_t &ent)
 {
 	//!! oprimize this (vertex arrays, etc.)
 
-	GL_SetMultitexture (1);
-	GL_Bind (gl_particleImage);
+	GL_SetMultitexture(1);
+	GL_Bind(gl_particleImage);
 
-	GL_State (BLEND(S_ALPHA,M_S_ALPHA)|/*GLSTATE_DEPTHWRITE|*/GLSTATE_ALPHA_GT0);
+	GL_State(BLEND(S_ALPHA,M_S_ALPHA)|/*GLSTATE_DEPTHWRITE|*/GLSTATE_ALPHA_GT0);
 	CVec3 up, right;
-	VectorScale (vp.view.axis[1], 1.5f, up);
-	VectorScale (vp.view.axis[2], 1.5f, right);
+	VectorScale(vp.view.axis[1], 1.5f, up);
+	VectorScale(vp.view.axis[2], 1.5f, right);
 
-	glBegin (GL_TRIANGLES);
+	glBegin(GL_TRIANGLES);
 	for (const particle_t *p = part; p; p = p->drawNext)
 	{
 		// get Z-coordinate
 		CVec3 tmp;
-		VectorSubtract (p->org, vp.view.origin, tmp);
-		float scale = dot (tmp, vp.view.axis[0]) * vp.fov_scale;
+		VectorSubtract(p->org, vp.view.origin, tmp);
+		float scale = dot(tmp, vp.view.axis[0]) * vp.fov_scale;
 
 		if (scale < 10)
 			continue;		// too near
@@ -1934,7 +1934,7 @@ void surfaceParticle_t::Tesselate (refEntity_t &ent)
 		else
 			scale = scale / 500.0f + 1.0f;
 
-		int alpha = appRound (p->alpha * 255);
+		int alpha = appRound(p->alpha * 255);
 		alpha = bound(alpha, 0, 255);
 
 		byte	c[4];
@@ -1957,36 +1957,36 @@ void surfaceParticle_t::Tesselate (refEntity_t &ent)
 			*(int*)c = gl_config.tbl_8to32[p->color];
 		}
 		c[3] = alpha;
-		glColor4ubv (c);
+		glColor4ubv(c);
 
-		glTexCoord2f (0.0625f, 0.0625f);
-		glVertex3fv (p->org.v);
+		glTexCoord2f(0.0625f, 0.0625f);
+		glVertex3fv(p->org.v);
 
-		glTexCoord2f (1.0625f, 0.0625f);
-		glVertex3f (p->org[0] + up[0] * scale, p->org[1] + up[1] * scale, p->org[2] + up[2] * scale);
+		glTexCoord2f(1.0625f, 0.0625f);
+		glVertex3f(p->org[0] + up[0] * scale, p->org[1] + up[1] * scale, p->org[2] + up[2] * scale);
 
-		glTexCoord2f (0.0625f, 1.0625f);
-		glVertex3f (p->org[0] + right[0] * scale, p->org[1] + right[1] * scale, p->org[2] + right[2] * scale);
+		glTexCoord2f(0.0625f, 1.0625f);
+		glVertex3f(p->org[0] + right[0] * scale, p->org[1] + right[1] * scale, p->org[2] + right[2] * scale);
 	}
-	glEnd ();
+	glEnd();
 }
 
 
-void BK_DrawScene ()
+void BK_DrawScene()
 {
 	guard(DrawScene);
 
 	if (!renderingEnabled) return;
 
-	LOG_STRING (va("******** R_DrawScene: (%d, %d) - (%d, %d) ********\n", vp.x, vp.y, vp.x+vp.w, vp.y+vp.h));
+	LOG_STRING(va("******** R_DrawScene: (%d, %d) - (%d, %d) ********\n", vp.x, vp.y, vp.x+vp.w, vp.y+vp.h));
 
-	if (gl_numVerts) BK_FlushShader ();
-	GL_Set3DMode (&vp);
+	if (gl_numVerts) BK_FlushShader();
+	GL_Set3DMode(&vp);
 
 	// sort surfaces
-	if (gl_finish->integer == 2) glFinish ();
+	if (gl_finish->integer == 2) glFinish();
 	STAT(clock(gl_stats.sort));
-	SortSurfaces (&vp, sortedSurfaces);
+	SortSurfaces(&vp, sortedSurfaces);
 	STAT(unclock(gl_stats.sort));
 
 	STAT(gl_stats.surfs += vp.numSurfaces);
@@ -2001,7 +2001,7 @@ void BK_DrawScene ()
 		// setup currentEntity, currentShader before sky drawing
 		currentShader = gl_skyShader;
 		currentEntity = &gl_entities[ENTITYNUM_WORLD];
-		DrawSky ();
+		DrawSky();
 	}
 
 	/*--- update all dynamic lightmaps ---*/
@@ -2013,7 +2013,7 @@ void BK_DrawScene ()
 	{
 		surfaceBase_t *surf = (*si)->surf;
 		if (surf && surf->type == SURFACE_PLANAR)
-			CheckDynamicLightmap (static_cast<surfacePlanar_t*>(surf));
+			CheckDynamicLightmap(static_cast<surfacePlanar_t*>(surf));
 	}
 
 	/*-------- draw world/models ---------*/
@@ -2035,13 +2035,13 @@ void BK_DrawScene ()
 		if (shNum != currentShaderNum || entNum != currentEntityNum || currentDlightMask != dlightMask)
 		{
 			// flush data for the previous shader
-			BK_FlushShader ();
+			BK_FlushShader();
 
 			// change shader
-			shader_t *shader = GetShaderByNum (shNum);
-			SetCurrentShader (shader);
+			shader_t *shader = GetShaderByNum(shNum);
+			SetCurrentShader(shader);
 			currentDlightMask = dlightMask;
-			LOG_STRING (va("******** shader = %s ********\n", *shader->Name));
+			LOG_STRING(va("******** shader = %s ********\n", *shader->Name));
 			currentShaderNum = shNum;
 		}
 
@@ -2056,43 +2056,43 @@ void BK_DrawScene ()
 			{
 				if (!currentWorld)		// previous entity was not world
 				{
-					LOG_STRING (va("******** entity = WORLD ********\n"));
-					glLoadMatrixf (&vp.modelMatrix[0][0]);
+					LOG_STRING(va("******** entity = WORLD ********\n"));
+					glLoadMatrixf(&vp.modelMatrix[0][0]);
 				}
 				gl_state.inverseCull = false;
-				GL_DepthRange (DEPTH_NORMAL);
+				GL_DepthRange(DEPTH_NORMAL);
 			}
 			else
 			{
-				LOG_STRING (va("******** entity = %s ********\n", *currentEntity->model->Name));
-				glLoadMatrixf (&currentEntity->modelMatrix[0][0]);
+				LOG_STRING(va("******** entity = %s ********\n", *currentEntity->model->Name));
+				glLoadMatrixf(&currentEntity->modelMatrix[0][0]);
 				gl_state.inverseCull = currentEntity->mirror;
-				GL_DepthRange (currentEntity->flags & RF_DEPTHHACK ? DEPTH_HACK : DEPTH_NORMAL);
+				GL_DepthRange(currentEntity->flags & RF_DEPTHHACK ? DEPTH_HACK : DEPTH_NORMAL);
 			}
 			currentWorld = isWorld;
 			vp.time = (entNum == ENTITYNUM_WORLD) ? worldTime : currentEntity->time;
 		}
 
-		surf->Tesselate (*currentEntity);
+		surf->Tesselate(*currentEntity);
 	}
 
 	/*--------- finilize/debug -----------*/
-	BK_FlushShader ();
+	BK_FlushShader();
 	vp.time = worldTime;				// restore time
 
-	GL_DepthRange (DEPTH_NORMAL);
+	GL_DepthRange(DEPTH_NORMAL);
 
 #if !NO_DEBUG
 	if (gl_showbboxes->integer)
-		DrawBBoxes ();
+		DrawBBoxes();
 
 	if (gl_showLights->integer)
-		ShowLights ();
+		ShowLights();
 
-	DrawBrushes ();
+	DrawBrushes();
 #endif
 
-	if (gl_finish->integer == 2) glFinish ();
+	if (gl_finish->integer == 2) glFinish();
 
 	unguard;
 }
@@ -2103,19 +2103,19 @@ void BK_DrawScene ()
 	2D tesselators
 -----------------------------------------------------------------------------*/
 
-void BK_DrawPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color, byte flipMode)
+void BK_DrawPic(shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color, byte flipMode)
 {
 	if (!renderingEnabled) return;
 
 	if (currentShader != shader)
 	{
-		BK_FlushShader ();
-		SetCurrentShader (shader);
+		BK_FlushShader();
+		SetCurrentShader(shader);
 	}
 
-	GL_Set2DMode ();
+	GL_Set2DMode();
 
-	ReserveVerts (4, 6);
+	ReserveVerts(4, 6);
 
 	if (w > shader->width * 2)
 	{
@@ -2151,8 +2151,8 @@ void BK_DrawPic (shader_t *shader, int x, int y, int w, int h, float s1, float t
 	//?? make as function, use for sprites too
 	//?? make consts for flipMode (1,2,4)
 	// swap texture coords
-	if (flipMode & 1) Exchange (s1, s2);
-	if (flipMode & 2) Exchange (t1, t2);
+	if (flipMode & 1) Exchange(s1, s2);
+	if (flipMode & 2) Exchange(t1, t2);
 	// set s
 	t[0].tex[0] = t[3].tex[0] = s1;
 	t[1].tex[0] = t[2].tex[0] = s2;
@@ -2167,8 +2167,8 @@ void BK_DrawPic (shader_t *shader, int x, int y, int w, int h, float s1, float t
 		 *	3 2		==	s2,t1	s2,t2   >>		s1,t2	s2,t2
 		 */
 		// swap points 1 and 3
-		Exchange (t[1].tex[0], t[3].tex[0]);
-		Exchange (t[1].tex[1], t[3].tex[1]);
+		Exchange(t[1].tex[0], t[3].tex[0]);
+		Exchange(t[1].tex[1], t[3].tex[1]);
 	}
 	// store colors
 	c[0] = c[1] = c[2] = c[3] = color;
@@ -2181,20 +2181,20 @@ void BK_DrawPic (shader_t *shader, int x, int y, int w, int h, float s1, float t
 
 
 // This is slightly optimized version of BK_DrawPic() for drawing texts
-void BK_DrawText (const char *text, int len, int x, int y, int w, int h, unsigned color)
+void BK_DrawText(const char *text, int len, int x, int y, int w, int h, unsigned color)
 {
 	if (!len) return;
 	if (!renderingEnabled) return;
 
 	if (currentShader != gl_concharsShader)
 	{
-		BK_FlushShader ();
-		SetCurrentShader (gl_concharsShader);
+		BK_FlushShader();
+		SetCurrentShader(gl_concharsShader);
 	}
 
-	GL_Set2DMode ();
+	GL_Set2DMode();
 
-	ReserveVerts (len * 4, len * 6);
+	ReserveVerts(len * 4, len * 6);
 
 	bufVertex_t *v = &vb->verts[gl_numVerts];
 	bufTexCoordSrc_t *t = &srcTexCoord[gl_numVerts];
@@ -2251,33 +2251,33 @@ void BK_DrawText (const char *text, int len, int x, int y, int w, int h, unsigne
 
 /*---------------------------------------------------------------------------*/
 
-void BK_BeginFrame ()
+void BK_BeginFrame()
 {
 	if (!renderingEnabled) return;
 
 	if (gl_clear->integer && !gl_state.useFastSky)
 	{
-		glClearColor (0.1, 0.6, 0.3, 1);
-		glClear (GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+		glClearColor(0.1, 0.6, 0.3, 1);
+		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	}
-	if (gl_finish->integer == 2) glFinish ();
+	if (gl_finish->integer == 2) glFinish();
 
-//??	GL_ResetState (); -- not helps; see bugs.txt for info
+//??	GL_ResetState(); -- not helps; see bugs.txt for info
 }
 
 
-void BK_EndFrame ()
+void BK_EndFrame()
 {
 	if (!renderingEnabled) return;
 
-	BK_FlushShader ();
+	BK_FlushShader();
 	if (screenshotName)
-		PerformScreenshot ();
-	ShowImages ();				// debug
-	QGL_SwapBuffers ();
+		PerformScreenshot();
+	ShowImages();				// debug
+	QGL_SwapBuffers();
 	gl_state.is2dMode = false;	// invalidate 2D mode, because of buffer switching
 
-	if (gl_finish->integer) glFinish ();
+	if (gl_finish->integer) glFinish();
 }
 
 
@@ -2285,7 +2285,7 @@ void BK_EndFrame ()
 	Init/shutdown
 -----------------------------------------------------------------------------*/
 
-void BK_Init ()
+void BK_Init()
 {
 CVAR_BEGIN(vars)
 #if SPY_SHADER
@@ -2299,20 +2299,20 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_clear, 0, 0),
 	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE)
 CVAR_END
-	Cvar_GetVars (ARRAY_ARG(vars));
-	ClearBuffers ();
+	Cvar_GetVars(ARRAY_ARG(vars));
+	ClearBuffers();
 
 	// size of 1 buffer (depends on multitexturing ability)
-	int vbSize = vertexBuffer_t::getSize (gl_config.maxActiveTextures);
+	int vbSize = vertexBuffer_t::getSize(gl_config.maxActiveTextures);
 	// alloc
-	vb = (vertexBuffer_t*)appMalloc (vbSize, 16);
+	vb = (vertexBuffer_t*)appMalloc(vbSize, 16);
 }
 
 
-void BK_Shutdown ()
+void BK_Shutdown()
 {
 	if (!vb) return;			// not initialized
-	appFree (vb);
+	appFree(vb);
 	vb = NULL;
 }
 

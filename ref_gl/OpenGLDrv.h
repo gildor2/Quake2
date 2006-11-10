@@ -69,13 +69,13 @@ namespace OpenGLDrv {
 #include "../client/renderer.h"
 #include "GLBind.h"
 
-bool	QGL_Init (const char *libName);
-void	QGL_Shutdown ();
+bool	QGL_Init(const char *libName);
+void	QGL_Shutdown();
 
-void	QGL_InitExtensions ();
-void	QGL_PrintExtensionsString (const char *label, const char *str, const char *mask = NULL);
+void	QGL_InitExtensions();
+void	QGL_PrintExtensionsString(const char *label, const char *str, const char *mask = NULL);
 
-void	QGL_SwapBuffers ();
+void	QGL_SwapBuffers();
 
 
 // OpenGL function call logging
@@ -88,9 +88,9 @@ void	QGL_SwapBuffers ();
 
 extern cvar_t	*gl_logFile;
 
-void	QGL_EnableLogging (bool enable);
-void	QGL_LogMessage (const char *text);
-#define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage (str);
+void	QGL_EnableLogging(bool enable);
+void	QGL_LogMessage(const char *text);
+#define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage(str);
 
 #else // NO_GL_LOG
 
@@ -120,7 +120,7 @@ struct refEntity_t;
 /*----------------- gl_main.cpp -------------------*/
 
 extern bool renderingEnabled;
-void GL_EnableRendering (bool enable);
+void GL_EnableRendering(bool enable);
 
 extern const unsigned colorTable[];		// C_XXX->rgba; used for DrawChar() and DrawPic() only
 
@@ -161,10 +161,10 @@ struct FDrawStats
 	unsigned meshTess;
 	unsigned dynLightmap;
 	// methods
-	inline void Zero ()
+	inline void Zero()
 	{
 		int numVisLeafs = visLeafs;		// keep number of visLeafs (remove when MarkLeaves() will be called every frame)
-		memset (this, 0, sizeof(FDrawStats));
+		memset(this, 0, sizeof(FDrawStats));
 		visLeafs = numVisLeafs;
 	}
 };
@@ -185,14 +185,14 @@ struct FLoadStats
 	// world loading
 	int64 bspLoad;
 	// methods
-	inline void Zero ()
+	inline void Zero()
 	{
-		memset (this, 0, sizeof(FLoadStats));
+		memset(this, 0, sizeof(FLoadStats));
 	}
 };
 extern FLoadStats gl_ldStats;
 
-void DumpLoadStats ();
+void DumpLoadStats();
 extern cvar_t	*r_stats;
 
 #endif
@@ -200,19 +200,19 @@ extern cvar_t	*r_stats;
 
 /*----------- gl_text.cpp -------------------*/
 
-void	InitTexts ();
-void	ClearTexts ();
-void	FlushTexts ();
+void	InitTexts();
+void	ClearTexts();
+void	FlushTexts();
 
 
 /*------ Platform-specific functions --------*/
 
-bool	GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscreen);
-void	GLimp_Shutdown (bool complete);
-//void	AppActivate (bool active); -- interface
+bool	GLimp_SetMode(unsigned *pwidth, unsigned *pheight, int mode, bool fullscreen);
+void	GLimp_Shutdown(bool complete);
+//void	AppActivate(bool active); -- interface
 
-bool	GLimp_HasGamma ();
-void	GLimp_SetGamma (float gamma);
+bool	GLimp_HasGamma();
+void	GLimp_SetGamma(float gamma);
 
 
 /*----------------- Cvars -------------------*/

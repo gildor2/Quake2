@@ -75,7 +75,7 @@ typedef unsigned int		address_t;
 	Some math functions
 -----------------------------------------------------------------------------*/
 
-inline int appRound (float f)
+inline int appRound(float f)
 {
 	int		i;
 
@@ -89,7 +89,7 @@ inline int appRound (float f)
 // NOTE: when used 0.5 in floor/ceil functions, integral values
 // will be rounded incorrectly (floor(1)=0,floor(2)=2;floor(3)=2 etc.)
 
-inline int appFloor (float f)
+inline int appFloor(float f)
 {
 	int		i;
 	static const float h = 0.4999999;	// 0.5
@@ -102,7 +102,7 @@ inline int appFloor (float f)
 	return i;
 }
 
-inline int appCeil (float f)
+inline int appCeil(float f)
 {
 	int		i;
 	static const float h = 0.4999999;	// 0.5
@@ -123,12 +123,12 @@ inline int appCeil (float f)
 #pragma warning(push)
 #pragma warning(disable : 4035)			// "no return value"
 
-inline unsigned appCycles ()
+inline unsigned appCycles()
 {
 	__asm rdtsc
 }
 
-inline int64 appCycles64 ()
+inline int64 appCycles64()
 {
 	__asm rdtsc
 }
@@ -137,13 +137,13 @@ inline int64 appCycles64 ()
 
 extern CORE_API double GMSecondsPerCycle;
 
-inline float appCyclesToMsecf (unsigned timeDelta)
+inline float appCyclesToMsecf(unsigned timeDelta)
 {
 	double v = timeDelta;
 	return v * GMSecondsPerCycle;
 }
 
-inline float appCyclesToMsecf (int64 &timeDelta)
+inline float appCyclesToMsecf(int64 &timeDelta)
 {
 	double v = timeDelta;
 	return v * GMSecondsPerCycle;
@@ -176,13 +176,13 @@ inline float appCyclesToMsecf (int64 &timeDelta)
 
 #define unguard							\
 		} catch (...) {					\
-			appUnwindThrow (__FUNC__);	\
+			appUnwindThrow(__FUNC__);	\
 		}								\
 	}
 
 #define unguardf(msg)					\
 		} catch (...) {					\
-			appUnwindPrefix (__FUNC__);	\
+			appUnwindPrefix(__FUNC__);	\
 			appUnwindThrow msg;			\
 		}								\
 	}
@@ -199,11 +199,11 @@ inline float appCyclesToMsecf (int64 &timeDelta)
 
 #if 0
 #include <excpt.h>
-CORE_API unsigned WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info);
+CORE_API unsigned WINAPI win32ExceptFilter(struct _EXCEPTION_POINTERS *info);
 #define EXCEPT_FILTER	win32ExceptFilter(GetExceptionInformation())
 #else
 // this will allow to produce slightly smaller code, but may not work under non-VC6 compiler
-CORE_API unsigned win32ExceptFilter2 ();
+CORE_API unsigned win32ExceptFilter2();
 #define EXCEPT_FILTER	win32ExceptFilter2()
 #endif
 
@@ -215,13 +215,13 @@ CORE_API unsigned win32ExceptFilter2 ();
 
 #define unguard							\
 		} __except (EXCEPT_FILTER) {	\
-			appUnwindThrow (__FUNC__);	\
+			appUnwindThrow(__FUNC__);	\
 		}								\
 	}
 
 #define unguardf(msg)					\
 		} __except (EXCEPT_FILTER) {	\
-			appUnwindPrefix (__FUNC__);	\
+			appUnwindPrefix(__FUNC__);	\
 			appUnwindThrow msg;			\
 		}								\
 	}

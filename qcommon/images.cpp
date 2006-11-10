@@ -37,13 +37,13 @@ struct pcxHdr_t
 };
 
 
-byte* LoadPCX (const char *name, int &width, int &height, byte *&palette)
+byte* LoadPCX(const char *name, int &width, int &height, byte *&palette)
 {
 	palette = NULL;
 
 	byte *file;
 	unsigned filelen;
-	if (!(file = (byte*) GFileSystem->LoadFile (name, &filelen))) return NULL;
+	if (!(file = (byte*) GFileSystem->LoadFile(name, &filelen))) return NULL;
 
 	pcxHdr_t *hdr = (pcxHdr_t*)file;
 
@@ -59,17 +59,17 @@ byte* LoadPCX (const char *name, int &width, int &height, byte *&palette)
 	if (errMsg)
 	{
 		delete file;
-		Com_DropError ("LoadPCX(%s): %s", name, errMsg);
+		Com_DropError("LoadPCX(%s): %s", name, errMsg);
 	}
 
 	palette = new byte [768];
-	memcpy (palette, (byte *)hdr + filelen - 768, 768);
+	memcpy(palette, (byte *)hdr + filelen - 768, 768);
 
 	width  = w;
 	height = h;
 
 	byte *src = (byte*)(hdr + 1);
-	byte *dst = (byte*)appMalloc (w * h);
+	byte *dst = (byte*)appMalloc(w * h);
 	byte *ret = dst;
 
 	for (int y = 0; y < h; y++)
@@ -129,10 +129,10 @@ struct GCC_PACK tgaHdr_t
 #endif
 
 
-byte* LoadTGA (const char *name, int &width, int &height)
+byte* LoadTGA(const char *name, int &width, int &height)
 {
 	byte	*file;
-	if (!(file = (byte*) GFileSystem->LoadFile (name))) return NULL;
+	if (!(file = (byte*) GFileSystem->LoadFile(name))) return NULL;
 
 	tgaHdr_t *hdr = (tgaHdr_t*)file;
 
@@ -173,7 +173,7 @@ byte* LoadTGA (const char *name, int &width, int &height)
 	if (errMsg)
 	{
 		delete file;
-		Com_DropError ("LoadTGA(%s): %s", name, errMsg);
+		Com_DropError("LoadTGA(%s): %s", name, errMsg);
 	}
 
 	int numPixels = width * height;
@@ -269,56 +269,56 @@ static const char *jpegname;
 static bool jpegerror;
 
 
-METHODDEF(void) J_InitSource (j_decompress_ptr cinfo)
+METHODDEF(void) J_InitSource(j_decompress_ptr cinfo)
 {}
 
 
-METHODDEF(boolean) J_FillInputBuffer (j_decompress_ptr cinfo)
+METHODDEF(boolean) J_FillInputBuffer(j_decompress_ptr cinfo)
 {
 	if (!jpegerror)
 	{
-		appWPrintf ("LoadJPG(%s): damaged file\n", jpegname);
-//		Com_DropError ("Bad JPEG");
+		appWPrintf("LoadJPG(%s): damaged file\n", jpegname);
+//		Com_DropError("Bad JPEG");
 		jpegerror = true;
 	}
 	return true;
 }
 
-METHODDEF(void) J_SkipInputData (j_decompress_ptr cinfo, long num_bytes)
+METHODDEF(void) J_SkipInputData(j_decompress_ptr cinfo, long num_bytes)
 {
 	if (num_bytes <= 0) return;
 	cinfo->src->next_input_byte += (size_t) num_bytes;
 	cinfo->src->bytes_in_buffer -= (size_t) num_bytes;
 }
 
-METHODDEF(void) J_TermSource (j_decompress_ptr cinfo)
+METHODDEF(void) J_TermSource(j_decompress_ptr cinfo)
 {}
 
-METHODDEF(void) J_ErrorExit (j_common_ptr cinfo)
+METHODDEF(void) J_ErrorExit(j_common_ptr cinfo)
 {
-	Com_DropError ("JPEG error %d", cinfo->err->msg_code);
+	Com_DropError("JPEG error %d", cinfo->err->msg_code);
 }
 
-METHODDEF(void) J_EmitMessage (j_common_ptr cinfo, int msg_level)
+METHODDEF(void) J_EmitMessage(j_common_ptr cinfo, int msg_level)
 {
 	if (msg_level < 0)
 	{	// warning
-		Com_DPrintf ("JPEG warning %d\n", cinfo->err->msg_code);
+		Com_DPrintf("JPEG warning %d\n", cinfo->err->msg_code);
 	}
 	// else -- trace message
 }
 
 
-METHODDEF(void) J_ResetErrorMgr (j_common_ptr cinfo)
+METHODDEF(void) J_ResetErrorMgr(j_common_ptr cinfo)
 {
 	cinfo->err->num_warnings = 0;
 	cinfo->err->msg_code     = 0;
 }
 
 // Replacement for jpeg_std_error
-static struct jpeg_error_mgr *InitJpegError (struct jpeg_error_mgr *err)
+static struct jpeg_error_mgr *InitJpegError(struct jpeg_error_mgr *err)
 {
-	memset (err, 0, sizeof(*err));
+	memset(err, 0, sizeof(*err));
 
 	err->error_exit      = J_ErrorExit;
 	err->emit_message    = J_EmitMessage;
@@ -341,7 +341,7 @@ static struct jpeg_error_mgr *InitJpegError (struct jpeg_error_mgr *err)
 }
 
 
-byte* LoadJPG (const char *name, int &width, int &height)
+byte* LoadJPG(const char *name, int &width, int &height)
 {
 	struct jpeg_decompress_struct cinfo;
 	struct jpeg_error_mgr jerr;
@@ -349,13 +349,13 @@ byte* LoadJPG (const char *name, int &width, int &height)
 
 	unsigned length;
 	byte *buffer;
-	if (!(buffer = (byte*) GFileSystem->LoadFile (name, &length))) return NULL;
+	if (!(buffer = (byte*) GFileSystem->LoadFile(name, &length))) return NULL;
 
 	jpegerror = false;
 	jpegname  = name;
 
-	cinfo.err = InitJpegError (&jerr);
-	jpeg_create_decompress (&cinfo);
+	cinfo.err = InitJpegError(&jerr);
+	jpeg_create_decompress(&cinfo);
 
 	// init jpeg source
 	cinfo.src = (struct jpeg_source_mgr *) (*cinfo.mem->alloc_small) ((j_common_ptr) &cinfo, JPOOL_PERMANENT,
@@ -368,8 +368,8 @@ byte* LoadJPG (const char *name, int &width, int &height)
 	cinfo.src->bytes_in_buffer   = length;
 	cinfo.src->next_input_byte   = buffer;
 
-	jpeg_read_header (&cinfo, true);
-	jpeg_start_decompress (&cinfo);
+	jpeg_read_header(&cinfo, true);
+	jpeg_start_decompress(&cinfo);
 
 	int columns = cinfo.output_width;
 	int rows    = cinfo.output_height;
@@ -382,19 +382,19 @@ byte* LoadJPG (const char *name, int &width, int &height)
 
 	if (errMsg)
 	{
-		jpeg_destroy_decompress (&cinfo);
+		jpeg_destroy_decompress(&cinfo);
 		delete buffer;
-		Com_DropError ("LoadJPG(%s): %s", name, errMsg);
+		Com_DropError("LoadJPG(%s): %s", name, errMsg);
 	}
 
-	byte *decompr = (byte*)appMalloc (columns * rows * 4);
+	byte *decompr = (byte*)appMalloc(columns * rows * 4);
 
 	byte *scanline = line;
 	byte *out      = decompr;
 
 	while (cinfo.output_scanline < rows)
 	{
-		jpeg_read_scanlines (&cinfo, &scanline, 1);
+		jpeg_read_scanlines(&cinfo, &scanline, 1);
 
 		byte *in = line;
 		for (int i = 0; i < columns; i++)
@@ -406,8 +406,8 @@ byte* LoadJPG (const char *name, int &width, int &height)
 		}
 	}
 
-	jpeg_finish_decompress (&cinfo);
-	jpeg_destroy_decompress (&cinfo);
+	jpeg_finish_decompress(&cinfo);
+	jpeg_destroy_decompress(&cinfo);
 
 	delete buffer;
 	if (jpegerror)
@@ -424,27 +424,27 @@ byte* LoadJPG (const char *name, int &width, int &height)
 
 // Finds name.* images within all game dirs and paks; returns 0 if not found or OR'ed
 // set of IMAGE_XXX flags. Name should be without extension and in a lowercase.
-int ImageExists (const char *name, int stop_mask)
+int ImageExists(const char *name, int stop_mask)
 {
 	int out = 0;
 
 	const char *path = NULL;
-	while (path = FS_NextPath (path))
+	while (path = FS_NextPath(path))
 	{
 		bool rootBased = (name[0] == '.' && name[1] == '/');
-		CFileList *list = GFileSystem->List (rootBased ?
+		CFileList *list = GFileSystem->List(rootBased ?
 			va("%s.*", name) :				// root-based
 			va("%s/%s.*", path, name),		// game-based
 			FS_FILE);
 		for (TListIterator<CFileItem> item = *list; item; ++item)
 		{
-			const char *ext = strrchr (item->name, '.');	// find last dot in a filename
+			const char *ext = strrchr(item->name, '.');	// find last dot in a filename
 			if (!ext) continue;
 
-			if		(!strcmp (ext, ".pcx")) out |= IMAGE_PCX;
-			else if (!strcmp (ext, ".wal")) out |= IMAGE_WAL;
-			else if (!strcmp (ext, ".tga")) out |= IMAGE_TGA;
-			else if (!strcmp (ext, ".jpg")) out |= IMAGE_JPG;
+			if		(!strcmp(ext, ".pcx")) out |= IMAGE_PCX;
+			else if (!strcmp(ext, ".wal")) out |= IMAGE_WAL;
+			else if (!strcmp(ext, ".tga")) out |= IMAGE_TGA;
+			else if (!strcmp(ext, ".jpg")) out |= IMAGE_JPG;
 		}
 		delete list;
 		if (rootBased) break;
@@ -462,15 +462,15 @@ int ImageExists (const char *name, int stop_mask)
 -----------------------------------------------------------------------------*/
 // All functions receive data in RGB format; data may be modified while writting.
 
-bool WriteTGA (const char *name, byte *pic, int width, int height)
+bool WriteTGA(const char *name, byte *pic, int width, int height)
 {
 	int		i;
 
-	appMakeDirectoryForFile (name);
+	appMakeDirectoryForFile(name);
 	FILE *f;
-	if (!(f = fopen (name, "wb")))
+	if (!(f = fopen(name, "wb")))
 	{
-		appWPrintf ("WriteTGA(%s): cannot create file\n", name);
+		appWPrintf("WriteTGA(%s): cannot create file\n", name);
 		return false;
 	}
 
@@ -478,9 +478,9 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 	int size = width * height;
 	// convert RGB to BGR (inplace!)
 	for (i = 0, src = pic; i < size; i++, src += 3)
-		Exchange (src[0], src[2]);
+		Exchange(src[0], src[2]);
 
-	byte *packed = (byte*)appMalloc (width * height * 3);
+	byte *packed = (byte*)appMalloc(width * height * 3);
 	byte *threshold = packed + width * height * 3 - 16;		// threshold for "dst"
 
 	src = pic;
@@ -545,81 +545,81 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 
 	// write header
 	tgaHdr_t header;
-	memset (&header, 0, sizeof(header));
-	header.width      = LittleShort (width);
-	header.height     = LittleShort (height);
+	memset(&header, 0, sizeof(header));
+	header.width      = LittleShort(width);
+	header.height     = LittleShort(height);
 #if 0
 	// debug: write black/white image
 	header.pixel_size = 8;
 	header.image_type = 3;
-	fwrite (&header, 1, sizeof(header), f);
+	fwrite(&header, 1, sizeof(header), f);
 	for (i = 0; i < width * height; i++, pic += 3)
 	{
 		int c = (pic[0]+pic[1]+pic[2]) / 3;
-		fwrite (&c, 1, 1, f);
+		fwrite(&c, 1, 1, f);
 	}
 #else
 	header.pixel_size = 24;
 	if (useCompression)
 	{
-		Com_DPrintf ("WriteTGA: packed %d -> %d\n", size * 3, dst - packed);
+		Com_DPrintf("WriteTGA: packed %d -> %d\n", size * 3, dst - packed);
 		header.image_type = 10;		// RLE
 		// write data
-		fwrite (&header, 1, sizeof(header), f);
-		fwrite (packed, 1, dst - packed, f);
+		fwrite(&header, 1, sizeof(header), f);
+		fwrite(packed, 1, dst - packed, f);
 	}
 	else
 	{
-		Com_DPrintf ("WriteTGA: revert to uncompressed\n");
+		Com_DPrintf("WriteTGA: revert to uncompressed\n");
 		header.image_type = 2;		// uncompressed
 		// write data
-		fwrite (&header, 1, sizeof(header), f);
-		fwrite (pic, 1, size * 3, f);
+		fwrite(&header, 1, sizeof(header), f);
+		fwrite(pic, 1, size * 3, f);
 	}
 #endif
 
-	fclose (f);
-	appFree (packed);
+	fclose(f);
+	appFree(packed);
 	return true;
 }
 
 
-bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQuality)
+bool WriteJPG(const char *name, byte *pic, int width, int height, bool highQuality)
 {
-	appMakeDirectoryForFile (name);
+	appMakeDirectoryForFile(name);
 	FILE	*f;
-	if (!(f = fopen (name, "wb")))
+	if (!(f = fopen(name, "wb")))
 	{
-		appWPrintf ("WriteJPG(%s): cannot create file\n", name);
+		appWPrintf("WriteJPG(%s): cannot create file\n", name);
 		return false;
 	}
 
 	// standard way to encode JPEG file (see libjpeg.doc for details)
 	struct jpeg_compress_struct cinfo;
 	struct jpeg_error_mgr jerr;
-	cinfo.err = InitJpegError (&jerr);
-	jpeg_create_compress (&cinfo);
-	jpeg_stdio_dest (&cinfo, f);
+	cinfo.err = InitJpegError(&jerr);
+	jpeg_create_compress(&cinfo);
+	jpeg_stdio_dest(&cinfo, f);
 
 	cinfo.image_width      = width;
 	cinfo.image_height     = height;
 	cinfo.input_components = 3;
 	cinfo.in_color_space   = JCS_RGB;
-	jpeg_set_defaults (&cinfo);
+	jpeg_set_defaults(&cinfo);
 	if (highQuality)
-		jpeg_set_quality (&cinfo, 100, TRUE);
+		jpeg_set_quality(&cinfo, 100, TRUE);
 
-	jpeg_start_compress (&cinfo, TRUE);
+	jpeg_start_compress(&cinfo, TRUE);
 	int stride = 3 * width;
 	while (cinfo.next_scanline < height)
 	{
 		JSAMPROW row[1];
 		row[0] = pic + stride * (height - 1 - cinfo.next_scanline);	// top-to-bottom?
-		jpeg_write_scanlines (&cinfo, row, 1);
+		jpeg_write_scanlines(&cinfo, row, 1);
 	}
-	jpeg_finish_compress (&cinfo);
-	jpeg_destroy_compress (&cinfo);
+	jpeg_finish_compress(&cinfo);
+	jpeg_destroy_compress(&cinfo);
 
-	fclose (f);
+	fclose(f);
 	return true;
 }

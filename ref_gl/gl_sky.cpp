@@ -14,12 +14,12 @@ static float skyMins[2][6], skyMaxs[2][6];
 
 enum {SIDE_FRONT, SIDE_BACK, SIDE_ON};
 
-static void ClipSkyPolygon (CVec3 *verts, int numVerts, int stage)
+static void ClipSkyPolygon(CVec3 *verts, int numVerts, int stage)
 {
 	if (!numVerts) return;				// empty polygon
 
 	if (numVerts > MAX_CLIP_VERTS - 2)	// may require to add 2 verts for slitting
-		Com_DropError ("ClipSkyPolygon: overflow");
+		Com_DropError("ClipSkyPolygon: overflow");
 
 	int		i;
 
@@ -30,17 +30,17 @@ static void ClipSkyPolygon (CVec3 *verts, int numVerts, int stage)
 		CVec3 v = verts[0];
 		const CVec3 *vp = verts + 1;
 		for (i = 1; i < numVerts; i++, vp++)
-			v.Add (*vp);
+			v.Add(*vp);
 		CVec3	av;
-		av.Set (fabs(v[0]), fabs(v[1]), fabs(v[2]));
+		av.Set(fabs(v[0]), fabs(v[1]), fabs(v[2]));
 		// Here: v = sum vector, av = abs(v)
 		int		axis;
 		if (av[0] > av[1] && av[0] > av[2])
-			axis = IsNegative (v[0]);
+			axis = IsNegative(v[0]);
 		else if (av[1] > av[2] && av[1] > av[0])
-			axis = IsNegative (v[1]) + 2;
+			axis = IsNegative(v[1]) + 2;
 		else
-			axis = IsNegative (v[2]) + 4;
+			axis = IsNegative(v[2]) + 4;
 
 		// project new texture coords
 		for (i = 0; i < numVerts; i++, verts++)
@@ -88,7 +88,7 @@ static void ClipSkyPolygon (CVec3 *verts, int numVerts, int stage)
 	const CVec3 &norm = clipNormals[stage];
 	for (i = 0; i < numVerts; i++)
 	{
-		float d = dot (verts[i], norm);
+		float d = dot(verts[i], norm);
 		dists[i] = d;
 		if (d > ON_EPSILON)
 		{
@@ -107,7 +107,7 @@ static void ClipSkyPolygon (CVec3 *verts, int numVerts, int stage)
 	if (!front || !back)
 	{
 		// polygon is not clipped by current plane
-		ClipSkyPolygon (verts, numVerts, stage + 1);
+		ClipSkyPolygon(verts, numVerts, stage + 1);
 		return;
 	}
 
@@ -144,13 +144,13 @@ static void ClipSkyPolygon (CVec3 *verts, int numVerts, int stage)
 		// line intersects clip plane: split line to 2 parts by adding new point
 		float d = dists[i] / (dists[i] - dists[i+1]);
 		CVec3 tmp;
-		Lerp (vec[0], vec[1], d, tmp);
+		Lerp(vec[0], vec[1], d, tmp);
 		poly1[poly1size++] = poly2[poly2size++] = tmp;
 	}
 
 	// process new polys
-	if (poly1size) ClipSkyPolygon (poly1, poly1size, stage + 1);
-	if (poly2size) ClipSkyPolygon (poly2, poly2size, stage + 1);
+	if (poly1size) ClipSkyPolygon(poly1, poly1size, stage + 1);
+	if (poly2size) ClipSkyPolygon(poly2, poly2size, stage + 1);
 }
 
 
@@ -174,23 +174,23 @@ static byte skyVis[6][SKY_CELLS*SKY_CELLS];
 static bool skyRotated;
 static CAxis rotAxis;
 
-void ClearSky ()
+void ClearSky()
 {
-	memset (skyVis, 0, sizeof(skyVis));
-	memset (skySideVisible, 0, sizeof(skySideVisible));
+	memset(skyVis, 0, sizeof(skyVis));
+	memset(skySideVisible, 0, sizeof(skySideVisible));
 	// rotate sky
 	float angle = vp.time * gl_skyShader->skyRotate;
 	if (angle)
 	{
 		skyRotated = true;
-		BuildRotationAxis (rotAxis, gl_skyShader->skyAxis, angle);
+		BuildRotationAxis(rotAxis, gl_skyShader->skyAxis, angle);
 	}
 	else
 		skyRotated = false;
 }
 
 
-static bool SkyVisible ()
+static bool SkyVisible()
 {
 	int		i;
 	byte	*p;
@@ -200,7 +200,7 @@ static bool SkyVisible ()
 }
 
 
-void AddSkySurface (surfacePlanar_t *pl, byte flag)
+void AddSkySurface(surfacePlanar_t *pl, byte flag)
 {
 	if (gl_state.useFastSky) return;
 
@@ -219,11 +219,11 @@ void AddSkySurface (surfacePlanar_t *pl, byte flag)
 	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
 	{
 		if (skyRotated)
-			TransformPoint (vp.view.origin, rotAxis, v->xyz, verts[i]);
+			TransformPoint(vp.view.origin, rotAxis, v->xyz, verts[i]);
 		else
-			VectorSubtract (v->xyz, vp.view.origin, verts[i]);
+			VectorSubtract(v->xyz, vp.view.origin, verts[i]);
 	}
-	ClipSkyPolygon (verts, pl->numVerts, 0);
+	ClipSkyPolygon(verts, pl->numVerts, 0);
 
 	// analyse skyMins/skyMaxs, detect occupied cells
 	for (side = 0; side < 6; side++)
@@ -232,10 +232,10 @@ void AddSkySurface (surfacePlanar_t *pl, byte flag)
 
 		skySideVisible[side] |= flag;
 		// get cell's "x" and "w"
-		int x = appFloor ((skyMins[0][side] + 1) * SKY_TESS_SIZE);	// left
+		int x = appFloor((skyMins[0][side] + 1) * SKY_TESS_SIZE);	// left
 		int w = appCeil  ((skyMaxs[0][side] + 1) * SKY_TESS_SIZE);	// right
 		// get cell's "y" and "h"
-		int y = appFloor ((skyMins[1][side] + 1) * SKY_TESS_SIZE);	// bottom (or top ?)
+		int y = appFloor((skyMins[1][side] + 1) * SKY_TESS_SIZE);	// bottom (or top ?)
 		int h = appCeil  ((skyMaxs[1][side] + 1) * SKY_TESS_SIZE);	// top (or bottom)
 #if 1
 		x = bound(x, 0, SKY_CELLS);		// avoid precision errors: when we can get floor((mins==-1 + 1)*SIZE) -> -1 (should be 0)
@@ -245,7 +245,7 @@ void AddSkySurface (surfacePlanar_t *pl, byte flag)
 #else
 		if (x < 0 || w < 0 || y < 0 || h < 0 ||
 			x > SKY_CELLS || y > SKY_CELLS || w > SKY_CELLS || h > SKY_CELLS)
-			appError ("x/y/w/h: %d %d %d %d\n"
+			appError("x/y/w/h: %d %d %d %d\n"
 			"mins[%g %g] maxs[%g %g]", x, y, w, h,
 			skyMins[0][side], skyMins[1][side], skyMaxs[0][side], skyMaxs[1][side]);
 #endif
@@ -271,7 +271,7 @@ void AddSkySurface (surfacePlanar_t *pl, byte flag)
 static float skyDist;
 
 // In: s, t in range [-1..1]; out: tex = {s,t}, vec
-static int AddSkyVec (float s, float t, int axis, bufVertex_t *&vec, bufTexCoordSrc_t *&tex)
+static int AddSkyVec(float s, float t, int axis, bufVertex_t *&vec, bufTexCoordSrc_t *&tex)
 {
 	static const int stToVec[6][3] = {	// 1 = s, 2 = t, 3 = zFar
 		{ 3,-1, 2},
@@ -283,7 +283,7 @@ static int AddSkyVec (float s, float t, int axis, bufVertex_t *&vec, bufTexCoord
 	};
 
 	CVec3 b;
-	b.Set (s * skyDist, t * skyDist, skyDist);
+	b.Set(s * skyDist, t * skyDist, skyDist);
 
 	for (int i = 0; i < 3; i++)
 	{
@@ -314,13 +314,13 @@ static int AddSkyVec (float s, float t, int axis, bufVertex_t *&vec, bufTexCoord
 	float r1 = r-h;
 	// find intersection of sky sphere with generated vector
 	float f = z*z*r1*r1 + (x*x+y*y+z*z)*(2*h*r-h*h);
-	v.Scale ((-z * r1 + SQRTFAST(f)) / (x*x + y*y + z*z));
+	v.Scale((-z * r1 + SQRTFAST(f)) / (x*x + y*y + z*z));
 	// offset sphere to get polar coordinates
 	v[2] += r1;
 	// get polar coordinates
-	v.NormalizeFast ();
-	tex->tex[0] = ACOS_FUNC (v[0]);
-	tex->tex[1] = ACOS_FUNC (v[1]);
+	v.NormalizeFast();
+	tex->tex[0] = ACOS_FUNC(v[0]);
+	tex->tex[1] = ACOS_FUNC(v[1]);
 
 	vec++;
 	tex++;
@@ -329,7 +329,7 @@ static int AddSkyVec (float s, float t, int axis, bufVertex_t *&vec, bufTexCoord
 }
 
 
-static void TesselateSkySide (int side, bufVertex_t *vec, bufTexCoordSrc_t *tex)
+static void TesselateSkySide(int side, bufVertex_t *vec, bufTexCoordSrc_t *tex)
 {
 #if 0
 	DrawTextLeft(va("side %d:", side));
@@ -351,7 +351,7 @@ static void TesselateSkySide (int side, bufVertex_t *vec, bufTexCoordSrc_t *tex)
 
 	// generate side vertexes
 	int grid[SKY_VERTS*SKY_VERTS];
-	memset (grid, 0, sizeof(grid));	// "0" is valid, because index=0 only for upper-left vertex, which is used only for 1 cell ...
+	memset(grid, 0, sizeof(grid));	// "0" is valid, because index=0 only for upper-left vertex, which is used only for 1 cell ...
 	byte *ptr = skyVis[side];
 	int *grid1 = grid;
 	int *grid2 = grid + SKY_VERTS;
@@ -365,12 +365,12 @@ static void TesselateSkySide (int side, bufVertex_t *vec, bufTexCoordSrc_t *tex)
 		{
 			if (*ptr != (SKY_FRUSTUM|SKY_SURF)) continue;		// this cell is not visible
 			// this 2 verts can be filled by previous line
-			if (!grid1[0])	grid1[0] = AddSkyVec (s, t, side, vec, tex);
-			if (!grid1[1])	grid1[1] = AddSkyVec (s + 1.0f / SKY_TESS_SIZE, t, side, vec, tex);
+			if (!grid1[0])	grid1[0] = AddSkyVec(s, t, side, vec, tex);
+			if (!grid1[1])	grid1[1] = AddSkyVec(s + 1.0f / SKY_TESS_SIZE, t, side, vec, tex);
 			// this vertex can be filled by previous cell
-			if (!grid2[0])	grid2[0] = AddSkyVec (s, t + 1.0f / SKY_TESS_SIZE, side, vec, tex);
+			if (!grid2[0])	grid2[0] = AddSkyVec(s, t + 1.0f / SKY_TESS_SIZE, side, vec, tex);
 			// this vertex cannot be filled by previous cells
-			grid2[1] = AddSkyVec (s + 1.0f / SKY_TESS_SIZE, t + 1.0f / SKY_TESS_SIZE, side, vec, tex);
+			grid2[1] = AddSkyVec(s + 1.0f / SKY_TESS_SIZE, t + 1.0f / SKY_TESS_SIZE, side, vec, tex);
 			// generate indexes
 			// g1(1) ----- g1+1(2)
 			//  |           |
@@ -396,85 +396,85 @@ static void TesselateSkySide (int side, bufVertex_t *vec, bufTexCoordSrc_t *tex)
 //#define VISUALIZE_SKY_FRUSTUM		1	// NOTE: SKY_FRUST_DIST should be at least gl_znear->value to make rect visible
 
 // NOTE: currentShader is set to gl_skyShader before calling this function
-void DrawSky ()
+void DrawSky()
 {
 	guard(DrawSky);
 
-	LOG_STRING ("***** DrawSky() *****\n");
+	LOG_STRING("***** DrawSky() *****\n");
 	if (gl_state.useFastSky) return;
 
 	// build frustum cover
 	vertex_t fv[4];
 	CVec3	tmp, tmp1, up, right;
-	VectorMA (vp.view.origin, SKY_FRUST_DIST, vp.view.axis[0], tmp);
-	VectorScale (vp.view.axis[1], SKY_FRUST_DIST * vp.t_fov_x * 1.05, right);	// *1.05 -- to avoid FP precision bugs
-	VectorScale (vp.view.axis[2], SKY_FRUST_DIST * vp.t_fov_y * 1.05, up);
+	VectorMA(vp.view.origin, SKY_FRUST_DIST, vp.view.axis[0], tmp);
+	VectorScale(vp.view.axis[1], SKY_FRUST_DIST * vp.t_fov_x * 1.05, right);	// *1.05 -- to avoid FP precision bugs
+	VectorScale(vp.view.axis[2], SKY_FRUST_DIST * vp.t_fov_y * 1.05, up);
 #if VISUALIZE_SKY_FRUSTUM
-	right.Scale (0.9);
-	up.Scale (0.9);
+	right.Scale(0.9);
+	up.Scale(0.9);
 #endif
-	VectorAdd (tmp, up, tmp1);				// up
-	VectorAdd (tmp1, right, fv[0].xyz);
-	VectorSubtract (tmp1, right, fv[1].xyz);
-	VectorSubtract (tmp, up, tmp1);			// down
-	VectorSubtract (tmp1, right, fv[2].xyz);
-	VectorAdd (tmp1, right, fv[3].xyz);
+	VectorAdd(tmp, up, tmp1);				// up
+	VectorAdd(tmp1, right, fv[0].xyz);
+	VectorSubtract(tmp1, right, fv[1].xyz);
+	VectorSubtract(tmp, up, tmp1);			// down
+	VectorSubtract(tmp1, right, fv[2].xyz);
+	VectorAdd(tmp1, right, fv[3].xyz);
 	// rasterize frustum
 	surfacePlanar_t pl;
 	pl.numVerts = 4;
 	pl.verts    = fv;
-	AddSkySurface (&pl, SKY_FRUSTUM);
+	AddSkySurface(&pl, SKY_FRUSTUM);
 
-	if (!SkyVisible ()) return;				// all sky surfaces are outside frustum
+	if (!SkyVisible()) return;				// all sky surfaces are outside frustum
 
 	// draw sky
 	shader_t *shader = gl_skyShader;
 	shaderStage_t *stage = shader->stages[0];
 	assert(gl_skyShader->numStages && stage);
 
-	GL_DepthRange (gl_showSky->integer ? DEPTH_NEAR : DEPTH_FAR);
-	GL_EnableFog (false);
+	GL_DepthRange(gl_showSky->integer ? DEPTH_NEAR : DEPTH_FAR);
+	GL_EnableFog(false);
 	// if we will add "NODEPTHTEST" if gl_showSky mode -- DEPTHWITE will no effect
 	stage->glState = (gl_showSky->integer) ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST;
 
-	glPushMatrix ();
+	glPushMatrix();
 	// modify modelview matrix
-	glTranslatef (VECTOR_ARG(vp.view.origin));
+	glTranslatef(VECTOR_ARG(vp.view.origin));
 	if (shader->skyRotate)
-		glRotatef (vp.time * shader->skyRotate, VECTOR_ARG(shader->skyAxis));
+		glRotatef(vp.time * shader->skyRotate, VECTOR_ARG(shader->skyAxis));
 
 	skyDist = vp.zFar / 3;					// any non-zero value not works on TNT2 (but works with GeForce2)
 
 	for (int side = 0; side < 6; side++)
 	{
-		TesselateSkySide (side, vb->verts, srcTexCoord);
+		TesselateSkySide(side, vb->verts, srcTexCoord);
 		if (!gl_numIndexes) continue;		// no surfaces on this side
 		// if gl_skyShader == gl_defaultSkyShader, then skyBox[] will be NULL (disabled texturing)
 		if (shader->useSkyBox)
 			stage->mapImage[0] = shader->skyBox[side];
-		BK_FlushShader ();
+		BK_FlushShader();
 	}
-	glPopMatrix ();
+	glPopMatrix();
 
 #if VISUALIZE_SKY_FRUSTUM
-	glPushMatrix ();
-	glLoadMatrixf (&vp.modelMatrix[0][0]);	// world matrix
-	GL_SetMultitexture (0);
-	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
-	GL_DepthRange (DEPTH_NEAR);
-	glDisableClientState (GL_COLOR_ARRAY);
-	glColor3f (0, 0, 0);
-	GL_CullFace (CULL_NONE);
-	glBegin (GL_QUADS);
-	glVertex3fv (fv[0].xyz);
-	glVertex3fv (fv[1].xyz);
-	glVertex3fv (fv[2].xyz);
-	glVertex3fv (fv[3].xyz);
-	glEnd ();
-	glPopMatrix ();
+	glPushMatrix();
+	glLoadMatrixf(&vp.modelMatrix[0][0]);	// world matrix
+	GL_SetMultitexture(0);
+	GL_State(GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
+	GL_DepthRange(DEPTH_NEAR);
+	glDisableClientState(GL_COLOR_ARRAY);
+	glColor3f(0, 0, 0);
+	GL_CullFace(CULL_NONE);
+	glBegin(GL_QUADS);
+	glVertex3fv(fv[0].xyz);
+	glVertex3fv(fv[1].xyz);
+	glVertex3fv(fv[2].xyz);
+	glVertex3fv(fv[3].xyz);
+	glEnd();
+	glPopMatrix();
 #endif
 
-	GL_DepthRange (DEPTH_NORMAL);
+	GL_DepthRange(DEPTH_NORMAL);
 
 	unguard;
 }

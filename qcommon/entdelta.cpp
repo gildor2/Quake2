@@ -12,15 +12,15 @@
 #if 0
 
 #define TEMPLATE(Name,type,fmt)						\
-static void M_Write##Name (sizebuf_t *m, type c)	\
+static void M_Write##Name(sizebuf_t *m, type c)	\
 {													\
-	appPrintf (S_GREEN"w" fmt "\n", c);			\
-	MSG_Write##Name (m, c);							\
+	appPrintf(S_GREEN"w" fmt "\n", c);			\
+	MSG_Write##Name(m, c);							\
 }													\
-static type M_Read##Name (sizebuf_t *m)				\
+static type M_Read##Name(sizebuf_t *m)				\
 {													\
-	type c = MSG_Read##Name (m);					\
-	appPrintf (S_RED"r" fmt "\n", c);				\
+	type c = MSG_Read##Name(m);					\
+	appPrintf(S_RED"r" fmt "\n", c);				\
 	return c;										\
 }
 
@@ -98,15 +98,15 @@ struct deltaInfo_t
 
 // parsing delta
 //!! function will be smaller, if use msg->Serialize(&data) -- single function for reading/writting
-static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *info, int count, unsigned bits, sizebuf_t *w, sizebuf_t *r)
+static unsigned ParseDelta(const void *prev, void *next, const deltaInfo_t *info, int count, unsigned bits, sizebuf_t *w, sizebuf_t *r)
 {
 	guard(ParseDelta);
 	unsigned ret = 0;
 
 	for ( ; count; count--, info++)
 	{
-		void *field = (byte*)next + info->offset; // OffsetPointer (next, info->offset);
-		if (!w && !r && !memcmp ((byte*)prev + info->offset, field, typeSize[info->type])) continue;
+		void *field = (byte*)next + info->offset; // OffsetPointer(next, info->offset);
+		if (!w && !r && !memcmp((byte*)prev + info->offset, field, typeSize[info->type])) continue;
 
 #define F(type)		*((type*)field)
 		unsigned m = 0;
@@ -127,40 +127,40 @@ static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *inf
 				switch (info->type)
 				{
 				case CHAR:
-					if (w) MSG_WriteChar (w, F(char));
-					if (r) F(char) = MSG_ReadChar (r);
+					if (w) MSG_WriteChar(w, F(char));
+					if (r) F(char) = MSG_ReadChar(r);
 					break;
 				case BYTE:
-					if (w) MSG_WriteByte (w, F(byte));
-					if (r) F(byte) = MSG_ReadByte (r);
+					if (w) MSG_WriteByte(w, F(byte));
+					if (r) F(byte) = MSG_ReadByte(r);
 					break;
 				case SHORT:
-					if (w) MSG_WriteShort (w, F(short));
-					if (r) F(short) = MSG_ReadShort (r);
+					if (w) MSG_WriteShort(w, F(short));
+					if (r) F(short) = MSG_ReadShort(r);
 					break;
 				case DWORD:
-					if (w) MSG_WriteLong (w, F(unsigned));
-					if (r) F(unsigned) = MSG_ReadLong (r);
+					if (w) MSG_WriteLong(w, F(unsigned));
+					if (r) F(unsigned) = MSG_ReadLong(r);
 					break;
 				case ANGLE:
-					if (w) MSG_WriteAngle (w, F(float));
-					if (r) F(float) = MSG_ReadAngle (r);
+					if (w) MSG_WriteAngle(w, F(float));
+					if (r) F(float) = MSG_ReadAngle(r);
 					break;
 				case ANGLE16:
-					if (w) MSG_WriteAngle16 (w, F(float));
-					if (r) F(float) = MSG_ReadAngle16 (r);
+					if (w) MSG_WriteAngle16(w, F(float));
+					if (r) F(float) = MSG_ReadAngle16(r);
 					break;
 				case FCHAR:
-					if (w) MSG_WriteChar (w, appRound (F(float) * info->extra2));
-					if (r) F(float) = (float) MSG_ReadChar (r) / info->extra2;
+					if (w) MSG_WriteChar(w, appRound(F(float) * info->extra2));
+					if (r) F(float) = (float) MSG_ReadChar(r) / info->extra2;
 					break;
 				case FBYTE:
-					if (w) MSG_WriteByte (w, appRound (F(float) * info->extra2));
-					if (r) F(float) = (float) MSG_ReadByte (r) / info->extra2;
+					if (w) MSG_WriteByte(w, appRound(F(float) * info->extra2));
+					if (r) F(float) = (float) MSG_ReadByte(r) / info->extra2;
 					break;
 				case FSHORT:
-					if (w) MSG_WriteShort (w, appRound (F(float) * info->extra2));
-					if (r) F(float) = (float) MSG_ReadShort (r) / info->extra2;
+					if (w) MSG_WriteShort(w, appRound(F(float) * info->extra2));
+					if (r) F(float) = (float) MSG_ReadShort(r) / info->extra2;
 					break;
 				}
 			}
@@ -176,13 +176,13 @@ static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *inf
 
 				if (bits & e1)
 				{
-					if (w) MSG_WriteByte (w, d);
-					if (r) F(short) = MSG_ReadByte (r);
+					if (w) MSG_WriteByte(w, d);
+					if (r) F(short) = MSG_ReadByte(r);
 				}
 				else if (bits & e2)
 				{
-					if (w) MSG_WriteShort (w, d);
-					if (r) F(short) = MSG_ReadShort (r);
+					if (w) MSG_WriteShort(w, d);
+					if (r) F(short) = MSG_ReadShort(r);
 				}
 			}
 			break;
@@ -202,14 +202,14 @@ static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *inf
 
 				unsigned chk = bits & (e1|e2);
 				if (chk == e1) {
-					if (w) MSG_WriteByte (w, d);
-					if (r) F(unsigned) = MSG_ReadByte (r);
+					if (w) MSG_WriteByte(w, d);
+					if (r) F(unsigned) = MSG_ReadByte(r);
 				} else if (chk == e2) {
-					if (w) MSG_WriteShort (w, d);
-					if (r) F(unsigned) = (unsigned short)MSG_ReadShort (r);	// without "unsigned short"
+					if (w) MSG_WriteShort(w, d);
+					if (r) F(unsigned) = (unsigned short)MSG_ReadShort(r);	// without "unsigned short"
 				} else if (chk == (e1|e2)) {
-					if (w) MSG_WriteLong (w, d);
-					if (r) F(unsigned) = MSG_ReadLong (r);
+					if (w) MSG_WriteLong(w, d);
+					if (r) F(unsigned) = MSG_ReadLong(r);
 				}
 			}
 			break;
@@ -223,20 +223,20 @@ static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *inf
 }
 
 
-inline unsigned ComputeDeltaBits (const void *prev, void *next, const deltaInfo_t *info, int count)
+inline unsigned ComputeDeltaBits(const void *prev, void *next, const deltaInfo_t *info, int count)
 {
-	return ParseDelta (prev, next, info, count, 0, NULL, NULL);
+	return ParseDelta(prev, next, info, count, 0, NULL, NULL);
 }
 
-inline void WriteDelta (const void *prev, void *next, const deltaInfo_t *info, int count, unsigned bits, sizebuf_t *msg)
+inline void WriteDelta(const void *prev, void *next, const deltaInfo_t *info, int count, unsigned bits, sizebuf_t *msg)
 {
 	// NOTE: "prev" unused
-	ParseDelta (NULL, next, info, count, bits, msg, NULL);
+	ParseDelta(NULL, next, info, count, bits, msg, NULL);
 }
 
-inline void ReadDelta (const void *prev, void *next, const deltaInfo_t *info, int count, unsigned bits, sizebuf_t *msg)
+inline void ReadDelta(const void *prev, void *next, const deltaInfo_t *info, int count, unsigned bits, sizebuf_t *msg)
 {
-	ParseDelta (NULL, next, info, count, bits, NULL, msg);
+	ParseDelta(NULL, next, info, count, bits, NULL, msg);
 }
 
 
@@ -312,18 +312,18 @@ N(	anim,			DWORD,	U_ANIM,	 0	)
 #undef STRUC
 
 
-void MSG_WriteDeltaEntity (sizebuf_t *msg, const entityStateEx_t *from, entityStateEx_t *to, bool force, bool newentity, bool isExt)
+void MSG_WriteDeltaEntity(sizebuf_t *msg, const entityStateEx_t *from, entityStateEx_t *to, bool force, bool newentity, bool isExt)
 {
 	guard(MSG_WriteDeltaEntity);
 
 	if (!to->number)
-		appError ("Unset entity number");
+		appError("Unset entity number");
 	if (to->number >= MAX_EDICTS)
-		appError ("Entity number >= MAX_EDICTS");
+		appError("Entity number >= MAX_EDICTS");
 
 	LOG("write delta entity\n");
 
-	unsigned bits = ComputeDeltaBits (from, to, ARRAY_ARG(entityStateDelta));
+	unsigned bits = ComputeDeltaBits(from, to, ARRAY_ARG(entityStateDelta));
 	if (to->number >= 256) bits |= 1<<U_NUMBER16;
 
 	if (!isExt) bits &= U_OLD_MASK;		// do not transfer extended fields when old protocol
@@ -344,23 +344,23 @@ void MSG_WriteDeltaEntity (sizebuf_t *msg, const entityStateEx_t *from, entitySt
 	// write ent->num
 
 	if (bits & 0xFF000000)
-		MSG_WriteLong (msg, bits | 0x808080);
+		MSG_WriteLong(msg, bits | 0x808080);
 	else if (bits & 0x00FF0000)
 	{
-		MSG_WriteShort (msg, bits | 0x8080);
-		MSG_WriteByte (msg, bits >> 16);
+		MSG_WriteShort(msg, bits | 0x8080);
+		MSG_WriteByte(msg, bits >> 16);
 	}
 	else if (bits & 0x0000FF00)
-		MSG_WriteShort (msg, bits | 0x80);
+		MSG_WriteShort(msg, bits | 0x80);
 	else
-		MSG_WriteByte (msg, bits);
+		MSG_WriteByte(msg, bits);
 
 	if (bits & (1<<U_NUMBER16))
-		MSG_WriteShort (msg, to->number);
+		MSG_WriteShort(msg, to->number);
 	else
-		MSG_WriteByte (msg, to->number);
+		MSG_WriteByte(msg, to->number);
 
-	WriteDelta (from, to, ARRAY_ARG(entityStateDelta), bits, msg);
+	WriteDelta(from, to, ARRAY_ARG(entityStateDelta), bits, msg);
 
 	LOG("----------\n");
 
@@ -368,46 +368,46 @@ void MSG_WriteDeltaEntity (sizebuf_t *msg, const entityStateEx_t *from, entitySt
 }
 
 
-void MSG_WriteRemoveEntity (sizebuf_t *msg, int num)
+void MSG_WriteRemoveEntity(sizebuf_t *msg, int num)
 {
 	if (num >= 256)
 	{
-		MSG_WriteShort (msg, (1<<U_REMOVE)|(1<<U_NUMBER16)|(1<<U_MOREBITS1));	// U_NUMBER16 is bit[8], => U_MOREBITS1
-		MSG_WriteShort (msg, num);
+		MSG_WriteShort(msg, (1<<U_REMOVE)|(1<<U_NUMBER16)|(1<<U_MOREBITS1));	// U_NUMBER16 is bit[8], => U_MOREBITS1
+		MSG_WriteShort(msg, num);
 	}
 	else
 	{
-		MSG_WriteByte (msg, (1<<U_REMOVE));
-		MSG_WriteByte (msg, num);
+		MSG_WriteByte(msg, (1<<U_REMOVE));
+		MSG_WriteByte(msg, num);
 	}
 }
 
 
 // Returns the entity number and the header bits
-int MSG_ReadEntityBits (sizebuf_t *msg, unsigned *bits, bool *remove)
+int MSG_ReadEntityBits(sizebuf_t *msg, unsigned *bits, bool *remove)
 {
 	unsigned b;
 
 	LOG("read entity bits\n");
 
-	unsigned total = MSG_ReadByte (msg);
+	unsigned total = MSG_ReadByte(msg);
 	if (total & 0x80)
 	{
-		b = MSG_ReadByte (msg);
+		b = MSG_ReadByte(msg);
 		total |= b<<8;
 	}
 	if (total & 0x8000)
 	{
-		b = MSG_ReadByte (msg);
+		b = MSG_ReadByte(msg);
 		total |= b<<16;
 	}
 	if (total & 0x800000)
 	{
-		b = MSG_ReadByte (msg);
+		b = MSG_ReadByte(msg);
 		total |= b<<24;
 	}
 
-	int number = (total & (1<<U_NUMBER16)) ?  MSG_ReadShort (msg) : MSG_ReadByte (msg);
+	int number = (total & (1<<U_NUMBER16)) ?  MSG_ReadShort(msg) : MSG_ReadByte(msg);
 
 	*bits = total;
 	if (remove) *remove = (total & (1<<U_REMOVE)) != 0;
@@ -418,7 +418,7 @@ int MSG_ReadEntityBits (sizebuf_t *msg, unsigned *bits, bool *remove)
 }
 
 
-void MSG_ReadDeltaEntity (sizebuf_t *msg, const entityStateEx_t *from, entityStateEx_t *to, unsigned bits)
+void MSG_ReadDeltaEntity(sizebuf_t *msg, const entityStateEx_t *from, entityStateEx_t *to, unsigned bits)
 {
 	guard(MSG_ReadDeltaEntity);
 
@@ -427,7 +427,7 @@ void MSG_ReadDeltaEntity (sizebuf_t *msg, const entityStateEx_t *from, entitySta
 	to->old_origin = from->origin;
 	to->event = 0;		// dalta from zero
 
-	ReadDelta (from, to, ARRAY_ARG(entityStateDelta), bits, msg);
+	ReadDelta(from, to, ARRAY_ARG(entityStateDelta), bits, msg);
 
 	LOG("----------\n");
 
@@ -464,15 +464,15 @@ N(	lightlevel,		BYTE,	31, 0  )			// always
 #undef STRUC
 
 
-void MSG_WriteDeltaUsercmd (sizebuf_t *msg, const usercmd_t *from, usercmd_t *to)
+void MSG_WriteDeltaUsercmd(sizebuf_t *msg, const usercmd_t *from, usercmd_t *to)
 {
 	guard(MSG_WriteDeltaUsercmd);
 
 	LOG("write delta usercmd\n");
 
-	unsigned bits = ComputeDeltaBits (from, to, ARRAY_ARG(userCmdDelta));
-	MSG_WriteByte (msg, bits);
-	WriteDelta (from, to, ARRAY_ARG(userCmdDelta), bits | (1<<31), msg);	// bit #31 - for msec and lightlevel
+	unsigned bits = ComputeDeltaBits(from, to, ARRAY_ARG(userCmdDelta));
+	MSG_WriteByte(msg, bits);
+	WriteDelta(from, to, ARRAY_ARG(userCmdDelta), bits | (1<<31), msg);	// bit #31 - for msec and lightlevel
 
 	LOG("----------\n");
 
@@ -480,7 +480,7 @@ void MSG_WriteDeltaUsercmd (sizebuf_t *msg, const usercmd_t *from, usercmd_t *to
 }
 
 
-void MSG_ReadDeltaUsercmd (sizebuf_t *msg, const usercmd_t *from, usercmd_t *to)
+void MSG_ReadDeltaUsercmd(sizebuf_t *msg, const usercmd_t *from, usercmd_t *to)
 {
 	guard(MSG_ReadDeltaUsercmd);
 
@@ -488,8 +488,8 @@ void MSG_ReadDeltaUsercmd (sizebuf_t *msg, const usercmd_t *from, usercmd_t *to)
 
 	*to = *from;
 
-	unsigned bits = MSG_ReadByte (msg);
-	ReadDelta (from, to, ARRAY_ARG(userCmdDelta), bits | (1<<31), msg);
+	unsigned bits = MSG_ReadByte(msg);
+	ReadDelta(from, to, ARRAY_ARG(userCmdDelta), bits | (1<<31), msg);
 
 	LOG("----------\n");
 
@@ -562,7 +562,7 @@ N(	rdflags,		BYTE,	PS_RDFLAGS, 0  )
 #undef STRUC
 
 
-void MSG_WriteDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, player_state_t *newState)
+void MSG_WriteDeltaPlayerstate(sizebuf_t *msg, const player_state_t *oldState, player_state_t *newState)
 {
 	guard(MSG_WriteDeltaPlayerstate);
 
@@ -571,18 +571,18 @@ void MSG_WriteDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, 
 	player_state_t nullState;
 	if (!oldState)
 	{
-		memset (&nullState, 0, sizeof(player_state_t));
+		memset(&nullState, 0, sizeof(player_state_t));
 		oldState = &nullState;
 	}
 
-	unsigned bits = ComputeDeltaBits (oldState, newState, ARRAY_ARG(playerStateDelta));
+	unsigned bits = ComputeDeltaBits(oldState, newState, ARRAY_ARG(playerStateDelta));
 	bits |= 1<<PS_WEAPONINDEX;		//?? always sent
 
 	//------------------------------
 	// write it
-	MSG_WriteShort (msg, bits);
+	MSG_WriteShort(msg, bits);
 
-	WriteDelta (oldState, newState, ARRAY_ARG(playerStateDelta), bits, msg);
+	WriteDelta(oldState, newState, ARRAY_ARG(playerStateDelta), bits, msg);
 
 	// send stats
 	unsigned statbits = 0;
@@ -590,10 +590,10 @@ void MSG_WriteDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, 
 	for (i = 0; i < MAX_STATS; i++)
 		if (newState->stats[i] != oldState->stats[i])
 			statbits |= 1<<i;
-	MSG_WriteLong (msg, statbits);
+	MSG_WriteLong(msg, statbits);
 	for (i = 0; statbits; i++, statbits >>= 1)
 		if (statbits & 1)
-			MSG_WriteShort (msg, newState->stats[i]);
+			MSG_WriteShort(msg, newState->stats[i]);
 
 	LOG("----------\n");
 
@@ -601,7 +601,7 @@ void MSG_WriteDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, 
 }
 
 
-void MSG_ReadDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, player_state_t *newState)
+void MSG_ReadDeltaPlayerstate(sizebuf_t *msg, const player_state_t *oldState, player_state_t *newState)
 {
 	guard(MSG_ReadDeltaPlayerstate);
 
@@ -611,17 +611,17 @@ void MSG_ReadDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, p
 	if (oldState)
 		*newState = *oldState;
 	else
-		memset (newState, 0, sizeof(player_state_t));
+		memset(newState, 0, sizeof(player_state_t));
 
-	unsigned bits = MSG_ReadShort (msg);
-	ReadDelta (oldState, newState, ARRAY_ARG(playerStateDelta), bits, msg);
+	unsigned bits = MSG_ReadShort(msg);
+	ReadDelta(oldState, newState, ARRAY_ARG(playerStateDelta), bits, msg);
 
 	// parse stats
-	unsigned statbits = MSG_ReadLong (msg);
+	unsigned statbits = MSG_ReadLong(msg);
 	int		i;
 	for (i = 0; statbits; i++, statbits >>= 1)
 		if (statbits & 1)
-			newState->stats[i] = MSG_ReadShort (msg);
+			newState->stats[i] = MSG_ReadShort(msg);
 
 	LOG("----------\n");
 

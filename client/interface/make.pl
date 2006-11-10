@@ -71,9 +71,9 @@ sub EmitDefine {
 		print (DEFS "#define ${npref}$func\t$strucname.${spref}$sname\n");
 	} else {
 		# regular function, may be overloaded - so make inline code
-		print DEFS "inline $type ${npref}$func ($args)\n{\n\t";
+		print DEFS "inline $type ${npref}$func($args)\n{\n\t";
 		print DEFS "return " if $type ne "void";
-		print DEFS "$strucname.${spref}$sname (";
+		print DEFS "$strucname.${spref}$sname(";
 		# args
 		my $i = 0;
 		for $arg (@args) {

@@ -71,19 +71,19 @@ typedef unsigned int		address_t;
 -----------------------------------------------------------------------------*/
 
 //?? asm version here (check compiled code)
-inline int appRound (float f)
+inline int appRound(float f)
 {
-	return lrintf (f);
+	return lrintf(f);
 }
 
-inline int appFloor (float f)
+inline int appFloor(float f)
 {
-	return lrintf (floorf (f));
+	return lrintf(floorf(f));
 }
 
-inline int appCeil (float f)
+inline int appCeil(float f)
 {
-	return lrintf (ceilf (f));
+	return lrintf(ceilf(f));
 }
 
 
@@ -91,7 +91,7 @@ inline int appCeil (float f)
 	Pentium RDTSC timing
 -----------------------------------------------------------------------------*/
 
-inline unsigned appCycles ()
+inline unsigned appCycles()
 {
 	unsigned r;
 	unsigned r2;			// this value is not used, but signal to GCC, that EDX will be modified too
@@ -100,7 +100,7 @@ inline unsigned appCycles ()
 	return r;
 }
 
-inline int64 appCycles64 ()
+inline int64 appCycles64()
 {
 	int64 r;
 	__asm __volatile__
@@ -110,13 +110,13 @@ inline int64 appCycles64 ()
 
 extern CORE_API double GMSecondsPerCycle;
 
-inline float appCyclesToMsecf (unsigned timeDelta)
+inline float appCyclesToMsecf(unsigned timeDelta)
 {
 	double v = timeDelta;
 	return v * GMSecondsPerCycle;
 }
 
-inline float appCyclesToMsecf (int64 &timeDelta)
+inline float appCyclesToMsecf(int64 &timeDelta)
 {
 	double v = timeDelta;
 	return v * GMSecondsPerCycle;
@@ -138,13 +138,13 @@ inline float appCyclesToMsecf (int64 &timeDelta)
 			// guarded code here
 #define unguard							\
 		} catch (...) {					\
-			appUnwindThrow (__FUNC__);	\
+			appUnwindThrow(__FUNC__);	\
 		}								\
 	}
 
 #define unguardf(msg)					\
 		} catch (...) {					\
-			appUnwindPrefix (__FUNC__);	\
+			appUnwindPrefix(__FUNC__);	\
 			appUnwindThrow msg;			\
 		}								\
 	}
@@ -171,35 +171,35 @@ public:
 	jmp_buf	jmp;
 	const char *text;				// == NULL when TRY/CATCH used
 	bool	jumped;					// disallow some infinite loops
-	CGuardContext (const char *msg);
-	~CGuardContext ();
+	CGuardContext(const char *msg);
+	~CGuardContext();
 	// register context and execute code
-	bool Exec (const char *msg);
+	bool Exec(const char *msg);
 };
 
 class CORE_API CGuardContext2 : public CGuardContext
 {
 public:
-	CGuardContext2 ();
+	CGuardContext2();
 };
 
 
-CORE_API NORETURN void appThrowException ();
+CORE_API NORETURN void appThrowException();
 
 #define guard(func)						\
 	{									\
 		CGuardContext _Context(#func);	\
-		if (setjmp (_Context.jmp) == 0) {
+		if (setjmp(_Context.jmp) == 0) {
 			// guarded code here
 #define unguard							\
 		} else {						\
-			appUnwindThrow (_Context.text); \
+			appUnwindThrow(_Context.text); \
 		}								\
 	}
 
 #define unguardf(msg)					\
 		} else {						\
-			appUnwindPrefix (_Context.text); \
+			appUnwindPrefix(_Context.text); \
 			appUnwindThrow msg;			\
 		}								\
 	}
@@ -207,7 +207,7 @@ CORE_API NORETURN void appThrowException ();
 #define TRY_CRASH						\
 	{									\
 		CGuardContext _Context(NULL); 	\
-		if (setjmp (_Context.jmp) == 0)
+		if (setjmp(_Context.jmp) == 0)
 			// guarded code here
 #define CATCH_CRASH						\
 		else
@@ -218,7 +218,7 @@ CORE_API NORETURN void appThrowException ();
 #define TRY								\
 	{									\
 		CGuardContext2 _Context; 		\
-		if (setjmp (_Context.jmp) == 0)
+		if (setjmp(_Context.jmp) == 0)
 			// guarded code here
 #define CATCH							\
 		else

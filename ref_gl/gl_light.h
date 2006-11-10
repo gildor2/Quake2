@@ -34,10 +34,10 @@ public:
 	// fields for culling
 	int		cluster;
 	float	maxDist2;
-	virtual void Init () = 0;
-	virtual void Add (const CVec3 &org, const CAxis &axis) const = 0;
+	virtual void Init() = 0;
+	virtual void Add(const CVec3 &org, const CAxis &axis) const = 0;
 #if LIGHT_DEBUG
-	virtual void Show () const = 0;
+	virtual void Show() const = 0;
 #endif
 };
 
@@ -54,16 +54,16 @@ public:
 	CVec3	spotDir;
 	float	spotDot;
 	// virtual methods
-	virtual void Init ();
-	virtual void Add (const CVec3 &org, const CAxis &axis) const;
+	virtual void Init();
+	virtual void Add(const CVec3 &org, const CAxis &axis) const;
 #if LIGHT_DEBUG
-	virtual void Show () const;
+	virtual void Show() const;
 #endif
-	virtual float GetScale (float dist) const
+	virtual float GetScale(float dist) const
 	{
 		return 1;
 	}
-	virtual const char *GetName () const
+	virtual const char *GetName() const
 	{
 		return "unknown";
 	}
@@ -73,9 +73,9 @@ public:
 // classes for different light attenuation
 class CLightLinear : public CPointLight
 {
-	virtual void Init ();
-	virtual float GetScale (float dist) const;
-	virtual const char *GetName () const
+	virtual void Init();
+	virtual float GetScale(float dist) const;
+	virtual const char *GetName() const
 	{
 		return "linear";
 	}
@@ -83,9 +83,9 @@ class CLightLinear : public CPointLight
 
 class CLightInv : public CPointLight
 {
-	virtual void Init ();
-	virtual float GetScale (float dist) const;
-	virtual const char *GetName () const
+	virtual void Init();
+	virtual float GetScale(float dist) const;
+	virtual const char *GetName() const
 	{
 		return "inv";
 	}
@@ -93,9 +93,9 @@ class CLightInv : public CPointLight
 
 class CLightInv2 : public CPointLight
 {
-	virtual void Init ();
-	virtual float GetScale (float dist) const;
-	virtual const char *GetName () const
+	virtual void Init();
+	virtual float GetScale(float dist) const;
+	virtual const char *GetName() const
 	{
 		return "inv2";
 	}
@@ -103,9 +103,9 @@ class CLightInv2 : public CPointLight
 
 class CLightNofade : public CPointLight
 {
-	virtual void Init ();
-	virtual float GetScale (float dist) const;
-	virtual const char *GetName () const
+	virtual void Init();
+	virtual float GetScale(float dist) const;
+	virtual const char *GetName() const
 	{
 		return "nofade";
 	}
@@ -121,10 +121,10 @@ public:
 	surfacePlanar_t *pl;		// used for normal/axis/bounds
 		//!! NOTE: if few surflights will be combined into a single one, should insert this fields here;
 		//!! in this case can remove gl_model.h dependency and surfacePlanar_t decl. from OpenGLDrv.h
-	virtual void Init ();
-	virtual void Add (const CVec3 &org, const CAxis &axis) const;
+	virtual void Init();
+	virtual void Add(const CVec3 &org, const CAxis &axis) const;
 #if LIGHT_DEBUG
-	virtual void Show () const;
+	virtual void Show() const;
 #endif
 };
 
@@ -135,10 +135,10 @@ class CSunLight : public CLight
 public:
 	CVec3	origin;				// for HL sunlights
 	CVec3	dir;
-	virtual void Init ();
-	virtual void Add (const CVec3 &org, const CAxis &axis) const;
+	virtual void Init();
+	virtual void Add(const CVec3 &org, const CAxis &axis) const;
 #if LIGHT_DEBUG
-	virtual void Show () const
+	virtual void Show() const
 	{}
 #endif
 };
@@ -160,13 +160,13 @@ struct lightCell_t
 	Functions
 -----------------------------------------------------------------------------*/
 
-void ShowLights ();
+void ShowLights();
 
-void LightForEntity (refEntity_t *ent);
-void DiffuseLight (color_t *dst, float lightScale);
+void LightForEntity(refEntity_t *ent);
+void DiffuseLight(color_t *dst, float lightScale);
 
-void InitLightGrid ();
-void PostLoadLights ();
+void InitLightGrid();
+void PostLoadLights();
 
 
 } // namespace

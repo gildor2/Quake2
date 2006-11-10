@@ -27,6 +27,6 @@ struct viddef_t
 extern	viddef_t viddef;			// global video state
 
 // Video module initialisation etc
-void	Vid_Init ();
-void	Vid_Shutdown ();
-void	Vid_Tick ();
+void	Vid_Init();
+void	Vid_Shutdown();
+void	Vid_Tick();

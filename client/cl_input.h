@@ -22,14 +22,14 @@ struct kbutton_t
 };
 extern kbutton_t in_Speed;
 
-void CL_InitInput ();
-void CL_SendCmd ();
+void CL_InitInput();
+void CL_SendCmd();
 
 // platform code
-void IN_Init ();
-void IN_Shutdown ();
-void IN_Activate (bool active);
+void IN_Init();
+void IN_Shutdown();
+void IN_Activate(bool active);
 
-void IN_Frame ();
+void IN_Frame();
 
-void IN_Move (usercmd_t *cmd);
+void IN_Move(usercmd_t *cmd);

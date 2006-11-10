@@ -10,8 +10,8 @@
 #define STACK_UNWIND_DEPTH		80
 
 
-void DumpRegs (COutputDevice *Out, CONTEXT *ctx);
-void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx);
+void DumpRegs(COutputDevice *Out, CONTEXT *ctx);
+void DumpMem(COutputDevice *Out, const unsigned *data, CONTEXT *ctx);
 #if UNWIND_EBP_FRAMES
-void UnwindEbpFrame (COutputDevice *Out, const unsigned *data);
+void UnwindEbpFrame(COutputDevice *Out, const unsigned *data);
 #endif

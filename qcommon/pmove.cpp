@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #if PM_DEBUG
-void SV_DrawTextLeft (const char *text, unsigned rgba = RGB(1,1,1));
+void SV_DrawTextLeft(const char *text, unsigned rgba = RGB(1,1,1));
 #endif
 
 
@@ -71,10 +71,10 @@ static float pm_waterfriction = 1;
 static float pm_waterspeed = 400;
 
 
-inline void PM_Trace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds)
+inline void PM_Trace(trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds)
 {
-	// original: trace = pm->trace (pml.origin, bounds.mins, bounds.maxs, end);
-	pm->trace (trace, start, bounds.mins, bounds.maxs, end);
+	// original: trace = pm->trace(pml.origin, bounds.mins, bounds.maxs, end);
+	pm->trace(trace, start, bounds.mins, bounds.maxs, end);
 }
 
 
@@ -88,10 +88,10 @@ returns the blocked flags (1 = floor, 2 = step / wall)
 */
 #define	STOP_EPSILON	0.1
 
-static void ClipVelocity (const CVec3 &in, const CVec3 &normal, CVec3 &out, float overbounce)
+static void ClipVelocity(const CVec3 &in, const CVec3 &normal, CVec3 &out, float overbounce)
 {
-	float backoff = dot (in, normal) * overbounce;
-	VectorMA (in, -backoff, normal, out);
+	float backoff = dot(in, normal) * overbounce;
+	VectorMA(in, -backoff, normal, out);
 
 	for (int i = 0; i < 3; i++)
 		if (out[i] > -STOP_EPSILON && out[i] < STOP_EPSILON)
@@ -116,7 +116,7 @@ Does not modify any world state?
 #define	MAX_CLIP_PLANES	5
 #define OVERBOUNCE		1.01
 
-static bool SlideMove ()
+static bool SlideMove()
 {
 	CVec3 planes[MAX_CLIP_PLANES];
 	CVec3 primal_velocity = pml.velocity;
@@ -140,8 +140,8 @@ static bool SlideMove ()
 	for (bumpcount = 0; bumpcount < 4; bumpcount++)
 	{
 		CVec3 end;
-		VectorMA (pml.origin, time_left, pml.velocity, end);
-		PM_Trace (trace, pml.origin, end, pm->bounds);
+		VectorMA(pml.origin, time_left, pml.velocity, end);
+		PM_Trace(trace, pml.origin, end, pm->bounds);
 
 		if (trace.allsolid)
 		{	// entity is trapped in another solid
@@ -179,12 +179,12 @@ static bool SlideMove ()
 		int i;
 		for (i = 0; i < numplanes; i++)
 		{
-			ClipVelocity (pml.velocity, planes[i], pml.velocity, 1.01);
+			ClipVelocity(pml.velocity, planes[i], pml.velocity, 1.01);
 			int j;
 			for (j = 0; j < numplanes; j++)
 				if (j != i)
 				{
-					if (dot (pml.velocity, planes[j]) < 0)
+					if (dot(pml.velocity, planes[j]) < 0)
 						break;	// not ok
 				}
 			if (j == numplanes)
@@ -198,37 +198,37 @@ static bool SlideMove ()
 		{	// go along the crease
 			if (numplanes != 2)
 			{
-//				appPrintf ("clip velocity, numplanes == %d\n",numplanes);
+//				appPrintf("clip velocity, numplanes == %d\n",numplanes);
 				pml.velocity.Zero();
 				break;
 			}
 			CVec3 dir;
-			cross (planes[0], planes[1], dir);
-			float d = dot (dir, pml.velocity);
-			VectorScale (dir, d, pml.velocity);
+			cross(planes[0], planes[1], dir);
+			float d = dot(dir, pml.velocity);
+			VectorScale(dir, d, pml.velocity);
 		}
 #else
 		// modify original velocity so it parallels all of the clip planes
 		for (int i = 0; i < numplanes; i++)
 		{
-			if (dot (pml.velocity, planes[i]) >= 0) continue;
-			ClipVelocity (pml.velocity, planes[i], pml.velocity, OVERBOUNCE);
+			if (dot(pml.velocity, planes[i]) >= 0) continue;
+			ClipVelocity(pml.velocity, planes[i], pml.velocity, OVERBOUNCE);
 
 			for (int j = 0; j < numplanes; j++)
 			{
 				if (j == i) continue;
-				if (dot (pml.velocity, planes[j]) >= 0) continue;
+				if (dot(pml.velocity, planes[j]) >= 0) continue;
 
-				ClipVelocity (pml.velocity, planes[j], pml.velocity, OVERBOUNCE);
+				ClipVelocity(pml.velocity, planes[j], pml.velocity, OVERBOUNCE);
 				// check for reentering plane[i] after clip against plane[j]
-				if (dot (pml.velocity, planes[i]) >= 0) continue;
+				if (dot(pml.velocity, planes[i]) >= 0) continue;
 
 				// go along the crease
 				CVec3 dir;
-				cross (planes[i], planes[j], dir);
-				dir.NormalizeFast ();
-				float d = dot (dir, pml.velocity);
-				VectorScale (dir, d, pml.velocity);
+				cross(planes[i], planes[j], dir);
+				dir.NormalizeFast();
+				float d = dot(dir, pml.velocity);
+				VectorScale(dir, d, pml.velocity);
 			}
 			break;
 		}
@@ -236,7 +236,7 @@ static bool SlideMove ()
 
 		// if velocity is against the original velocity, stop dead
 		// to avoid tiny oscilations in sloping corners
-		if (dot (pml.velocity, primal_velocity) <= 0)
+		if (dot(pml.velocity, primal_velocity) <= 0)
 		{
 			pml.velocity.Zero();
 			break;
@@ -250,7 +250,7 @@ static bool SlideMove ()
 }
 
 
-static void StepSlideMove ()
+static void StepSlideMove()
 {
 #if PM_DEBUG
 	SV_DrawTextLeft("slide");
@@ -260,9 +260,9 @@ static void StepSlideMove ()
 	CVec3 start_v = pml.velocity;
 
 #if OLD_PMOVE
-	if (!SlideMove ()) return;
+	if (!SlideMove()) return;
 #else
-	SlideMove ();
+	SlideMove();
 #endif
 
 	CVec3 down_o = pml.origin;
@@ -273,7 +273,7 @@ static void StepSlideMove ()
 
 #if OLD_PMOVE
 	trace_t trace;
-	PM_Trace (trace, up, up, pm->bounds);
+	PM_Trace(trace, up, up, pm->bounds);
 	if (trace.allsolid)
 		return;		// can't step up
 
@@ -282,12 +282,12 @@ static void StepSlideMove ()
 	pml.velocity = start_v;
 #else
 	trace_t trace;
-	PM_Trace (trace, start_o, up, pm->bounds);
+	PM_Trace(trace, start_o, up, pm->bounds);
 	if (trace.allsolid)
 	{
 		// can't step up
 #if PM_DEBUG
-		SV_DrawTextLeft ("allsolid: no up",RGB(1,0,0));
+		SV_DrawTextLeft("allsolid: no up",RGB(1,0,0));
 #endif
 		return;
 	}
@@ -299,12 +299,12 @@ static void StepSlideMove ()
 #endif
 
 //appPrintf(S_GREEN" up ");//!!
-	SlideMove ();
+	SlideMove();
 
 	// push down the final amount
 	CVec3 down = pml.origin;
 	down[2] -= stepHeight;
-	PM_Trace (trace, pml.origin, down, pm->bounds);
+	PM_Trace(trace, pml.origin, down, pm->bounds);
 	if (!trace.allsolid)
 		pml.origin = trace.endpos;
 
@@ -320,7 +320,7 @@ static void StepSlideMove ()
 	if (down_dist > up_dist || trace.plane.normal[2] < MIN_STEP_NORMAL)
 	{
 #if PM_DEBUG
-		SV_DrawTextLeft (va("down: d_dist=%g u_dist=%g norm[2]=%g\n", down_dist, up_dist, trace.plane.normal[2]));
+		SV_DrawTextLeft(va("down: d_dist=%g u_dist=%g norm[2]=%g\n", down_dist, up_dist, trace.plane.normal[2]));
 #endif
 		pml.origin   = down_o;
 		pml.velocity = down_v;
@@ -333,7 +333,7 @@ static void StepSlideMove ()
 
 
 // Handles both ground friction and water friction
-static void Friction ()
+static void Friction()
 {
 	CVec3 &vel = pml.velocity;
 	float speed = dot(vel, vel);		// this is (speed*speed)
@@ -352,7 +352,7 @@ static void Friction ()
 	if ((pm->groundentity && pml.groundsurface && !(pml.groundsurface->flags & SURF_SLICK)) || pml.ladder)
 	{
 #if PM_DEBUG
-		SV_DrawTextLeft ("friction");
+		SV_DrawTextLeft("friction");
 #endif
 		float control = speed < pm_stopspeed ? pm_stopspeed : speed;
 		drop += control * pm_friction * pml.frametime;
@@ -376,9 +376,9 @@ static void Friction ()
 
 
 // Handles user intended acceleration
-static void Accelerate (const CVec3 &wishdir, float wishspeed, float accel)
+static void Accelerate(const CVec3 &wishdir, float wishspeed, float accel)
 {
-	float currentspeed = dot (pml.velocity, wishdir);
+	float currentspeed = dot(pml.velocity, wishdir);
 	float addspeed = wishspeed - currentspeed;
 	if (addspeed <= 0) return;
 
@@ -386,11 +386,11 @@ static void Accelerate (const CVec3 &wishdir, float wishspeed, float accel)
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 
-	VectorMA (pml.velocity, accelspeed, wishdir);
+	VectorMA(pml.velocity, accelspeed, wishdir);
 }
 
 
-static void AddCurrents (CVec3 &wishvel)
+static void AddCurrents(CVec3 &wishvel)
 {
 	CVec3	v;
 	float	f;
@@ -422,12 +422,12 @@ static void AddCurrents (CVec3 &wishvel)
 				CVec3	axis[2], vel_vert;
 
 				// compute projections of velocity onto ladder plane axis
-				cross (pml.ladderPlane.normal, up, axis[0]);
-				axis[0].NormalizeFast ();
-				cross (pml.ladderPlane.normal, axis[0], axis[1]);
+				cross(pml.ladderPlane.normal, up, axis[0]);
+				axis[0].NormalizeFast();
+				cross(pml.ladderPlane.normal, axis[0], axis[1]);
 
-				f = dot (wishvel, axis[1]);
-				VectorScale (axis[1], f, vel_vert);
+				f = dot(wishvel, axis[1]);
+				VectorScale(axis[1], f, vel_vert);
 
 				// limit horizontal component of speed
 				//!! NOTE: SlideMove() may add its own horizontal speed
@@ -435,9 +435,9 @@ static void AddCurrents (CVec3 &wishvel)
 					wishvel = vel_vert;
 				else
 				{
-					f = dot (wishvel, axis[0]);
+					f = dot(wishvel, axis[0]);
 					f = bound(f, -LADDER_SIDE_SPEED, LADDER_SIDE_SPEED);
-					VectorMA (vel_vert, f, axis[0], wishvel);
+					VectorMA(vel_vert, f, axis[0], wishvel);
 				}
 			}
 		}
@@ -458,7 +458,7 @@ static void AddCurrents (CVec3 &wishvel)
 		if ((pm->waterlevel == 1) && (pm->groundentity))
 			f /= 2;
 
-		VectorMA (wishvel, f, v);
+		VectorMA(wishvel, f, v);
 	}
 
 	// add conveyor belt velocities
@@ -472,12 +472,12 @@ static void AddCurrents (CVec3 &wishvel)
 		if (pml.groundcontents & CONTENTS_CURRENT_UP) 	v[2] =  1;
 		if (pml.groundcontents & CONTENTS_CURRENT_DOWN)	v[2] = -1;
 
-		VectorMA (wishvel, 100 /* pm->groundentity->speed */, v);
+		VectorMA(wishvel, 100 /* pm->groundentity->speed */, v);
 	}
 }
 
 
-static void WaterMove ()
+static void WaterMove()
 {
 	CVec3	wishvel;
 	for (int i = 0; i < 3; i++)
@@ -488,28 +488,28 @@ static void WaterMove ()
 	else
 		wishvel[2] += pm->cmd.upmove;
 
-	AddCurrents (wishvel);
+	AddCurrents(wishvel);
 
 	CVec3 wishdir = wishvel;
 	float wishspeed = wishdir.Normalize();
 
 	if (wishspeed > pm_maxspeed)
 	{
-		wishvel.Scale (pm_maxspeed/wishspeed);
+		wishvel.Scale(pm_maxspeed/wishspeed);
 		wishspeed = pm_maxspeed;
 	}
 	wishspeed *= 0.5;
 
-	Accelerate (wishdir, wishspeed, pm_wateraccelerate);
+	Accelerate(wishdir, wishspeed, pm_wateraccelerate);
 
-	StepSlideMove ();
+	StepSlideMove();
 }
 
 
-static void AirMove ()
+static void AirMove()
 {
 #if PM_DEBUG
-	SV_DrawTextLeft ("AirMove");
+	SV_DrawTextLeft("AirMove");
 #endif
 	float fmove = pm->cmd.forwardmove;
 	float smove = pm->cmd.sidemove;
@@ -521,24 +521,24 @@ static void AirMove ()
 		wishvel[i] = pml.forward[i]*fmove + pml.right[i]*smove;
 	wishvel[2] = 0;
 
-	AddCurrents (wishvel);
-	float wishspeed = VectorNormalize (wishvel, wishdir);
+	AddCurrents(wishvel);
+	float wishspeed = VectorNormalize(wishvel, wishdir);
 
 	// clamp to server defined max speed
 	float maxspeed = (pm->s.pm_flags & PMF_DUCKED) ? pm_duckspeed : pm_maxspeed;
 
 	if (wishspeed > maxspeed)
 	{
-		wishvel.Scale (maxspeed/wishspeed);
+		wishvel.Scale(maxspeed/wishspeed);
 		wishspeed = maxspeed;
 	}
 
 	if (pml.ladder)
 	{
 #if PM_DEBUG
-		SV_DrawTextLeft ("ladder");
+		SV_DrawTextLeft("ladder");
 #endif
-		Accelerate (wishdir, wishspeed, pm_accelerate);
+		Accelerate(wishdir, wishspeed, pm_accelerate);
 		if (wishvel[2] == 0)		// stop moving on ladder
 		{
 			if (pml.velocity[2] > 0)
@@ -554,38 +554,38 @@ static void AirMove ()
 					pml.velocity[2] = 0;
 			}
 		}
-		StepSlideMove ();
+		StepSlideMove();
 	}
 	else if (pm->groundentity)
 	{
 #if PM_DEBUG
-		SV_DrawTextLeft ("groundentity");
+		SV_DrawTextLeft("groundentity");
 #endif
 		// walking on ground
 		pml.velocity[2] = 0; //!!! this is before the accel
-		Accelerate (wishdir, wishspeed, pm_accelerate);
+		Accelerate(wishdir, wishspeed, pm_accelerate);
 		pml.velocity[2] = (pm->s.gravity > 0) ? 0 : pml.velocity[2] -= pm->s.gravity * pml.frametime;
 
 		if (!pml.velocity[0] && !pml.velocity[1])
 			return;
-		StepSlideMove ();
+		StepSlideMove();
 	}
 	else
 	{
 #if PM_DEBUG
-		SV_DrawTextLeft ("in air");
+		SV_DrawTextLeft("in air");
 #endif
 		// not on ground, so little effect on velocity
-		Accelerate (wishdir, wishspeed, pm_airaccelerate ? pm_airaccelerate : 1);
+		Accelerate(wishdir, wishspeed, pm_airaccelerate ? pm_airaccelerate : 1);
 		// add gravity
 		pml.velocity[2] -= pm->s.gravity * pml.frametime;
-		StepSlideMove ();
+		StepSlideMove();
 	}
 }
 
 
 
-static void CatagorizePosition ()
+static void CatagorizePosition()
 {
 	// if the player hull point one unit down is solid, the player
 	// is on ground
@@ -602,7 +602,7 @@ static void CatagorizePosition ()
 		// see if standing on something solid
 		trace_t trace;
 		point[2] = pml.origin[2] - 0.25f;
-		PM_Trace (trace, pml.origin, point, pm->bounds);
+		PM_Trace(trace, pml.origin, point, pm->bounds);
 		pml.groundplane    = trace.plane;
 		pml.groundsurface  = trace.surface;
 		pml.groundcontents = trace.contents;
@@ -614,7 +614,7 @@ static void CatagorizePosition ()
 			pm->groundentity = NULL;
 			pm->s.pm_flags &= ~PMF_ON_GROUND;
 #if PM_DEBUG
-			SV_DrawTextLeft ("!ON_GROUND");
+			SV_DrawTextLeft("!ON_GROUND");
 #endif
 		}
 		else
@@ -654,7 +654,7 @@ static void CatagorizePosition ()
 			pm->touchents[pm->numtouch] = trace.ent;
 			pm->numtouch++;
 #if PM_DEBUG
-			SV_DrawTextLeft (va("touched %d ents ($%X): plane: %g %g %g / %g",
+			SV_DrawTextLeft(va("touched %d ents ($%X): plane: %g %g %g / %g",
 				pm->numtouch, trace.ent, VECTOR_ARG(trace.plane.normal), trace.plane.dist),RGB(1,0,0));
 #endif
 		}
@@ -668,29 +668,29 @@ static void CatagorizePosition ()
 	float sample1 = sample2 / 2;
 
 	point[2] = pml.origin[2] + pm->bounds.mins[2] + 1;
-	unsigned cont = pm->pointcontents (point);
+	unsigned cont = pm->pointcontents(point);
 	if (cont & MASK_WATER)
 	{
 		pm->watertype  = cont;
 		pm->waterlevel = 1;
 		point[2] = pml.origin[2] + pm->bounds.mins[2] + sample1;
-		cont = pm->pointcontents (point);
+		cont = pm->pointcontents(point);
 		if (cont & MASK_WATER)
 		{
 			pm->waterlevel = 2;
 			point[2] = pml.origin[2] + pm->bounds.mins[2] + sample2;
-			cont = pm->pointcontents (point);
+			cont = pm->pointcontents(point);
 			if (cont & MASK_WATER)
 				pm->waterlevel = 3;
 		}
 #if PM_DEBUG
-		SV_DrawTextLeft (va("waterlevel=%d",pm->waterlevel),RGB(0,0.1,1));
+		SV_DrawTextLeft(va("waterlevel=%d",pm->waterlevel),RGB(0,0.1,1));
 #endif
 	}
 }
 
 
-static void CheckJump ()
+static void CheckJump()
 {
 	if (pm->s.pm_flags & PMF_TIME_LAND)
 	{	// hasn't been long enough since landing to jump again
@@ -740,7 +740,7 @@ static void CheckJump ()
 }
 
 
-static void CheckSpecialMovement ()
+static void CheckSpecialMovement()
 {
 	if (pm->s.pm_time) return;
 
@@ -751,7 +751,7 @@ static void CheckSpecialMovement ()
 	flatforward[0] = pml.forward[0];
 	flatforward[1] = pml.forward[1];
 	flatforward[2] = 0;
-	flatforward.Normalize ();
+	flatforward.Normalize();
 
 	float dist;
 	if (pm->cmd.upmove < 0)
@@ -759,9 +759,9 @@ static void CheckSpecialMovement ()
 	else
 		dist = 1;
 	CVec3 spot;
-	VectorMA (pml.origin, dist, flatforward, spot);
+	VectorMA(pml.origin, dist, flatforward, spot);
 	trace_t trace;
-	PM_Trace (trace, pml.origin, spot, pm->bounds);
+	PM_Trace(trace, pml.origin, spot, pm->bounds);
 	if ((trace.fraction < 1) && (trace.contents & CONTENTS_LADDER))
 	{
 		pml.ladder      = true;
@@ -773,15 +773,15 @@ static void CheckSpecialMovement ()
 	if (pm->waterlevel != 2)
 		return;
 
-	VectorMA (pml.origin, 30, flatforward, spot);
+	VectorMA(pml.origin, 30, flatforward, spot);
 	spot[2] += 4;
-	if (!(pm->pointcontents (spot) & CONTENTS_SOLID)) return;
+	if (!(pm->pointcontents(spot) & CONTENTS_SOLID)) return;
 
 	spot[2] += 16;
-	if (pm->pointcontents (spot)) return;			// CONTENTS_EMPTY
+	if (pm->pointcontents(spot)) return;			// CONTENTS_EMPTY
 
 	// jump out of water
-	VectorScale (flatforward, 50, pml.velocity);
+	VectorScale(flatforward, 50, pml.velocity);
 	pml.velocity[2] = 350;
 
 	pm->s.pm_flags |= PMF_TIME_WATERJUMP;
@@ -789,14 +789,14 @@ static void CheckSpecialMovement ()
 }
 
 
-static void FlyMove (bool doclip)
+static void FlyMove(bool doclip)
 {
 	int		i;
 
 	pm->viewheight = 22;
 
 	// friction
-	float speed = pml.velocity.GetLength ();
+	float speed = pml.velocity.GetLength();
 	if (speed < 1)
 		pml.velocity.Zero();
 	else
@@ -812,15 +812,15 @@ static void FlyMove (bool doclip)
 		else
 			newspeed /= speed;
 
-		pml.velocity.Scale (newspeed);
+		pml.velocity.Scale(newspeed);
 	}
 
 	// accelerate
 	float fmove = pm->cmd.forwardmove;
 	float smove = pm->cmd.sidemove;
 
-	pml.forward.Normalize ();
-	pml.right.Normalize ();
+	pml.forward.Normalize();
+	pml.right.Normalize();
 
 	CVec3 wishvel;
 	for (i = 0; i < 3; i++)
@@ -828,12 +828,12 @@ static void FlyMove (bool doclip)
 	wishvel[2] += pm->cmd.upmove;
 
 	CVec3 wishdir = wishvel;
-	float wishspeed = wishdir.Normalize ();
+	float wishspeed = wishdir.Normalize();
 
 	// clamp to server defined max speed
 	if (wishspeed > pm_maxspeed)
 	{
-		wishvel.Scale (pm_maxspeed/wishspeed);
+		wishvel.Scale(pm_maxspeed/wishspeed);
 		wishspeed = pm_maxspeed;
 	}
 
@@ -855,11 +855,11 @@ static void FlyMove (bool doclip)
 		for (i = 0; i < 3; i++)
 			end[i] = pml.origin[i] + pml.frametime * pml.velocity[i];
 		trace_t trace;
-		PM_Trace (trace, pml.origin, end, pm->bounds);
+		PM_Trace(trace, pml.origin, end, pm->bounds);
 		pml.origin = trace.endpos;
 	}
 	else
-		VectorMA (pml.origin, pml.frametime, pml.velocity);
+		VectorMA(pml.origin, pml.frametime, pml.velocity);
 }
 
 
@@ -884,7 +884,7 @@ MAXD_NORMAL			|	32							|	32							|
 --------------------+-------------------------------+-------------------------------+
 */
 
-static void CheckDuck ()
+static void CheckDuck()
 {
 	pm->bounds.mins[0] = -16;
 	pm->bounds.mins[1] = -16;
@@ -913,7 +913,7 @@ static void CheckDuck ()
 			// try to stand up
 			pm->bounds.maxs[2] = 32;
 			trace_t trace;
-			PM_Trace (trace, pml.origin, pml.origin, pm->bounds);
+			PM_Trace(trace, pml.origin, pml.origin, pm->bounds);
 			if (!trace.allsolid)
 				pm->s.pm_flags &= ~PMF_DUCKED;
 		}
@@ -932,20 +932,20 @@ static void CheckDuck ()
 }
 
 
-static void DeadMove ()
+static void DeadMove()
 {
 	if (!pm->groundentity) return;
 
-	float forward = pml.velocity.GetLength ();
+	float forward = pml.velocity.GetLength();
 	// extra friction
 	if (forward <= 20)
 		pml.velocity.Zero();
 	else
-		pml.velocity.Scale ((forward - 20) / forward);
+		pml.velocity.Scale((forward - 20) / forward);
 }
 
 
-static bool GoodPosition ()
+static bool GoodPosition()
 {
 	if (pm->s.pm_type == PM_SPECTATOR) return true;
 
@@ -953,7 +953,7 @@ static bool GoodPosition ()
 	for (int i = 0; i < 3; i++)
 		v[i] = pm->s.origin[i] / 8.0f;
 	trace_t trace;
-	PM_Trace (trace, v, v, pm->bounds);
+	PM_Trace(trace, v, v, pm->bounds);
 
 	return !trace.allsolid;
 }
@@ -966,7 +966,7 @@ On exit, the origin will have a value that is pre-quantized to the 0.125
 precision of the network channel and in a valid position.
 ================
 */
-static void SnapPosition ()
+static void SnapPosition()
 {
 #if OLD_PMOVE
 	int		sign[3];
@@ -1000,7 +1000,7 @@ static void SnapPosition ()
 			else
 				pm->s.origin[i] = base[i];
 
-		if (GoodPosition ())
+		if (GoodPosition())
 			return;
 	}
 #else
@@ -1009,8 +1009,8 @@ static void SnapPosition ()
 
 	for (i = 0; i < 3; i++)
 	{
-		pm->s.origin[i] = appRound (pml.origin[i] * 8);
-		pm->s.velocity[i] = appRound (pml.velocity[i] * 8);
+		pm->s.origin[i] = appRound(pml.origin[i] * 8);
+		pm->s.velocity[i] = appRound(pml.velocity[i] * 8);
 	}
 	if (pm->s.pm_type == PM_SPECTATOR) return;
 
@@ -1024,7 +1024,7 @@ static void SnapPosition ()
 	{
 		for (j = 0; j < 3; j++) v[j] = pm->s.origin[j] / 8.0f;
 		trace_t trace;
-		PM_Trace (trace, v, v, pm->bounds);
+		PM_Trace(trace, v, v, pm->bounds);
 		if (!trace.allsolid)
 		{
 			for (j = 0; j < 3; j++)
@@ -1079,7 +1079,7 @@ static void InitialSnapPosition()
 			for (int x = 0; x < 3; x++)
 			{
 				pm->s.origin[0] = base[0] + offset[x];
-				if (GoodPosition ())
+				if (GoodPosition())
 				{
 					pml.origin[0] = pm->s.origin[0] / 8.0f;
 					pml.origin[1] = pm->s.origin[1] / 8.0f;
@@ -1093,11 +1093,11 @@ static void InitialSnapPosition()
 		}
 	}
 
-	Com_DPrintf ("Bad InitialSnapPosition\n");
+	Com_DPrintf("Bad InitialSnapPosition\n");
 }
 
 
-static void ClampAngles ()
+static void ClampAngles()
 {
 	if (pm->s.pm_flags & PMF_TIME_TELEPORT)
 	{
@@ -1120,17 +1120,17 @@ static void ClampAngles ()
 		else if (pm->viewangles[PITCH] < 271 && pm->viewangles[PITCH] >= 180)
 			pm->viewangles[PITCH] = 271;
 	}
-	Euler2Vecs (pm->viewangles, &pml.forward, &pml.right, &pml.up);
+	Euler2Vecs(pm->viewangles, &pml.forward, &pml.right, &pml.up);
 }
 
 
 // Can be called by either the server or the client
-void Pmove (pmove_t *pmove)
+void Pmove(pmove_t *pmove)
 {
 	guard(Pmove);
 
 #if PM_DEBUG
-	SV_DrawTextLeft ("******** PMOVE ********", RGB(1,1,0.2));
+	SV_DrawTextLeft("******** PMOVE ********", RGB(1,1,0.2));
 #endif
 
 	pm = pmove;
@@ -1144,7 +1144,7 @@ void Pmove (pmove_t *pmove)
 	pm->waterlevel   = 0;
 
 	// clear all pmove local vars
-	memset (&pml, 0, sizeof(pml));
+	memset(&pml, 0, sizeof(pml));
 
 	// convert origin and velocity to float values
 	pml.origin[0] = pm->s.origin[0] * 0.125f;
@@ -1162,15 +1162,15 @@ void Pmove (pmove_t *pmove)
 
 	pml.frametime = pm->cmd.msec * 0.001f;
 #if PM_DEBUG
-	SV_DrawTextLeft (va("org={%g %g %g} vel={%g %g %g}", VECTOR_ARG(pml.origin), VECTOR_ARG(pml.velocity)), RGB(0,1,1));
+	SV_DrawTextLeft(va("org={%g %g %g} vel={%g %g %g}", VECTOR_ARG(pml.origin), VECTOR_ARG(pml.velocity)), RGB(0,1,1));
 #endif
 
-	ClampAngles ();
+	ClampAngles();
 
 	if (pm->s.pm_type == PM_SPECTATOR)
 	{
-		FlyMove (false);
-		SnapPosition ();
+		FlyMove(false);
+		SnapPosition();
 		return;
 	}
 
@@ -1185,18 +1185,18 @@ void Pmove (pmove_t *pmove)
 		return;		// no movement at all
 
 	// set mins, maxs, and viewheight
-	CheckDuck ();
+	CheckDuck();
 
 	if (pm->snapinitial)
-		InitialSnapPosition ();
+		InitialSnapPosition();
 
 	// set groundentity, watertype, and waterlevel
-	CatagorizePosition ();
+	CatagorizePosition();
 
 	if (pm->s.pm_type == PM_DEAD)
-		DeadMove ();
+		DeadMove();
 
-	CheckSpecialMovement ();
+	CheckSpecialMovement();
 
 	// drop timing counter
 	if (pm->s.pm_time)
@@ -1224,30 +1224,30 @@ void Pmove (pmove_t *pmove)
 			pm->s.pm_time = 0;
 		}
 
-		StepSlideMove ();
+		StepSlideMove();
 	}
 	else
 	{
-		CheckJump ();
-		Friction ();
+		CheckJump();
+		Friction();
 
 		if (pm->waterlevel >= 2)
-			WaterMove ();
+			WaterMove();
 		else
 		{
 			CVec3 angles = pm->viewangles;
 			if (angles[PITCH] > 180)
 				angles[PITCH] -= 360;
 			angles[PITCH] /= 3;
-			Euler2Vecs (angles, &pml.forward, &pml.right, &pml.up);
+			Euler2Vecs(angles, &pml.forward, &pml.right, &pml.up);
 
-			AirMove ();
+			AirMove();
 		}
 	}
 
 	// set groundentity, watertype, and waterlevel for final spot
-	CatagorizePosition ();
-	SnapPosition ();
+	CatagorizePosition();
+	SnapPosition();
 #if PM_DEBUG
 	CVec3 org, vel;
 	for (int i = 0; i < 3; i++)
@@ -1255,8 +1255,8 @@ void Pmove (pmove_t *pmove)
 		org[i] = pmove->s.origin[i] / 8.0f;
 		vel[i] = pmove->s.velocity[i] / 8.0f;
 	}
-	SV_DrawTextLeft (va("org={%g %g %g} vel={%g %g %g}", VECTOR_ARG(org), VECTOR_ARG(vel)), RGB(0,1,1));
-	SV_DrawTextLeft (va("type=%d water=%d groundEnt=$%X touch=%d flags=$%X",
+	SV_DrawTextLeft(va("org={%g %g %g} vel={%g %g %g}", VECTOR_ARG(org), VECTOR_ARG(vel)), RGB(0,1,1));
+	SV_DrawTextLeft(va("type=%d water=%d groundEnt=$%X touch=%d flags=$%X",
 		pmove->s.pm_type, pmove->waterlevel, pmove->groundentity, pmove->numtouch, pmove->s.pm_flags), RGB(0.8,0.8,0));
 #endif
 

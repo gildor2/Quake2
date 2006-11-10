@@ -17,12 +17,12 @@ protected:
 	int		fillPos;
 	CTextRec *lastRec;
 public:
-	inline void Clear ()
+	inline void Clear()
 	{
 		filled = false;
 	}
-	CTextRec *Add (const char *text);
-	void Enumerate (void (*func) (const CTextRec *rec));
+	CTextRec *Add(const char *text);
+	void Enumerate(void (*func) (const CTextRec *rec));
 };
 
 
@@ -37,7 +37,7 @@ private:
 	char	buffer[BufferSize];
 #endif
 public:
-	inline TTextContainer ()
+	inline TTextContainer()
 	{
 #ifdef TEXT_CONTAINER_STATIC
 		textBuf = buffer;
@@ -48,17 +48,17 @@ public:
 		recSize = sizeof(R);
 	}
 #ifndef TEXT_CONTAINER_STATIC
-	~TTextContainer ()
+	~TTextContainer()
 	{
 		delete textBuf;
 	}
 #endif
-	inline R *Add (const char *text)
+	inline R *Add(const char *text)
 	{
-		return static_cast<R*>(CTextContainer::Add (text));
+		return static_cast<R*>(CTextContainer::Add(text));
 	}
-	inline void Enumerate (void (*func) (const R *rec))
+	inline void Enumerate(void (*func) (const R *rec))
 	{
-		CTextContainer::Enumerate ((void(*)(const CTextRec*)) func);
+		CTextContainer::Enumerate((void(*)(const CTextRec*)) func);
 	}
 };

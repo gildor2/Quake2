@@ -7,7 +7,7 @@
  */
 
 
-const char *CSimpleParser::GetLine ()
+const char *CSimpleParser::GetLine()
 {
 	while (true)
 	{
@@ -57,7 +57,7 @@ const char *CSimpleParser::GetLine ()
 		// cut trailing spaces
 		if (!(parseFlags & PARSER_KEEP_SPACES))
 		{
-			for (d = strchr (lineBuffer, 0) - 1; d >= lineBuffer; d--)
+			for (d = strchr(lineBuffer, 0) - 1; d >= lineBuffer; d--)
 			{
 				if (d[0] != ' ') break;
 				d[0] = 0;
@@ -75,11 +75,11 @@ const char *CSimpleParser::GetLine ()
 }
 
 
-const char *CSimpleParser::SkipBraces ()
+const char *CSimpleParser::SkipBraces()
 {
 	int braces = 0;
 	const char *end = textPtr;
-	while (const char *line = GetLine ())
+	while (const char *line = GetLine())
 	{
 		if (line[0] == '{')
 			braces++;
@@ -103,7 +103,7 @@ const char *CSimpleParser::SkipBraces ()
 // will return NULL, when line unexpectedly finished
 // will return pointer to next-after-closing-quote char otherwise
 //?? rename to appSkipString(); process non-quoted strings; skip leading spaces
-char* appSkipQuotedString (char *str)
+char* appSkipQuotedString(char *str)
 {
 	char c = *str;
 	if (c != '"') return str;					//?? not started with quotes ?!
@@ -122,7 +122,7 @@ char* appSkipQuotedString (char *str)
 }
 
 
-bool appQuoteString (char *dst, int dstSize, const char *src)
+bool appQuoteString(char *dst, int dstSize, const char *src)
 {
 	// place starting quote
 	if (!dstSize--) return false;
@@ -163,7 +163,7 @@ bool appQuoteString (char *dst, int dstSize, const char *src)
 }
 
 
-bool appUnquoteString (char *dst, int dstSize, const char *src)
+bool appUnquoteString(char *dst, int dstSize, const char *src)
 {
 	char c = *src++;
 	if (c != '"') return false;					//?? not started with quotes ?!

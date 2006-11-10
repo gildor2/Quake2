@@ -13,7 +13,7 @@ class CCompletedList : public CMemoryChain, public TList<CCompletedItem>
 {
 public:
 	char *completedString;
-	void AddItem (const char *name, unsigned flags);
+	void AddItem(const char *name, unsigned flags);
 	//?? int numItems;
 	//?? void Refine() -- reduce list by known few next chars
 };
@@ -24,7 +24,7 @@ public:
 class CCmdCompletorWorker
 {
 public:
-	virtual void Complete (const char *partial, CCompletedList &list);
+	virtual void Complete(const char *partial, CCompletedList &list);
 };
 
 
@@ -35,14 +35,14 @@ class CCommandCompletion
 private:
 	CCmdCompletorWorker *workers[256];
 public:
-	void RegisterWorker (CCmdCompletorWorker &worker);
-	CCompletedList *CompleteCommand (const char *partial);
+	void RegisterWorker(CCmdCompletorWorker &worker);
+	CCompletedList *CompleteCommand(const char *partial);
 };
 
 
 // CCommandCompletion
 
-void CCommandCompletion::RegisterWorker (CCmdCompletorWorker &worker)
+void CCommandCompletion::RegisterWorker(CCmdCompletorWorker &worker)
 {
 	for (int i = 0; i < ARRAY_COUNT(workers); i++)
 	{
@@ -55,10 +55,10 @@ void CCommandCompletion::RegisterWorker (CCmdCompletorWorker &worker)
 		}
 	}
 	//!! check this:
-	appWPrintf ("Cannot register completor: \"%s\"\n", appSymbolName ((address_t)&worker));
+	appWPrintf("Cannot register completor: \"%s\"\n", appSymbolName((address_t)&worker));
 }
 
-CCompletedList *CCommandCompletion::CompleteCommand (const char *partial)
+CCompletedList *CCommandCompletion::CompleteCommand(const char *partial)
 {
 	CCompletedList *list = new CCompletedList;
 	//!!

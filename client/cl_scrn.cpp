@@ -18,7 +18,7 @@ static cvar_t	*cl_draw2d;
 
 // Function DrawString used for painting HUD
 //?? may add shadow fx
-void DrawString (int x, int y, const char *s)
+void DrawString(int x, int y, const char *s)
 {
 	int color = C_WHITE;
 	while (char c = *s++)
@@ -33,7 +33,7 @@ void DrawString (int x, int y, const char *s)
 				continue;
 			}
 		}
-		RE_DrawChar (x, y, c, color);
+		RE_DrawChar(x, y, c, color);
 		x += CHAR_WIDTH;
 	}
 }
@@ -53,7 +53,7 @@ static struct {
 } gr_values[1024];
 
 
-void SCR_DebugGraph (float value, int color)
+void SCR_DebugGraph(float value, int color)
 {
 	gr_values[gr_current&1023].value = value;
 	gr_values[gr_current&1023].color = color;
@@ -61,10 +61,10 @@ void SCR_DebugGraph (float value, int color)
 }
 
 
-static void DrawDebugGraph ()
+static void DrawDebugGraph()
 {
 	int w = min(viddef.width, 1024);
-	RE_Fill8 (0, viddef.height - graphheight->integer, w, graphheight->integer, 8);
+	RE_Fill8(0, viddef.height - graphheight->integer, w, graphheight->integer, 8);
 
 	for (int a = 0; a < w; a++)
 	{
@@ -73,9 +73,9 @@ static void DrawDebugGraph ()
 		int color = gr_values[i].color;
 
 		if (v < 0)
-			v += graphheight->integer * (1 + appRound (-v / graphheight->value));
+			v += graphheight->integer * (1 + appRound(-v / graphheight->value));
 		int h = appRound(v) % graphheight->integer;
-		RE_Fill8 (w-1-a, viddef.height - h, 1, h, color);
+		RE_Fill8(w-1-a, viddef.height - h, 1, h, color);
 	}
 }
 
@@ -91,9 +91,9 @@ static float centertime_off;
 
 // Called for important messages that should stay in the center of the screen
 // for a few moments
-void SCR_CenterPrint (const char *str)
+void SCR_CenterPrint(const char *str)
 {
-	appStrncpyz (centerstring, str, sizeof(centerstring));
+	appStrncpyz(centerstring, str, sizeof(centerstring));
 	centertime_off = scr_centertime->value;
 
 	// count the number of lines for centering
@@ -103,7 +103,7 @@ void SCR_CenterPrint (const char *str)
 		if (*s++ == '\n') center_lines++;
 
 	// echo it to the console
-	appPrintf ("\n------------------------------------\n\n");
+	appPrintf("\n------------------------------------\n\n");
 	s = str;
 	while (true)
 	{
@@ -123,7 +123,7 @@ void SCR_CenterPrint (const char *str)
 		line[i] = '\n';
 		line[i+1] = 0;
 
-		appPrintf ("%s", line);
+		appPrintf("%s", line);
 
 		while (*s && *s != '\n')
 			s++;
@@ -131,17 +131,17 @@ void SCR_CenterPrint (const char *str)
 		if (!*s) break;
 		s++;		// skip the \n
 	}
-	appPrintf ("------------------------------------\n");
-	Con_ClearNotify ();
+	appPrintf("------------------------------------\n");
+	Con_ClearNotify();
 }
 
 
-static void DrawCenterString ()
+static void DrawCenterString()
 {
 	centertime_off -= cls.frametime;
 	if (centertime_off <= 0) return;
 
-	int y = (center_lines <= 4) ? appRound (viddef.height * 0.35f) : 48;
+	int y = (center_lines <= 4) ? appRound(viddef.height * 0.35f) : 48;
 	const char *start = centerstring;
 	while (true)
 	{
@@ -152,7 +152,7 @@ static void DrawCenterString ()
 				break;
 		int x = (viddef.width - len * CHAR_WIDTH) / 2;
 		for (int i = 0; i < len; i++, x += CHAR_WIDTH)
-			RE_DrawChar (x, y, *start++);
+			RE_DrawChar(x, y, *start++);
 
 		y += CHAR_HEIGHT;
 
@@ -171,7 +171,7 @@ static char		chat_buffer[MAXCMDLINE];
 static int		chat_bufferlen = 0;
 
 
-static void DrawChatInput ()
+static void DrawChatInput()
 {
 	// edit current player message
 	if (cls.key_dest != key_message) return;
@@ -180,12 +180,12 @@ static void DrawChatInput ()
 	int v = CHAR_HEIGHT * 8;		//?? num notify lines
 	if (chat_team)
 	{
-		DrawString (8, v, "say_team:");
+		DrawString(8, v, "say_team:");
 		x = 11;
 	}
 	else
 	{
-		DrawString (8, v, "say:");
+		DrawString(8, v, "say:");
 		x = 5;
 	}
 
@@ -194,24 +194,24 @@ static void DrawChatInput ()
 		s += chat_bufferlen - (viddef.width/CHAR_WIDTH - (x + 1));
 	while (*s)
 	{
-		RE_DrawChar (x * CHAR_WIDTH, v, *s++);
+		RE_DrawChar(x * CHAR_WIDTH, v, *s++);
 		x++;
 	}
 	// draw cursor
-	RE_DrawChar (x * CHAR_WIDTH, v, 10 + ((cls.realtime >> 8) & 1));
+	RE_DrawChar(x * CHAR_WIDTH, v, 10 + ((cls.realtime >> 8) & 1));
 }
 
 
-void Key_Message (int key)
+void Key_Message(int key)
 {
 	if (key == K_ENTER || key == K_KP_ENTER)
 	{
 		if (chat_team)
-			Cbuf_AddText ("say_team \"");
+			Cbuf_AddText("say_team \"");
 		else
-			Cbuf_AddText ("say \"");
-		Cbuf_AddText (chat_buffer);
-		Cbuf_AddText ("\"\n");
+			Cbuf_AddText("say \"");
+		Cbuf_AddText(chat_buffer);
+		Cbuf_AddText("\"\n");
 
 		cls.key_dest = key_game;
 		chat_bufferlen = 0;
@@ -248,14 +248,14 @@ void Key_Message (int key)
 }
 
 
-static void MessageMode_f ()
+static void MessageMode_f()
 {
 	chat_team = false;
 	cls.key_dest = key_message;
 }
 
 
-static void MessageMode2_f ()
+static void MessageMode2_f()
 {
 	chat_team = true;
 	cls.key_dest = key_message;
@@ -270,7 +270,7 @@ static const char *map_levelshot;
 static TString<64> LoadingNotify;
 static float loadingFrac = 0;
 
-void SCR_SetLevelshot (const char *name)
+void SCR_SetLevelshot(const char *name)
 {
 	static const char defLevelshot[] = "pics/levelshot";
 
@@ -278,92 +278,92 @@ void SCR_SetLevelshot (const char *name)
 	{
 		// get levelshot name from map name
 		TString<64> MapName;
-		MapName.filename (cl.configstrings[CS_MODELS+1]);
-		char *tmp = MapName.chr ('.');
+		MapName.filename(cl.configstrings[CS_MODELS+1]);
+		char *tmp = MapName.chr('.');
 		if (tmp) tmp[0] = 0;
-		tmp = MapName.rchr ('/');
+		tmp = MapName.rchr('/');
 		tmp = tmp ? tmp+1 : MapName;
 		name = va("levelshots/%s", tmp);
 	}
 
-	if (map_levelshot && stricmp (map_levelshot, defLevelshot))
+	if (map_levelshot && stricmp(map_levelshot, defLevelshot))
 		return;						// already set non-default levelshot
 
-	if (ImageExists (name))
+	if (ImageExists(name))
 	{
 		static TString<MAX_OSPATH> Levelshot;
 
-		Com_DPrintf ("SetLevelshot: %s\n", name);
+		Com_DPrintf("SetLevelshot: %s\n", name);
 		Levelshot = name;
 		map_levelshot = Levelshot;
 		// force renderer to refresh image
-		CBasicImage *img = RE_RegisterPic (name);
-		if (img) img->Reload ();
+		CBasicImage *img = RE_RegisterPic(name);
+		if (img) img->Reload();
 	}
-	else if (ImageExists (defLevelshot))
+	else if (ImageExists(defLevelshot))
 	{
 		if (map_levelshot != defLevelshot)
 		{
-			Com_DPrintf ("SetLevelshot: %s\n", defLevelshot);
+			Com_DPrintf("SetLevelshot: %s\n", defLevelshot);
 			map_levelshot = defLevelshot;
 		}
 	}
 	else
 		map_levelshot = NULL;
 
-	SCR_BeginLoadingPlaque ();
+	SCR_BeginLoadingPlaque();
 }
 
 
-void SCR_BeginLoadingPlaque (bool server)
+void SCR_BeginLoadingPlaque(bool server)
 {
 	guard(SCR_BeginLoadingPlaque);
 
 	if (server) cl.configstrings[CS_NAME][0] = 0;	// clear previous message
 
-	S_StopAllSounds_f ();
+	S_StopAllSounds_f();
 	cl.sound_ambient = false;						// don't play ambients
-	CDAudio_Stop ();
+	CDAudio_Stop();
 	cls.loading = true;
 	cls.disable_servercount = cl.servercount;
 	LoadingNotify[0] = 0;
 
-	M_ForceMenuOff ();
-	SCR_ShowConsole (false, true);
-	SCR_UpdateScreen ();
+	M_ForceMenuOff();
+	SCR_ShowConsole(false, true);
+	SCR_UpdateScreen();
 	unguard;
 }
 
 
-void SCR_EndLoadingPlaque (bool force)
+void SCR_EndLoadingPlaque(bool force)
 {
 	guard(SCR_EndLoadingPlaque);
 	if (force || (cls.disable_servercount != cl.servercount && cl.rendererReady))
 	{
 		cls.loading = false;
 		map_levelshot = NULL;
-		Con_ClearNotify ();
-		SCR_ShowConsole (false, true);
+		Con_ClearNotify();
+		SCR_ShowConsole(false, true);
 	}
 	unguard;
 }
 
 
-void SCR_LoadingNotify (const char *msg, float frac)
+void SCR_LoadingNotify(const char *msg, float frac)
 {
 	LoadingNotify = msg;
 	loadingFrac   = frac;
-	Sys_ProcessMessages ();
-	SCR_UpdateScreen ();
+	Sys_ProcessMessages();
+	SCR_UpdateScreen();
 }
 
 
 static float conCurrent = 0;	// aproaches con_desired
 
 //!! sometimes console should be painted before menu! (when cls.keep_console)
-static void DrawGUI (bool allowNotifyArea)
+static void DrawGUI(bool allowNotifyArea)
 {
-	Con_CheckResize ();
+	Con_CheckResize();
 
 	// decide on the height of the console
 	float conDesired = 0;		// 0.0 to 1.0 lines of console to display
@@ -374,7 +374,7 @@ static void DrawGUI (bool allowNotifyArea)
 
 	// scroll console
 	static unsigned lastConTime = 0;
-	unsigned currTime  = appMilliseconds ();
+	unsigned currTime  = appMilliseconds();
 	unsigned timeDelta = lastConTime ? currTime - lastConTime : 0;
 	lastConTime = currTime;
 
@@ -399,26 +399,26 @@ static void DrawGUI (bool allowNotifyArea)
 		if (DEVELOPER)
 		{
 			// draw full-screen console before loading plaque if in developer mode
-			RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "pics/conback");
-			Con_DrawConsole (1.0f);
+			RE_DrawDetailedPic(0, 0, viddef.width, viddef.height, "pics/conback");
+			Con_DrawConsole(1.0f);
 #define DEV_SHOT_FRAC	4		// part of screen for levelshot when loading in "developer" mode
 			if (map_levelshot)
-				RE_DrawStretchPic (viddef.width * (DEV_SHOT_FRAC-1) / DEV_SHOT_FRAC, 0,
+				RE_DrawStretchPic(viddef.width * (DEV_SHOT_FRAC-1) / DEV_SHOT_FRAC, 0,
 					viddef.width / DEV_SHOT_FRAC, viddef.height / DEV_SHOT_FRAC, map_levelshot);
 		}
 		else
 		{
 			if (map_levelshot)
-				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, map_levelshot);
+				RE_DrawDetailedPic(0, 0, viddef.width, viddef.height, map_levelshot);
 			else
 			{
-				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "pics/conback");
-				RE_DrawPic (viddef.width / 2, viddef.height / 2, "pics/loading", ANCHOR_CENTER);
+				RE_DrawDetailedPic(0, 0, viddef.width, viddef.height, "pics/conback");
+				RE_DrawPic(viddef.width / 2, viddef.height / 2, "pics/loading", ANCHOR_CENTER);
 			}
 			// common params
 			int left   = viddef.width / 4;
 			int w      = viddef.width / 2;
-			int r      = appRound (w * loadingFrac);
+			int r      = appRound(w * loadingFrac);
 			int top    = viddef.height * 4 / 5;
 			int height = 2 * CHAR_HEIGHT;
 			// map name -- draw multi-line centered message
@@ -429,32 +429,32 @@ static void DrawGUI (bool allowNotifyArea)
 				while (src)
 				{
 					char buf[64];
-					const char *end = strchr (src, '\n');
+					const char *end = strchr(src, '\n');
 					int len;
 					if (end)
 					{
 						len = end - src;
-						appStrncpyz (buf, src, len + 1);
+						appStrncpyz(buf, src, len + 1);
 						src = end + 1;
 					}
 					else
 					{
-						len = strlen (src);
-						memcpy (buf, src, len + 1);
+						len = strlen(src);
+						memcpy(buf, src, len + 1);
 						src = NULL;
 					}
 					// note: up to 6 lines until overlap
-					DrawString ((viddef.width - CHAR_WIDTH*len) / 2, top - CHAR_HEIGHT*6 + shift, va(S_YELLOW"%s", buf));
+					DrawString((viddef.width - CHAR_WIDTH*len) / 2, top - CHAR_HEIGHT*6 + shift, va(S_YELLOW"%s", buf));
 					shift += CHAR_HEIGHT;
 				}
 			}
 			if (LoadingNotify[0])
 			{
 				// graphical progress indicator
-				RE_Fill (left, top, r, height, RGBA(1,1,1,0.1));
-				RE_Fill (left + r, top, w - r, height, RGBA(0.1,0.1,0.1,0.5));
+				RE_Fill(left, top, r, height, RGBA(1,1,1,0.1));
+				RE_Fill(left + r, top, w - r, height, RGBA(0.1,0.1,0.1,0.5));
 				// hotification text
-				DrawString (left + 8, top + 4, va(S_BLACK"%s", *LoadingNotify));
+				DrawString(left + 8, top + 4, va(S_BLACK"%s", *LoadingNotify));
 			}
 			allowNotifyArea = false;
 		}
@@ -467,27 +467,27 @@ static void DrawGUI (bool allowNotifyArea)
 		int r      = w * cls.downloadPercent / 100;
 		int top    = viddef.height - 3 * CHAR_HEIGHT - 2;
 		int height = 2 * CHAR_HEIGHT + 4;
-		RE_Fill (6, top, r, height, RGB(0.5,0,0));
-		RE_Fill (6 + r, top, w - r, height, RGB(0.1,0.1,0.1));
-		DrawString (8, viddef.height - 3 * CHAR_HEIGHT, va("Downloading: %s", *cls.DownloadName));
-		DrawString (8, viddef.height - 2 * CHAR_HEIGHT, va("%d%% complete", cls.downloadPercent));
+		RE_Fill(6, top, r, height, RGB(0.5,0,0));
+		RE_Fill(6 + r, top, w - r, height, RGB(0.1,0.1,0.1));
+		DrawString(8, viddef.height - 3 * CHAR_HEIGHT, va("Downloading: %s", *cls.DownloadName));
+		DrawString(8, viddef.height - 2 * CHAR_HEIGHT, va("%d%% complete", cls.downloadPercent));
 	}
 
 	// draw menu
-	M_Draw ();
+	M_Draw();
 
 	// draw console
 	if (!(cls.loading && DEVELOPER))
 	{
 		if (conCurrent)
-			Con_DrawConsole (conCurrent);
+			Con_DrawConsole(conCurrent);
 		else if (allowNotifyArea && cl_draw2d->integer && (cls.key_dest == key_game || cls.key_dest == key_message))
-			Con_DrawNotify (true);
+			Con_DrawNotify(true);
 	}
 }
 
 
-void SCR_ShowConsole (bool show, bool noAnim)
+void SCR_ShowConsole(bool show, bool noAnim)
 {
 	guard(SCR_ShowConsole);
 
@@ -496,34 +496,34 @@ void SCR_ShowConsole (bool show, bool noAnim)
 		cls.key_dest = (m_current) ? key_menu : key_game;
 		if (noAnim) conCurrent = 0;
 		if (cls.key_dest != key_menu)
-			CL_Pause (false);
+			CL_Pause(false);
 	}
 	else
 	{
 		cls.key_dest = key_console;
 		if (noAnim) conCurrent = bound(con_maxSize->value, 0.1, 1);	//?? different (may be, not needed)
-		CL_Pause (true);
+		CL_Pause(true);
 	}
 
 	unguard;
 }
 
 
-void SCR_ToggleConsole ()
+void SCR_ToggleConsole()
 {
 	if (cls.keep_console) return;
 
-	Con_ClearTyping ();
-	Con_ClearNotify ();
-	SCR_ShowConsole (cls.key_dest != key_console, false);
+	Con_ClearTyping();
+	Con_ClearNotify();
+	SCR_ShowConsole(cls.key_dest != key_console, false);
 }
 
 
-static void Screenshot_f (bool usage, int argc, char **argv)
+static void Screenshot_f(bool usage, int argc, char **argv)
 {
 	if (usage)
 	{
-		appPrintf ("Usage: screenshot [-levelshot] [-no2d] [-nogamma] [-silent] [-jpeg] [<filename>]\n");
+		appPrintf("Usage: screenshot [-levelshot] [-no2d] [-nogamma] [-silent] [-jpeg] [<filename>]\n");
 		return;
 	}
 
@@ -536,82 +536,82 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 		if (opt[0] == '-')
 		{
 			opt++;
-			if (!stricmp (opt, "levelshot"))
+			if (!stricmp(opt, "levelshot"))
 			{
 				if (cls.state != ca_active)
 				{
-					appWPrintf ("No levelshots when disconnected\n");
+					appWPrintf("No levelshots when disconnected\n");
 					return;
 				}
 
 				char *tmp;
-				if (!(tmp = strrchr (bspfile.Name, '/')))
+				if (!(tmp = strrchr(bspfile.Name, '/')))
 				{
-					appWPrintf ("Invalid map_name: %s\n", *bspfile.Name);
+					appWPrintf("Invalid map_name: %s\n", *bspfile.Name);
 					return;
 				}
 				tmp++;	// skip '/'
 
 				flags |= SHOT_SMALL|SHOT_NO_2D|SHOT_NOGAMMA;
-				Filename.sprintf ("./%s/levelshots/%s", FS_Gamedir (), tmp);
+				Filename.sprintf("./%s/levelshots/%s", FS_Gamedir(), tmp);
 				// cut extension
-				tmp = Filename.rchr ('.');
+				tmp = Filename.rchr('.');
 				if (tmp) *tmp = 0;
 			}
-			else if (!stricmp (opt, "no2d"))
+			else if (!stricmp(opt, "no2d"))
 				flags |= SHOT_NO_2D;
-			else if (!stricmp (opt, "nogamma"))
+			else if (!stricmp(opt, "nogamma"))
 				flags |= SHOT_NOGAMMA;
-			else if (!stricmp (opt, "silent"))
+			else if (!stricmp(opt, "silent"))
 				flags |= SHOT_SILENT;
-			else if (!stricmp (opt, "jpeg"))
+			else if (!stricmp(opt, "jpeg"))
 				flags |= SHOT_JPEG;
 			else
 			{
-				appWPrintf ("Unknown option: %s\n", opt);
+				appWPrintf("Unknown option: %s\n", opt);
 				return;
 			}
 		}
 		else
 		{
 			if (Filename[0])
-				appWPrintf ("WARNING: name already specified (%s). Changed.\n", *Filename);
-			Filename.filename (va("./%s/screenshots/%s", FS_Gamedir (), opt));
+				appWPrintf("WARNING: name already specified (%s). Changed.\n", *Filename);
+			Filename.filename(va("./%s/screenshots/%s", FS_Gamedir(), opt));
 		}
 	}
 
-	RE_Screenshot (flags, Filename);
+	RE_Screenshot(flags, Filename);
 }
 
 
-static void TimeRefresh_f (bool usage, int argc, char **argv)
+static void TimeRefresh_f(bool usage, int argc, char **argv)
 {
 	//?? name of this func came from "time refresh" == "profile renderer"
 	//?? we was renamed refresh=>renderer, so - rename this func too?
 	if (usage || argc > 2)
 	{
-		appPrintf ("Usage: timerefresh [steps=256]\n");
+		appPrintf("Usage: timerefresh [steps=256]\n");
 		return;
 	}
 	if (cls.state != ca_active) return;
 
 	keydest_t keyDest = cls.key_dest;
 
-	int64 start = appCycles64 ();
+	int64 start = appCycles64();
 	double time = 0;
 
-	int steps = (argc == 2) ? atoi (argv[1]) : 256;
+	int steps = (argc == 2) ? atoi(argv[1]) : 256;
 	for (int i = 0; i < steps; i++)
 	{
 		cl.refdef.viewangles[1] = (float)i * 360 / steps;
 
-		RE_BeginFrame (cls.realtime / 1000.0);
-		RE_RenderFrame (&cl.refdef);
-		RE_EndFrame ();
-		int64 timeDelta = appCycles64 () - start;
-		time = appCyclesToMsecf (timeDelta) / 1000;
+		RE_BeginFrame(cls.realtime / 1000.0);
+		RE_RenderFrame(&cl.refdef);
+		RE_EndFrame();
+		int64 timeDelta = appCycles64() - start;
+		time = appCyclesToMsecf(timeDelta) / 1000;
 		// prevent too long measuring
-		Sys_ProcessMessages ();			// poll keyboard
+		Sys_ProcessMessages();			// poll keyboard
 		if (cls.key_dest != keyDest)	// console or menu was activated or deactivated
 		{
 			steps = i;
@@ -619,7 +619,7 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 		}
 	}
 
-	appPrintf ("%d frames/%g seconds (%g fps)\n", steps, time, steps / time);
+	appPrintf("%d frames/%g seconds (%g fps)\n", steps, time, steps / time);
 }
 
 
@@ -633,7 +633,7 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 #define	ICON_SPACE		8
 
 #if 0
-static void SizeHUDString (const char *string, int *w, int *h)
+static void SizeHUDString(const char *string, int *w, int *h)
 {
 	int lines = 1;
 	int width = 0;
@@ -658,7 +658,7 @@ static void SizeHUDString (const char *string, int *w, int *h)
 }
 #endif
 
-static void DrawHUDString (char *string, int x0, int y, int centerwidth, int color)
+static void DrawHUDString(char *string, int x0, int y, int centerwidth, int color)
 {
 	while (*string)
 	{
@@ -674,7 +674,7 @@ static void DrawHUDString (char *string, int x0, int y, int centerwidth, int col
 		int x = centerwidth ? x0 + (centerwidth - width * CHAR_WIDTH) / 2 : x0;
 		for (int i = 0; i < width; i++)
 		{
-			RE_DrawChar (x, y, *string++, color);
+			RE_DrawChar(x, y, *string++, color);
 			x += CHAR_WIDTH;
 		}
 		if (*string)
@@ -686,13 +686,13 @@ static void DrawHUDString (char *string, int x0, int y, int centerwidth, int col
 }
 
 
-static void DrawField (int x, int y, bool color, int width, int value)
+static void DrawField(int x, int y, bool color, int width, int value)
 {
 	if (width < 1) return;
 
 	// draw number string
 	TString<16> Num;
-	int len = Num.sprintf ("%d", value);
+	int len = Num.sprintf("%d", value);
 	if (width > 5) width = 5;
 	if (len > width) len = width;
 
@@ -703,9 +703,9 @@ static void DrawField (int x, int y, bool color, int width, int value)
 	while (*ptr && len--)
 	{
 		if (*ptr == '-')
-			RE_DrawPic (x, y, va("pics/%snum_minus", color ? "a" : ""));
+			RE_DrawPic(x, y, va("pics/%snum_minus", color ? "a" : ""));
 		else
-			RE_DrawPic (x, y, va("pics/%snum_%c", color ? "a" : "", *ptr));
+			RE_DrawPic(x, y, va("pics/%snum_%c", color ? "a" : "", *ptr));
 		x += HUDCHAR_WIDTH;
 		ptr++;
 	}
@@ -714,7 +714,7 @@ static void DrawField (int x, int y, bool color, int width, int value)
 
 #define	DISPLAY_ITEMS	17
 
-static void DrawInventory ()
+static void DrawInventory()
 {
 	int		i, index[MAX_ITEMS];
 
@@ -742,12 +742,12 @@ static void DrawInventory ()
 	int x = (viddef.width-256)/2;
 	int y = (viddef.height-240)/2;
 
-	RE_DrawPic (x, y+CHAR_HEIGHT, "pics/inventory");
+	RE_DrawPic(x, y+CHAR_HEIGHT, "pics/inventory");
 
 	y += 3 * CHAR_HEIGHT;
 	x += 3 * CHAR_WIDTH;
-	DrawString (x, y,			  S_GREEN"hotkey ### item");
-	DrawString (x, y+CHAR_HEIGHT, S_GREEN"------ --- ----");
+	DrawString(x, y,			  S_GREEN"hotkey ### item");
+	DrawString(x, y+CHAR_HEIGHT, S_GREEN"------ --- ----");
 	y += 2 * CHAR_HEIGHT;
 
 	for (i = top; i < num && i < top+DISPLAY_ITEMS; i++)
@@ -757,16 +757,16 @@ static void DrawInventory ()
 		const char *keyName;
 
 		int item = index[i];
-		appSprintf (ARRAY_ARG(binding), "use %s", cl.configstrings[CS_ITEMS+item]);
-		if (Key_FindBinding (binding, &key, 1))
-			keyName = Key_KeynumToString (key);
+		appSprintf(ARRAY_ARG(binding), "use %s", cl.configstrings[CS_ITEMS+item]);
+		if (Key_FindBinding(binding, &key, 1))
+			keyName = Key_KeynumToString(key);
 		else
 			keyName = "";
 
 		if (item == selected)
-			RE_DrawChar (x-CHAR_WIDTH, y, 13);	//?? original: 15 (but not displayed anyway)
+			RE_DrawChar(x-CHAR_WIDTH, y, 13);	//?? original: 15 (but not displayed anyway)
 
-		DrawString (x, y, va("%s%6s %3i %s", (item == selected) ? S_GREEN: S_WHITE,
+		DrawString(x, y, va("%s%6s %3i %s", (item == selected) ? S_GREEN: S_WHITE,
 			keyName, cl.inventory[item], cl.configstrings[CS_ITEMS+item]));
 		y += CHAR_HEIGHT;
 	}
@@ -775,7 +775,7 @@ static void DrawInventory ()
 
 static char	crosshair_pic[MAX_QPATH];
 
-static void DrawCrosshair ()
+static void DrawCrosshair()
 {
 	if (!crosshair->integer || cl.refdef.rdflags & RDF_THIRD_PERSON)
 		return;
@@ -783,16 +783,16 @@ static void DrawCrosshair ()
 	if (crosshair->modified)
 	{
 		crosshair->modified = false;
-		SCR_TouchPics ();
+		SCR_TouchPics();
 	}
 
 	if (!crosshair_pic[0]) return;
 
-	RE_DrawPic (viddef.width / 2, viddef.height / 2, crosshair_pic, ANCHOR_CENTER, crosshairColor->integer);
+	RE_DrawPic(viddef.width / 2, viddef.height / 2, crosshair_pic, ANCHOR_CENTER, crosshairColor->integer);
 }
 
 
-static void ExecuteLayoutString (const char *s)
+static void ExecuteLayoutString(const char *s)
 {
 	guard(SCR_ExecuteLayoutString);
 
@@ -808,83 +808,83 @@ static void ExecuteLayoutString (const char *s)
 		int value, index;
 		clientInfo_t *ci;
 
-		const char *token = COM_Parse (s);
-		if (!strcmp (token, "xl"))
-			x = atoi (COM_Parse (s));
-		else if (!strcmp (token, "xr"))
-			x = viddef.width + atoi (COM_Parse (s));
-		else if (!strcmp (token, "xv"))
-			x = viddef.width/2 - 160 + atoi (COM_Parse (s));
-		else if (!strcmp (token, "yt"))
-			y = atoi (COM_Parse (s));
-		else if (!strcmp (token, "yb"))
-			y = viddef.height + atoi (COM_Parse (s));
-		else if (!strcmp (token, "yv"))
-			y = viddef.height/2 - 120 + atoi (COM_Parse (s));
-		else if (!strcmp (token, "pic"))
+		const char *token = COM_Parse(s);
+		if (!strcmp(token, "xl"))
+			x = atoi(COM_Parse(s));
+		else if (!strcmp(token, "xr"))
+			x = viddef.width + atoi(COM_Parse(s));
+		else if (!strcmp(token, "xv"))
+			x = viddef.width/2 - 160 + atoi(COM_Parse(s));
+		else if (!strcmp(token, "yt"))
+			y = atoi(COM_Parse(s));
+		else if (!strcmp(token, "yb"))
+			y = viddef.height + atoi(COM_Parse(s));
+		else if (!strcmp(token, "yv"))
+			y = viddef.height/2 - 120 + atoi(COM_Parse(s));
+		else if (!strcmp(token, "pic"))
 		{	// draw a pic from a stat number
-			value = cl.frame.playerstate.stats[atoi (COM_Parse (s))];
+			value = cl.frame.playerstate.stats[atoi(COM_Parse(s))];
 			if (value >= MAX_IMAGES)
-				Com_DropError ("Pic >= MAX_IMAGES");
+				Com_DropError("Pic >= MAX_IMAGES");
 			if (cl.configstrings[CS_IMAGES+value][0])
-				RE_DrawPic (x, y, va("pics/%s", cl.configstrings[CS_IMAGES+value]));
+				RE_DrawPic(x, y, va("pics/%s", cl.configstrings[CS_IMAGES+value]));
 		}
-		else if (!strcmp (token, "client"))
+		else if (!strcmp(token, "client"))
 		{	// draw a deathmatch client block
-			x = viddef.width/2 - 160 + atoi (COM_Parse (s));
-			y = viddef.height/2 - 120 + atoi (COM_Parse (s));
+			x = viddef.width/2 - 160 + atoi(COM_Parse(s));
+			y = viddef.height/2 - 120 + atoi(COM_Parse(s));
 
-			value = atoi (COM_Parse (s));
+			value = atoi(COM_Parse(s));
 			if (value >= MAX_CLIENTS || value < 0)
-				Com_DropError ("client >= MAX_CLIENTS");
+				Com_DropError("client >= MAX_CLIENTS");
 			ci = &cl.clientInfo[value];
 
-			int score = atoi (COM_Parse (s));
-			int ping  = atoi (COM_Parse (s));
-			int time  = atoi (COM_Parse (s));
+			int score = atoi(COM_Parse(s));
+			int ping  = atoi(COM_Parse(s));
+			int time  = atoi(COM_Parse(s));
 
 			int x1 = x+32;
-			DrawString (x1, y,				va(S_GREEN"%s", *ci->PlayerName));
-			DrawString (x1, y+CHAR_HEIGHT,	va("Score: "S_GREEN"%d", score));
-			DrawString (x1, y+CHAR_HEIGHT*2,va("Ping:  %d", ping));
-			DrawString (x1, y+CHAR_HEIGHT*3,va("Time:  %d", time));
+			DrawString(x1, y,				va(S_GREEN"%s", *ci->PlayerName));
+			DrawString(x1, y+CHAR_HEIGHT,	va("Score: "S_GREEN"%d", score));
+			DrawString(x1, y+CHAR_HEIGHT*2,va("Ping:  %d", ping));
+			DrawString(x1, y+CHAR_HEIGHT*3,va("Time:  %d", time));
 
-			RE_DrawStretchPic (x, y, 32, 32, ci->IconName);
+			RE_DrawStretchPic(x, y, 32, 32, ci->IconName);
 		}
-		else if (!strcmp (token, "ctf"))
+		else if (!strcmp(token, "ctf"))
 		{	// draw a ctf client block
 			char	block[80];
 
-			x = viddef.width/2 - 160 + atoi (COM_Parse (s));
-			y = viddef.height/2 - 120 + atoi (COM_Parse (s));
+			x = viddef.width/2 - 160 + atoi(COM_Parse(s));
+			y = viddef.height/2 - 120 + atoi(COM_Parse(s));
 
-			value = atoi (COM_Parse (s));
+			value = atoi(COM_Parse(s));
 			if (value >= MAX_CLIENTS || value < 0)
-				Com_DropError ("client >= MAX_CLIENTS");
+				Com_DropError("client >= MAX_CLIENTS");
 			ci = &cl.clientInfo[value];
 
-			int score = atoi (COM_Parse (s));
-			int ping = atoi (COM_Parse (s));
+			int score = atoi(COM_Parse(s));
+			int ping = atoi(COM_Parse(s));
 			if (ping > 999) ping = 999;
 
-			appSprintf (ARRAY_ARG(block), "%3d %3d %-12.12s", score, ping, *ci->PlayerName);
+			appSprintf(ARRAY_ARG(block), "%3d %3d %-12.12s", score, ping, *ci->PlayerName);
 
 			if (value == cl.playernum)
-				DrawString (x, y, va(S_RED"%s", block));
+				DrawString(x, y, va(S_RED"%s", block));
 			else
-				DrawString (x, y, block);
+				DrawString(x, y, block);
 		}
-		else if (!strcmp (token, "picn"))
+		else if (!strcmp(token, "picn"))
 		{	// draw a pic from a name
-			RE_DrawPic (x, y, va("pics/%s", COM_Parse (s)));
+			RE_DrawPic(x, y, va("pics/%s", COM_Parse(s)));
 		}
-		else if (!strcmp (token, "num"))
+		else if (!strcmp(token, "num"))
 		{	// draw a number
-			int width = atoi (COM_Parse (s));
-			value = cl.frame.playerstate.stats[atoi (COM_Parse (s))];
-			DrawField (x, y, false, width, value);
+			int width = atoi(COM_Parse(s));
+			value = cl.frame.playerstate.stats[atoi(COM_Parse(s))];
+			DrawField(x, y, false, width, value);
 		}
-		else if (!strcmp (token, "hnum"))
+		else if (!strcmp(token, "hnum"))
 		{	// health number
 			bool	color;
 
@@ -897,11 +897,11 @@ static void ExecuteLayoutString (const char *s)
 				color = true;
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 1)
-				RE_DrawPic (x, y, "pics/field_3");
+				RE_DrawPic(x, y, "pics/field_3");
 
-			DrawField (x, y, color, 3, value);
+			DrawField(x, y, color, 3, value);
 		}
-		else if (!strcmp (token, "anum"))
+		else if (!strcmp(token, "anum"))
 		{	// ammo number
 			bool	color;
 
@@ -914,42 +914,42 @@ static void ExecuteLayoutString (const char *s)
 				continue;	// negative number = don't show
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 4)
-				RE_DrawPic (x, y, "pics/field_3");
+				RE_DrawPic(x, y, "pics/field_3");
 
-			DrawField (x, y, color, 3, value);
+			DrawField(x, y, color, 3, value);
 		}
-		else if (!strcmp (token, "rnum"))
+		else if (!strcmp(token, "rnum"))
 		{	// armor number
 			value = cl.frame.playerstate.stats[STAT_ARMOR];
 			if (value < 1) continue;
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 2)
-				RE_DrawPic (x, y, "pics/field_3");
+				RE_DrawPic(x, y, "pics/field_3");
 
-			DrawField (x, y, false, 3, value);		// color = green
+			DrawField(x, y, false, 3, value);		// color = green
 		}
-		else if (!strcmp (token, "stat_string"))
+		else if (!strcmp(token, "stat_string"))
 		{
-			index = cl.frame.playerstate.stats[atoi (COM_Parse (s))];
+			index = cl.frame.playerstate.stats[atoi(COM_Parse(s))];
 			if (index < 0 || index >= MAX_CONFIGSTRINGS)
-				Com_DropError ("Bad stat_string index");
-			DrawString (x, y, cl.configstrings[index]);
+				Com_DropError("Bad stat_string index");
+			DrawString(x, y, cl.configstrings[index]);
 		}
-		else if (!strcmp (token, "cstring"))
-			DrawHUDString (COM_Parse (s), x, y, 320, C_WHITE);
-		else if (!strcmp (token, "cstring2"))
-			DrawHUDString (COM_Parse (s), x, y, 320, C_GREEN);
-		else if (!strcmp (token, "string"))
-			DrawString (x, y, COM_Parse (s));
-		else if (!strcmp (token, "string2"))
-			DrawString (x, y, va(S_GREEN"%s", COM_Parse (s)));
-		else if (!strcmp (token, "if"))
+		else if (!strcmp(token, "cstring"))
+			DrawHUDString(COM_Parse(s), x, y, 320, C_WHITE);
+		else if (!strcmp(token, "cstring2"))
+			DrawHUDString(COM_Parse(s), x, y, 320, C_GREEN);
+		else if (!strcmp(token, "string"))
+			DrawString(x, y, COM_Parse(s));
+		else if (!strcmp(token, "string2"))
+			DrawString(x, y, va(S_GREEN"%s", COM_Parse(s)));
+		else if (!strcmp(token, "if"))
 		{	// draw a number
-			value = cl.frame.playerstate.stats[atoi (COM_Parse (s))];
+			value = cl.frame.playerstate.stats[atoi(COM_Parse(s))];
 			if (!value)
 			{	// skip to endif
-				while (s && strcmp (token, "endif"))
-					token = COM_Parse (s);
+				while (s && strcmp(token, "endif"))
+					token = COM_Parse(s);
 			}
 		}
 	}
@@ -959,95 +959,95 @@ static void ExecuteLayoutString (const char *s)
 
 
 //?? remove; but: this code allow us to cycle crosshairs (when ch#N absent, crosshair is set to 0)
-void SCR_TouchPics ()
+void SCR_TouchPics()
 {
 	int ch_num = crosshair->integer;
 	if (ch_num)
 	{
 		if (ch_num > 0)
 		{
-			appSprintf (ARRAY_ARG(crosshair_pic), "pics/ch%d", crosshair->integer);
-			if (!RE_RegisterPic (crosshair_pic))
+			appSprintf(ARRAY_ARG(crosshair_pic), "pics/ch%d", crosshair->integer);
+			if (!RE_RegisterPic(crosshair_pic))
 				ch_num = -1;								// invalid value
 		}
 		if (ch_num <= 0)
 		{
 			crosshair_pic[0] = 0;
-			if (ch_num < 0) Cvar_Set ("crosshair", "0");	// invalid value becomes zero
+			if (ch_num < 0) Cvar_Set("crosshair", "0");	// invalid value becomes zero
 		}
 	}
 }
 
 
 // This is called every frame, and can also be called explicitly to flush text to the screen.
-void SCR_UpdateScreen ()
+void SCR_UpdateScreen()
 {
 	guard(SCR_UpdateScreen);
 
 	if (!initialized) return;		// not initialized yet
 
-	RE_BeginFrame (cls.realtime / 1000.0);
+	RE_BeginFrame(cls.realtime / 1000.0);
 
 	if (cl.cinematicActive)
 	{
-		if (!SCR_DrawCinematic ())
-			RE_Fill (0, 0, viddef.width, viddef.height, RGB(0,0,0));
-		DrawGUI (false);
+		if (!SCR_DrawCinematic())
+			RE_Fill(0, 0, viddef.width, viddef.height, RGB(0,0,0));
+		DrawGUI(false);
 	}
 	else
 	{
-		if (V_RenderView ())
+		if (V_RenderView())
 		{
 			//------------------- HUD --------------------
 			if (cl_draw2d->integer)
 			{
-				DrawCrosshair ();
+				DrawCrosshair();
 				// SCR_DrawStats:
-				ExecuteLayoutString (cl.configstrings[CS_STATUSBAR]);
+				ExecuteLayoutString(cl.configstrings[CS_STATUSBAR]);
 				// SCR_DrawLayout:
 				if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 1)
-					ExecuteLayoutString (cl.layout);
+					ExecuteLayoutString(cl.layout);
 				// draw inventory
 				if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 2)
-					DrawInventory ();
+					DrawInventory();
 
 				// show disconnected icon when server is not responding
 				if (cl.overtime > 200)
-					RE_DrawPic (64, 0, "pics/net");
+					RE_DrawPic(64, 0, "pics/net");
 
-				DrawCenterString ();
+				DrawCenterString();
 
 				// draw pause
 				if (cl_paused->integer)
-					RE_DrawPic (viddef.width / 2, viddef.height / 2, "pics/pause", ANCHOR_CENTER);
+					RE_DrawPic(viddef.width / 2, viddef.height / 2, "pics/pause", ANCHOR_CENTER);
 
-				DrawChatInput ();
+				DrawChatInput();
 			}
 		}
 		else
 		{
 			// 3D not rendered - draw background
 			if (!cls.loading || !map_levelshot)
-				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "pics/conback");
+				RE_DrawDetailedPic(0, 0, viddef.width, viddef.height, "pics/conback");
 			if (cls.state == ca_disconnected && !cls.loading)
-				M_ForceMenuOn ();
+				M_ForceMenuOn();
 		}
 
-		DrawGUI (true);
+		DrawGUI(true);
 
 		if (timegraph->integer)
-			SCR_DebugGraph (cls.frametime * 300, 0);
+			SCR_DebugGraph(cls.frametime * 300, 0);
 		if (debuggraph->integer || timegraph->integer || netgraph->integer)
-			DrawDebugGraph ();
+			DrawDebugGraph();
 	}
 
-	RE_EndFrame ();
+	RE_EndFrame();
 
 	unguard;
 }
 
 
-void SCR_Init ()
+void SCR_Init()
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(crosshair, 0, CVAR_ARCHIVE),
@@ -1064,13 +1064,13 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(graphshift, 0, 0)
 CVAR_END
 
-	Cvar_GetVars (ARRAY_ARG(vars));
+	Cvar_GetVars(ARRAY_ARG(vars));
 
-	RegisterCommand ("timerefresh", TimeRefresh_f);
-	RegisterCommand ("toggleconsole", SCR_ToggleConsole);
-	RegisterCommand ("messagemode", MessageMode_f);
-	RegisterCommand ("messagemode2", MessageMode2_f);
-	RegisterCommand ("screenshot", Screenshot_f);
+	RegisterCommand("timerefresh", TimeRefresh_f);
+	RegisterCommand("toggleconsole", SCR_ToggleConsole);
+	RegisterCommand("messagemode", MessageMode_f);
+	RegisterCommand("messagemode2", MessageMode2_f);
+	RegisterCommand("screenshot", Screenshot_f);
 
 	initialized = true;
 }

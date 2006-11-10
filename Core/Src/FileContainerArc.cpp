@@ -11,7 +11,7 @@
 //	- separators are '/'
 //	- lowercase names
 //	- not finished with '/'
-CFileContainerArc::FDirInfo *CFileContainerArc::FindDir (const char *path, bool create)
+CFileContainerArc::FDirInfo *CFileContainerArc::FindDir(const char *path, bool create)
 {
 	if (!path || !path[0]) return &Root;
 
@@ -19,14 +19,14 @@ CFileContainerArc::FDirInfo *CFileContainerArc::FindDir (const char *path, bool 
 	for (TStringSplitter<256, '/'> split = path; split; ++split)
 	{
 		FDirInfo *ins;
-		FDirInfo *SubDir = Dir->Dirs.Find (split, &ins);
+		FDirInfo *SubDir = Dir->Dirs.Find(split, &ins);
 		if (!SubDir)
 		{
 			// directory does not exists
 			if (!create) return NULL;		// creation is not desired
 			// create subdirectory
 			SubDir = new (split, mem) FDirInfo;
-			Dir->Dirs.InsertAfter (SubDir, ins);
+			Dir->Dirs.InsertAfter(SubDir, ins);
 		}
 		Dir = SubDir;
 	}
@@ -35,15 +35,15 @@ CFileContainerArc::FDirInfo *CFileContainerArc::FindDir (const char *path, bool 
 }
 
 
-CFileContainerArc::FFileInfo *CFileContainerArc::FindFile (const char *filename)
+CFileContainerArc::FFileInfo *CFileContainerArc::FindFile(const char *filename)
 {
 	TString<256> Path; Path = filename;
-	char *name = Path.rchr ('/');
+	char *name = Path.rchr('/');
 	FDirInfo *Dir;
 	if (name)
 	{
 		*name++ = 0;				// cut filename from path
-		Dir = FindDir (Path);
+		Dir = FindDir(Path);
 		if (!Dir) return NULL;		// directory not found - file does not exists too
 	}
 	else
@@ -52,7 +52,7 @@ CFileContainerArc::FFileInfo *CFileContainerArc::FindFile (const char *filename)
 		Dir = &Root;
 	}
 
-	return Dir->Files.Find (name);
+	return Dir->Files.Find(name);
 }
 
 
@@ -60,29 +60,29 @@ CFileContainerArc::FFileInfo *CFileContainerArc::FindFile (const char *filename)
 	CFileContainer interface
 -----------------------------------------------------------------------------*/
 
-bool CFileContainerArc::FileExists (const char *filename)
+bool CFileContainerArc::FileExists(const char *filename)
 {
-	return FindFile (filename) != NULL;
+	return FindFile(filename) != NULL;
 }
 
 
-CFile *CFileContainerArc::OpenFile (const char *filename)
+CFile *CFileContainerArc::OpenFile(const char *filename)
 {
-	const FFileInfo *FileInfo = FindFile (filename);
+	const FFileInfo *FileInfo = FindFile(filename);
 	if (!FileInfo) return NULL;
-	return OpenLocalFile (*FileInfo);
+	return OpenLocalFile(*FileInfo);
 }
 
 
-void CFileContainerArc::List (CFileList &list, const char *mask, unsigned flags)
+void CFileContainerArc::List(CFileList &list, const char *mask, unsigned flags)
 {
 	TString<256> Path; Path = mask;
-	char *name = Path.rchr ('/');
+	char *name = Path.rchr('/');
 	FDirInfo *Dir;
 	if (name)
 	{
 		*name++ = 0;
-		Dir = FindDir (Path);
+		Dir = FindDir(Path);
 		if (!Dir) return;			// directory not found
 	}
 	else
@@ -106,22 +106,22 @@ void CFileContainerArc::List (CFileList &list, const char *mask, unsigned flags)
 
 		for ( ; it; ++it)
 		{
-			if (!appMatchWildcard (it->name, name)) continue;
+			if (!appMatchWildcard(it->name, name)) continue;
 
 			TString<256> Name; Name = it->name;
 			// process NOEXT
 			if (flags & FS_NOEXT)
 			{
-				char *s = Name.rchr ('.');
+				char *s = Name.rchr('.');
 				if (s) *s = 0;
 			}
 
 			CFileItem *item, *place;
-			if (!(item = list.Find (Name, &place)))
+			if (!(item = list.Find(Name, &place)))
 			{
 				item = new (Name, &list) CFileItem;
 				// here: item->flags=0
-				list.InsertAfter (item, place);
+				list.InsertAfter(item, place);
 			}
 			item->flags |= containFlags|Flag;
 		}

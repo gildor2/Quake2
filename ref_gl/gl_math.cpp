@@ -25,7 +25,7 @@ int   noiseTablei[256];
 float noiseTablef[256];
 
 
-void InitFuncTables ()
+void InitFuncTables()
 {
 	int		i;
 
@@ -34,7 +34,7 @@ void InitFuncTables ()
 		float j = i;			// just to avoid "(float)i"
 		float f = j / TABLE_SIZE;
 		squareTable[i] = (i < TABLE_SIZE/2) ? -1 : 1;
-		sinTable[i] = sin (j / (TABLE_SIZE/2) * M_PI);		// 0 -- 0, last -- 2*pi
+		sinTable[i] = sin(j / (TABLE_SIZE/2) * M_PI);		// 0 -- 0, last -- 2*pi
 		sawtoothTable[i] = f;
 
 		int n = (i + TABLE_SIZE/4) & TABLE_MASK;			// make range -1..1..-1
@@ -42,18 +42,18 @@ void InitFuncTables ()
 			n = TABLE_SIZE - n;
 		triangleTable[i] = (float)(n - TABLE_SIZE/4) / (TABLE_SIZE/4);
 
-		asinTable[i] = asin (f - 1);
-		asinTable[i + TABLE_SIZE] = asin (f);
-		acosTable[i] = acos (f - 1);
-		acosTable[i + TABLE_SIZE] = acos (f);
-		atanTable[i] = atan (f);
-		atanTable2[i] = atan (1.0f / f);
+		asinTable[i] = asin(f - 1);
+		asinTable[i + TABLE_SIZE] = asin(f);
+		acosTable[i] = acos(f - 1);
+		acosTable[i + TABLE_SIZE] = acos(f);
+		atanTable[i] = atan(f);
+		atanTable2[i] = atan(1.0f / f);
 	}
 
 	for (i = 0; i < 256; i++)
 	{
-		sqrtTable[i] = pow (i / 255.0f, 0.5f);
-		noiseTablei[i] = appRound (rand() * 255.0f / RAND_MAX) & 0xFF;
+		sqrtTable[i] = pow(i / 255.0f, 0.5f);
+		noiseTablei[i] = appRound(rand() * 255.0f / RAND_MAX) & 0xFF;
 		noiseTablef[i] = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;	// range -1..1
 	}
 }
@@ -76,13 +76,13 @@ void InitFuncTables ()
  *      | xz(1-cosQ)-y*sinQ    yz(1-cosQ)+x*sinQ    zz+(1-zz)cosQ     |
  */
 
-void BuildRotationAxis (CAxis &r, const CVec3 &axis, float angle)
+void BuildRotationAxis(CAxis &r, const CVec3 &axis, float angle)
 {
 	CVec3	axisn;
 #define x axisn[0]
 #define y axisn[1]
 #define z axisn[2]
-	VectorNormalize (axis, axisn);
+	VectorNormalize(axis, axisn);
 	float q = angle / 180 * M_PI;
 	float sq = sin(q);
 	float cq = cos(q); float ncq = 1 - cq;
@@ -101,25 +101,25 @@ void BuildRotationAxis (CAxis &r, const CVec3 &axis, float angle)
 
 // 3/12 + 4 * 3 = 15/24 dots (worldMatrix/non-worldMatrix)
 // In: ent -- axis + center, center+size2 = maxs, center-size2 = mins
-bool GetBoxRect (const refEntity_t *ent, const CVec3 &size2, float mins2[2], float maxs2[2], bool clamp)
+bool GetBoxRect(const refEntity_t *ent, const CVec3 &size2, float mins2[2], float maxs2[2], bool clamp)
 {
 	CAxis axis;
 	if (!ent->worldMatrix)
 	{
 		// rotate screen axis
 		for (int i = 0; i < 3; i++)
-			ent->coord.axis.TransformVector (vp.view.axis[i], axis[i]);
+			ent->coord.axis.TransformVector(vp.view.axis[i], axis[i]);
 	}
 	else
 		axis = vp.view.axis;
 
 	// vp.view.TransformPoint(ent->center, {x0,y0,z0}) with fast z0 culling
 	CVec3 tmp;
-	VectorSubtract (ent->center, vp.view.origin, tmp);
-	float z0 = dot (tmp, vp.view.axis[0]);				// get Z-coordinate
+	VectorSubtract(ent->center, vp.view.origin, tmp);
+	float z0 = dot(tmp, vp.view.axis[0]);				// get Z-coordinate
 	if (z0 < 4) return false;							// too near to viewer (4==gl_znear)
-	float x0 = dot (tmp, vp.view.axis[1]);
-	float y0 = dot (tmp, vp.view.axis[2]);
+	float x0 = dot(tmp, vp.view.axis[1]);
+	float y0 = dot(tmp, vp.view.axis[2]);
 
 	// {x0,y0,z0} - ent.center, projected to vp.view (3D projection of entity center to screen)
 	// axis - vp.view.axis, rotated to entity coordinate system
@@ -139,10 +139,10 @@ bool GetBoxRect (const refEntity_t *ent, const CVec3 &size2, float mins2[2], flo
 		v[1] = (i & 2) ? size2[1] : -size2[1];
 
 		// axis.TransformVector(v, {x,y,z}) with fast z culling
-		float z = dot (v, axis[0]);						// get entity-relative Z-coordinate of vertex (size of entity along axis.Z)
+		float z = dot(v, axis[0]);						// get entity-relative Z-coordinate of vertex (size of entity along axis.Z)
 		if ((z >= z0 || z <= -z0)) return false;		// |size| is greater than z0 (entity Z-coord) - box intersects screen
-		float x = dot (v, axis[1]);						// entity-center-relative vertex position in 2D
-		float y = dot (v, axis[2]);
+		float x = dot(v, axis[1]);						// entity-center-relative vertex position in 2D
+		float y = dot(v, axis[2]);
 
 		float	scale, x1, y1;
 		// we use orthogonal projection of symmetric box - can use half of computations
@@ -185,28 +185,28 @@ bool GetBoxRect (const refEntity_t *ent, const CVec3 &size2, float mins2[2], flo
 
 
 // Project 3D point to screen coordinates; return false when not in view frustum
-bool ProjectToScreen (const CVec3 &pos, int scr[2])
+bool ProjectToScreen(const CVec3 &pos, int scr[2])
 {
 	CVec3	vec;
-	VectorSubtract (pos, vp.view.origin, vec);
+	VectorSubtract(pos, vp.view.origin, vec);
 
-	float z = dot (vec, vp.view.axis[0]);
+	float z = dot(vec, vp.view.axis[0]);
 	if (z <= gl_znear->value) return false;			// not visible
 
-	float x = dot (vec, vp.view.axis[1]) / z / vp.t_fov_x;
+	float x = dot(vec, vp.view.axis[1]) / z / vp.t_fov_x;
 	if (x < -1 || x > 1) return false;
 
-	float y = dot (vec, vp.view.axis[2]) / z / vp.t_fov_y;
+	float y = dot(vec, vp.view.axis[2]) / z / vp.t_fov_y;
 	if (y < -1 || y > 1) return false;
 
-	scr[0] = appRound (vp.x + vp.w * (0.5 - x / 2));
-	scr[1] = appRound (vp.y + vp.h * (0.5 - y / 2));
+	scr[0] = appRound(vp.x + vp.w * (0.5 - x / 2));
+	scr[1] = appRound(vp.y + vp.h * (0.5 - y / 2));
 
 	return true;
 }
 
 
-void SaturateColor3f (CVec3 &color)
+void SaturateColor3f(CVec3 &color)
 {
 	float sat = r_saturation->value;
 	if (sat != 1.0f)
@@ -225,7 +225,7 @@ void SaturateColor3f (CVec3 &color)
 }
 
 
-void SaturateColor4b (color_t *c)
+void SaturateColor4b(color_t *c)
 {
 	float sat = r_saturation->value;
 	if (sat != 1.0f)
@@ -237,9 +237,9 @@ void SaturateColor4b (color_t *c)
 		SATURATE(r,light,sat);
 		SATURATE(g,light,sat);
 		SATURATE(b,light,sat);
-		c->c[0] = appRound (r);
-		c->c[1] = appRound (g);
-		c->c[2] = appRound (b);
+		c->c[0] = appRound(r);
+		c->c[1] = appRound(g);
+		c->c[2] = appRound(b);
 	}
 }
 

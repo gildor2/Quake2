@@ -15,14 +15,14 @@
 	Startup/shutdown some subsystems
 -----------------------------------------------------------------------------*/
 
-void appInitMemory ();
-void appInitError ();
-void appInitPlatform ();
+void appInitMemory();
+void appInitError();
+void appInitPlatform();
 
-void appShutdownPlatform ();
-void appShutdownError ();
+void appShutdownPlatform();
+void appShutdownError();
 
-void appDetectCPU ();
+void appDetectCPU();
 
 
 /*-----------------------------------------------------------------------------
@@ -30,10 +30,10 @@ void appDetectCPU ();
 -----------------------------------------------------------------------------*/
 
 // initiate error (will set GErr.Message and GIsFatalError + start logging)
-COutputDevice *appBeginError (const char *msg);
+COutputDevice *appBeginError(const char *msg);
 // will return correct value even when log cannot be opened; should be called after GErr.Message is
 // set, otherwise log file will contain "General Protection Fault" string!
-COutputDevice *appGetErrorLog ();
+COutputDevice *appGetErrorLog();
 #if SETJMP_GUARD
 // when > 0, throwing exceptions will not produce application error
 // (used for 'signal()+setjmp()'-driven exception handler only)
@@ -47,11 +47,11 @@ extern int GNumDisabledContexts;
 
 #if DBG_SYMBOLS
 
-void appLoadDebugSymbols ();
+void appLoadDebugSymbols();
 
 // platform-specific code
-bool osGetAddressPackage (address_t address, char *pkgName, int bufSize, int &offset);
-bool osGetAddressSymbol (address_t address, char *exportName, int bufSize, int &offset);
+bool osGetAddressPackage(address_t address, char *pkgName, int bufSize, int &offset);
+bool osGetAddressSymbol(address_t address, char *exportName, int bufSize, int &offset);
 
 #else
 
@@ -66,6 +66,6 @@ bool osGetAddressSymbol (address_t address, char *exportName, int bufSize, int &
 
 #if __UNIX__
 
-void appHookExceptions ();
+void appHookExceptions();
 
 #endif // __UNIX__

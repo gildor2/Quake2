@@ -17,10 +17,10 @@ static cvar_t	*gl_logTexts;
 #define CHAR_WIDTH	8
 #define CHAR_HEIGHT	8
 
-void DrawChar (int x, int y, int c, int color)
+void DrawChar(int x, int y, int c, int color)
 {
 	if (c == ' ') return;
-	BK_DrawText ((char*)&c, 1, x, y, CHAR_WIDTH, CHAR_HEIGHT, colorTable[color]);
+	BK_DrawText((char*)&c, 1, x, y, CHAR_WIDTH, CHAR_HEIGHT, colorTable[color]);
 }
 
 
@@ -45,15 +45,15 @@ static int nextLeft_y  = TOP_TEXT_POS;
 static int nextRight_y = TOP_TEXT_POS;
 
 
-void ClearTexts ()
+void ClearTexts()
 {
 	nextLeft_y = nextRight_y = TOP_TEXT_POS;
-	Text.Clear ();
+	Text.Clear();
 }
 
 
 //?? later (CFont): implement as CFont method
-static void GetTextExtents (const char *s, int &width, int &height)
+static void GetTextExtents(const char *s, int &width, int &height)
 {
 	int x = 0, w = 0;
 	int h = CHARSIZE_Y;
@@ -73,20 +73,20 @@ static void GetTextExtents (const char *s, int &width, int &height)
 }
 
 
-static void DrawText (const CRText *rec)
+static void DrawText(const CRText *rec)
 {
 	if (gl_logTexts->integer)
-		appPrintf (S_MAGENTA"%s\n", rec->text);
+		appPrintf(S_MAGENTA"%s\n", rec->text);
 
 	int y = rec->y;
 	const char *text = rec->text;
 
 	while (true)
 	{
-		const char *s = strchr (text, '\n');
-		int len = s ? s - text : strlen (text);
+		const char *s = strchr(text, '\n');
+		int len = s ? s - text : strlen(text);
 
-		BK_DrawText (text, len, rec->x, y, CHARSIZE_X, CHARSIZE_Y, rec->c.rgba);
+		BK_DrawText(text, len, rec->x, y, CHARSIZE_X, CHARSIZE_Y, rec->c.rgba);
 		if (!s) return;							// all done
 
 		y += CHARSIZE_Y;
@@ -95,19 +95,19 @@ static void DrawText (const CRText *rec)
 }
 
 
-void FlushTexts ()
+void FlushTexts()
 {
-	Text.Enumerate (DrawText);
+	Text.Enumerate(DrawText);
 	if (gl_logTexts->integer == 2)				// special value: log only 1 frame
-		Cvar_SetInteger ("gl_logTexts", 0);
+		Cvar_SetInteger("gl_logTexts", 0);
 	nextLeft_y = nextRight_y = TOP_TEXT_POS;
-	ClearTexts ();
+	ClearTexts();
 }
 
 
-void DrawTextPos (int x, int y, const char *text, unsigned rgba)
+void DrawTextPos(int x, int y, const char *text, unsigned rgba)
 {
-	CRText *rec = Text.Add (text);
+	CRText *rec = Text.Add(text);
 	if (!rec) return;
 	rec->x      = x;
 	rec->y      = y;
@@ -115,31 +115,31 @@ void DrawTextPos (int x, int y, const char *text, unsigned rgba)
 }
 
 
-void DrawTextLeft (const char *text, unsigned rgba)
+void DrawTextLeft(const char *text, unsigned rgba)
 {
 	int w, h;
 	if (nextLeft_y >= vid_height) return;	// out of screen
-	GetTextExtents (text, w, h);
-	DrawTextPos (0, nextLeft_y, text, rgba);
+	GetTextExtents(text, w, h);
+	DrawTextPos(0, nextLeft_y, text, rgba);
 	nextLeft_y += h;
 }
 
 
-void DrawTextRight (const char *text, unsigned rgba)
+void DrawTextRight(const char *text, unsigned rgba)
 {
 	int w, h;
 	if (nextRight_y >= vid_height) return;	// out of screen
-	GetTextExtents (text, w, h);
-	DrawTextPos (vid_width - w, nextRight_y, text, rgba);
+	GetTextExtents(text, w, h);
+	DrawTextPos(vid_width - w, nextRight_y, text, rgba);
 	nextRight_y += h;
 }
 
 
-void DrawText3D (const CVec3 &pos, const char *text, unsigned rgba)
+void DrawText3D(const CVec3 &pos, const char *text, unsigned rgba)
 {
 	int coords[2];
-	if (!ProjectToScreen (pos, coords)) return;
-	DrawTextPos (coords[0], coords[1], text, rgba);
+	if (!ProjectToScreen(pos, coords)) return;
+	DrawTextPos(coords[0], coords[1], text, rgba);
 }
 
 
@@ -147,9 +147,9 @@ void DrawText3D (const CVec3 &pos, const char *text, unsigned rgba)
 	Initialization
 -----------------------------------------------------------------------------*/
 
-void InitTexts ()
+void InitTexts()
 {
-	gl_logTexts = Cvar_Get ("gl_logTexts", "0");
+	gl_logTexts = Cvar_Get("gl_logTexts", "0");
 	//?? should init fonts here
 }
 

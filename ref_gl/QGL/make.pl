@@ -29,7 +29,7 @@ $constname   = "NUM_GLFUNCS";
 $constname2  = "NUM_EXTFUNCS";
 $constname3  = "NUM_EXTENSIONS";
 $extArrName  = "extInfo";
-$log         = "LogFile->Printf (";
+$log         = "LogFile->Printf(";
 
 
 #------------------------------------------------------------------------------
@@ -178,7 +178,7 @@ sub EmitLogDecl {
 	my (@atype, @parm, @arr);
 
 	print (CODE <<EOF
-static $type APIENTRY log$func ($args)
+static $type APIENTRY log$func($args)
 {
 EOF
 	);
@@ -206,7 +206,7 @@ EOF
 			} else {
 				print (CODE "\t");
 			}
-			print (CODE "lib.$func (");
+			print (CODE "lib.$func(");
 			# make arguments for call
 			$i = 0;
 			for $s (@parm)
@@ -216,7 +216,7 @@ EOF
 				$i++;
 			}
 			print (CODE ");\n");
-			print (CODE "\tGLenum err = lib.GetError ();\n\tif (err) $log\"ERROR: %X in %s\\n\", err, \"$funcname\");\n");
+			print (CODE "\tGLenum err = lib.GetError();\n\tif (err) $log\"ERROR: %X in %s\\n\", err, \"$funcname\");\n");
 			print (CODE "\treturn ret;\n") if !$void;
 			print (CODE "}\n");
 			return;
@@ -278,7 +278,7 @@ EOF
 		} else {
 			print (CODE "\t");
 		}
-		print (CODE "lib.$func (");
+		print (CODE "lib.$func(");
 		# make arguments for call
 		$i = 0;
 		for $s (@parm)
@@ -428,7 +428,7 @@ sub Parse {
 			die "Unknown command: ", $cmd
 		} else {
 			#.......... function declaration .............
-			($type, $func, $args, $end) = $line =~ / \s* (\S+ .* [\*\s]) (\w+) \s+ \( (.*) \) \s* (\S*.*) /x;
+			($type, $func, $args, $end) = $line =~ / \s* (\S+ .* [\*\s]) (\w+) \s* \( (.*) \) \s* (\S*.*) /x;
 			($type) = $type =~ /\s*(\S.*\S)\s*/;	# truncate leading and trailing spaces
 			if ($end =~ /NAME/) {
 				($funcname) = $end =~ / .* NAME \s+ (\w+)/x;
@@ -543,7 +543,7 @@ print (CODE "#if !NO_GL_LOG\n\n\n");
 #------------------------------------------------------------------------------
 
 print (CODE <<EOF
-static const char *EnumName (GLenum v)
+static const char *EnumName(GLenum v)
 {
 	switch (v)
 	{

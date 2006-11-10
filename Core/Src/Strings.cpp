@@ -5,7 +5,7 @@
 	String comparision
 -----------------------------------------------------------------------------*/
 
-int appStrcmp (const char *s1, const char *s2)
+int appStrcmp(const char *s1, const char *s2)
 {
 	char c1, c2;
 
@@ -19,7 +19,7 @@ int appStrcmp (const char *s1, const char *s2)
 }
 
 
-int appStrncmp (const char *s1, const char *s2, int count)
+int appStrncmp(const char *s1, const char *s2, int count)
 {
 	char c1, c2;
 
@@ -34,29 +34,29 @@ int appStrncmp (const char *s1, const char *s2, int count)
 }
 
 
-int appStricmp (const char *s1, const char *s2)
+int appStricmp(const char *s1, const char *s2)
 {
 	char c1, c2;
 
 	do
 	{
-		c1 = toLower (*s1++);
-		c2 = toLower (*s2++);
+		c1 = toLower(*s1++);
+		c2 = toLower(*s2++);
 	} while (c1 && c1 == c2);
 
 	return c1 - c2;
 }
 
 
-int appStrnicmp (const char *s1, const char *s2, int count)
+int appStrnicmp(const char *s1, const char *s2, int count)
 {
 	char c1, c2;
 
 	do
 	{
 		if (!count--) return 0;
-		c1 = toLower (*s1++);
-		c2 = toLower (*s2++);
+		c1 = toLower(*s1++);
+		c2 = toLower(*s2++);
 	} while (c1 && c1 == c2);
 
 	return c1 - c2;
@@ -67,7 +67,7 @@ int appStrnicmp (const char *s1, const char *s2, int count)
 	String copying
 -----------------------------------------------------------------------------*/
 
-void appStrcpy (char *dst, const char *src)
+void appStrcpy(char *dst, const char *src)
 {
 	char c;
 	do
@@ -78,7 +78,7 @@ void appStrcpy (char *dst, const char *src)
 }
 
 
-void appStrncpy (char *dst, const char *src, int count)
+void appStrncpy(char *dst, const char *src, int count)
 {
 	char c;
 	do
@@ -90,7 +90,7 @@ void appStrncpy (char *dst, const char *src, int count)
 }
 
 
-void appStrncpylwr (char *dst, const char *src, int count)
+void appStrncpylwr(char *dst, const char *src, int count)
 {
 	if (count <= 0) return;
 
@@ -103,13 +103,13 @@ void appStrncpylwr (char *dst, const char *src, int count)
 			*dst = 0;
 			return;
 		}
-		c = toLower (*src++);
+		c = toLower(*src++);
 		*dst++ = c;
 	} while (c);
 }
 
 
-void appStrncpyz (char *dst, const char *src, int count)
+void appStrncpyz(char *dst, const char *src, int count)
 {
 
 	if (count <= 0) return;	// zero-length string
@@ -131,16 +131,16 @@ void appStrncpyz (char *dst, const char *src, int count)
 
 // NOTE: not same, as strncat(dst, src, count): strncat's "count" is a maximum length of "src", but
 //	here "count" is maximal result size of "dst" ...
-void appStrcatn (char *dst, int count, const char *src)
+void appStrcatn(char *dst, int count, const char *src)
 {
-	char *p = strchr (dst, 0);
+	char *p = strchr(dst, 0);
 	int maxLen = count - (p - dst);
 	if (maxLen > 1)
-		appStrncpyz (p, src, maxLen);
+		appStrncpyz(p, src, maxLen);
 }
 
 
-void appCopyFilename (char *dest, const char *src, int len)
+void appCopyFilename(char *dest, const char *src, int len)
 {
 	guardSlow(appCopyFilename);
 
@@ -199,7 +199,7 @@ void appCopyFilename (char *dest, const char *src, int len)
 	Colorized strings support
 -----------------------------------------------------------------------------*/
 
-int appCStrlen (const char *str)
+int appCStrlen(const char *str)
 {
 	int len = 0;
 	while (char c = *str++)
@@ -220,7 +220,7 @@ int appCStrlen (const char *str)
 }
 
 
-void appUncolorizeString (char *dst, const char *src)
+void appUncolorizeString(char *dst, const char *src)
 {
 	char c;
 
@@ -250,7 +250,7 @@ void appUncolorizeString (char *dst, const char *src)
 #define VA_BUFSIZE		2048
 
 // name of this function is a short form of "VarArgs"
-const char *va (const char *format, ...)
+const char *va(const char *format, ...)
 {
 	guardSlow(va);
 
@@ -260,25 +260,25 @@ const char *va (const char *format, ...)
 	if (bufPos >= VA_BUFSIZE - VA_GOODSIZE) bufPos = 0;
 
 	va_list argptr;
-	va_start (argptr, format);
+	va_start(argptr, format);
 
 	// print
 	char *str = buf + bufPos;
-	int len = vsnprintf (str, VA_BUFSIZE - bufPos, format, argptr);
+	int len = vsnprintf(str, VA_BUFSIZE - bufPos, format, argptr);
 	if (len < 0 && bufPos > 0)
 	{
 		// buffer overflow - try again with printing to buffer start
 		bufPos = 0;
 		str = buf;
-		len = vsnprintf (buf, VA_BUFSIZE, format, argptr);
+		len = vsnprintf(buf, VA_BUFSIZE, format, argptr);
 	}
 
-	va_end (argptr);
+	va_end(argptr);
 
 	if (len < 0)					// not enough buffer space
 	{
 		const char suffix[] = " ... (overflow)";		// it is better, than return empty string
-		memcpy (buf + VA_BUFSIZE - sizeof(suffix), suffix, sizeof(suffix));
+		memcpy(buf + VA_BUFSIZE - sizeof(suffix), suffix, sizeof(suffix));
 		return str;
 	}
 
@@ -289,16 +289,16 @@ const char *va (const char *format, ...)
 }
 
 
-int appSprintf (char *dest, int size, const char *fmt, ...)
+int appSprintf(char *dest, int size, const char *fmt, ...)
 {
 	guardSlow(appSprintf);
 
 	va_list	argptr;
-	va_start (argptr, fmt);
-	int len = vsnprintf (dest, size, fmt, argptr);
-	va_end (argptr);
+	va_start(argptr, fmt);
+	int len = vsnprintf(dest, size, fmt, argptr);
+	va_end(argptr);
 	if (len < 0 || len >= size - 1)
-		appWPrintf ("appSprintf: overflow of %d (called by \"%s\")\n", size, appSymbolName (GET_RETADDR(dest)));
+		appWPrintf("appSprintf: overflow of %d (called by \"%s\")\n", size, appSymbolName(GET_RETADDR(dest)));
 
 	return len;
 
@@ -318,7 +318,7 @@ int appSprintf (char *dest, int size, const char *fmt, ...)
 // 4) text   - name equals "text"
 // Comparision is case-sensitive, when ignoreCase == false (default)
 // A few masks can be separated with ','
-bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
+bool appMatchWildcard(const char *name, const char *mask, bool ignoreCase)
 {
 	guardSlow(appMatchWildcard);
 
@@ -327,20 +327,20 @@ bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 	TString<256> MaskCopy, NameCopy;
 	if (ignoreCase)
 	{
-		NameCopy.toLower (name);
+		NameCopy.toLower(name);
 		name = NameCopy;
-		MaskCopy.toLower (mask);
+		MaskCopy.toLower(mask);
 	}
 	else
 		MaskCopy = mask;
-	int namelen = strlen (name);
+	int namelen = strlen(name);
 
 	// can use TStringSplitter here
 	char *next;
 	for (mask = MaskCopy; mask; mask = next)
 	{
 		// find next wildcard (comma-separated)
-		next = strchr (mask, ',');
+		next = strchr(mask, ',');
 		int masklen;
 		if (next)
 		{
@@ -348,12 +348,12 @@ bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 			next++;					// skip ','
 		}
 		else
-			masklen = strlen (mask);
+			masklen = strlen(mask);
 
 		if (!masklen)
 		{
 			// used something like "mask1,,mask3" (2nd mask is empty)
-//??			Com_DPrintf ("appMatchWildcard: skip empty mask in \"%s\"\n", mask);
+//??			Com_DPrintf("appMatchWildcard: skip empty mask in \"%s\"\n", mask);
 			continue;
 		}
 
@@ -372,12 +372,12 @@ bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 			mask++;
 			masklen -= 2;
 			for (i = 0; i <= namelen - masklen; i++)
-				if (!memcmp (&name[i], mask, masklen)) return true;
+				if (!memcmp(&name[i], mask, masklen)) return true;
 		}
 		else
 		{
 			// "*text" or "text*" mask
-			char *suff = strchr (mask, '*');
+			char *suff = strchr(mask, '*');
 			if (next && suff >= next) suff = NULL;		// suff can be in next wildcard
 			if (suff)
 			{
@@ -387,15 +387,15 @@ bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 
 				if (namelen < preflen + sufflen)
 					continue;		// name is not long enough
-				if (preflen && memcmp (name, mask, preflen))
+				if (preflen && memcmp(name, mask, preflen))
 					continue;		// different prefix
-				if (sufflen && memcmp (name + namelen - sufflen, suff, sufflen))
+				if (sufflen && memcmp(name + namelen - sufflen, suff, sufflen))
 					continue;		// different suffix
 
 				return true;
 			}
 			// exact match ("text")
-			if (namelen == masklen && !memcmp (name, mask, namelen))
+			if (namelen == masklen && !memcmp(name, mask, namelen))
 				return true;
 		}
 	}
@@ -405,10 +405,10 @@ bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 }
 
 
-bool appIsWildcard (const char *string)
+bool appIsWildcard(const char *string)
 {
-	if (strchr (string, '*')) return true;
-	if (strchr (string, ',')) return true;
+	if (strchr(string, '*')) return true;
+	if (strchr(string, ',')) return true;
 	return false;
 }
 
@@ -417,20 +417,20 @@ bool appIsWildcard (const char *string)
 	String allocation
 -----------------------------------------------------------------------------*/
 
-char *appStrdup (const char *str)
+char *appStrdup(const char *str)
 {
 	MEM_ALLOCATOR(str);
-	int size = strlen (str) + 1;
-	char *out = (char*)appMalloc (size);
-	memcpy (out, str, size);
+	int size = strlen(str) + 1;
+	char *out = (char*)appMalloc(size);
+	memcpy(out, str, size);
 	return out;
 }
 
-char *appStrdup (const char *str, CMemoryChain *chain)
+char *appStrdup(const char *str, CMemoryChain *chain)
 {
-	int size = strlen (str) + 1;
-	char *out = (char*)chain->Alloc (size);
-	memcpy (out, str, size);
+	int size = strlen(str) + 1;
+	char *out = (char*)chain->Alloc(size);
+	memcpy(out, str, size);
 	return out;
 }
 
@@ -449,23 +449,23 @@ char *appStrdup (const char *str, CMemoryChain *chain)
 char *CStringItem::AllocatedName;
 
 // used in conjunction with "CStringItem::operator new" only!
-CStringItem::CStringItem ()
-:	name (AllocatedName)			// properly initialize CStringItem::name field
+CStringItem::CStringItem()
+:	name(AllocatedName)			// properly initialize CStringItem::name field
 {}
 #endif
 
-void* CStringItem::operator new (size_t size, const char *str)
+void* CStringItem::operator new(size_t size, const char *str)
 {
 	guardSlow(CStringItem::new);
 	MEM_ALLOCATOR(size);
-	int len = strlen (str) + 1;
-	CStringItem *item = (CStringItem*) appMalloc (size + len);
+	int len = strlen(str) + 1;
+	CStringItem *item = (CStringItem*) appMalloc(size + len);
 #ifndef STRING_ITEM_TRICK
-	item->name    = (char*) OffsetPointer (item, size);
-	memcpy (item->name, str, len);	// faster than strcpy()
+	item->name    = (char*) OffsetPointer(item, size);
+	memcpy(item->name, str, len);	// faster than strcpy()
 #else
-	AllocatedName = (char*) OffsetPointer (item, size);
-	memcpy (AllocatedName, str, len);
+	AllocatedName = (char*) OffsetPointer(item, size);
+	memcpy(AllocatedName, str, len);
 #endif
 
 	return item;
@@ -473,22 +473,22 @@ void* CStringItem::operator new (size_t size, const char *str)
 }
 
 
-void* CStringItem::operator new (size_t size, const char *str, CMemoryChain *chain)
+void* CStringItem::operator new(size_t size, const char *str, CMemoryChain *chain)
 {
 	guardSlow(CStringItem::new(chain));
 #if 0
 	// allocate CStringItem and string in a single block
-	int len = strlen (str) + 1;
-	CStringItem *item = (CStringItem*) chain->Alloc (size + len);
-	item->name = (char*) OffsetPointer (item, size);
-	memcpy (item->name, str, len);	// faster than strcpy()
+	int len = strlen(str) + 1;
+	CStringItem *item = (CStringItem*) chain->Alloc(size + len);
+	item->name = (char*) OffsetPointer(item, size);
+	memcpy(item->name, str, len);	// faster than strcpy()
 #else
 	// 2 separate blocks: may be more effective memory usage (CMemoryChain architecture)
-	CStringItem *item = (CStringItem*) chain->Alloc (size);
+	CStringItem *item = (CStringItem*) chain->Alloc(size);
   #ifndef STRING_ITEM_TRICK
-	item->name    = appStrdup (str, chain);
+	item->name    = appStrdup(str, chain);
   #else
-	AllocatedName = appStrdup (str, chain);
+	AllocatedName = appStrdup(str, chain);
   #endif
 #endif
 
@@ -497,7 +497,7 @@ void* CStringItem::operator new (size_t size, const char *str, CMemoryChain *cha
 }
 
 
-int CStringList::GetCount ()
+int CStringList::GetCount()
 {
 	int i = 0;
 	for (CStringItem *item = first; item; item = item->next)
@@ -506,13 +506,13 @@ int CStringList::GetCount ()
 }
 
 
-CStringItem *CStringList::Find (const char *name, CStringItem **after)
+CStringItem *CStringList::Find(const char *name, CStringItem **after)
 {
 	guardSlow(CStringItem::Find(str,after));
 	if (after) *after = NULL;
 	for (CStringItem *item = first; item; item = item->next)
 	{
-		int cmp = appStricmp (name, item->name);
+		int cmp = appStricmp(name, item->name);
 		if (!cmp)
 			// found exact item
 			return item;
@@ -527,12 +527,12 @@ CStringItem *CStringList::Find (const char *name, CStringItem **after)
 }
 
 
-const CStringItem *CStringList::Find (const char *name) const
+const CStringItem *CStringList::Find(const char *name) const
 {
 	guardSlow(CStringItem::Find(str) const);
 	for (const CStringItem *item = first; item; item = item->next)
 	{
-		int cmp = appStricmp (name, item->name);
+		int cmp = appStricmp(name, item->name);
 		if (!cmp)
 			// found exact item
 			return item;
@@ -546,7 +546,7 @@ const CStringItem *CStringList::Find (const char *name) const
 }
 
 
-CStringItem* CStringList::Find (int index)
+CStringItem* CStringList::Find(int index)
 {
 	guardSlow(CStringItem::Find(idx));
 	CStringItem *item;
@@ -557,20 +557,20 @@ CStringItem* CStringList::Find (int index)
 
 
 //!! note: this function works with unsorted list, but Find() -- with sorted; should change!
-int CStringList::IndexOf (const char *str)
+int CStringList::IndexOf(const char *str)
 {
 	guardSlow(CStringList::IndexOf);
 	int		index;
 	CStringItem *item;
 	for (item = first, index = 0; item; item = item->next, index++)
-		if (!appStricmp (str, item->name))		//!! NOTE: when list is alpha-sorted, can return NULL if cmp<0
+		if (!appStricmp(str, item->name))		//!! NOTE: when list is alpha-sorted, can return NULL if cmp<0
 			return index;
 	return -1;
 	unguardSlow;
 }
 
 
-void CStringList::InsertLast (CStringItem *item)
+void CStringList::InsertLast(CStringItem *item)
 {
 	guardSlow(CStringItem::InsertLast);
 	if (!first)
@@ -586,7 +586,7 @@ void CStringList::InsertLast (CStringItem *item)
 }
 
 
-bool CStringList::Remove (CStringItem *item)
+bool CStringList::Remove(CStringItem *item)
 {
 	guardSlow(CStringList::Remove);
 	CStringItem *prev = NULL;
@@ -608,14 +608,14 @@ bool CStringList::Remove (CStringItem *item)
 }
 
 
-void CStringList::Free ()
+void CStringList::Free()
 {
 	guardSlow(CStringList::Free);
 	CStringItem *item, *next;
 	for (item = first; item; item = next)
 	{
 		next = item->next;
-		appFree (item);
+		appFree(item);
 	}
 	unguardSlow;
 }

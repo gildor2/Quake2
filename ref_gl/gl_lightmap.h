@@ -39,21 +39,21 @@ struct dynamicLightmap_t
 };
 
 
-void LM_Init ();
-void LM_Flush (lightmapBlock_t *lm);
-void LM_Done ();
-void LM_Save (lightmapBlock_t *lm);
-void LM_Restore (lightmapBlock_t *lm);
-lightmapBlock_t *LM_NewBlock ();
-void LM_Rewind ();
-lightmapBlock_t *LM_NextBlock ();
-void LM_CheckMinlight (dynamicLightmap_t *dl);
-bool LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl);
-void LM_PutBlock (dynamicLightmap_t *dl);
-void LM_PutBlock1 (dynamicLightmap_t *dl);		// monochrome version for Quake1 lightmaps
-void LM_SortLightStyles (dynamicLightmap_t *dl);
-void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dlightMask);
-bool LM_IsMonotone (dynamicLightmap_t *lm, color_t *avg);
+void LM_Init();
+void LM_Flush(lightmapBlock_t *lm);
+void LM_Done();
+void LM_Save(lightmapBlock_t *lm);
+void LM_Restore(lightmapBlock_t *lm);
+lightmapBlock_t *LM_NewBlock();
+void LM_Rewind();
+lightmapBlock_t *LM_NextBlock();
+void LM_CheckMinlight(dynamicLightmap_t *dl);
+bool LM_AllocBlock(lightmapBlock_t *lm, dynamicLightmap_t *dl);
+void LM_PutBlock(dynamicLightmap_t *dl);
+void LM_PutBlock1(dynamicLightmap_t *dl);		// monochrome version for Quake1 lightmaps
+void LM_SortLightStyles(dynamicLightmap_t *dl);
+void UpdateDynamicLightmap(surfacePlanar_t *surf, bool vertexOnly, unsigned dlightMask);
+bool LM_IsMonotone(dynamicLightmap_t *lm, color_t *avg);
 
 
 extern color_t lmMinlight;

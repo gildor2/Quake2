@@ -59,33 +59,33 @@ class CORE_API CFile
 {
 	//?? can add to CFile/~CFile registering opened files, list with "fsinfo" command
 protected:
-	CFile ()						// no default constructor
+	CFile()							// no default constructor
 	{}
 public:
-	virtual ~CFile ()				// close all opened objects; virtual destructor
+	virtual ~CFile()				// close all opened objects; virtual destructor
 	{}
 	TString<64>	Name;				// local name inside owner container
 	CFileContainer *Owner;
-	virtual int Read (void *Buffer, int Size) = 0;
+	virtual int Read(void *Buffer, int Size) = 0;
 #if LITTLE_ENDIAN
-	inline int ByteOrderRead (void *Buffer, int Size)
+	inline int ByteOrderRead(void *Buffer, int Size)
 	{
-		return Read (Buffer, Size);
+		return Read(Buffer, Size);
 	}
 #else
-	int ByteOrderRead (void *Buffer, int Size);
+	int ByteOrderRead(void *Buffer, int Size);
 #endif
-	virtual int GetSize () = 0;
-	virtual bool Eof () = 0;
+	virtual int GetSize() = 0;
+	virtual bool Eof() = 0;
 	// read helpers
-	byte ReadByte ();
-	short ReadShort ();
-	int ReadInt ();
-	float ReadFloat ();
-	void ReadString (char *buf, int size);
-	template<int N> inline void ReadString (TString<N> &Str)
+	byte ReadByte();
+	short ReadShort();
+	int ReadInt();
+	float ReadFloat();
+	void ReadString(char *buf, int size);
+	template<int N> inline void ReadString(TString<N> &Str)
 	{
-		ReadString (Str, N);
+		ReadString(Str, N);
 	}
 };
 
@@ -105,14 +105,14 @@ protected:
 	TString<64> MountPoint;
 	unsigned	containFlags;		// FS_OS, FS_PAK ... (used by CFileSystem::List())
 	unsigned	numFiles;			// for info
-	virtual const char *GetType ();
+	virtual const char *GetType();
 public:
 	bool		locked;				// cannot "umount" from console command; but can use FS->Umount()
-	virtual ~CFileContainer ()		// required for correct destroying
+	virtual ~CFileContainer()		// required for correct destroying
 	{}
-	virtual bool FileExists (const char *filename) = 0;
-	virtual CFile *OpenFile (const char *filename) = 0;
-	virtual void List (CFileList &list, const char *mask, unsigned flags = FS_ALL) = 0;
+	virtual bool FileExists(const char *filename) = 0;
+	virtual CFile *OpenFile(const char *filename) = 0;
+	virtual void List(CFileList &list, const char *mask, unsigned flags = FS_ALL) = 0;
 };
 
 
@@ -134,28 +134,28 @@ protected:
 	CMemoryChain *mem;				// will hold whole directory data
 	FDirInfo Root;					// root archive directory
 	// directory manipulations
-	FDirInfo  *FindDir (const char *path, bool create = false);
-	FFileInfo *FindFile (const char *filename);
+	FDirInfo  *FindDir(const char *path, bool create = false);
+	FFileInfo *FindFile(const char *filename);
 	// Opening file by info from internal directory structure.
-	virtual CFile *OpenLocalFile (const FFileInfo &Info) = 0;
+	virtual CFile *OpenLocalFile(const FFileInfo &Info) = 0;
 	// Derived classes should:
 	//	1. define own CFile
 	//	2. define own FFileInfo
 	//	3. overload OpenLocalFile()
 	//	4. declare "static Create(const char *filename, FILE *f)" function
 public:
-	inline CFileContainerArc ()
+	inline CFileContainerArc()
 	{
 		containFlags = FS_PAK;
 		mem = new CMemoryChain;
 	}
-	~CFileContainerArc ()
+	~CFileContainerArc()
 	{
 		delete mem;
 	}
-	bool FileExists (const char *filename);
-	CFile *OpenFile (const char *filename);
-	void List (CFileList &list, const char *mask, unsigned flags);
+	bool FileExists(const char *filename);
+	CFile *OpenFile(const char *filename);
+	void List(CFileList &list, const char *mask, unsigned flags);
 };
 
 
@@ -176,47 +176,47 @@ private:
 	TList<CFileContainer> mounts;
 	static CreateArchive_t ArchiveReaders[MAX_ARCHIVE_FORMATS];
 public:
-	virtual ~CFileSystem ()			// shut up gcc4 warning; virtual destructor
+	virtual ~CFileSystem()			// shut up gcc4 warning; virtual destructor
 	{}
 	unsigned modifyCount;			// incremented every time something mounted/umounted; rename??
 	// registering archive format
-	static void RegisterFormat (CreateArchive_t reader);
+	static void RegisterFormat(CreateArchive_t reader);
 	// file operations
-	virtual bool FileExists (const char *filename, unsigned flags = FS_ALL);
-	virtual CFile *OpenFile (const char *filename, unsigned flags = FS_ALL);
-	virtual CFileList *List (const char *mask, unsigned flags = FS_ALL, CFileList *list = NULL);
+	virtual bool FileExists(const char *filename, unsigned flags = FS_ALL);
+	virtual CFile *OpenFile(const char *filename, unsigned flags = FS_ALL);
+	virtual CFileList *List(const char *mask, unsigned flags = FS_ALL, CFileList *list = NULL);
 	// mount/unmount containers
 	// if point == NULL, will mount to GDefMountPoint
-	void Mount (CFileContainer &Container, const char *point = NULL);
-	void Umount (CFileContainer &Container);
-	CFileContainer *MountDirectory (const char *path, const char *point = NULL);
-	CFileContainer *MountArchive (const char *filename, const char *point = NULL);
-	void Mount (const char *mask, const char *point = NULL);
-	void Umount (const char *mask);
-	bool IsFileMounted (const char *filename);
+	void Mount(CFileContainer &Container, const char *point = NULL);
+	void Umount(CFileContainer &Container);
+	CFileContainer *MountDirectory(const char *path, const char *point = NULL);
+	CFileContainer *MountArchive(const char *filename, const char *point = NULL);
+	void Mount(const char *mask, const char *point = NULL);
+	void Umount(const char *mask);
+	bool IsFileMounted(const char *filename);
 	// file loading; can be free'ed with "delete" or "appFree()"
-	void *LoadFile (const char *filename, unsigned *size = NULL);
+	void *LoadFile(const char *filename, unsigned *size = NULL);
 };
 
 
 CORE_API extern CFileSystem *GFileSystem;
 CORE_API extern TString<64> GDefMountPoint;
 
-CORE_API void appInitFileSystem (CFileSystem &FS);
+CORE_API void appInitFileSystem(CFileSystem &FS);
 
 
 //?? separate: FileSystem -- object-based; these functions works independently from CFileSystem;
 //?? should separate from cpp too
 // simple file reader using OS file system
-CORE_API CFile *appOpenFile (const char *filename);
+CORE_API CFile *appOpenFile(const char *filename);
 // This function can be used without CFileSystem objects at all; access to files is
 // not restricted by file system mounts (function works without it)
-CORE_API void appListDirectory (const char *dir, CFileList &List, unsigned flags);
+CORE_API void appListDirectory(const char *dir, CFileList &List, unsigned flags);
 // Create directory; supports multiple nested dirs creation
-CORE_API void appMakeDirectory (const char *dirname);
+CORE_API void appMakeDirectory(const char *dirname);
 // Verify file type: return FS_FILE|FS_DIR; if file does not exists (or special Unix file) - return 0
-CORE_API unsigned appFileType (const char *filename);
+CORE_API unsigned appFileType(const char *filename);
 
 // Create directory, which can hold filename
 //?? may be, integrate this function into fopen(name,"w") analog (appOpenFileWrite() etc)
-CORE_API void appMakeDirectoryForFile (const char *filename);
+CORE_API void appMakeDirectoryForFile(const char *filename);

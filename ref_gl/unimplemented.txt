@@ -213,7 +213,7 @@ COLORS (SATURATE/OVERBRIGHT):
   ! autoflares: should combine bsp-divided surfaces onto a single flare (combine by parent brush ?)
   ? correct fov
   ?? flare image have visible square (when its color is saturated) -- not with ATI, check NV (GF5+TNT)
-  - implement with GL_NV_occlusion_query (and flare option: off, software, hardware);
+  - implement with GL_NV_occlusion_query(and flare option: off, software, hardware);
     test should be performed after whole 3D world is out from backend
 
 - fog:
@@ -313,7 +313,7 @@ VISIBLE:
 - models (entities)
   - md2
     ? RF_MINLIGHT
-    ? inlineModels: RF_TRANSLUCENT: glColor4f (1,1,1,0.25) + blend + no lightmap (vertex light ?)
+    ? inlineModels: RF_TRANSLUCENT: glColor4f(1,1,1,0.25) + blend + no lightmap (vertex light ?)
 - shadows
 FOR GAME:
 - RE_GetClientLight () - really, should change this API completely

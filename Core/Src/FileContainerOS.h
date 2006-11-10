@@ -9,32 +9,32 @@ public:
 	int		size;		// used as "-1" when uninitialized
 	FILE	*file;
 	unsigned readPos;
-	~CFileOS ()
+	~CFileOS()
 	{
 		if (file)
-			fclose (file);
+			fclose(file);
 	}
-	int Read (void *Buffer, int Size)
+	int Read(void *Buffer, int Size)
 	{
 		if (!file)
 			return 0;
-		int count = fread (Buffer, 1, Size, file);
+		int count = fread(Buffer, 1, Size, file);
 		readPos += count;
 		return count;
 	}
-	int GetSize ()
+	int GetSize()
 	{
 		if (size != -1)
 			return size;
-		int pos = ftell (file); fseek (file, 0, SEEK_END);
-		size = ftell (file);  fseek (file, pos, SEEK_SET);
+		int pos = ftell(file); fseek(file, 0, SEEK_END);
+		size = ftell(file);  fseek(file, pos, SEEK_SET);
 		return size;
 	}
-	bool Eof ()
+	bool Eof()
 	{
 		if (!file)
 			return true;
-		return feof (file) != 0;
+		return feof(file) != 0;
 	}
 };
 
@@ -42,25 +42,25 @@ public:
 class CFileContainerOS : public CFileContainer
 {
 protected:
-	const char *GetType ()
+	const char *GetType()
 	{
 		return "dir";
 	}
 public:
-	CFileContainerOS ()
+	CFileContainerOS()
 	{
 		containFlags = FS_OS;
 	}
-	bool FileExists (const char *filename)
+	bool FileExists(const char *filename)
 	{
-		return appFileType (va("%s/%s", name, filename)) == FS_FILE;
+		return appFileType(va("%s/%s", name, filename)) == FS_FILE;
 	}
-	CFile *OpenFile (const char *filename)
+	CFile *OpenFile(const char *filename)
 	{
 #if 1
-		return appOpenFile (va("%s/%s", name, filename));
+		return appOpenFile(va("%s/%s", name, filename));
 #else
-		FILE *f = fopen (va("%s/%s", name, filename), "rb");
+		FILE *f = fopen(va("%s/%s", name, filename), "rb");
 		if (!f)
 			return NULL;
 		CFileOS *File = new CFileOS;
@@ -69,8 +69,8 @@ public:
 		return File;
 #endif
 	}
-	void List (CFileList &list, const char *mask, unsigned flags)
+	void List(CFileList &list, const char *mask, unsigned flags)
 	{
-		appListDirectory (va("%s/%s", name, mask), list, flags);
+		appListDirectory(va("%s/%s", name, mask), list, flags);
 	}
 };

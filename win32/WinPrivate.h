@@ -31,5 +31,5 @@ extern bool in_needRestart;		//?? used from vid_dll.c::Vid_NewVindow()
 // message hooks
 typedef bool (*MSGHOOK_FUNC) (UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-void AddMsgHook (MSGHOOK_FUNC func);
-void RemoveMsgHook (MSGHOOK_FUNC func);
+void AddMsgHook(MSGHOOK_FUNC func);
+void RemoveMsgHook(MSGHOOK_FUNC func);
