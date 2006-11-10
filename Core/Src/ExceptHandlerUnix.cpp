@@ -114,11 +114,11 @@ static void handle_signal (int signum, siginfo_t *info, void *ctx)
 	if (info &&						// may be, running under old Cygwin version w/o SA_SIGINFO support
 		(signum == SIGSEGV || signum == SIGFPE))	// no si_addr for this signal numbers
 	{
-		TRY_S {						// guard in a case of non-NULL `info', pointed to incorrect siginfo_t
+		TRY {						// guard in a case of non-NULL `info', pointed to incorrect siginfo_t
 			TString<1024> Message;
 			Message.sprintf ("%s in \"%s\"", str, appSymbolName ((address_t)info->si_addr));
 			appBeginError (Message);
-		} CATCH_S {
+		} CATCH {
 			appBeginError (str);	// failed to get extended info -> print minimal information ...
 		} END_CATCH
 	}

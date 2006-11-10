@@ -503,7 +503,7 @@ static void SetWorldModelview ()
 {
 	float	matrix[4][4];
 	int		i, j, k;
-	static const float baseMatrix[4][4] = {	// axias {0 0 -1} {-1 0 0} {0 1 0}
+	static const float baseMatrix[4][4] = {	// axis {0 0 -1} {-1 0 0} {0 1 0}
 		{  0,  0, -1,  0},
 		{ -1,  0,  0,  0},
 		{  0,  1,  0,  0},
@@ -628,19 +628,17 @@ static void SetPerspective ()
 	m[2][2] = -(zmax + zmin) / (zmax - zmin);		// E
 	m[2][3] = -1;
 	m[3][2] = -2.0f * zmin * zmax / (zmax - zmin);	// F
-#undef m
 #if 0
 #define dr DrawTextRight
 	dr (va("zFar: %g;  frustum: x[%g, %g] y[%g, %g]", vp.zFar, xmin, xmax, ymin, ymax), RGB(1,0.1,0.2));
-#define m vp.projectionMatrix
 	dr (va("----- projection matrix -----"), RGB(1,0.2,0.2));
 	dr (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][0], m[1][0], m[2][0], m[3][0]), RGB(0.8,0.3,0.3));
 	dr (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][1], m[1][1], m[2][1], m[3][1]), RGB(0.8,0.3,0.3));
 	dr (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][2], m[1][2], m[2][2], m[3][2]), RGB(0.8,0.3,0.3));
 	dr (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][3], m[1][3], m[2][3], m[3][3]), RGB(0.8,0.3,0.3));
-#undef m
 #undef dr
 #endif
+#undef m
 }
 
 
@@ -871,11 +869,11 @@ void DrawPic (int x, int y, const char *name, int anchor, int color)
 
 /*------------------- Model registration ----------------------*/
 
-void LoadNewWorld (const char *mapname)
+void LoadNewWorld ()
 {
 	STAT(gl_ldStats.Zero ());		// clear loading stats
 	ResetShaders ();				// delete all shaders and re-create auto-shaders
-	LoadWorldMap (va("maps/%s.bsp", mapname));
+	LoadWorldMap ();
 	forceVisMap = true;
 }
 

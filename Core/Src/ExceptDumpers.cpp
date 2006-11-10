@@ -42,7 +42,7 @@ static bool IsBadReadPtr (const void *data, int count)
 {
 	// NULL is always bad
 	if (data == NULL) return true;
-	TRY_S {
+	TRY {
 		const byte *b = (byte*) data;
 		static byte a = 0;
 		// quick check 1st and last bytes
@@ -57,7 +57,7 @@ static bool IsBadReadPtr (const void *data, int count)
 			b     += pageSize;
 			count -= pageSize;
 		}
-	} CATCH_S {
+	} CATCH {
 		return true;
 	} END_CATCH
 	return false;

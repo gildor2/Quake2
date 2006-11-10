@@ -22,7 +22,7 @@ static bool Md2SkinExists (const char *skin, CFileList *pcxfiles)
 
 	TString<64> Search;
 	Search.sprintf ("%s_i", skin);
-	for (CListIterator item = *pcxfiles; item; ++item)
+	for (CFileList::iterator item = *pcxfiles; item; ++item)
 		if (Search == item->name) return true;
 	return false;
 }

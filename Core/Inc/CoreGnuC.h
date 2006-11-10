@@ -204,23 +204,24 @@ CORE_API NORETURN void appThrowException ();
 		}								\
 	}
 
-#define TRY								\
+#define TRY_CRASH						\
 	{									\
 		CGuardContext _Context(NULL); 	\
 		if (setjmp (_Context.jmp) == 0)
 			// guarded code here
-#define CATCH							\
+#define CATCH_CRASH						\
 		else
 			// exception handler here
 #define END_CATCH						\
 	}
 
-#define TRY_S							\
+#define TRY								\
 	{									\
 		CGuardContext2 _Context; 		\
 		if (setjmp (_Context.jmp) == 0)
 			// guarded code here
-#define CATCH_S			CATCH
+#define CATCH							\
+		else
 
 #define THROW_AGAIN		appThrowException();
 #define THROW			appThrowException();

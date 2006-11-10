@@ -78,6 +78,12 @@ template<class T> inline void Zero (T& A)
 }
 
 
+template<class T> inline void QSort(T* array, int count, int (*cmpFunc)(const T*, const T*))
+{
+	qsort(array, count, sizeof(T), (int (*)(const void*, const void*)) cmpFunc);
+}
+
+
 #define EXPAND_BOUNDS(a,minval,maxval)	\
 	if (a < minval) minval = a;			\
 	if (a > maxval) maxval = a;

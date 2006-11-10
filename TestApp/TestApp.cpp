@@ -84,11 +84,11 @@ void cXcpt (int argc, char **argv)
 		break;
 	case 'a':
 		{
-			TRY_S {
+			TRY {
 				appPrintf ("testing TRY_S/CATCH_S ...\n");
 				TEST(*((byte*)NULL) = 0);		// memory access
 				appPrintf ("should not be here!\n");
-			} CATCH_S {
+			} CATCH {
 				appPrintf ("catched exception!\n");
 			} END_CATCH
 			appPrintf ("continue!\n");
@@ -97,14 +97,14 @@ void cXcpt (int argc, char **argv)
 	case 'b':
 		{
 			appPrintf ("testing double TRY_S ...\n");
-			TRY_S {
-				TRY_S {
+			TRY {
+				TRY {
 					TEST(*((byte*)NULL) = 0);	// memory access
-				} CATCH_S {
+				} CATCH {
 					appPrintf ("catched at 2\n");
 				} END_CATCH
 				appPrintf ("cont#2\n");
-			} CATCH_S {
+			} CATCH {
 				appPrintf ("catched at 1\n");
 			} END_CATCH
 			appPrintf ("cont#1\n");
@@ -330,7 +330,7 @@ public:
 
 int main (int argc, char** argv)
 {
-	TRY {
+	TRY_CRASH {
 		Out.Register ();
 		appInit ();
 
@@ -383,7 +383,7 @@ int main (int argc, char** argv)
 				appWPrintf ("ERROR: bad command\n");
 		}
 		unguard;
-	} CATCH {
+	} CATCH_CRASH {
 		// nothing ... just breaking MainLoop
 	} END_CATCH
 

@@ -234,7 +234,7 @@ static bool LoadLight ()
 			switch (atoi (f->value))
 			{
 			case 1:
-				if (bspfile.type == map_kp) DebugPrintf ("HAVE SUN FLARE: %s\n", bspfile.name);//!!
+				if (bspfile.type == map_kp) DebugPrintf ("HAVE SUN FLARE: %s\n", *bspfile.Name);//!!
 				flare->radius = -1;					// mark as "sun"
 				flare->color.c[2] = 192;
 				entOrigin.NormalizeFast ();			// just a sun direction
@@ -853,6 +853,31 @@ static void ParseWorldSpawn ()
 		AddField ("sky", "q1sky");	// do not allow q2 game to set default sky
 	if (bspfile.type == map_hl && (f = FindField ("skyname")))
 		strcpy (f->name, "sky");
+	// map message
+	if (f = FindField ("message"))
+	{
+		// replace
+		char copy[256];
+		bool color = false;
+		char *s = f->value, *d = copy;
+		while (char c = *s++)
+		{
+//			appPrintf("[%c == %02X  -> ", c, c);
+			if (bspfile.type == map_q1)
+			{
+				// 0x12 - 10 chars of '0'..'9'
+				if (c >= 0x12 && c <= 0x12+9)
+					*d++ = c - 0x12 + '0' + 0x80;
+				else
+					*d++ = c;
+			}
+			else
+				*d++ = c;
+//			appPrintf("[%c == %02X\n", d[-1], d[-1]);
+		}
+		*d = 0;
+		strcpy (f->value, copy);
+	}
 	// wads
 	if (bspfile.type == map_hl && (f = FindField ("wad")))
 	{
@@ -1142,7 +1167,7 @@ const char *ProcessEntstring (const char *entString)
 	guard(ProcessEntstring);
 
 	unsigned plen;
-	char *patch = (char*) GFileSystem->LoadFile (va("%s.add", bspfile.name), &plen);
+	char *patch = (char*) GFileSystem->LoadFile (va("%s.add", *bspfile.Name), &plen);
 	plen++;	// add 1 byte for trailing zero
 
 	char *dst, *dst2;

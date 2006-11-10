@@ -2305,7 +2305,7 @@ struct dmbrowseMenu_t : menuFramework_t
 #define THUMBNAIL_BORDER	4
 #define THUMBNAIL_TEXT		(CHAR_HEIGHT + 2)
 #define MAX_BROWSE_MAPS		1024
-	static char			*browse_map_names[MAX_BROWSE_MAPS];
+	static const char	*browse_map_names[MAX_BROWSE_MAPS];
 	static CFileList	*browse_list;
 	static thumbParams_t thumbs;
 
@@ -2457,7 +2457,7 @@ struct dmbrowseMenu_t : menuFramework_t
 		return menu_move_sound;
 	}
 
-	static void DrawThumbnail (int x, int y, int w, int h, char *name, bool selected)
+	static void DrawThumbnail (int x, int y, int w, int h, const char *name, bool selected)
 	{
 		char	name2[256];
 
@@ -2506,7 +2506,7 @@ struct dmbrowseMenu_t : menuFramework_t
 static dmbrowseMenu_t dmbrowseMenu;
 
 // static members
-char *dmbrowseMenu_t::browse_map_names[MAX_BROWSE_MAPS];
+const char *dmbrowseMenu_t::browse_map_names[MAX_BROWSE_MAPS];
 CFileList *dmbrowseMenu_t::browse_list;
 thumbParams_t dmbrowseMenu_t::thumbs;
 

@@ -50,6 +50,12 @@ struct CORE_API CVec3
 		v[1] += a.v[1];
 		v[2] += a.v[2];
 	}
+	inline void Sub (const CVec3 &a) //?? == "operator -= (CVec3&)"
+	{
+		v[0] -= a.v[0];
+		v[1] -= a.v[1];
+		v[2] -= a.v[2];
+	}
 	//!! +ScaleTo(dst)
 	float GetLength ();
 	float Normalize ();			// returns vector length

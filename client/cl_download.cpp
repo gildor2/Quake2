@@ -251,7 +251,10 @@ static void RequestNextDownload ()
 		return;
 
 	if (cls.netchan.remote_address.type == NA_LOOPBACK)
+	{
+		CM_LoadMap (cl.configstrings[CS_MODELS+1], true);
 		precache_check = DCS_SKIP_ALL;		// local server: download is nonsense (skip this phase)
+	}
 
 	if (!allow_download->integer && precache_check < DCS_MAP_LOAD)
 		precache_check = DCS_MAP_LOAD;
@@ -495,8 +498,7 @@ void CL_Precache_f (int argc, char **argv)
 	// Yet another hack to let old demos work; the old precache sequence
 	if (argc < 2)
 	{
-		unsigned map_checksum;		// for detecting cheater maps
-		CM_LoadMap (cl.configstrings[CS_MODELS+1], true, &map_checksum);
+		CM_LoadMap (cl.configstrings[CS_MODELS+1], true);
 		CL_RegisterSounds ();
 		V_InitRenderer ();
 		return;

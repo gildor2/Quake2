@@ -329,10 +329,10 @@ static void LoadInlineModels2 (CBspModel *data, int count)
 
 		*(static_cast<CBspModel*>(out)) = *data;
 		// create surface list
-		out->numFaces = data->numfaces;
+		out->numFaces = data->numFaces;
 		out->faces    = new (map.dataChain) surfaceBase_t* [out->numFaces];
 
-		int k = data->firstface;
+		int k = data->firstFace;
 		for (int j = 0; j < out->numFaces; j++, k++)
 		{
 			surfaceBase_t *s = map.faces[k];
@@ -678,7 +678,7 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 		// find owner model
 		const CBspModel *owner;
 		for (j = 0, owner = models; j < numModels; j++, owner++)
-			if (i >= owner->firstface && i < owner->firstface + owner->numfaces)
+			if (i >= owner->firstFace && i < owner->firstFace + owner->numFaces)
 				break;
 
 		if (owner->flags & CMODEL_ALPHA)
@@ -893,11 +893,9 @@ static void LoadSurfaces2 (const dBspFace_t *surfs, int numSurfaces, const int *
 
 //------------------------ loading surface lightmaps --------------------------
 
-static int LightmapCompare (const void *s1, const void *s2)
+static int LightmapCompare (surfacePlanar_t* const* s1, surfacePlanar_t* const* s2)
 {
-	surfacePlanar_t *surf1, *surf2;
-	surf1 = *(surfacePlanar_t **)s1;
-	surf2 = *(surfacePlanar_t **)s2;
+	const surfacePlanar_t *surf1 = *s1, *surf2 = *s2;
 
 	byte *v1, *v2;
 	v1 = (surf1->lightmap) ? surf1->lightmap->source[0] : NULL;
@@ -917,13 +915,9 @@ static int LightmapCompare (const void *s1, const void *s2)
 	return v1 - v2;
 }
 
-static int ShaderCompare (const void *s1, const void *s2)
+static int ShaderCompare (surfacePlanar_t* const* surf1, surfacePlanar_t* const* surf2)
 {
-	surfaceBase_t *surf1, *surf2;
-	surf1 = *(surfaceBase_t **)s1;
-	surf2 = *(surfaceBase_t **)s2;
-
-	return surf1->shader->sortIndex - surf2->shader->sortIndex;
+	return (*surf1)->shader->sortIndex - (*surf2)->shader->sortIndex;
 }
 
 static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
@@ -953,7 +947,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 				if (!dl->externalSource)
 					dl->source[k] += (unsigned)lightData;
 
-			if (map.monoLightmap) continue;	//?? q1 map
+			if (map.monoLightmap) continue;				//?? add q1 map support here
 			// optimize lightmaps
 			color_t avg;
 			if (LM_IsMonotone (dl, &avg))
@@ -992,7 +986,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 	if (lightDataSize)
 	{
 		// when map have no lightmaps, we do not need to sort them
-		qsort (sortedSurfaces, map.numFaces, sizeof(surfaceBase_t*), LightmapCompare);
+		QSort (sortedSurfaces, map.numFaces, LightmapCompare);
 	}
 
 	// check for lightmap intersection
@@ -1038,7 +1032,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 		// after this examination. we can resort lightstyles (cannot do this earlier because used source[0])
 		LM_SortLightStyles (dl);
 		if (!map.monoLightmap)
-			LM_CheckMinlight (dl);		//?? q1 minlight ?
+			LM_CheckMinlight (dl);		//?? check for q1 minlight ?
 		// set shader lightstyles
 		if (s->shader->lightmapNumber >= 0)
 		{
@@ -1082,7 +1076,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 	if (!gl_config.vertexLight)
 	{
 		// resort surfaces by shader
-		qsort (sortedSurfaces, map.numFaces, sizeof(surfaceBase_t*), ShaderCompare);
+		QSort (sortedSurfaces, map.numFaces, ShaderCompare);
 
 		lightmapBlock_t *bl = NULL;
 		i = 0;
@@ -1258,7 +1252,7 @@ static void LoadSky1 ()
 	dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)bspfile.miptex1 + bspfile.miptex1->dataofs[miptex] );
 	if (tex->width != 256 || tex->height != 128)
 	{
-		Com_DPrintf ("sky texture \"%s\" have wring sizes (%d x %d)\n", tex->name, tex->width, tex->height);
+		Com_DPrintf ("sky texture \"%s\" have wring size (%d x %d)\n", tex->name, tex->width, tex->height);
 		return;
 	}
 
@@ -1301,30 +1295,20 @@ END_PROFILE
 	unguard;
 }
 
+
 /*-----------------------------------------------------------------------------
 	LoadWorldMap()
 -----------------------------------------------------------------------------*/
 
-void LoadWorldMap (const char *name)
+void LoadWorldMap ()
 {
 	guard(LoadWorldMap);
 
-	TString<64> Name2;
-	Name2.filename (name);
-
-	// map must be reloaded to update shaders (which are restarted every LoadWorld())
-//	if (Name2 == map.Name)
-//		return;						// map is not changed
-
 	FreeModels ();					// will zero `map'
-	map.Name = Name2;
 	map.dataChain = new CMemoryChain;
 
 	STAT(clock(gl_ldStats.bspLoad));
 	// map should be already loaded by client
-	//?? use "bspfile" instead of LoadBspFile()
-	LoadBspFile (Name2, true, NULL); //?? require to call LoadBspFile() with clientload==true?
-
 	// load sun ambient info
 	map.sunAmbient = bspfile.sunAmbient;
 	if (bspfile.sunAmbient[0] + bspfile.sunAmbient[1] + bspfile.sunAmbient[2] > 0)

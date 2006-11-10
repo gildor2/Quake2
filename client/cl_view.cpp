@@ -305,7 +305,7 @@ void V_InitRenderer ()
 	float loadingFrac = 0;
 	SCR_LoadingNotify (va("map: %s", mapname), 0);
 	loadingFrac += W_MAP / totalWeight;
-	RE_LoadNewWorld (mapname);
+	RE_LoadNewWorld ();
 
 	// precache status bar pics
 	SCR_TouchPics ();
@@ -833,7 +833,7 @@ bool V_RenderView ()
 		return false;
 	if (!cl.rendererReady)
 		return false;			// still loading
-	if (!map_clientLoaded)
+	if (!bspfile.clientLoaded)
 		return false;			// map already unloaded (by server), but client is still active (ca_active)
 
 	if (timedemo->integer)

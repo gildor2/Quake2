@@ -187,11 +187,13 @@ inline float appCyclesToMsecf (int64 &timeDelta)
 		}								\
 	}
 
-#define TRY			try
-#define CATCH		catch (...)
+#define TRY_CRASH		try
+#define CATCH_CRASH		catch (...)
 #define END_CATCH
-#define	THROW_AGAIN	throw
-#define THROW		throw 1
+#define TRY				try
+#define CATCH			catch (...)
+#define	THROW_AGAIN		throw
+#define THROW			throw 1
 
 #else // WIN32_USE_SEH
 
@@ -224,14 +226,14 @@ CORE_API unsigned win32ExceptFilter2 ();
 		}								\
 	}
 
-#define TRY			__try
-#define CATCH		__except(EXCEPT_FILTER)
+#define TRY_CRASH		__try
+#define CATCH_CRASH		__except(EXCEPT_FILTER)
 #define END_CATCH
 
-#define TRY_S		__try
-#define CATCH_S		__except(1)			// 1==EXCEPTION_EXECUTE_HANDLER
+#define TRY				__try
+#define CATCH			__except(1)			// 1==EXCEPTION_EXECUTE_HANDLER
 
-#define THROW_AGAIN	throw
-#define THROW		throw 1
+#define THROW_AGAIN		throw
+#define THROW			throw 1
 
 #endif // WIN32_USE_SEH

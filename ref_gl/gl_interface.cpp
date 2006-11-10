@@ -689,8 +689,8 @@ void GL_Set2DMode ()
 	GL_CullFace (CULL_NONE);
 	gl_state.is2dMode = true;
 
-	gl_state.inverseCull = false;
-	GL_CullFace (CULL_FRONT);
+	gl_state.inverseCull = false;	//??
+//??	GL_CullFace (CULL_FRONT);
 }
 
 

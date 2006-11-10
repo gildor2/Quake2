@@ -221,7 +221,7 @@ void CL_PredictMovement ()
 {
 	guard(CL_PredictMovement);
 
-	if (!map_clientLoaded)		// the code below will use trace(), but map is not yet ready ...
+	if (!bspfile.clientLoaded)		// the code below will use trace(), but map is not yet ready ...
 		return;
 
 	if (cls.state != ca_active || cl.attractloop)

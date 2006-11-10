@@ -266,7 +266,7 @@ struct FAllocatorInfo
 	unsigned short count;
 };
 
-static int CompareAllocators (const FAllocatorInfo *a1, const FAllocatorInfo *a2)
+static int CompareAllocators (const FAllocatorInfo* a1, const FAllocatorInfo* a2)
 {
 	return a1->address - a2->address;
 }
@@ -341,7 +341,7 @@ static int CompareAllocators (const FAllocatorInfo *a1, const FAllocatorInfo *a2
 		appWPrintf ("maxCount hit\n");
 
 	// sort allocations info by address
-	qsort (info, numAllocators, sizeof(FAllocatorInfo), (int (*) (const void*, const void*))CompareAllocators);
+	QSort (info, numAllocators, CompareAllocators);
 
 	return numAllocators;
 }

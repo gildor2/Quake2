@@ -751,10 +751,7 @@ void	Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, const char *form
 extern bool cm_showTrace;
 #endif
 
-extern char map_name[];
-extern bool map_clientLoaded;
-
-CBspModel *CM_LoadMap (const char *name, bool clientload, unsigned *checksum);
+CBspModel *CM_LoadMap (const char *name, bool clientload, unsigned *checksum = NULL);
 CBspModel *CM_InlineModel (const char *name);	// *1, *2, etc
 CBspModel *CM_InlineModel (int index);
 

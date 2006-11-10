@@ -1642,6 +1642,9 @@ Release/obj-win32/q2stat/cl_ents.obj : client/cl_ents.cpp $(DEPENDS)
 Release/obj-win32/q2stat/cl_pred.obj : client/cl_pred.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_pred.obj" client/cl_pred.cpp
 
+Release/obj-win32/q2stat/cl_scrn.obj : client/cl_scrn.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_scrn.obj" client/cl_scrn.cpp
+
 Release/obj-win32/q2stat/cl_view.obj : client/cl_view.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_view.obj" client/cl_view.cpp
 
@@ -1692,9 +1695,6 @@ Release/obj-win32/q2stat/cl_parse.obj : client/cl_parse.cpp $(DEPENDS)
 
 Release/obj-win32/q2stat/cl_playermodel.obj : client/cl_playermodel.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_playermodel.obj" client/cl_playermodel.cpp
-
-Release/obj-win32/q2stat/cl_scrn.obj : client/cl_scrn.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_scrn.obj" client/cl_scrn.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \

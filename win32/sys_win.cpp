@@ -250,7 +250,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 int main (int argc, const char **argv) // force to link as console application
 #endif
 {
-	TRY
+	TRY_CRASH
 	{
 		hInstance = GetModuleHandle (NULL);
 		// get command line
@@ -359,7 +359,7 @@ int main (int argc, const char **argv) // force to link as console application
 			oldtime = newtime;
 		}
 		unguard;
-	} CATCH {
+	} CATCH_CRASH {
 #if 0
 		extern COutputDevice *debugLog;
 		if (debugLog)

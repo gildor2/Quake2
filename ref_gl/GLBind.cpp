@@ -189,10 +189,10 @@ void QGL_InitExtensions ()
 			gl_config.extensionMask |= 1 << i;
 			for (j = ext->first; j < ext->first + ext->count; j++)
 			{
-#if _WIN32
-				dummyFunc_t func = (dummyFunc_t) (wglGetProcAddress (GLNames[j]));
-#else
 				dummyFunc_t func;
+#if _WIN32
+				func = (dummyFunc_t) (wglGetProcAddress (GLNames[j]));
+#else
 				libGL.GetProc (GLNames[j], &func);
 #endif
 				GlFunc(GL, j) = GlFunc(lib, j) = func;
@@ -260,7 +260,7 @@ void QGL_InitExtensions ()
 				}
 				// disable extension
 				gl_config.extensionMask &= ~(1 << i);
-				gl_config.ignoredExt |= 1 << i;
+				gl_config.ignoredExt    |=   1 << i;
 			}
 			else
 				appPrintf ("   %s\n", ext->name);

@@ -16,6 +16,7 @@ static void SwapQ2BspFile (bspfile_t *f)
 	// models
 	for (i = 0; i < f->numModels; i++)
 	{
+		//!! swap dBsp2Model_t !!
 		CBspModel &d = f->models[i];
 		LTL(d.firstface);
 		LTL(d.numfaces);
@@ -254,8 +255,8 @@ static void LoadQ2Submodels (bspfile_t *f, dBsp2Model_t *data)
 		out->radius     = VectorDistance (out->bounds.mins, out->bounds.maxs) / 2;
 		out->headnode   = data->headnode;
 		out->flags      = 0;
-		out->firstface  = data->firstface;
-		out->numfaces   = data->numfaces;
+		out->firstFace  = data->firstface;
+		out->numFaces   = data->numfaces;
 		out->color.rgba = RGBA(1,1,1,1);
 		// dBsp2Model_t have unused field "origin"
 	}
@@ -273,8 +274,8 @@ static void LoadQ1Submodels (bspfile_t *f, dBsp1Model_t *data)
 		out->radius     = VectorDistance (out->bounds.mins, out->bounds.maxs) / 2;
 		out->headnode   = data->headnode[0];
 		out->flags      = 0;
-		out->firstface  = data->firstface;
-		out->numfaces   = data->numfaces;
+		out->firstFace  = data->firstface;
+		out->numFaces   = data->numfaces;
 		out->color.rgba = RGBA(1,1,1,1);
 		// dBsp1Model_t have unused field "origin"
 	}
@@ -433,7 +434,7 @@ void LoadQ2BspFile ()
 #endif
 
 	bspfile.type = map_q2;
-	Com_DPrintf ("Loading Q2 bsp %s\n", bspfile.name);
+	Com_DPrintf ("Loading Q2 bsp %s\n", *bspfile.Name);
 
 #define C(num,field,count,type) \
 	bspfile.count = CheckLump(dBsp2Hdr_t::LUMP_##num, (void**)&bspfile.field, sizeof(type))
@@ -478,7 +479,6 @@ void LoadQ2BspFile ()
 		Com_DPrintf ("Kingpin map detected\n");
 	}
 	bspfile.entStr = ProcessEntstring (entString);
-	bspfile.entStrSize = strlen (bspfile.entStr);
 
 #undef C
 	unguard;
@@ -502,7 +502,7 @@ void LoadQ1BspFile ()
 		bspfile.type = map_q1;
 	else
 		bspfile.type = map_hl;
-	Com_DPrintf ("Loading %s bsp %s\n", bspfile.type == map_q1 ? "Q1" : "HL", bspfile.name);
+	Com_DPrintf ("Loading %s bsp %s\n", bspfile.type == map_q1 ? "Q1" : "HL", *bspfile.Name);
 
 #define C(num,field,count,type) \
 	bspfile.count = CheckLump(dBsp1Hdr_t::LUMP_##num, (void**)&bspfile.field, sizeof(type))
@@ -539,7 +539,6 @@ void LoadQ1BspFile ()
 	// load entstring after all: we may require to change something
 	char *entString = (char*)header + header->lumps[dBsp1Hdr_t::LUMP_ENTITIES].fileofs;
 	bspfile.entStr = ProcessEntstring (entString);
-	bspfile.entStrSize = strlen (bspfile.entStr);
 
 #undef C
 	unguard;
@@ -560,7 +559,7 @@ void LoadQ3BspFile ()
 #endif
 
 	bspfile.type = map_q3;
-	Com_DPrintf ("Loading Q3 bsp %s\n", bspfile.name);
+	Com_DPrintf ("Loading Q3 bsp %s\n", *bspfile.Name);
 
 #define C(num,field,count,type) \
 	bspfile.count = CheckLump(dBsp3Hdr_t::LUMP_##num, (void**)&bspfile.field, sizeof(type))
@@ -595,7 +594,6 @@ void LoadQ3BspFile ()
 	// load entstring after all: we may require to change something
 	char *entString = (char*)header + header->lumps[dBsp3Hdr_t::LUMP_ENTITIES].fileofs;
 	bspfile.entStr = ProcessEntstring (entString);
-	bspfile.entStrSize = strlen (bspfile.entStr);
 
 #undef C
 	unguard;
@@ -606,35 +604,35 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 {
 	guard(LoadBspFile);
 
-	if (!stricmp (filename, bspfile.name) && (clientload || !Cvar_VariableInt ("flushmap")))
+	if (!stricmp (filename, bspfile.Name) && (clientload || !Cvar_VariableInt ("flushmap")))
 	{
 		if (checksum)
 			*checksum = bspfile.checksum;
-		map_clientLoaded |= clientload;
+		bspfile.clientLoaded |= clientload;
 		return &bspfile;
 	}
 
 	server_state_t ss = Com_ServerState ();
-	if (clientload && (ss == ss_loading || ss == ss_game) && stricmp (filename, bspfile.name) && bspfile.name[0])
-		Com_DropError ("client trying to load map \"%s\" while server running \"%s\"", filename, bspfile.name);
+	if (clientload && (ss == ss_loading || ss == ss_game) && stricmp (filename, bspfile.Name) && bspfile.Name[0])
+		Com_DropError ("client trying to load map \"%s\" while server running \"%s\"", filename, *bspfile.Name);
 
-	if (bspfile.name[0] && bspfile.file)
+	if (bspfile.Name[0] && bspfile.file)
 		delete bspfile.file;
 	if (bspfile.extraChain)
 		delete bspfile.extraChain;
 
 	memset (&bspfile, 0, sizeof(bspfile));
-	strcpy (bspfile.name, filename);
+	strcpy (bspfile.Name, filename);
 	if (!(bspfile.file = (byte*) GFileSystem->LoadFile (filename, &bspfile.length)))
 	{
-		bspfile.name[0] = 0;
+		bspfile.Name[0] = 0;
 		Com_DropError ("Couldn't load %s", filename);
 	}
 	bspfile.checksum = LittleLong (Com_BlockChecksum (bspfile.file, bspfile.length));
 	if (checksum) *checksum = bspfile.checksum;
 	bspfile.extraChain = new CMemoryChain;
 
-	map_clientLoaded = clientload;
+	bspfile.clientLoaded = clientload;
 	unsigned *h = (unsigned*)bspfile.file;
 	unsigned id1 = LittleLong(h[0]);
 	unsigned id2 = LittleLong(h[1]);
@@ -660,9 +658,7 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 	}
 	// error
 	delete bspfile.file;
-	bspfile.name[0]  = 0;
-	bspfile.file     = NULL;
-	map_clientLoaded = false;
+	memset (&bspfile, 0, sizeof(bspfile));
 	Com_DropError ("%s has a wrong BSP header", filename);
 	return NULL;		// make compiler happy
 

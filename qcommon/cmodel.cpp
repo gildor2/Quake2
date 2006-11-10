@@ -69,10 +69,8 @@ struct surfBounds_t						// used for texture trace in Q1/HL maps
 	float	maxs[2];
 };
 
-char	map_name[MAX_QPATH];			//?? same as bspfile.name?
 static CMemoryChain *dataChain;
 static bool isMapLoaded;
-bool	map_clientLoaded;
 
 int		c_traces, c_pointcontents;		// stats
 
@@ -92,7 +90,7 @@ static csurface_t nullsurface;
 
 static int		floodvalid;
 
-static bool portalopen[MAX_MAP_AREAPORTALS];
+static bool		portalopen[MAX_MAP_AREAPORTALS];
 
 
 static cvar_t	*map_noareas;
@@ -159,7 +157,7 @@ static void ReadSurfMaterials (const char *filename)
 		T('z',SILENT);
 #undef T
 		default:
-			appWPrintf ("Unknown material mark \"%s\" in %s\n", s, filename);
+			appWPrintf ("Unknown material marker \"%s\" in %s\n", s, filename);
 			m = MATERIAL_CONCRETE;
 		}
 
@@ -174,7 +172,6 @@ static void ReadSurfMaterials (const char *filename)
 		sm->material = m;
 		// add to list
 		surfMaterialList.InsertAfter (sm, prev);
-
 		prev = sm;
 //		Com_DPrintf ("Added surface material: %d for %s\n", m, s);
 	}
@@ -241,9 +238,9 @@ template<class T> static void LoadNodes (T *data, int size)
 
 	for (int i = 0; i < size; i++, data++, out++)
 	{
-		out->isLeaf      = false;
-		out->num         = i;
-		out->plane       = bspfile.planes + data->planeNum;
+		out->isLeaf = false;
+		out->num    = i;
+		out->plane  = bspfile.planes + data->planeNum;
 		// bounds: int[3] -> CVec3
 		for (int j = 0; j < 3; j++)
 		{
@@ -1095,37 +1092,36 @@ CBspModel *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 	//!! NOTE about "flushmap": should be synced with flushmap in LoadBspFile(): some
 	//!!   functions in cmodel.cpp will modify base fields in "bspfile", and CM_* functions
 	//!!   should not be called again
-	static unsigned	last_checksum;
-	if (map_name[0] && !stricmp (map_name, name) && (clientload || !Cvar_VariableInt ("flushmap")))
+	static unsigned	lastChecksum;
+	if (bspfile.Name[0] && !stricmp (bspfile.Name, name) && (clientload || !Cvar_VariableInt ("flushmap")))
 	{
-		*checksum = last_checksum;
+		if (checksum) *checksum = lastChecksum;
 		if (!clientload)
 		{
 			memset (portalopen, 0, sizeof(portalopen));
 			FloodAreaConnections ();
 		}
+		bspfile.clientLoaded |= clientload;
 		return &bspfile.models[0];
 	}
 
 	// free old stuff
-	map_name[0] = 0;
 	isMapLoaded = false;
 	if (dataChain) delete dataChain;
 	dataChain = NULL;
 
 	if (!name || !name[0])
 	{
-		numAreas    = 0;
-		*checksum   = 0;
-		map_clientLoaded = false;
+		numAreas  = 0;
+		if (checksum) *checksum = 0;
 		memset (&bspfile, 0, sizeof(bspfile));
 		return &bspfile.models[0];			// cinematic servers won't have anything at all
 	}
 
 	//?? use "bspfile" var (but should call LoadBspFile() anyway)
-	bspfile_t *bsp = LoadBspFile (name, clientload, &last_checksum);
+	bspfile_t *bsp = LoadBspFile (name, clientload, &lastChecksum);
 	dataChain = new CMemoryChain;
-	*checksum = last_checksum;
+	if (checksum) *checksum = lastChecksum;
 
 	switch (bsp->type)
 	{
@@ -1156,7 +1152,6 @@ CBspModel *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 	FloodAreaConnections ();
 	InitBoxHull ();
 
-	strcpy (map_name, name);
 	return &bspfile.models[0];
 
 	unguardf(("%s", name));
@@ -1308,7 +1303,6 @@ const CBspLeaf *CM_FindLeaf (const CVec3 &p, int headnode)
 int CM_PointContents (const CVec3 &p, int headnode)
 {
 	guard(CM_PointContents);
-	if (!isMapLoaded) return 0;					// map not loaded
 	return CM_FindLeaf (p, headnode)->contents;
 	unguard;
 }
@@ -1644,7 +1638,7 @@ static bool TestBrush (const cbrush_t &brush)
 	tr.trace.fraction = 0;
 	tr.trace.contents = brush.contents;
 	tr.trace.plane    = *clipside->plane;
-	tr.trace.surface  = clipside->surface;				//?? note: not valid for Q1/HL map
+	tr.trace.surface  = clipside->surface;				// note: not valid for Q1/HL map
 
 	return true;
 }
@@ -1891,8 +1885,8 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CB
 
 	int i;
 
-	traceFrame++;	// to avoid testing the same brush from different leafs
-	c_traces++;		//??
+	traceFrame++;							// to avoid testing the same brush from different leafs
+	c_traces++;								//?? stats
 
 	// fill in a default trace
 	memset (&tr, 0, sizeof(tr));
@@ -1900,7 +1894,7 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CB
 	tr.trace.surface  = &nullsurface;
 	tr.trace.brushNum = -1;
 
-	if (!isMapLoaded)	// map not loaded
+	if (!isMapLoaded)
 	{
 		trace = tr.trace;
 		return;
@@ -1928,7 +1922,7 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CB
 	}
 
 	// check for "position test" special case
-	if (start[0] == end[0] && start[1] == end[1] && start[2] == end[2])
+	if (start == end)
 	{
 		CBox box;
 		for (i = 0; i < 3; i++)
@@ -1942,7 +1936,7 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CB
 		for (i = 0; i < numLeafs; i++)
 		{
 			TestLeaf (*leafs[i]);
-			if (tr.trace.allsolid)	// always set when 1st intersection by CM_TestBoxInBrush()
+			if (tr.trace.allsolid)			// always set when 1st intersection by CM_TestBoxInBrush()
 				break;
 		}
 		tr.trace.endpos = start;

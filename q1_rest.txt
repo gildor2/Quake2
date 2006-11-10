@@ -15,8 +15,12 @@
 - hl: aaatrigger -- invisible texture ? (check: may be, have in wads?)
 
 - Q1 sky (not HL!): should occlude other map surfaces (check: map "a2", "kasteel")
-! find all CS_NAME usage, check 7th bit for each char, replace with color
+- CS_NAME (map message) with bad chars:
+  ? check 7th bit for each char, replace with color
   ! server: do not colorize string for old clients
+  * may be, process "worldspawn::message" param in EntityParser.cpp -- easier, more generic
+  - NOTE: CS_NAME may be too long to transfer via configstrings[MAX_QPATH==64]
+  - example map with long message: "q1/efdm10"
 
 - try to find linked doors for Q1 (their bbox+origin touch one another; check 'ground3' for example of opening 2 linked doors,
   when no way to open one door without another)
@@ -58,7 +62,7 @@
 - door sounds (create linked trigger with sound? -- check entity count overflow!)
 
 --------------- later ------------------
-- hl: "lights.rad" file (SURF_LIGHT analog)
+* hl: "lights.rad" file (SURF_LIGHT analog)
 ? hl: water waves
 ? ents: convert q1 NPC to q2 NPC
 - surface sounds (hl) -- requires surface info in Trace()

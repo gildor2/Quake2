@@ -17,7 +17,7 @@ long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 	// If we will disable line above, will be dumped context for each appUnwind() entry
 	dumped = true;
 
-	TRY_S {
+	TRY {
 		const char *excName = "Exception";
 		switch (info->ExceptionRecord->ExceptionCode)
 		{
@@ -66,7 +66,7 @@ long WINAPI win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 		Out->Printf ("\nCall stack trace:\n");
 		UnwindEbpFrame (Out, (unsigned*) ctx->Ebp);
 #endif
-	} CATCH_S {
+	} CATCH {
 		// do nothing
 	} END_CATCH
 

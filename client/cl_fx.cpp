@@ -56,7 +56,7 @@ static void RunLightStyles ()
 		else
 		{
 			int pos  = ofs % ls->length;
-			int pos1 = (pos >= ls->length) ? 0 : pos + 1;
+			int pos1 = (pos == ls->length-1) ? 0 : pos + 1; // last -> firts
 			ls->value = appRound (Lerp<float> (ls->map[pos], ls->map[pos1], cl.lerpfrac));
 		}
 	}
@@ -72,6 +72,9 @@ void CL_SetLightstyle (int i, const char *s)
 	cl_lightstyles[i].length = len;
 
 	// 'a' -> 0; 'm' -> 128 (1.0f); 'z' -> 255 (2.0f)
+	// NOTE: if we will use 'a'=0 and 'm'=128 reference points, then 'y'=>256 ('z'=>overflow)
+	// BUT:  if we'll use 'a'=0 and 'z'=255, then 'm'=>122, but game uses 'm' as normal lightmap
+	// SO:   we use reference points 'a' and 'm' and receive overflow in 'y' and 'z'
 	byte *dst = cl_lightstyles[i].map;
 	for (int j = 0; j < len; j++)
 	{

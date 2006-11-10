@@ -27,6 +27,7 @@ class CQuakeFileSystem : public CFileSystem
 {
 private:
 	TString<256> Name1, Name2;
+	// support for checking for file current mod dir, then BASEDIRNAME
 	void CheckFilename (const char *name)
 	{
 		Name2[0] = 0;

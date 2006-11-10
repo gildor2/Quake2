@@ -222,7 +222,6 @@ struct gl_flare_t
 
 struct bspModel_t				//?? really needs as separate struc? (only one instance at a time)
 {
-	TString<64> Name;			//?? used for verifying "is map loaded" only
 	CMemoryChain *dataChain;
 	//?? shaders, fog, lightGrid (Q3)
 	// inline models
@@ -365,7 +364,7 @@ model_t	*FindModel (const char *name);
 void	FreeModels ();
 
 // bsp model
-void	LoadWorldMap (const char *name);	//?? rename
+void	LoadWorldMap ();
 
 // triangle models
 md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len);

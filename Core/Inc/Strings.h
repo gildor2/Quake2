@@ -66,12 +66,14 @@ class CStringItem
 	friend class CStringList;
 	friend class CListIterator;
 //	template<class T> friend class TList; -- not compiled in VC6
+
 private:
 #ifdef STRING_ITEM_TRICK
 	static char *AllocatedName;
 #endif
+
 public:
-	char	*name;
+	const char *name;
 	CStringItem *next;
 		// really, this field should be "protected" and CStringList should be a friend of CStringItem,
 		// but VC6 will generate error "cannot access protected member (C2248)" for TList<>
@@ -87,6 +89,7 @@ public:
 class CStringList
 {
 	friend class CListIterator;
+
 protected:
 	CStringItem *first;
 	// searching items in a sorted list
@@ -100,6 +103,7 @@ protected:
 		first = item;
 	}
 	CORE_API void InsertLast (CStringItem *item);
+
 public:
 	inline CStringList ()
 	:	first (NULL)
@@ -127,10 +131,19 @@ public:
 };
 
 
+// forwards
+template<class T> class TListIterator;
+
+
 // Template for list of any objects, derived from CStringItem
 template<class T> class TList : public CStringList
 {
 public:
+	// types
+	typedef T						valueType;
+	typedef TListIterator<T>		iterator;
+	//?? add const_iterator -- not just "const TListIterator<T>" - such iterator should use "const T *item" instead of "T *item"
+
 	// list enumeration
 	T *First ()
 	{
@@ -209,6 +222,7 @@ class CListIterator
 {
 protected:
 	CStringItem *item;
+
 public:
 	// initialization
 	CListIterator ()
@@ -248,6 +262,7 @@ public:
 };
 
 
+//?? can create iterator template for any base type, which have "next" field and for any list with "first" field
 template<class T> class TListIterator : public CListIterator
 {
 public:
@@ -279,6 +294,7 @@ public:
 //	c) for (CStringItem *item = list->first; item; item = item->next)		-- long form without iterators
 // TListIterator -- for TStringList<>
 //	a) for (TListIterator<CItem> item = ItemList; item; ++item)
+//  == for (ItemListType::iterator item = ItelList; item; ++item)
 //	b) for (TListIterator<CItem> item(ItemList); item; ++item)
 //	c) for (CItem *item = ItemList.First(); item; item = ItemList.Next(item))
 // When required access to current item, use "*item" (overloaded operator*())
@@ -294,6 +310,7 @@ private:
 	char	buf[BufSize];
 	char	*curr;
 	const char *next;
+
 public:
 	// initialization
 	TStringSplitter ()
@@ -399,25 +416,19 @@ public:
 	// so, to correct this situation, we overloaded binary operator (char*,TString<>&) too
 	int cmp (const char *s2) const			{ return strcmp (str, s2); }
 	int icmp (const char *s2) const			{ return stricmp (str, s2); }
-	// operator == (for "const char*", "char*", "const TString<>", "TString<>"
-	bool operator== (const char *s2) const	{ return strcmp (str, s2) == 0; }
-	bool operator== (char *s2) const		{ return strcmp (str, s2) == 0; }	// dup
-	template<int M> bool operator== (const TString<M> &S) const
-	{ return strcmp (str, S.str) == 0; }
-	template<int M> bool operator== (TString<M> &S)								// dup
-	{ return strcmp (str, S.str) == 0; }
-	// operator !=
-	bool operator!= (const char *s2) const	{ return strcmp (str, s2) != 0; }
-	bool operator!= (char *s2) const		{ return strcmp (str, s2) != 0; }	// dup
-	template<int M> bool operator!= (const TString<M> &S) const
-	{ return strcmp (str, S.str) != 0; }
-	template<int M> bool operator!= (TString<M> &S)								// dup
-	{ return strcmp (str, S.str) != 0; }
-	// operators < <= > >=
-	bool operator<  (const char *s2) const	{ return strcmp (str, s2) < 0; }
-	bool operator<= (const char *s2) const	{ return strcmp (str, s2) <= 0; }
-	bool operator>  (const char *s2) const	{ return strcmp (str, s2) > 0; }
-	bool operator>= (const char *s2) const	{ return strcmp (str, s2) >= 0; }
+	// comparision operators
+#define OP(op)										\
+	inline bool operator op (const char *s2) const	\
+	{ return strcmp (str, s2) op 0; };				\
+	inline bool operator op (char *s2) const		\
+	{ return strcmp (str, s2) op 0; };				\
+	template<int M> inline bool operator op (const TString<M> &S) const \
+	{ return strcmp (str, S.str) op 0; }			\
+	template<int M> inline bool operator op (TString<M> &S) const \
+	{ return strcmp (str, S.str) op 0; }
+	OP(==) OP(!=) OP(<=) OP(<) OP(>) OP(>=)
+#undef OP
+
 	// implicit use as "const char*"
 	operator const char* () const			{ return str; }
 	operator char* ()						{ return str; }

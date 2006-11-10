@@ -384,12 +384,10 @@ static void GenerateColorArray (shaderStage_t *st)
 					static const CVec3 lightOrigin = {-960, 1980, 96};	//!! should use major light from DiffuseLight(), when using for model
 					VectorSubtract (lightOrigin, vec->xyz, v);
 					v.NormalizeFast ();
-					// compute reflection vector
-					float d = dot (v, norm) * 2;
+					// compute reflection vector: refl = dot(v,norm)*2*norm - v
 					CVec3 refl;
-					refl[0] = d * norm[0] - v[0];
-					refl[1] = d * norm[1] - v[1];
-					refl[2] = d * norm[2] - v[2];
+					VectorScale(norm, dot(v,norm)*2, refl);
+					refl.Sub(v);
 					// compute amount of light, reflected to viewer
 					VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
 					v.NormalizeFast ();
@@ -433,7 +431,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *te
 
 	int j, k;
 	// process tcGen
-	bufTexCoord_t *dst = vb->texCoord[tmu];
+	bufTexCoord_t    *dst = vb->texCoord[tmu];
 	bufTexCoordSrc_t *src = srcTexCoord;
 	switch (st->tcGenType)
 	{
@@ -740,7 +738,7 @@ static void PreprocessShader (shader_t *sh)
 
 	int debugMode = 0;
 	if (r_fullbright->integer) debugMode |= DEBUG_FULLBRIGHT;
-	if (r_lightmap->integer) debugMode |= DEBUG_LIGHTMAP;
+	if (r_lightmap->integer)   debugMode |= DEBUG_LIGHTMAP;
 
 	st = tmpSt;
 	numTmpStages = 0;

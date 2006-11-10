@@ -5,6 +5,7 @@
 # CPU specification (+ MMX/SSE etc)
 # ? add dependency: generated_file.mak : source_file.project => echo "Rebuild makefile!"+exit; insert into ALL target?
 # ? custom targets: simply emit text to makefile?
+# - multiline assignment (=, +=, sources()=) : make generic version (current: same code repeated few times)
 
 =documentation
 
@@ -1165,6 +1166,8 @@ while (getline ())
 	$line = ExpandVars ($line);
 	if ($line =~ /^sources\(\s*\w+\s*\)\s*\=/) {
 		my ($objListName, $srcFiles) = $line =~ /\(\s*(\w+)\s*\)\s*\=\s*(\S+(.*\S+)?)$/;
+		$srcFiles = GetMultiLine() if defined($srcFiles) && $srcFiles eq "{";
+		$srcFiles = ExpandVars($srcFiles);
 		AddObjectList ($objListName, $srcFiles);
 	} elsif ($line =~ /^target\(.*\)$/) {
 		my ($type, $outfile, $objListName, undef, $symName) = $line =~

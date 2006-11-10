@@ -1,4 +1,5 @@
 #include "client.h"
+#include "cmodel.h"			// for bspfile.Name
 
 static bool initialized;
 
@@ -544,9 +545,9 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 				}
 
 				char *tmp;
-				if (!(tmp = strrchr (map_name, '/')))
+				if (!(tmp = strrchr (bspfile.Name, '/')))
 				{
-					appWPrintf ("Invalid map_name: %s\n", map_name);
+					appWPrintf ("Invalid map_name: %s\n", *bspfile.Name);
 					return;
 				}
 				tmp++;	// skip '/'

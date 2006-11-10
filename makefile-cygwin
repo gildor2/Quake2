@@ -1587,6 +1587,9 @@ Release/obj-cygwin/q2stat/cl_ents.o : client/cl_ents.cpp $(DEPENDS_35)
 Release/obj-cygwin/q2stat/cl_pred.o : client/cl_pred.cpp $(DEPENDS_35)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_pred.o client/cl_pred.cpp
 
+Release/obj-cygwin/q2stat/cl_scrn.o : client/cl_scrn.cpp $(DEPENDS_35)
+	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_scrn.o client/cl_scrn.cpp
+
 Release/obj-cygwin/q2stat/cl_view.o : client/cl_view.cpp $(DEPENDS_35)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_view.o client/cl_view.cpp
 
@@ -1637,9 +1640,6 @@ Release/obj-cygwin/q2stat/cl_parse.o : client/cl_parse.cpp $(DEPENDS_36)
 
 Release/obj-cygwin/q2stat/cl_playermodel.o : client/cl_playermodel.cpp $(DEPENDS_36)
 	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_playermodel.o client/cl_playermodel.cpp
-
-Release/obj-cygwin/q2stat/cl_scrn.o : client/cl_scrn.cpp $(DEPENDS_36)
-	$(CPP) $(OPT_STATIC) -o Release/obj-cygwin/q2stat/cl_scrn.o client/cl_scrn.cpp
 
 DEPENDS_37 = \
 	Core/Inc/Build.h \

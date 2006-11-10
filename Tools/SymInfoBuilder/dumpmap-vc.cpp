@@ -17,6 +17,9 @@
 //#define MAP_PATH	"../../Release/"		// test version; do not define to allow command-line
 
 
+//#define DEBUG		1						// use to show unprocessed names
+
+
 void Abort (const char *msg)
 {
 	fprintf (stderr, "ERROR: %s\n", msg);
@@ -48,13 +51,52 @@ void ProcessMapFile (const char *name)
 	while (!feof (f))
 	{
 		unsigned seg, ofs, virtAddr;
-		char	decorated[1024], undecorated[1024];
+		char decorated[1024], undecorated[1024];
 
 		fgets (line, sizeof(line), f);
 		if (sscanf (line, " %04X:%08X %s %08X", &seg, &ofs, &decorated, &virtAddr) != 4) continue;
 		UnDecorateSymbolName (decorated, undecorated, sizeof(undecorated), UND_FLAGS);
+		// process special VC class::`name'
+		char *ptype = strchr (undecorated, '`');
+		if ((ptype - undecorated >= 3) && (ptype[-1] == ':') && (ptype[-2] == ':')) // react on "::`" only
+		{
+			// split class::`name' -> name + type
+			char name[1024], type[1024];
+			// get 'type'
+			strcpy (type, ptype+1);
+			char *s = strchr (type, '\'');
+			if (s) *s = 0;
+			// get 'name'
+			int len = ptype - undecorated - 2;
+			memcpy (name, undecorated, len);
+			name[len] = 0;
+			if (!memcmp (name, "const ", 6))			// process "const ClassName::`vtable'"
+				strcpy (name, name+6);
+			// process type
+			if (!strcmp (type, "scalar deleting destructor"))
+				sprintf (undecorated, "%s::sdestruc", name);
+			else if (!strcmp (type, "vector deleting destructor"))
+				sprintf (undecorated, "%s::vdestruc", name);
+			else if (!strcmp (type, "vftable"))
+				sprintf (undecorated, "vmt(%s)", name);
+			else
+			{
+#if DEBUG
+				fprintf (stderr, "?? %s\n", undecorated);
+#endif
+				continue;
+			}
+		}
 		// refine output names
-		if (strpbrk (undecorated, "?$'`\\")) continue;
+		if (!memcmp (undecorated, "__real@", 7))		// unnamed constant
+			continue;
+		if (strpbrk (undecorated, "?$`'\\"))
+		{
+#if DEBUG
+			fprintf (stderr, "-> %s\n", undecorated);
+#endif
+			continue;
+		}
 //		if (undecorated[0] == '_' && undecorated[1] == '_') continue;
 //		if (!__iscsym (undecorated[0])) continue;
 

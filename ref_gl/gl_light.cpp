@@ -265,7 +265,7 @@ void CLightInv2::Init ()
 	CPointLight::Init ();
 	//!! wanna check this on a real map
 	if (bspfile.type == map_q2 || bspfile.type == map_kp)
-		DebugPrintf ("%s: inv2 slight at %g %g %g\n", *map.Name, VECTOR_ARG(origin));
+		DebugPrintf ("%s: inv2 slight at %g %g %g\n", *bspfile.Name, VECTOR_ARG(origin));
 	float f = SQRTFAST(intens * INV_SCALE / MIN_POINT_LIGHT);
 	maxDist2 = f * f;
 }

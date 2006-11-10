@@ -5,7 +5,7 @@ struct refExport_t
 	int		struc_size;
 	bool	(*Init) ();
 	void	(*Shutdown) (bool complete);
-	void	(*LoadNewWorld) (const char *map);
+	void	(*LoadNewWorld) ();
 	void	(*FinishLoadingWorld) ();
 	CRenderModel*	(*RegisterModel) (const char *name);
 	CBasicImage*	(*RegisterSkin) (const char *name, bool force);
@@ -47,9 +47,9 @@ inline void RE_Shutdown (bool complete = false)
 {
 	re.Shutdown (complete);
 }
-inline void RE_LoadNewWorld (const char *map)
+inline void RE_LoadNewWorld ()
 {
-	re.LoadNewWorld (map);
+	re.LoadNewWorld ();
 }
 inline void RE_FinishLoadingWorld ()
 {

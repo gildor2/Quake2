@@ -4,6 +4,26 @@ $workext  = "map";								# can use "(ext1|ext2|ext3)" syntax
 $cvt_tool = "dumpmap";
 $dbg_file = "symbols.dbg";
 
+#------------------------------------------------------------------------------
+#	Service functions
+#------------------------------------------------------------------------------
+$S_RED     = "\033[1;31m";
+#$S_YELLOW  = "\033[1;33m";
+$S_DEFAULT = "\033[0m";
+
+sub Error {
+	die "${S_RED}ERROR: $_[0]${S_DEFAULT}\n";
+}
+
+# check for non-unix and non-cygwin computer
+# /bin/sh will be called indirectly from open(..."cvt_tool | sort" ...)
+Error "program will not function: cannot find /bin/sh" if ! -f "/bin/sh";
+
+
+#------------------------------------------------------------------------------
+#	Processing mapfile
+#------------------------------------------------------------------------------
+
 #$sizesWarn = 128;			# maximum size of variable (Kb), which allowed without warning
 #$doDump = 1;
 
@@ -30,7 +50,7 @@ sub ProcessMap {
 	# write module name
 	syswrite (DBG, "$name\0");
 
-	open (IN, "$cvt_tool $filename | sort |") or die "cannot pipe map file $filename";
+	open (IN, "$cvt_tool $filename | sort |") or Error "cannot pipe map file $filename";
 	print STDERR "---------- $name ------------\n" if $doDump;
 	my $prev = 0; #0x7FFFFFFF;
 	my $prevName = "";
@@ -41,6 +61,7 @@ sub ProcessMap {
 		next if !defined($_);
 #		print "LINE: $_\n";	#!!!
 		($addr, $name, undef, $args) = / \s* (\S+) \s+ ([\w\.<>:*,~\s]+) \s* (\( (.*) \))? /x;
+		next if !defined($name);
 		my $curr = hex($addr);
 		next if $name =~ /^__/;						# do not include in list names, started with double underscore
 		# process return type
@@ -61,6 +82,7 @@ sub ProcessMap {
 			($name) = $name =~ /^void\s+(\S.*)/;
 		}
 		# detect constructors/destructors
+		next if !defined $name;						# may happen when processing "void (*name)(args)"
 		($t, $n) = $name =~ /^ (.*) \:\: (.*) $/x;
 		if (defined $t && defined $n)
 		{
@@ -104,22 +126,29 @@ sub ProcessMap {
 	syswrite (DBG, "\0\0\0\0");
 }
 
+
+#------------------------------------------------------------------------------
+#	Startup
+#------------------------------------------------------------------------------
+
 # usage information
-die "Generate symbols.dbg\nUsage: work.pl workdir compiler\n" if $#ARGV != 1;
+die "Generate symbols.dbg\nUsage: work.pl workdir [compiler=vc]\n" if $#ARGV != 1 && $#ARGV != 0;
 
 # cvt_tool placed in a directory of this script
 ($tmp) = $0 =~ /(.*\/)[^\/]+/ ;						# extract path
 $tmp = "./" if !defined($tmp);
-$cvt_tool = $tmp.$cvt_tool."-".$ARGV[1];			# append filename and compiler
+$compiler = $ARGV[1];
+$compiler = "vc" if !defined($compiler);			# default compiler is "vc"
+$cvt_tool = $tmp.$cvt_tool."-".$compiler;			# append filename and compiler
 
 $workdir = $ARGV[0];
 # read output directory
-opendir (DIR, $workdir) or die "cannot open dir \"$workdir\"\n";
+opendir (DIR, $workdir) or Error "cannot open dir \"$workdir\"";
 @filelist = readdir (DIR);
 closedir (DIR);
 
 # open debug file for writting
-open (DBG, ">$workdir/$dbg_file") or die "cannot create $dbg_file";
+open (DBG, ">$workdir/$dbg_file") or Error "cannot create $dbg_file";
 binmode (DBG);
 # process map files
 $found = 0;
@@ -130,7 +159,7 @@ for $file (@filelist) {
 		$found = 1;
 	}
 }
-die "No *.map files found\n" if !$found;
+Error "No *.map files found" if !$found;
 # write end-of-file mark (module with null name)
 syswrite (DBG, "\0");
 close (DBG);

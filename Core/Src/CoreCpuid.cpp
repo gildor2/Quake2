@@ -112,9 +112,9 @@ static void CheckCpuModel ()
 
 	// cpuid presence
 	unsigned cpu0;
-	TRY_S {
+	TRY {
 		cpu0 = cpuid0 (0x80000000);
-	} CATCH_S {
+	} CATCH {
 		// no CPUID available
 		appPrintf ("CPU: %s\n", GMachineCPU);
 		return;

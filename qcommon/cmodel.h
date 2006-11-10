@@ -23,14 +23,14 @@
 
 struct CBspModel
 {
-	CBox	bounds;
-	float	radius;
-	int		headnode;
-	int		firstface, numfaces;
-	unsigned flags;						// set of CMODEL_XXX flags
-	unsigned contents;					// contents of all model brushes; used only with CMODEL_CONTENTS
-	color_t	color;						// set by Half-Life entities
-	CVec3	origin;
+	CBox		bounds;
+	float		radius;
+	int			headnode;
+	int			firstFace, numFaces;
+	unsigned	flags;					// set of CMODEL_XXX flags
+	unsigned	contents;				// contents of all model brushes; used only with CMODEL_CONTENTS
+	color_t		color;					// set by Half-Life entities
+	CVec3		origin;
 };
 
 
@@ -73,12 +73,12 @@ struct CBspLeaf : public CBspBaseNode
 
 struct lightFlare_t
 {
-	CVec3	origin;
-	float	size;
-	float	radius;						// -1 for sunflare
-	color_t	color;
-	byte	style;
-	int		model;
+	CVec3		origin;
+	float		size;
+	float		radius;					// -1 for sunflare
+	color_t		color;
+	byte		style;
+	int			model;
 	lightFlare_t *next;
 };
 
@@ -94,27 +94,27 @@ enum slightType_t
 struct slight_t
 {
 	slightType_t type;
-	slight_t *next;
-	bool	spot;
-	bool	sun;
-	byte	style;
-	CVec3	origin;
-	CVec3	color;
-	float	intens;
+	slight_t	*next;
+	bool		spot;
+	bool		sun;
+	byte		style;
+	CVec3		origin;
+	CVec3		color;
+	float		intens;
 	// arghrad fields
-	float	focus;
-	float	fade;						// for linear lights only: scale the distance
+	float		focus;
+	float		fade;					// for linear lights only: scale the distance
 	// for spotlights
-	float	spotDot;
-	CVec3	spotDir;					// used for sunlight too
+	float		spotDot;
+	CVec3		spotDir;				// used for sunlight too
 };
 
 // static map effects
 
 struct splash_t
 {
-	CVec3	origin;
-	splash_t *next;
+	CVec3		origin;
+	splash_t	*next;
 };
 
 
@@ -131,14 +131,14 @@ enum fogMode_t
 
 struct bspfile_t
 {
-	char		name[MAX_QPATH];		// mapname
+	TString<64>	Name;					// mapname
 	byte		*file;					// buffer, returned by FS_LoadFile()
+	bool		clientLoaded;			// for synchronization of server/client/renderer map loading
 	mapType_t	type;
 	unsigned	checksum;
 	unsigned	length;
 	CMemoryChain *extraChain;
 
-	int			entStrSize;
 	const char	*entStr;
 
 	int			numPlanes;

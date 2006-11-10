@@ -574,7 +574,6 @@ static void Upload (void *pic, unsigned flags, image_t *image)
 			if (scaledHeight < 1) scaledHeight = 1;
 
 			// show mipmap levels as colors
-			size = scaledWidth * scaledHeight;
 			if (r_colorMipLevels->integer)
 			{
 				// here miplevel >= 1
@@ -582,6 +581,7 @@ static void Upload (void *pic, unsigned flags, image_t *image)
 				c.rgba = 0;
 				c.c[(miplevel - 1) % 3] = 255;
 				byte *p = (byte *) scaledPic;
+				size = scaledWidth * scaledHeight;
 				for (int i = 0; i < size; i++, p += 4)
 				{
 					p[0] = (c.c[0] + p[0]) / 4;

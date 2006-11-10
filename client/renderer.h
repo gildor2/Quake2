@@ -5,7 +5,7 @@ bool	Init ();
 // called before the library is unloaded
 void	Shutdown (bool complete = false);
 
-void	LoadNewWorld (const char *map);
+void	LoadNewWorld ();
 void	FinishLoadingWorld ();
 CRenderModel* RegisterModel (const char *name);
 CBasicImage* RegisterSkin (const char *name, bool force = false);
