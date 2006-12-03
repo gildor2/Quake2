@@ -1049,9 +1049,9 @@ void CL_Frame(float msec, float realMsec)
 		V_InitRenderer();
 
 	// update the screen
-	if (com_speeds->integer) time_before_ref = appCycles();	//?? move
+	time_before_ref = appCycles();	//?? move
 	SCR_UpdateScreen();
-	if (com_speeds->integer) time_after_ref = appCycles();		//??
+	time_after_ref = appCycles();	//??
 
 	// update audio
 	S_Update(cl.refdef.vieworg, cl.v_right);

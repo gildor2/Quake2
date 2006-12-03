@@ -160,12 +160,15 @@ struct FDrawStats
 	unsigned meshLight;
 	unsigned meshTess;
 	unsigned dynLightmap;
+	unsigned swapBuffers;
 	// methods
 	inline void Zero()
 	{
-		int numVisLeafs = visLeafs;		// keep number of visLeafs (remove when MarkLeaves() will be called every frame)
+		int numVisLeafs     = visLeafs;		// keep number of visLeafs (remove when MarkLeaves() will be called every frame)
+		int statSwapBuffers = swapBuffers;	// updated after displaying stats, so keep until the next frame
 		memset(this, 0, sizeof(FDrawStats));
-		visLeafs = numVisLeafs;
+		visLeafs    = numVisLeafs;
+		swapBuffers = statSwapBuffers;
 	}
 };
 extern FDrawStats gl_stats;

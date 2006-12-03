@@ -77,6 +77,14 @@
   player will continue to run for a few seconds (bug present in original q2 too)
   ? try to close most background apps - may be, the reason is there ...
 
+GAME DLL:
+~~~~~~~~~
+- after teleporter_touch() all angles will be set to null (but pmove.delta_angles[] contains angle values), and angles will be
+  corrected in PMove() call, which will appear only on the next call to ClientThink(). This call will be made in 2 situations:
+  1) when server receives another usercmd after teleport (most frequent case) - called from SV_MoveClient()
+  2) when teleport was occured within last usercmd, angles will be corrected in PMove() on the next server frame only
+     (visual appearance: after teleport player will look at yaw=0 for 1/10 of second, then will rotate to correct view angle)
+
 UNRECOVARABLE:
 ~~~~~~~~~~~~~~
 - rogue demo3: ".../items/defender/tris..." - linked NULL-model entity (modelindex2 > max available model index)

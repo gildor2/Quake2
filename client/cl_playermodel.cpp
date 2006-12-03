@@ -554,10 +554,6 @@ void RunAnimation(clientInfo_t &ci, animState_t &as, int animNum)
 	// get animation
 	animation_t *anim = &ci.animations[animNum];
 
-	//!! check for correct animation changing w/o lerping (teleport, respawn ...)
-	//!! can make this using teleport detection (significant changing of origin):
-	//!! when detected, lerp frames from 0
-
 	// check for next animation in sequence
 	int wholeAnimTime = anim->numFrames * anim->frameLerp;
 	if (animNum == as.animNum && (curTime >= as.startTime + wholeAnimTime - anim->frameLerp))	// start next sequence 1 frame earlier
@@ -980,13 +976,15 @@ int ParsePlayerEntity(centity_t &cent, clientInfo_t &ci, clEntityState_t *st, co
 
 	if (cent.clientInfoId != ci.id)
 	{
-		// clientInfo_t changed -> reset animations for new model
-		//!! same after teleport/respawn or long time without visualization
+		// clientInfo_t changed or teleported -> reset animations for new model
+		//!! the same after long time without visualization
 		cent.clientInfoId = ci.id;
 		memset(&cent.legsAnim, 0, sizeof(animState_t));
 		cent.legsAnim.angles = ent.angles;
 		memset(&cent.torsoAnim, 0, sizeof(animState_t));
 		cent.torsoAnim.angles = ent.angles;
+		memset(&cent.headAnim, 0, sizeof(animState_t));
+		cent.headAnim.angles = ent.angles;
 	}
 
 	if (maxEnts > 0) memset(buf, 0, sizeof(entity_t) * maxEnts);

@@ -72,10 +72,16 @@ struct centity_t
 	animState_t headAnim;		// used only angles
 
 	int		serverframe;		// if not current, this ent isn't in the frame
+	bool	teleported;			// when true, do not lerp entity state with previous state
 	// particle effects
 	CVec3	prevTrail;
 	float	trailLen;
 	int		fly_stoptime;
+
+	void Teleported()
+	{
+		clientInfoId = -1;		// force restarting entity animations
+	}
 };
 
 #define NEW_FX	(cl_newfx->integer)

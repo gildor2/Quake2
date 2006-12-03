@@ -832,7 +832,6 @@ float crand();
 
 extern cvar_t	*developer;
 extern cvar_t	*dedicated;
-extern cvar_t	*com_speeds;
 extern cvar_t	*timedemo;
 extern cvar_t	*timescale;
 extern cvar_t	*sv_cheats;

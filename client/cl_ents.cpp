@@ -75,7 +75,7 @@ void CL_ParseDelta(clEntityState_t *from, clEntityState_t *to, int number, unsig
 
 
 // Parses deltas from the given base and adds the resulting entity to the current frame
-static void CL_DeltaEntity(frame_t *frame, int newnum, clEntityState_t *old, unsigned bits)
+static void DeltaEntity(frame_t *frame, int newnum, clEntityState_t *old, unsigned bits)
 {
 	centity_t &ent = cl_entities[newnum];
 	clEntityState_t &state = cl_parse_entities[cl.parse_entities & (MAX_PARSE_ENTITIES-1)];
@@ -94,26 +94,20 @@ static void CL_DeltaEntity(frame_t *frame, int newnum, clEntityState_t *old, uns
 		fabs(state.origin[1] - ent.current.origin[1]) > 256 ||
 		fabs(state.origin[2] - ent.current.origin[2]) > 256 ||
 		state.event == EV_PLAYER_TELEPORT ||
-		state.event == EV_OTHER_TELEPORT
-		)
-	{
-		ent.serverframe = -99;
-	}
-
-	if (ent.serverframe != cl.frame.serverframe - 1)
+		state.event == EV_OTHER_TELEPORT  ||
+		ent.serverframe != cl.frame.serverframe - 1)
 	{
 		// duplicate the current state so lerping doesn't hurt anything
-		ent.prev = state;			// new entity: prev = new
-		if (state.event == EV_OTHER_TELEPORT)
-			ent.prev.origin = state.origin;
-		else
+		ent.prev = state;				// new entity: prev = new
+		if (state.event == EV_PLAYER_TELEPORT)
 			ent.prev.origin = state.old_origin;
 		// init some non-transferred fields (reset entity)
 		ent.prevTrail = ent.prev.origin;
 		ent.trailLen  = 0;
+		ent.Teleported();
 	}
 	else
-		ent.prev = ent.current;		// normal delta: prev = current, current = new
+		ent.prev = ent.current;			// normal delta: prev = current, current = new
 
 	ent.serverframe = cl.frame.serverframe;
 	ent.current     = state;
@@ -121,7 +115,7 @@ static void CL_DeltaEntity(frame_t *frame, int newnum, clEntityState_t *old, uns
 
 
 // An svc_packetentities has just been parsed, deal with the rest of the data stream.
-static void CL_ParsePacketEntities(frame_t *oldframe, frame_t *newframe)
+static void ParsePacketEntities(frame_t *oldframe, frame_t *newframe)
 {
 	clEntityState_t *oldstate;
 	int		oldnum;
@@ -157,7 +151,7 @@ static void CL_ParsePacketEntities(frame_t *oldframe, frame_t *newframe)
 			// one or more entities from the old packet are unchanged
 			if (cl_shownet->integer == 3)
 				appPrintf("   unchanged: %d\n", oldnum);
-			CL_DeltaEntity(newframe, oldnum, oldstate, 0);
+			DeltaEntity(newframe, oldnum, oldstate, 0);
 
 			if (++oldindex >= old_num_entities)
 			{
@@ -184,7 +178,7 @@ static void CL_ParsePacketEntities(frame_t *oldframe, frame_t *newframe)
 			// delta from previous state
 			if (cl_shownet->integer == 3)
 				appPrintf("   delta: %d\n", newnum);
-			CL_DeltaEntity(newframe, newnum, oldstate, bits);
+			DeltaEntity(newframe, newnum, oldstate, bits);
 
 			oldindex++;
 			continue;
@@ -195,7 +189,7 @@ static void CL_ParsePacketEntities(frame_t *oldframe, frame_t *newframe)
 			// delta from baseline
 			if (cl_shownet->integer == 3)
 				appPrintf("   baseline: %d\n", newnum);
-			CL_DeltaEntity(newframe, newnum, &cl_entities[newnum].baseline, bits);
+			DeltaEntity(newframe, newnum, &cl_entities[newnum].baseline, bits);
 			continue;
 		}
 	}
@@ -209,14 +203,14 @@ static void CL_ParsePacketEntities(frame_t *oldframe, frame_t *newframe)
 
 		if (cl_shownet->integer == 3)
 			appPrintf("   unchanged: %d\n", oldnum);
-		CL_DeltaEntity(newframe, oldnum, oldstate, 0);
+		DeltaEntity(newframe, oldnum, oldstate, 0);
 
 		oldindex++;
 	}
 }
 
 
-static void CL_FireEntityEvents(frame_t *frame)
+static void FireEntityEvents(frame_t *frame)
 {
 	for (int pnum = 0; pnum < frame->num_entities; pnum++)
 	{
@@ -311,7 +305,7 @@ void CL_ParseFrame()
 	SHOWNET(svc_strings[cmd]);
 	if (cmd != svc_packetentities)
 		Com_DropError("CL_ParseFrame: not packetentities");
-	CL_ParsePacketEntities(old, &cl.frame);
+	ParsePacketEntities(old, &cl.frame);
 
 	// save the frame off in the backup array for later delta comparisons
 	cl.frames[cl.frame.serverframe & UPDATE_MASK] = cl.frame;
@@ -335,7 +329,7 @@ void CL_ParseFrame()
 		cl.sound_ambient = true;			// can start mixing ambient sounds
 
 		// fire entity events
-		CL_FireEntityEvents(&cl.frame);
+		FireEntityEvents(&cl.frame);
 		CL_CheckPredictionError();
 	}
 	// get oldFrame
@@ -485,7 +479,7 @@ void CL_AddEntityBox(clEntityState_t *st, unsigned rgba)
 }
 
 
-static void CL_AddDebugLines()
+static void AddDebugLines()
 {
 	if (!cl_showbboxes->integer) return;
 
@@ -504,7 +498,7 @@ static void CL_AddDebugLines()
 }
 
 
-static void CL_AddPacketEntities()
+static void AddPacketEntities()
 {
 	// bonus items rotate at a fixed rate
 	float autorotate = ReduceAngle(cl.ftime * 100);
@@ -806,7 +800,7 @@ static void CL_AddPacketEntities()
 
 //#define FIXED_VIEW	1		// for debug purposes
 
-void CL_OffsetThirdPersonView()
+void OffsetThirdPersonView()
 {
 	CVec3	forward, pos;
 	trace_t	trace;
@@ -856,8 +850,10 @@ void CL_OffsetThirdPersonView()
 }
 
 
-// Sets cl.refdef view values
-static void CL_CalcViewValues()
+// This function uses cl.frame info, which can be correlated mostly with entity
+// replication system, not with view manager -- that is why this function here,
+// not in cl_view.cpp
+static void CalcViewValues()
 {
 	int			i;
 
@@ -875,7 +871,7 @@ static void CL_CalcViewValues()
 	float lerp = cl.lerpfrac;
 
 	// calculate the origin
-	if ((cl_predict->integer) && !(cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION)
+	if (cl_predict->integer && !(cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION)
 		&& !cl.attractloop)	// demos have no movement prediction ability (client commands are not stored)
 	{	// use predicted values
 		float backlerp = 1 - lerp;
@@ -924,7 +920,7 @@ static void CL_CalcViewValues()
 		cl.frame.playerstate.pmove.pm_type != PM_SPECTATOR)
 	{
 		cl.refdef.rdflags |= RDF_THIRD_PERSON;
-		CL_OffsetThirdPersonView();
+		OffsetThirdPersonView();
 		if (CM_PointContents(cl.refdef.vieworg, 0) & MASK_WATER)		//?? use different point
 			cl.refdef.rdflags |= RDF_UNDERWATER;
 		// compute cl.modelorg for 3rd person view from client entity
@@ -965,9 +961,11 @@ void CL_AddEntities()
 	else
 		cl.lerpfrac = 1.0f - (cl.frame.servertime - cl.time) / 100.0f;		//?? use cl.ftime
 
-	CL_CalcViewValues();
-	CL_AddPacketEntities();
-	CL_AddDebugLines();
+	CalcViewValues();
+	// this function will add player weapon at cl.refdef.vieworg position, so
+	// we require CalcViewValues() before this
+	AddPacketEntities();
+	AddDebugLines();
 
 	unguard;
 }

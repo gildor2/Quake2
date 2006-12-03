@@ -825,6 +825,15 @@ static void FixWaterVis()
 }
 
 
+//#define PROFILE_VIEW	1
+
+#if PROFILE_VIEW
+#define PRF(x)	x
+#else
+#define PRF(x)
+#endif
+
+
 bool V_RenderView()
 {
 	guard(V_RenderView);
@@ -857,10 +866,15 @@ bool V_RenderView()
 		cl.timedemoFrames++;
 	}
 
+#if PROFILE_VIEW
+	unsigned beforePrep = 0, beforeDebug = 0, beforeEffects = 0, afterEffects = 0, beforeRender, afterRender;
+#endif
+
 	// an invalid frame will just use the exact previous refdef
 	// we can't use the old frame if the video mode has changed, though...
 	if (cl.frame.valid && (cl.forceViewFrame || !cl_paused->integer))
 	{
+		PRF(beforePrep = appCycles());
 		cl.forceViewFrame = false;
 
 		CalcVrect();
@@ -873,7 +887,9 @@ bool V_RenderView()
 		// this also calls CL_CalcViewValues which loads
 		// v_forward, etc.
 		CL_AddEntities();
+		PRF(beforeEffects = appCycles());
 		CL_AddEffects();
+		PRF(afterEffects = appCycles());
 		CL_AddTEnts();
 
 #if !NO_DEBUG
@@ -894,6 +910,7 @@ bool V_RenderView()
 			delete debugMem;
 			debugMem = NULL;
 		}
+		PRF(beforeDebug = appCycles());
 		if (r_playerpos->integer)	DrawOriginInfo();
 		if (r_surfinfo->integer)	DrawSurfInfo();
 		DrawBrush();
@@ -908,12 +925,12 @@ bool V_RenderView()
 		cl.refdef.vieworg[2] += 1.0f/16;
 #endif
 
-		cl.refdef.x = scr_vrect.x;
-		cl.refdef.y = scr_vrect.y;
-		cl.refdef.width = scr_vrect.width;
+		cl.refdef.x      = scr_vrect.x;
+		cl.refdef.y      = scr_vrect.y;
+		cl.refdef.width  = scr_vrect.width;
 		cl.refdef.height = scr_vrect.height;
-		cl.refdef.fov_y = CalcFov(cl.refdef.fov_x, cl.refdef.width, cl.refdef.height);
-		cl.refdef.time = cl.ftime;
+		cl.refdef.fov_y  = CalcFov(cl.refdef.fov_x, cl.refdef.width, cl.refdef.height);
+		cl.refdef.time   = cl.ftime;
 
 		cl.refdef.areabits = cl.frame.areabits;
 
@@ -923,12 +940,12 @@ bool V_RenderView()
 			r_blend[3] = 0;
 
 		cl.refdef.num_entities = r_numentities;
-		cl.refdef.entities = r_entities;
-		cl.refdef.particles = cl_add_particles->integer ? active_particles : NULL;
-		cl.refdef.beams = active_beams;
-		cl.refdef.num_dlights = r_numdlights;
-		cl.refdef.dlights = r_dlights;
-		cl.refdef.lightstyles = cl_lightstyles;
+		cl.refdef.entities     = r_entities;
+		cl.refdef.particles    = cl_add_particles->integer ? active_particles : NULL;
+		cl.refdef.beams        = active_beams;
+		cl.refdef.num_dlights  = r_numdlights;
+		cl.refdef.dlights      = r_dlights;
+		cl.refdef.lightstyles  = cl_lightstyles;
 
 		// underwater fov warp (taken from Q3 game source)
 		if (cl.refdef.rdflags & RDF_UNDERWATER)
@@ -939,12 +956,24 @@ bool V_RenderView()
 		}
 		FixWaterVis();
 	}
+	PRF(beforeRender = appCycles());
 	// render scene
 	RE_RenderFrame(&cl.refdef);
+	PRF(afterRender = appCycles());
 	// add full-screen blend
 	if (r_blend[3])
 		RE_Fill(cl.refdef.x, cl.refdef.y, cl.refdef.width, cl.refdef.height,
 			RGBAS(r_blend[0], r_blend[1], r_blend[2], r_blend[3]));
+
+#if PROFILE_VIEW
+	RE_DrawTextLeft(va("V: prep1: %5.2f fx: %5.2f prep2: %5.2f dbg: %5.2f render: %5.2f",
+		appCyclesToMsecf(beforeEffects - beforePrep),
+		appCyclesToMsecf(afterEffects - beforeEffects),
+		appCyclesToMsecf(beforeDebug - afterEffects),
+		appCyclesToMsecf(beforeRender - beforeDebug),
+		appCyclesToMsecf(afterRender - beforeRender)),
+		RGB(0.2,1,0.2));
+#endif
 
 	// stats
 	if (r_drawfps->integer)

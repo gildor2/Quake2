@@ -479,7 +479,19 @@ static void UpdateParticles()
 				// org += timeDelta * vel + timeDelta^2 * accel
 				VectorMA(p->org, timeDelta, p->vel);
 				VectorMA(p->org, time2, p->accel);
-				p->leaf = CM_FindLeaf(p->org);
+				// Determining particle leaf is very slow operation, expecially when
+				// particle count is high; we can assume, that particle will remain
+				// near its spawn point with its small lifetime, and avoid recompution
+				// of leaf info
+				// May be, better way is to evaluate particle trajectory and trace
+				// against world to detect point, when it will disappear.
+				// Olso, can avoid computation on each frame: recompute only when
+				// particle was moved far enough from ist previous "checkpoint"; do not
+				// recompute all particles on the same frame; add flag for moving particle:
+				// "bool recomputeLeaf" for fast movable particles.
+				// Another way: change particle system to drammatically reduce particle
+				// count (use sprites, beams etc)
+//--				p->leaf = CM_FindLeaf(p->org);
 			}
 			// update velocity: vel += timeDelta * accel
 			VectorMA(p->vel, timeDelta, p->accel);

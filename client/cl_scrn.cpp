@@ -980,13 +980,29 @@ void SCR_TouchPics()
 
 
 // This is called every frame, and can also be called explicitly to flush text to the screen.
+
+//#define PROFILE_UPD_SCR		1
+
+#if PROFILE_UPD_SCR
+#define PRF(x)	x
+#else
+#define PRF(x)
+#endif
+
 void SCR_UpdateScreen()
 {
 	guard(SCR_UpdateScreen);
 
 	if (!initialized) return;		// not initialized yet
 
+#if PROFILE_UPD_SCR
+	unsigned beforeGUI = 0, afterGUI = 0, beforeHUD = 0;
+	unsigned beforeBegin = appCycles();
+#endif
+
 	RE_BeginFrame(cls.realtime / 1000.0);
+
+	PRF(unsigned afterBegin = appCycles());
 
 	if (cl.cinematicActive)
 	{
@@ -1001,6 +1017,7 @@ void SCR_UpdateScreen()
 			//------------------- HUD --------------------
 			if (cl_draw2d->integer)
 			{
+				PRF(beforeHUD = appCycles());
 				DrawCrosshair();
 				// SCR_DrawStats:
 				ExecuteLayoutString(cl.configstrings[CS_STATUSBAR]);
@@ -1033,7 +1050,9 @@ void SCR_UpdateScreen()
 				M_ForceMenuOn();
 		}
 
+		PRF(beforeGUI = appCycles());
 		DrawGUI(true);
+		PRF(afterGUI = appCycles());
 
 		if (timegraph->integer)
 			SCR_DebugGraph(cls.frametime * 300, 0);
@@ -1041,7 +1060,15 @@ void SCR_UpdateScreen()
 			DrawDebugGraph();
 	}
 
+	PRF(unsigned beforeEnd = appCycles());
 	RE_EndFrame();
+#if PROFILE_UPD_SCR
+	unsigned afterEnd = appCycles();
+	RE_DrawTextLeft(va("SCR: begin: %5.2f 3Dview: %5.2f hud: %5.2f gui: %5.2f mid: %5.2f end: %5.2f",
+		appCyclesToMsecf(afterBegin - beforeBegin), appCyclesToMsecf(beforeHUD - afterBegin),
+		appCyclesToMsecf(beforeGUI - beforeHUD), appCyclesToMsecf(afterGUI - beforeGUI),
+		appCyclesToMsecf(beforeEnd - afterGUI), appCyclesToMsecf(afterEnd - beforeEnd)), RGB(0.2,1,0.2));
+#endif
 
 	unguard;
 }

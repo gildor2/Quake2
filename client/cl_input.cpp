@@ -206,9 +206,21 @@ static void KeyboardMove(usercmd_t *cmd)
 
 static void ClampPitch()
 {
+	// NOTE: game code uses sum of cmd.angles and cmd.delta_angles as real view
+	// direction; delta_angles updated with small frequiency (when spawning, teleporting
+	// etc); its value may be ANY, so - normalize and clamp angles carefully
+
 	float pitch = SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
+	// normalize pitch
 	if (pitch > 180)
 		pitch -= 360;
+
+	// normalize sum of viewangle+pitch
+	// required to do before clamping angle
+	if (cl.viewangles[PITCH] + pitch < -360)
+		cl.viewangles[PITCH] += 360;
+	if (cl.viewangles[PITCH] + pitch > 360)
+		cl.viewangles[PITCH] -= 360;
 
 	if (cl.viewangles[PITCH] + pitch > 89)
 		cl.viewangles[PITCH] = 89 - pitch;

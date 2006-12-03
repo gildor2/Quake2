@@ -332,12 +332,12 @@ int main(int argc, const char **argv) // force to link as console application
 				//?? should process maxfps here (Sleep() required amount of time); problem: ensure server framerate!
 				newtime = appCycles64();
 				timeDelta = appCyclesToMsecf(newtime - oldtime);
-				if (timeDelta < 0)
+				if (timeDelta < 0 || timeDelta > 10000) // negative number, or greater than 10 sec
 				{
 					// may be, resumed from sleep mode - fix delta
 					//?? may be, implement fix in appMilliseconds() (for global effect) ?
 					Com_DPrintf("fixing timeDelta < 0\n");
-					timeDelta = 100;
+					timeDelta = 1000;                   // replace delta with 1 sec
 					break;
 				}
 				if (timeDelta > 1.0f) break;	//?? client (or server?) time bugs with ">0" condition & cl_maxfps < realFPS -- net/prediction errors

@@ -763,9 +763,11 @@ void RenderFrame(refdef_t *fd)
 						" entity light  %.3f\n"
 						" mesh tess     %.3f\n"
 						" mesh light    %.3f\n"
-						" comp dyn lm   %.3f",
+						" comp dyn lm   %.3f\n"
+						" swap buffers  %.3f",
 						T(frontend), T(dlightSurf), T(occlTest), T(flareTrace),
-						T(backend), T(sort), T(entLight), T(meshTess), T(meshLight), T(dynLightmap)
+						T(backend), T(sort), T(entLight), T(meshTess), T(meshLight), T(dynLightmap),
+						T(swapBuffers)
 			), RGB(0.1,0.6,0.1));
 		int lgridSize = map.mapGrid[0]*map.mapGrid[1]*map.mapGrid[2];
 		if (!lgridSize) lgridSize = 1;	// to avoid zero divide

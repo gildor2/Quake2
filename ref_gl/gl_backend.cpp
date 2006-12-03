@@ -2273,11 +2273,13 @@ void BK_EndFrame()
 	BK_FlushShader();
 	if (screenshotName)
 		PerformScreenshot();
-	ShowImages();				// debug
+	ShowImages();					// debug
+	STAT(gl_stats.swapBuffers = 0);	// reset manually
+	STAT(clock(gl_stats.swapBuffers));
 	QGL_SwapBuffers();
-	gl_state.is2dMode = false;	// invalidate 2D mode, because of buffer switching
-
 	if (gl_finish->integer) glFinish();
+	STAT(unclock(gl_stats.swapBuffers));
+	gl_state.is2dMode = false;		// invalidate 2D mode, because of buffer switching
 }
 
 

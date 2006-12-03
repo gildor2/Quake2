@@ -35,7 +35,6 @@ bool cm_showTrace;
 #define HULL_LEAFS			1
 #define HULL_BRUSHES		1
 
-
 struct cbrushside_t
 {
 	CPlane	*plane;
@@ -454,9 +453,7 @@ static void LoadSurfaces1(dBsp1Texinfo_t *data, int size)
 		{
 			dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)bspfile.miptex1 + offset );
 			// texture with data, but without name:
-			if (!tex->name[0])
-				appSprintf(ARRAY_ARG(out->texture), "unnamed#%d", miptex);
-			else if (texNames[miptex])
+			if (texNames[miptex])
 				strcpy(out->texture, texNames[miptex]);	// texture already checked
 			else
 			{
@@ -933,8 +930,8 @@ static void LoadQ1Map(bspfile_t *bsp)
 	// Q1 areas: simulate loading (create 1 area)
 	map_areas = new (dataChain) carea_t;
 	numAreas  = 1;
-//	map_areas[0].numareaportals  = 0;
-//	map_areas[0].firstareaportal = 0;
+//	map_areas[0].numAreaPortals  = 0;
+//	map_areas[0].firstAreaPortal = 0;
 //	map_areas[0].floodvalid      = 0;
 //	map_areas[0].floodnum        = 0;
 	numareaportals = 0;
@@ -2354,7 +2351,6 @@ static void FloodAreaConnections()
 		floodnum++;
 		FloodArea_r(area, floodnum);
 	}
-
 }
 
 void CM_SetAreaPortalState(int portalnum, bool open)

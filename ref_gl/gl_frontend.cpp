@@ -241,7 +241,7 @@ static bool BoxOccluded(const refEntity_t *e, const CVec3 &size2)
 	// will be rotated around entity center, and non-clipped part of rect will be inside
 	// world object, and entity will be mistakenly occluded)
 	float dist = e->dist2 / 2;
-	if (e->size2[0] > dist || e->size2[1] > dist || e->size2[2] > dist) return false;
+	if (e->size2[0] > dist || e->size2[1] > dist || e->size2[2] > dist) goto notOccluded;
 
 	// project box to plane
 	if (!GetBoxRect(e, size2, mins2, maxs2))

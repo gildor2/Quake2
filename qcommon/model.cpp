@@ -341,6 +341,7 @@ static void LoadQ2Vis(bspfile_t *f, dBsp2Vis_t *vis, int size)
 				appWPrintf("WARNING: map with cluster info but without visinfo\n");
 		}
 		f->numClusters = 1;				// required
+		f->visRowSize  = 1;				// required
 		f->visInfo     = NULL;
 		return;
 	}
@@ -363,6 +364,7 @@ static void LoadQ1Vis(bspfile_t *f, byte *vis, int size)
 	{
 		Com_DPrintf("No visinfo in map\n");
 		f->numClusters = 1;				// required
+		f->visRowSize  = 1;				// required
 		f->visInfo     = NULL;
 		return;
 	}
@@ -393,6 +395,7 @@ static void LoadQ3Vis(bspfile_t *f, dBsp3Vis_t* vis, int size)
 				appWPrintf("WARNING: map with cluster info but without visinfo\n");
 		}
 		f->numClusters = 1;				// required
+		f->visRowSize  = 1;				// required
 		f->visInfo     = NULL;
 		return;
 	}
@@ -517,10 +520,21 @@ void LoadQ1BspFile()
 	C(SURFEDGES, surfedges, numSurfedges, int);
 	C(EDGES, edges, numEdges, dEdge_t);
 
+	// load miptex lump
 	bspfile.miptex1 = (dBsp1MiptexLump_t*)(bspfile.file + lumps[dBsp1Hdr_t::LUMP_TEXTURES].fileofs);
 #if !LITTLE_ENDIAN
 	//!! swap miptex1 lump
 #endif
+	for (int miptex = 0; miptex < bspfile.miptex1->nummiptex; miptex++)
+	{
+		int offset = bspfile.miptex1->dataofs[miptex];
+		if (offset == -1)
+			continue;
+		dBsp1Miptex_t *tex = (dBsp1Miptex_t*)( (byte*)bspfile.miptex1 + offset );
+		// texture with data, but without name -- create default name
+		if (!tex->name[0])
+			appSprintf(ARRAY_ARG(tex->name), "unnamed#%d", miptex);
+	}
 
 	dBsp1Model_t *models;
 	bspfile.numModels = CheckLump(dBsp1Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp1Model_t));	// not in bspfile_t struc

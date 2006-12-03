@@ -3,7 +3,7 @@
 #include "OutputDeviceFile.h"
 
 
-cvar_t	*com_speeds;
+static cvar_t *com_speeds;
 cvar_t	*developer;
 cvar_t	*timescale;
 cvar_t	*timedemo;
@@ -731,8 +731,6 @@ bool com_isClient, com_isServer;
 
 void Com_Frame(float msec)
 {
-	unsigned time_before, time_between, time_after;
-
 	guard(Com_Frame);
 
 	// logfile
@@ -784,11 +782,9 @@ void Com_Frame(float msec)
 	Cbuf_Execute();
 	FS_Tick();
 
-	if (com_speeds->integer)
-	{
-		time_before = appCycles();
-		time_before_game = 0;				// for detection of frames with game frame
-	}
+	unsigned time_before, time_between, time_after;
+	time_before = appCycles();
+	time_before_game = 0;					// for detection of frames with game frame
 
 //if (!Cvar_VariableInt("sv_block"))
 	com_isServer = true;
@@ -797,11 +793,8 @@ void Com_Frame(float msec)
 
 	if (!DEDICATED)
 	{
-		if (com_speeds->integer)
-		{
-			time_between = appCycles();
-			time_before_ref = 0;			// for detection of frames with renderer frame (may be dropped with cl_maxfps)
-		}
+		time_between = appCycles();
+		time_before_ref = 0;				// for detection of frames with renderer frame (may be dropped with cl_maxfps)
 
 		com_isClient = true;
 		CL_Frame(smsec, msec);
@@ -826,7 +819,7 @@ void Com_Frame(float msec)
 				old_pc = c_pointcontents;
 			}
 			if (time_before_ref)
-				RE_DrawTextRight(va("sv:%.2f gm:%.2f (%.2f) cl:%.2f rf:%.2f all:%.2f\n"
+				RE_DrawTextRight(va("sv:%5.2f gm:%5.2f (%5.2f) cl:%5.2f rf:%5.2f all:%5.2f\n"
 									 "tr: %4d (%4d) pt: %4d (%4d)",
 									sv, gm, old_gm, cl, rf, all,
 									c_traces, old_tr, c_pointcontents, old_pc),

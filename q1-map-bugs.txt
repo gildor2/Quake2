@@ -5,9 +5,6 @@ damaul3b - sky issues
 damaul7 - not working teleporter near lava
 dokkur - moving teleport, not function (possible reason: q1 teleporter == cmodel,
   q2 teleporter == created md2 model at specified location + static trigger teleport)
-efdm1
-  ? (fixed?) cannot load
-  - "unnamed texture have mip index -1", have "default" texture (-1317, 573, -442)
 efdm10 - infinite teleport
 elbow - cannot start (SP only?)
 frivdev1_3 - infinite teleport

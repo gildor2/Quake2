@@ -486,7 +486,6 @@ static void SV_MoveClient(client_t *cl)
 
 			if (net_drop > 0)
 				SV_ClientThink(cl, &oldcmd);
-
 		}
 		SV_ClientThink(cl, &newcmd);
 	}

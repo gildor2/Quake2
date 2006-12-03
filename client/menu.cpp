@@ -2169,7 +2169,7 @@ struct playerConfigMenu_t : menuFramework_t
 		{
 			clEntityState_t st;
 			st.SetAnim(LEGS_IDLE, TORSO_STAND);
-			cent.prev = st;
+			cent.prev    = st;
 			cent.current = st;
 			// setup base entity
 			// note: we will setup both frame numbers(for q2 models) and animation type(for q3 models)
@@ -2191,12 +2191,12 @@ struct playerConfigMenu_t : menuFramework_t
 			memset(&e, 0, sizeof(e));
 			// setup for renderer
 			int numEnts = ParsePlayerEntity(cent, ci, &st, base, ARRAY_ARG(e), 0);
-//			refdef.areabits = NULL;
+//			refdef.areabits     = NULL;
 			refdef.num_entities = numEnts;
-			refdef.entities = e;
-//			refdef.lightstyles = NULL;
-			refdef.dlights = dl;
-			refdef.num_dlights = ARRAY_COUNT(dl);
+			refdef.entities     = e;
+//			refdef.lightstyles  = NULL;
+			refdef.dlights      = dl;
+			refdef.num_dlights  = ARRAY_COUNT(dl);
 		}
 		refdef.rdflags = RDF_NOWORLDMODEL;
 

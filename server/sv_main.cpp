@@ -1132,8 +1132,7 @@ void SV_Frame(float msec)
 	// don't run if paused
 	if (!sv_paused->integer || sv_maxclients->integer > 1)
 	{
-		if (com_speeds->integer)
-			time_before_game = appCycles();
+		time_before_game = appCycles();
 
 		guard(ge.RunFrame);
 		ge->RunFrame();
@@ -1148,8 +1147,7 @@ void SV_Frame(float msec)
 			svs.realtime  = sv.time;
 			svs.realtimef = sv.time;
 		}
-		if (com_speeds->integer)
-			time_after_game = appCycles();
+		time_after_game = appCycles();
 	}
 
 	// if extended protocol used, recalculate footstep sounds, mdx/mdl/md3 frames etc.
