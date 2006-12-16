@@ -176,6 +176,9 @@ struct CORE_API CPlane
 		else
 			return dot(normal, vec) - dist;
 	}
+	// dist == 0 -- box crosses plane, otherwise -- distance from place to
+	// nearest box vertex
+	float DistanceTo(const CBox& box) const;
 };
 
 
@@ -197,6 +200,21 @@ struct CORE_API CBox
 	// returns 1 when box placed on a normal-looking side of plane, 2 when on opposite side,
 	// and 3 (1+2) when box intersects plane
 	int OnPlaneSide(const CPlane &plane) const;
+	inline void GetVertex(int idx, CVec3& vec) const
+	{
+		vec[0] = (idx & 1) ? maxs[0] : mins[0];
+		vec[1] = (idx & 2) ? maxs[1] : mins[1];
+		vec[2] = (idx & 4) ? maxs[2] : mins[2];
+	}
+	inline void Inflate(float amount)
+	{
+		mins[0] -= amount;
+		mins[1] -= amount;
+		mins[2] -= amount;
+		maxs[0] += amount;
+		maxs[1] += amount;
+		maxs[2] += amount;
+	}
 };
 
 // CBox::OnPlaneSide(), optimized for axis-aligned planes

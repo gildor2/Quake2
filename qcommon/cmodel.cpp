@@ -1117,9 +1117,11 @@ CBspModel *CM_LoadMap(const char *name, bool clientload, unsigned *checksum)
 
 	//?? use "bspfile" var (but should call LoadBspFile() anyway)
 	bspfile_t *bsp = LoadBspFile(name, clientload, &lastChecksum);
+
 	dataChain = new CMemoryChain;
 	if (checksum) *checksum = lastChecksum;
 
+	// LoadXXMap() functions should not use entstring info
 	switch (bsp->type)
 	{
 	case map_q2:
@@ -1143,7 +1145,10 @@ CBspModel *CM_LoadMap(const char *name, bool clientload, unsigned *checksum)
 		Com_DropError("map has invalid headnode = %d", bspfile.models[0].headnode);
 #endif
 
+	// mark map as loaded and parse entities (entity parser may require
+	// tracing functions to work)
 	isMapLoaded = true;
+	bsp->entStr = ProcessEntstring(bsp->entStr);
 
 	memset(portalopen, 0, sizeof(portalopen));
 	FloodAreaConnections();
@@ -1911,12 +1916,8 @@ void CM_BoxTrace(trace_t &trace, const CVec3 &start, const CVec3 &end, const CBo
 		tr.bounds.mins[i] -= f;				// move bounds center to {0,0,0}
 		tr.bounds.maxs[i] -= f;
 	}
-	for (int boundsVec = 0; boundsVec < 8; boundsVec++)
-	{
-		int signbits = boundsVec;
-		for (int j = 0; j < 3; j++, signbits >>= 1)
-			tr.boundsVecs[boundsVec][j] = (signbits & 1) ? tr.bounds.maxs[j] : tr.bounds.mins[j];
-	}
+	for (i = 0; i < 8; i++)
+		tr.bounds.GetVertex(i, tr.boundsVecs[i]);
 
 	// check for "position test" special case
 	if (start == end)

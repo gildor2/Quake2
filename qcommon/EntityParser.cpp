@@ -19,6 +19,7 @@
 #define MAX_ENT_FIELDS		32
 #define MAX_TARGETS			256
 #define MAX_SUNS			4		// arghrad limit
+#define MAX_DOORS			256		// for Q1
 
 struct entField_t
 {
@@ -32,6 +33,13 @@ struct target_t
 	CVec3	origin;
 };
 
+struct door_t
+{
+	char	className[64];
+	int		modelIdx;				// inline model for this door
+	int		linkModel;				// when door already linked, this will contain model of master door
+};
+
 
 static bool haveErrors;
 static entField_t entity[MAX_ENT_FIELDS];
@@ -42,6 +50,9 @@ static int numTargets;
 
 static char sunTarget[64][MAX_SUNS];
 static slight_t *sunLight[MAX_SUNS];
+
+static door_t doors[MAX_DOORS];
+static int numDoors;
 
 // some fields from current entity
 static const char *classname;
@@ -476,14 +487,8 @@ static bool LoadLight()
 static bool ProcessEntity1()
 {
 	bool resetSpawnflags = false;
-	bool shiftUp = false;
-#define CHANGE0(orig, new)			\
-	if (!strcmp(classname, orig))	\
-	{								\
-		strcpy(classNameField->value, new); \
-		resetSpawnflags = true;		\
-		shiftUp = true;				\
-	}
+	bool shiftUp         = false;
+
 	// teleport
 	if (!strcmp(classname, "trigger_teleport"))
 	{
@@ -502,20 +507,55 @@ static bool ProcessEntity1()
 		entOrigin[2] += 8;
 		strcpy(originField->value, va("%g %g %g", VECTOR_ARG(entOrigin)));
 	}
+	else if (!strncmp(classname, "func_door", 9) && !(spawnflags & 4))
+	{
+		// implement linked doors
+		if (numDoors >= MAX_DOORS)
+		{
+			appWPrintf("MAX_DOORS reached\n");
+			return true;
+		}
+		// remember door
+		strcpy(doors[numDoors].className, classname);
+		doors[numDoors].modelIdx  = modelIdx;
+		doors[numDoors].linkModel = -1;
+		// find touched door
+		int masterModel = modelIdx;
+		CBox thisDoor = bspfile.models[modelIdx].bounds;
+		thisDoor.Inflate(1);				// cannot do this when loading map (see ProcessQ1BspFile())
+		for (int i = 0; i < numDoors; i++)	// do not compare with self
+		{
+			if (strcmp(doors[i].className, classname) != 0)	// class differs
+				continue;
+			CBox masterDoor = bspfile.models[doors[i].modelIdx].bounds;
+			masterDoor.Inflate(1);
+			if (thisDoor.Intersects(masterDoor))
+			{
+				masterModel = doors[i].linkModel;
+				if (masterModel == -1) masterModel = doors[i].modelIdx;
+				doors[numDoors].linkModel = masterModel;
+				break;
+			}
+		}
+
+		AddField("team", va("door_%d", masterModel));
+		// and only now increment numDoors
+		numDoors++;
+	}
 	// weapons/ammo
 	// weapon_: q2 have: supershotgun, rocketlauncher, grenadelauncher
 		//!! should reset spawnflags for them!
-	else CHANGE0("weapon_nailgun", "weapon_machinegun")
-	else CHANGE0("weapon_supernailgun", "weapon_chaingun")
-	else CHANGE0("weapon_lightning", "weapon_railgun")
+	else CHANGE("weapon_nailgun",      "weapon_machinegun")
+	else CHANGE("weapon_supernailgun", "weapon_chaingun")
+	else CHANGE("weapon_lightning",    "weapon_railgun")
 	// ammo
-	else CHANGE0("item_shells", "ammo_shells")		// shotguns
-	else CHANGE0("item_spikes", "ammo_bullets")		// nailgun
-	else CHANGE0("item_rockets", "ammo_grenades")	// rocketlauncher, grenadelauncher : ammo_rockets, ammo_grenades
+	else CHANGE("item_shells",  "ammo_shells")		// shotguns
+	else CHANGE("item_spikes",  "ammo_bullets")		// nailgun
+	else CHANGE("item_rockets", "ammo_grenades")	// rocketlauncher, grenadelauncher : ammo_rockets, ammo_grenades
 	//!! NOTE: q1 uses rockets for rocketlauncher and grenadelauncher
 	//!! We should check: if map have grenadelauncher - use ammo_grenades,
 	//!! otherwise use ammo_rockets
-	else CHANGE0("item_cells", "ammo_slugs")		// lightning
+	else CHANGE("item_cells", "ammo_slugs")		// lightning
 
 	// item_health
 	else if (!strcmp(classname, "item_health"))
@@ -526,19 +566,28 @@ static bool ProcessEntity1()
 			strcpy(classNameField->value, "item_health_mega");
 		else										// normal, 25 points
 			strcpy(classNameField->value, "item_health_large");
-		RemoveField("spawnflags");
-		shiftUp = true;
+	}
+
+	// item_weapon
+	else if (!strcmp(classname, "item_weapon"))
+	{
+		if (spawnflags & 2)      // rockets
+			strcpy(classNameField->value, "ammo_grenades");  //!! or rockets!
+		else if (spawnflags & 4) // nailgun
+			strcpy(classNameField->value, "ammo_bullets");
+		else if (spawnflags & 1) // shotgun
+			strcpy(classNameField->value, "ammo_shells");
 	}
 
 	// item_armor
-	else CHANGE0("item_armor1", "item_armor_jacket")	// 0.3/100
-	else CHANGE0("item_armor2", "item_armor_combat") 	// 0.6/150
-	else CHANGE0("item_armorInv", "item_armor_body") 	// 0.8/200
+	else CHANGE("item_armor1",   "item_armor_jacket")	// 0.3/100
+	else CHANGE("item_armor2",   "item_armor_combat") 	// 0.6/150
+	else CHANGE("item_armorInv", "item_armor_body") 	// 0.8/200
 
-	else CHANGE0("item_artifact_invulnerability", "item_invulnerability")
-	else CHANGE0("item_artifact_envirosuit", "item_enviro")
+	else CHANGE("item_artifact_invulnerability", "item_invulnerability")
+	else CHANGE("item_artifact_envirosuit", "item_enviro")
 	// item_artifact_invisibility
-	else CHANGE0("item_artifact_super_damage", "item_quad")
+	else CHANGE("item_artifact_super_damage", "item_quad")
 	// Q2: item_breather, item_silencer, item_adrenaline, item_bandolier, item_pack
 	// Q2: key_data_cd, key_power_cube, key_pyramid, key_data_spinner, key_pass,
 	// Q2: key_blue_key, key_red_key, key_oommander_head, key_airstrike_target
@@ -548,16 +597,60 @@ static bool ProcessEntity1()
 
 //	else CHANGE("trigger_changelevel", "target_changelevel")
 
+	// note: have few items, which do not require conversion
+	// but should fix item position
+	// also remove spawnflags for weapons/items and correct their position
+	// to avoid "droptofloor: startsolid" problem
+	if (!strncmp(classname, "weapon_", 7) ||
+		!strncmp(classname, "item_", 5)   ||
+		!strncmp(classname, "ammo_", 5))
+	{
+		resetSpawnflags = true;
+		shiftUp         = true;
+	}
+
 	if (resetSpawnflags && spawnflagsField)
 		strcpy(spawnflagsField->value, "0");
+	//?? changed 9.12.06 -- rename 'shiftUp', remove shiftUp+resetSpawnflags from CHANGE0() macro ...
 	if (shiftUp)
 	{
-		entOrigin[2] += 20;
-		strcpy(originField->value, va("%g %g %g", VECTOR_ARG(entOrigin)));
+		// try to move entity out of the walls
+		bool done = false;
+		CVec3 org;
+		org = entOrigin;
+		entOrigin[2] += 10;
+		for (int tries = 0; tries < 30; tries++)
+		{
+			static const CBox bounds = {{-20,-20,-20}, {20,20,20}}; // taken from game::droptofloor()
+			trace_t tr;
+			CM_BoxTrace(tr, org, org, bounds, 0, MASK_SOLID);
+			if (!tr.allsolid)
+			{
+//				appPrintf(S_YELLOW"...... ok!\n");
+				done = true;
+				break;
+			}
+#if 0
+			//?? try to compute distance
+			CBox bounds1;
+			bounds1 = bounds;
+			bounds1.mins.Add(org);
+			bounds1.maxs.Add(org);
+			appPrintf("%s[%d] : {%g %g %g} += {%g %g %g}+%g  (%g)\n", classname, tries, VECTOR_ARG(org), VECTOR_ARG(tr.plane.normal), tr.plane.dist,
+			tr.plane.DistanceTo(bounds1));
+#endif
+			//?? try to compute distance between bounds1.GetVertex(tr.plane.signbits) and plane to shift from this plane with
+			//?? a single iteration
+			VectorMA(org, 2, tr.plane.normal);
+		}
+		if (done)
+		{
+			entOrigin = org;
+			strcpy(originField->value, va("%g %g %g", VECTOR_ARG(entOrigin)));
+		}
 	}
 
 	return true;
-#undef CHANGE0
 }
 
 
@@ -1179,7 +1272,7 @@ const char *ProcessEntstring(const char *entString)
 
 	// find all target entities
 	const char *src = entString;
-	numTargets = 0;
+	numTargets = numDoors = 0;
 	while (!haveErrors && ReadEntity(src))
 		ProcessEntityTarget();
 

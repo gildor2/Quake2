@@ -126,9 +126,7 @@ static int TransformedCull(CBox &b, refEntity_t *e)
 	for (i = 0; i < 8; i++, v++)	// check all 8 verts of bounding box
 	{
 		CVec3 tmp;
-		tmp[0] = (i & 1) ? b.maxs[0] : b.mins[0];
-		tmp[1] = (i & 2) ? b.maxs[1] : b.mins[1];
-		tmp[2] = (i & 4) ? b.maxs[2] : b.mins[2];
+		b.GetVertex(i, tmp);
 		e->coord.UnTransformPoint(tmp, *v);
 	}
 
@@ -296,9 +294,7 @@ static bool WorldBoxOccluded(const CBox &bounds)
 	for (int i = 0; i < 8; i++)
 	{
 		CVec3	v;
-		v[0] = (i & 1) ? bounds.maxs[0] : bounds.mins[0];
-		v[1] = (i & 2) ? bounds.maxs[1] : bounds.mins[1];
-		v[2] = (i & 4) ? bounds.maxs[2] : bounds.mins[2];
+		bounds.GetVertex(i, v);
 
 		if (i == 0)
 			n = CM_BrushTrace(vp.view.origin, v, brushes, NUM_TEST_BRUSHES);	// test->integer);

@@ -594,10 +594,7 @@ static void SetPerspective()
 		for (int i = 0; i < 8; i++)			// enumarate all 8 verts of bounding box
 		{
 			CVec3	v;
-			CBox &b = vp.bounds;
-			v[0] = (i & 1) ? b.maxs[0] : b.mins[0];
-			v[1] = (i & 2) ? b.maxs[1] : b.mins[1];
-			v[2] = (i & 4) ? b.maxs[2] : b.mins[2];
+			vp.bounds.GetVertex(i, v);
 			// get Z-coordinate
 			VectorSubtract(v, vp.view.origin, v);
 			float d1 = dot(v, vp.view.axis[0]);

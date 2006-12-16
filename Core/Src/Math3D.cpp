@@ -91,6 +91,85 @@ void CPlane::Setup()
 }
 
 
+float CPlane::DistanceTo(const CBox& box) const
+{
+	float d;
+	if (type <= PLANE_Z)
+	{
+		d = box.mins[type] - dist;
+		if (!IsNegative(d)) return d; // >= 0
+		d = box.maxs[type] - dist;
+		if (IsNegative(d)) return d;
+		return 0;
+	}
+
+	if (type <= PLANE_MZ)
+	{
+		d = -box.mins[type-3] - dist;
+		if (!IsNegative(d)) return d;
+		d = -box.maxs[type-3] - dist;
+		if (IsNegative(d)) return d;
+		return 0;
+	}
+
+	// non-axial plane
+	// NOTE: code taken from CBox::OnPlaneSide()
+	float i0 = normal[0] * box.mins[0];	// In -- mIns[n] * p.normal[n]
+	float i1 = normal[1] * box.mins[1];
+	float i2 = normal[2] * box.mins[2];
+	float a0 = normal[0] * box.maxs[0];	// An -- mAxs[n] * p.normal[n]
+	float a1 = normal[1] * box.maxs[1];
+	float a2 = normal[2] * box.maxs[2];
+
+	float	dist1, dist2;
+	switch (signbits)
+	{
+	case 0:
+		dist1 = a0 + a1 + a2;
+		dist2 = i0 + i1 + i2;
+		break;
+	case 1:
+		dist1 = i0 + a1 + a2;
+		dist2 = a0 + i1 + i2;
+		break;
+	case 2:
+		dist1 = a0 + i1 + a2;
+		dist2 = i0 + a1 + i2;
+		break;
+	case 3:
+		dist1 = i0 + i1 + a2;
+		dist2 = a0 + a1 + i2;
+		break;
+	case 4:
+		dist1 = a0 + a1 + i2;
+		dist2 = i0 + i1 + a2;
+		break;
+	case 5:
+		dist1 = i0 + a1 + i2;
+		dist2 = a0 + i1 + a2;
+		break;
+	case 6:
+		dist1 = a0 + i1 + i2;
+		dist2 = i0 + a1 + a2;
+		break;
+	case 7:
+//	default:					// shut up compiler
+		dist1 = i0 + i1 + i2;
+		dist2 = a0 + a1 + a2;
+		break;
+//	default:
+//		dist1 = dist2 = 0;		// shut up compiler
+//		break;
+	}
+
+	dist2 -= dist;
+	if (!IsNegative(dist2)) return dist2;
+	dist1 -= dist;
+	if (IsNegative(dist1)) return dist1;
+	return 0;
+}
+
+
 /*-----------------------------------------------------------------------------
 	CBox
 -----------------------------------------------------------------------------*/

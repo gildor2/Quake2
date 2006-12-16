@@ -182,6 +182,7 @@ extern const char PkgVersion[];
 
 class CMemoryChain;
 struct CVec3;
+struct CBox;
 
 
 //----- miscellaneous ?

@@ -22,13 +22,6 @@
   - NOTE: CS_NAME may be too long to transfer via configstrings[MAX_QPATH==64]
   - example map with long message: "q1/efdm10"
 
-- try to find linked doors for Q1 (their bbox+origin touch one another; check 'ground3' for example of opening 2 linked doors,
-  when no way to open one door without another)
-  - "q1dm2" - have func_door "*2" - should be linked with "*1" (now: unlinked, opened with player touch)
-    -- should copy "target" field from linked entity
-    + change default speed/wait (other fields too?)
-    - should supoprt linked doors in server
-
 - texture loading:
   - should delete all textures (map textures) on next map loading, because:
     - q1: embedded textures: should delete all on map change (different maps -- may be different textures

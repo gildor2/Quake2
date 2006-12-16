@@ -218,6 +218,10 @@ static void ProcessQ1BspFile(bspfile_t *f)
 
 		for (j = 0; j < 3; j++)
 		{
+			// q1bsp tool reduces bounds by 1, so - we should increase by 2 ...
+			// but: when we will increase bounds by 1, q1 maps will receive a lots
+			// of visibility artifacts with moving entities, which enters into a
+			// wall (should recompute bbox for renderer?? reference: e1m3)
 			d.bounds.mins[j] -= 1;
 			d.bounds.maxs[j] += 1;
 		}
@@ -481,7 +485,7 @@ void LoadQ2BspFile()
 		bspfile.type = map_kp;
 		Com_DPrintf("Kingpin map detected\n");
 	}
-	bspfile.entStr = ProcessEntstring(entString);
+	bspfile.entStr = entString;
 
 #undef C
 	unguard;
@@ -552,7 +556,7 @@ void LoadQ1BspFile()
 	LoadQ1Vis(&bspfile, vis, visDataSize);
 	// load entstring after all: we may require to change something
 	char *entString = (char*)header + header->lumps[dBsp1Hdr_t::LUMP_ENTITIES].fileofs;
-	bspfile.entStr = ProcessEntstring(entString);
+	bspfile.entStr = entString;
 
 #undef C
 	unguard;
@@ -607,7 +611,7 @@ void LoadQ3BspFile()
 	LoadQ3Vis(&bspfile, vis, visDataSize);
 	// load entstring after all: we may require to change something
 	char *entString = (char*)header + header->lumps[dBsp3Hdr_t::LUMP_ENTITIES].fileofs;
-	bspfile.entStr = ProcessEntstring(entString);
+	bspfile.entStr = entString;
 
 #undef C
 	unguard;

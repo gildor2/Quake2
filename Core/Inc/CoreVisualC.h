@@ -143,7 +143,7 @@ inline float appCyclesToMsecf(unsigned timeDelta)
 	return v * GMSecondsPerCycle;
 }
 
-inline float appCyclesToMsecf(int64 &timeDelta)
+inline float appCyclesToMsecf(const int64 &timeDelta)
 {
 	double v = timeDelta;
 	return v * GMSecondsPerCycle;
