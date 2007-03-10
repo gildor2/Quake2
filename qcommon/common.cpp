@@ -11,11 +11,11 @@ cvar_t	*sv_cheats;
 static cvar_t *nointro;
 
 
-#if !DEDICATED_ONLY
+#if !DEDICATED_ONLY && !NO_DEDICATED
 static cvar_t dummyDedicated;
 cvar_t	*dedicated = &dummyDedicated;
 	// dummy cvar; may be used before initialized - when error happens before
-	// Com_Init()::Cvar_GetVars(); after this, will point to actual cvar
+	// Com_Init()->Cvar_GetVars(); after this, will point to actual cvar
 #else
 cvar_t	*dedicated;
 #endif
@@ -786,7 +786,6 @@ void Com_Frame(float msec)
 	time_before = appCycles();
 	time_before_game = 0;					// for detection of frames with game frame
 
-//if (!Cvar_VariableInt("sv_block"))
 	com_isServer = true;
 	SV_Frame(smsec);
 	com_isServer = false;

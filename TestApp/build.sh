@@ -1,10 +1,10 @@
 #!/bin/bash
 
 #PLATFORM="cygwin"
+TARGET="TESTAPP"
 OUT="TestApp"
 
 source ../build-common
 
 cd ..
-time $build makefile-$PLATFORM TESTAPP
-$tools/SymInfoBuilder/work.pl $OUT $maptype
+BuildTarget

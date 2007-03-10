@@ -951,7 +951,6 @@ static void ParseWorldSpawn()
 	{
 		// replace
 		char copy[256];
-		bool color = false;
 		char *s = f->value, *d = copy;
 		while (char c = *s++)
 		{
@@ -1136,7 +1135,7 @@ static bool ProcessEntity()
 	if (Cvar_VariableInt("keep_sp") && (spawnflags & SPAWNFLAG_NOT_DEATHMATCH))//!!
 	{
 		spawnflags &= ~SPAWNFLAG_NOT_DEATHMATCH;
-		appSprintf(f->value, sizeof(f->value), "%d", spawnflags);
+		appSprintf(ARRAY_ARG(f->value), "%d", spawnflags);
 	}
 #endif
 	// get origin

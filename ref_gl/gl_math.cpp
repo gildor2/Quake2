@@ -15,14 +15,14 @@ const float *mathFuncs[] = {
 
 /*---------- Tables for non-periodic functions ------------*/
 
-float asinTable[TABLE_SIZE*2], acosTable[TABLE_SIZE*2];
+float asinTable[TABLE_SIZE*2];
 float atanTable[TABLE_SIZE], atanTable2[TABLE_SIZE];
 
 
 //!! these tables are unused now
-float sqrtTable[256];
+/*float sqrtTable[256];
 int   noiseTablei[256];
-float noiseTablef[256];
+float noiseTablef[256]; */
 
 
 void InitFuncTables()
@@ -31,8 +31,9 @@ void InitFuncTables()
 
 	for (i = 0; i < TABLE_SIZE; i++)
 	{
-		float j = i;			// just to avoid "(float)i"
+		float j = i;					// just to avoid "(float)i"
 		float f = j / TABLE_SIZE;
+		float f1 = j / (TABLE_SIZE-1);	// for non-periodic funcs: cell # TABLE_SIZE-1 corresponds to 1
 		squareTable[i] = (i < TABLE_SIZE/2) ? -1 : 1;
 		sinTable[i] = sin(j / (TABLE_SIZE/2) * M_PI);		// 0 -- 0, last -- 2*pi
 		sawtoothTable[i] = f;
@@ -44,18 +45,17 @@ void InitFuncTables()
 
 		asinTable[i] = asin(f - 1);
 		asinTable[i + TABLE_SIZE] = asin(f);
-		acosTable[i] = acos(f - 1);
-		acosTable[i + TABLE_SIZE] = acos(f);
-		atanTable[i] = atan(f);
-		atanTable2[i] = atan(1.0f / f);
+
+		atanTable[i]  = atan(f1);
+		atanTable2[i] = atan(1.0f / f1);
 	}
 
-	for (i = 0; i < 256; i++)
+/*	for (i = 0; i < 256; i++)
 	{
 		sqrtTable[i] = pow(i / 255.0f, 0.5f);
 		noiseTablei[i] = appRound(rand() * 255.0f / RAND_MAX) & 0xFF;
 		noiseTablef[i] = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;	// range -1..1
-	}
+	} */
 }
 
 

@@ -78,9 +78,9 @@ struct centity_t
 	float	trailLen;
 	int		fly_stoptime;
 
-	void Teleported()
+	inline void Teleported()
 	{
-		clientInfoId = -1;		// force restarting entity animations
+		clientInfoId = 0xFFFFFFFF; // force restarting entity animations
 	}
 };
 

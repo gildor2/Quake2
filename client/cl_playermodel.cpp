@@ -436,9 +436,9 @@ static bool SetQuake3Skin(clientInfo_t &ci, const char *modelName, const char *s
 
 static CRenderModel *FindQ3Model(const char *name, const char *part)
 {
-	char filename[MAX_QPATH];
-	appSprintf(ARRAY_ARG(filename), "models/players/%s/%s.md3", name, part);
-	return RE_RegisterModel(filename);
+	TString<MAX_QPATH> Filename;
+	Filename.sprintf("models/players/%s/%s.md3", name, part);
+	return RE_RegisterModel(Filename);
 }
 
 

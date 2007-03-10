@@ -124,13 +124,15 @@ static void SV_Configstrings_f(int argc, char **argv)
 	// send next command
 	if (start == MAX_CONFIGSTRINGS)
 	{
+		// all configstrings gone, next is baselines
 		MSG_WriteByte(&sv_client->netchan.message, svc_stufftext);
-		MSG_WriteString(&sv_client->netchan.message, va("cmd baselines %i 0\n",svs.spawncount) );
+		MSG_WriteString(&sv_client->netchan.message, va("cmd baselines %i 0\n",svs.spawncount));
 	}
 	else
 	{
+		// retrieve next configstrings
 		MSG_WriteByte(&sv_client->netchan.message, svc_stufftext);
-		MSG_WriteString(&sv_client->netchan.message, va("cmd configstrings %i %i\n",svs.spawncount, start) );
+		MSG_WriteString(&sv_client->netchan.message, va("cmd configstrings %i %i\n",svs.spawncount, start));
 	}
 }
 
@@ -300,12 +302,7 @@ static void SV_BeginDownload_f(int argc, char **argv)
 
 	if (!sv_client->download)
 	{
-		Com_DPrintf("Couldn't download %s to %s\n", *Name, *sv_client->Name);
-		if (sv_client->download) {
-			delete sv_client->download;
-			sv_client->download = NULL;
-		}
-
+		Com_DPrintf("Couldn't upload %s to %s\n", *Name, *sv_client->Name);
 		MSG_WriteByte(&sv_client->netchan.message, svc_download);
 		MSG_WriteShort(&sv_client->netchan.message, -1);
 		MSG_WriteByte(&sv_client->netchan.message, 0);
@@ -313,7 +310,7 @@ static void SV_BeginDownload_f(int argc, char **argv)
 	}
 
 	SV_NextDownload_f(argc, argv);
-	Com_DPrintf("Downloading %s to %s\n", *Name, *sv_client->Name);
+	Com_DPrintf("Uploading %s to %s\n", *Name, *sv_client->Name);
 }
 
 
@@ -509,6 +506,8 @@ void SV_ExecuteClientMessage(client_t *cl)
 	bool move_issued = false;
 	int stringCmdCount = 0;
 
+	if (sv_shownet->integer)
+		appPrintf("net: msg from %s\n", *cl->Name);
 	while (true)
 	{
 		if (net_message.readcount > net_message.cursize)
@@ -524,14 +523,17 @@ void SV_ExecuteClientMessage(client_t *cl)
 		switch (c)
 		{
 		case clc_nop:
+			if (sv_shownet->integer) appPrintf("...nop\n");
 			break;
 
 		case clc_userinfo:
+			if (sv_shownet->integer) appPrintf("...userinfo\n");
 			cl->Userinfo = MSG_ReadString(&net_message);
 			SV_UserinfoChanged(cl);
 			break;
 
 		case clc_move:
+			if (sv_shownet->integer) appPrintf("...move\n");
 			if (move_issued) return;		// someone is trying to cheat...
 			move_issued = true;
 			SV_MoveClient(cl);
@@ -542,7 +544,10 @@ void SV_ExecuteClientMessage(client_t *cl)
 				const char *s = MSG_ReadString(&net_message);
 				// malicious users may try using too many string commands
 				if (++stringCmdCount < MAX_STRINGCMDS)
+				{
+					if (sv_shownet->integer) appPrintf("...stringcmd: %s\n", s);
 					SV_ExecuteUserCommand(s);
+				}
 
 				if (cl->state == cs_zombie)
 					return;	// disconnect command

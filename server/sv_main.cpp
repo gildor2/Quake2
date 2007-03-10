@@ -55,6 +55,8 @@ static cvar_t	*public_server;			// should heartbeats be sent
 static cvar_t	*sv_reconnect_limit;	// minimum seconds between connect messages
 
 cvar_t			*sv_extProtocol;
+cvar_t			*sv_shownet;
+
 static cvar_t	*sv_camperSounds;
 cvar_t			*sv_labels;
 //static cvar_t	*sv_fps;
@@ -185,9 +187,9 @@ static void cInfo(int argc, char **argv)
 		return;
 	}
 
-	char string[64];
+	TString<64> Str;
 	if (version != PROTOCOL_VERSION)
-		appSprintf(ARRAY_ARG(string), "%s: wrong version %d\n", hostname->string, version);
+		Str.sprintf("%s: wrong version %d\n", hostname->string, version);
 	else
 	{
 		int count = 0;
@@ -195,9 +197,9 @@ static void cInfo(int argc, char **argv)
 			if (svs.clients[i].state >= cs_connected)
 				count++;
 
-		appSprintf(ARRAY_ARG(string), "%16s %8s %2d/%2d\n", hostname->string, sv.name, count, sv_maxclients->integer);
+		Str.sprintf("%16s %8s %2d/%2d\n", hostname->string, sv.name, count, sv_maxclients->integer);
 	}
-	Netchan_OutOfBandPrint(NS_SERVER, net_from, "info\n%s", string);
+	Netchan_OutOfBandPrint(NS_SERVER, net_from, "info\n%s", *Str);
 }
 
 /*
@@ -395,16 +397,13 @@ static void cDirectConnect(int argc, char **argv)
 		Netchan_OutOfBandPrint(NS_SERVER, adr, "client_connect");
 
 	newcl->netchan.Setup(NS_SERVER, adr, port);
-	newcl->maxPacketSize = MAX_MSGLEN_OLD;
-	if (cl->newprotocol)
-		newcl->maxPacketSize = MAX_MSGLEN;
-
-	newcl->state = cs_connected;
+	newcl->maxPacketSize = cl->newprotocol ? MAX_MSGLEN : MAX_MSGLEN_OLD;
+	newcl->state         = cs_connected;
 
 	newcl->datagram.Init(newcl->datagram_buf, sizeof(newcl->datagram_buf));
 	newcl->datagram.allowoverflow = true;
-	newcl->lastmessage = svs.realtime;	// don't timeout
-	newcl->lastconnect = svs.realtime;
+	newcl->lastmessage   = svs.realtime;	// don't timeout
+	newcl->lastconnect   = svs.realtime;
 }
 
 
@@ -488,9 +487,10 @@ static void SV_ConnectionlessPacket()
 	net_message.BeginReading();
 	MSG_ReadLong(&net_message);		// skip the -1 marker
 
-	char *s = MSG_ReadString(&net_message);
+	const char *s = MSG_ReadString(&net_message);
 	//?? "s" may be too long (userinfo etc)
-	Com_DPrintf("SV: packet from %s: %s\n", NET_AdrToString(&net_from), s);
+	if (sv_shownet->integer)
+		appPrintf("SV: packet from %s: %s\n", NET_AdrToString(&net_from), s);
 
 	if (SV_AddressBanned(&net_from))
 	{
@@ -1325,6 +1325,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(sv_noreload, 0, 0),					//??
 
 	CVAR_FULL(&public_server, "public", "0", 0),
+	CVAR_VAR(sv_shownet, 0, 0),
 
 	CVAR_VAR(sv_reconnect_limit, 3, CVAR_ARCHIVE),
 

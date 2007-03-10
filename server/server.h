@@ -193,6 +193,7 @@ extern	cvar_t	*sv_paused;
 extern	cvar_t	*sv_deathmatch, *sv_coop, *sv_maxclients;
 extern	cvar_t	*sv_noreload;			// don't reload level state when reentering
 extern	cvar_t	*sv_extProtocol;
+extern	cvar_t	*sv_shownet;
 extern	cvar_t	*sv_labels;
 
 extern	cvar_t	*sv_airaccelerate;

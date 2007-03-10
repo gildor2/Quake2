@@ -352,21 +352,20 @@ struct keysMenu_t : menuFramework_t
 	{
 		int		keys[2];
 		menuAction_t *a = (menuAction_t *) self;
-		char	text[256];
+		TString<256> Text;
 
 		int numKeys = Key_FindBinding(bindnames[a->localData][0], ARRAY_ARG(keys));
 
 		if (!numKeys)
-			strcpy(text, S_RED"(not bound)");
+			Text = S_RED"(not bound)";
 		else
 		{
 			if (numKeys == 1)
-				strcpy(text, Key_KeynumToString(keys[0]));
+				Text = Key_KeynumToString(keys[0]);
 			else
-				appSprintf(ARRAY_ARG(text), "%s or %s%s",
-					Key_KeynumToString(keys[0]), Key_KeynumToString(keys[1]), numKeys > 2 ? " ..." : "");
+				Text.sprintf("%s or %s%s", Key_KeynumToString(keys[0]), Key_KeynumToString(keys[1]), numKeys > 2 ? " ..." : "");
 		}
-		DrawString(a->x + a->parent->x + 16, a->y + a->parent->y, text);
+		DrawString(a->x + a->parent->x + 16, a->y + a->parent->y, Text);
 	}
 
 	bool Init()
@@ -1522,7 +1521,7 @@ DMOPTIONS BOOK MENU
 
 struct dmoptionsMenu_t : menuFramework_t
 {
-	static char dmoptions_statusbar[128];
+	static TString<128>	DMoptionsStatusbar;
 
 	static menuList_t	friendlyfire_box;
 	static menuList_t	falls_box;
@@ -1620,7 +1619,7 @@ struct dmoptionsMenu_t : menuFramework_t
 
 		Cvar_SetInteger("dmflags", flags);
 
-		appSprintf(ARRAY_ARG(dmoptions_statusbar), "dmflags = %d", flags);
+		DMoptionsStatusbar.sprintf("dmflags = %d", flags);
 	}
 
 	bool Init()
@@ -1636,79 +1635,79 @@ struct dmoptionsMenu_t : menuFramework_t
 
 		int y = 0;
 		MENU_SPIN(falls_box,y,"falling damage",DMFlagCallback,yesno_names)
-		falls_box.curvalue = ( dmflags & DF_NO_FALLING ) == 0;
-		AddItem(&falls_box );
+		falls_box.curvalue = (dmflags & DF_NO_FALLING) == 0;
+		AddItem(&falls_box);
 		MENU_SPIN(weapons_stay_box,y+=10,"weapons stay",DMFlagCallback,yesno_names)
-		weapons_stay_box.curvalue = ( dmflags & DF_WEAPONS_STAY ) != 0;
-		AddItem(&weapons_stay_box );
+		weapons_stay_box.curvalue = (dmflags & DF_WEAPONS_STAY) != 0;
+		AddItem(&weapons_stay_box);
 		MENU_SPIN(instant_powerups_box,y+=10,"instant powerups",DMFlagCallback,yesno_names)
-		instant_powerups_box.curvalue = ( dmflags & DF_INSTANT_ITEMS ) != 0;
-		AddItem(&instant_powerups_box );
+		instant_powerups_box.curvalue = (dmflags & DF_INSTANT_ITEMS) != 0;
+		AddItem(&instant_powerups_box);
 		MENU_SPIN(powerups_box,y+=10,"allow powerups",DMFlagCallback,yesno_names)
-		powerups_box.curvalue = ( dmflags & DF_NO_ITEMS ) == 0;
-		AddItem(&powerups_box );
+		powerups_box.curvalue = (dmflags & DF_NO_ITEMS) == 0;
+		AddItem(&powerups_box);
 		MENU_SPIN(health_box,y+=10,"allow health",DMFlagCallback,yesno_names)
-		health_box.curvalue = ( dmflags & DF_NO_HEALTH ) == 0;
-		AddItem(&health_box );
+		health_box.curvalue = (dmflags & DF_NO_HEALTH) == 0;
+		AddItem(&health_box);
 		MENU_SPIN(armor_box,y+=10,"allow armor",DMFlagCallback,yesno_names)
-		armor_box.curvalue = ( dmflags & DF_NO_ARMOR ) == 0;
-		AddItem(&armor_box );
+		armor_box.curvalue = (dmflags & DF_NO_ARMOR) == 0;
+		AddItem(&armor_box);
 		MENU_SPIN(spawn_farthest_box,y+=10,"spawn farthest",DMFlagCallback,yesno_names)
-		spawn_farthest_box.curvalue = ( dmflags & DF_SPAWN_FARTHEST ) != 0;
-		AddItem(&spawn_farthest_box );
+		spawn_farthest_box.curvalue = (dmflags & DF_SPAWN_FARTHEST) != 0;
+		AddItem(&spawn_farthest_box);
 		MENU_SPIN(samelevel_box,y+=10,"same map",DMFlagCallback,yesno_names)
-		samelevel_box.curvalue = ( dmflags & DF_SAME_LEVEL ) != 0;
-		AddItem(&samelevel_box );
+		samelevel_box.curvalue = (dmflags & DF_SAME_LEVEL) != 0;
+		AddItem(&samelevel_box);
 		MENU_SPIN(force_respawn_box,y+=10,"force respawn",DMFlagCallback,yesno_names)
-		force_respawn_box.curvalue = ( dmflags & DF_FORCE_RESPAWN ) != 0;
-		AddItem(&force_respawn_box );
+		force_respawn_box.curvalue = (dmflags & DF_FORCE_RESPAWN) != 0;
+		AddItem(&force_respawn_box);
 		MENU_SPIN(teamplay_box,y+=10,"teamplay",DMFlagCallback,yesno_names)
 		teamplay_box.itemnames = teamplay_names;
-		AddItem(&teamplay_box );
+		AddItem(&teamplay_box);
 		MENU_SPIN(allow_exit_box,y+=10,"allow exit",DMFlagCallback,yesno_names)
-		allow_exit_box.curvalue = ( dmflags & DF_ALLOW_EXIT ) != 0;
-		AddItem(&allow_exit_box );
+		allow_exit_box.curvalue = (dmflags & DF_ALLOW_EXIT) != 0;
+		AddItem(&allow_exit_box);
 		MENU_SPIN(infinite_ammo_box,y+=10,"infinite ammo",DMFlagCallback,yesno_names)
-		infinite_ammo_box.curvalue = ( dmflags & DF_INFINITE_AMMO ) != 0;
-		AddItem(&infinite_ammo_box );
+		infinite_ammo_box.curvalue = (dmflags & DF_INFINITE_AMMO) != 0;
+		AddItem(&infinite_ammo_box);
 		MENU_SPIN(fixed_fov_box,y+=10,"fixed FOV",DMFlagCallback,yesno_names)
-		fixed_fov_box.curvalue = ( dmflags & DF_FIXED_FOV ) != 0;
-		AddItem(&fixed_fov_box );
+		fixed_fov_box.curvalue = (dmflags & DF_FIXED_FOV) != 0;
+		AddItem(&fixed_fov_box);
 		MENU_SPIN(quad_drop_box,y+=10,"quad drop",DMFlagCallback,yesno_names)
-		quad_drop_box.curvalue = ( dmflags & DF_QUAD_DROP ) != 0;
-		AddItem(&quad_drop_box );
+		quad_drop_box.curvalue = (dmflags & DF_QUAD_DROP) != 0;
+		AddItem(&quad_drop_box);
 		MENU_SPIN(friendlyfire_box,y+=10,"friendly fire",DMFlagCallback,yesno_names)
-		friendlyfire_box.curvalue = ( dmflags & DF_NO_FRIENDLY_FIRE ) == 0;
-		AddItem(&friendlyfire_box );
+		friendlyfire_box.curvalue = (dmflags & DF_NO_FRIENDLY_FIRE) == 0;
+		AddItem(&friendlyfire_box);
 
 		if (!stricmp(FS_Gamedir(), "rogue"))
 		{
 			MENU_SPIN(no_mines_box,y+=10,"remove mines",DMFlagCallback,yesno_names)
-			no_mines_box.curvalue = ( dmflags & DF_NO_MINES ) != 0;
-			AddItem( &no_mines_box );
+			no_mines_box.curvalue = (dmflags & DF_NO_MINES) != 0;
+			AddItem(&no_mines_box);
 			MENU_SPIN(no_nukes_box,y+=10,"remove nukes",DMFlagCallback,yesno_names)
-			no_nukes_box.curvalue = ( dmflags & DF_NO_NUKES ) != 0;
-			AddItem( &no_nukes_box );
+			no_nukes_box.curvalue = (dmflags & DF_NO_NUKES) != 0;
+			AddItem(&no_nukes_box);
 			MENU_SPIN(stack_double_box,y+=10,"2x/4x stacking off",DMFlagCallback,yesno_names)
-			stack_double_box.curvalue = ( dmflags & DF_NO_STACK_DOUBLE ) != 0;
-			AddItem( &stack_double_box );
+			stack_double_box.curvalue = (dmflags & DF_NO_STACK_DOUBLE) != 0;
+			AddItem(&stack_double_box);
 			MENU_SPIN(no_spheres_box,y+=10,"remove spheres",DMFlagCallback,yesno_names)
-			no_spheres_box.curvalue = ( dmflags & DF_NO_SPHERES ) != 0;
-			AddItem( &no_spheres_box );
+			no_spheres_box.curvalue = (dmflags & DF_NO_SPHERES) != 0;
+			AddItem(&no_spheres_box);
 		}
 
 		Center();
 
 		// set the original dmflags statusbar
 		DMFlagCallback(0);
-		SetStatusBar(dmoptions_statusbar );
+		SetStatusBar(DMoptionsStatusbar);
 		return true;
 	}
 };
 static dmoptionsMenu_t dmoptionsMenu;
 
 // static members
-char dmoptionsMenu_t::dmoptions_statusbar[128];
+TString<128> dmoptionsMenu_t::DMoptionsStatusbar;
 menuList_t	dmoptionsMenu_t::friendlyfire_box;
 menuList_t	dmoptionsMenu_t::falls_box;
 menuList_t	dmoptionsMenu_t::weapons_stay_box;

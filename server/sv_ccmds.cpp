@@ -444,12 +444,11 @@ static void SV_Map_f(int argc, char **argv)
 	const char *map = argv[1];
 	if (!strchr(map, '.'))
 	{
-		char	expanded[MAX_QPATH];
-
-		appSprintf(ARRAY_ARG(expanded), "maps/%s.bsp", map);
-		if (!GFileSystem->FileExists(expanded))
+		TString<MAX_QPATH> Expanded;
+		Expanded.sprintf("maps/%s.bsp", map);
+		if (!GFileSystem->FileExists(Expanded))
 		{
-			appWPrintf("Can't find %s\n", expanded);
+			appWPrintf("Can't find %s\n", *Expanded);
 			return;
 		}
 	}
@@ -821,7 +820,7 @@ static void SV_ServerRecord_f(bool usage, int argc, char **argv)
 	svs.wdemofile = fopen(Name, "wb");
 	if (!svs.wdemofile)
 	{
-		appWPrintf("ERROR: couldn't write %d\n", *Name);
+		appWPrintf("ERROR: couldn't write %s\n", *Name);
 		return;
 	}
 

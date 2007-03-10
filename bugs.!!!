@@ -159,8 +159,10 @@ COMPILERS:
     VisualC++7 have no such problem, but when VC6 inlined dot() everywhere, VC7 inlined most of calls, but some calls
     made as call to separate function.
   - not understand template classes as friends (VC7 - OK)
-- (VisualC++ 7) -- cannot use default arguments for functions, which are part of structure
-  Workaround: should use `inline Struc_Func()' (with default args) instead of struc.Func() call
+- (VisualC++ 7)
+  - cannot use default arguments for functions, which are part of structure
+    Workaround: should use `inline Struc_Func()' (with default args) instead of struc.Func() call
+  - not inlined most TString<> calls (e.g. 'operator=') unless specify "__forceinline" (see dot() for VC6 above ...)
 - GNU C++ 3.4: optimization: "-O2"-level: (all bugs - from FP hacks!?)
     ! all these bugs are covered with "strict-aliasing" optimization; can use "-fno-strict-aliasing" to allow FP-hack constructions.
     - incorrect code, when use uint_cast():

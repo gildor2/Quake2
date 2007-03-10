@@ -144,8 +144,8 @@ byte* LoadTGA(const char *name, int &width, int &height)
 	LTL(hdr->colormap_index);
 	LTL(hdr->colormap_length);
 
-	width  = LittleShort(hdr->width);
-	height = LittleShort(hdr->height);
+	width  = hdr->width;
+	height = hdr->height;
 
 	bool isRle      = (hdr->image_type & 8) != 0;
 	bool isPaletted = (hdr->image_type & ~8) == 1;

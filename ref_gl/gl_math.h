@@ -13,7 +13,7 @@ namespace OpenGLDrv {
 
 //?? make tables of size [TABLE_SIZE+1] to avoid some precision out-of-table errors
 extern float sinTable[], squareTable[], triangleTable[], sawtoothTable[];
-extern float asinTable[], acosTable[];
+extern float asinTable[];
 extern float atanTable[], atanTable2[];
 
 // for float 0..1 == 0..2*pi
@@ -29,8 +29,8 @@ extern float atanTable[], atanTable2[];
 
 // WARNING: these functions are not periodic and not clamped; input value should be exactly in [-1..1] range
 // Used (TABLE_SIZE-0.1f) to avoid [TABLE_SIZE*2] index for 1.0f value, should be [TABLE_SIZE*2-1] (OR: use index clamping ??)
-#define ASIN_FUNC(val)					asinTable[appFloor((val) * (TABLE_SIZE-0.1f)) + TABLE_SIZE]
-#define ACOS_FUNC(val)					acosTable[appFloor((val) * (TABLE_SIZE-0.1f)) + TABLE_SIZE]
+#define ASIN_FUNC(val)					( asinTable[appFloor((val) * (TABLE_SIZE-0.1f)) + TABLE_SIZE] )
+#define ACOS_FUNC(val)					( M_PI / 2 - asinTable[appFloor((val) * (TABLE_SIZE-0.1f)) + TABLE_SIZE] )
 
 
 inline float ATAN2_FUNC(float y, float x)
@@ -51,15 +51,14 @@ inline float ATAN2_FUNC(float y, float x)
 		m = -1;
 	}
 #else
-	int s;
-	FAbsSign(val, val, s);
-	float m = 1 - s * 2;		// s=0 -> m=1; s=1 -> m=-1
+	unsigned s;
+	FAbsSign2(val, val, s);
 #endif
 	if (val <= 1.0f)
-		val = atanTable[appFloor(val * (TABLE_SIZE - 0.1f))];
+		val = atanTable[appRound(val * (TABLE_SIZE-1))];
 	else
-		val = atanTable2[appFloor(1.0f / val * (TABLE_SIZE - 0.1f))];
-	val *= m;
+		val = atanTable2[appRound(1.0f / val * (TABLE_SIZE-1))];
+	FChangeSign(val, s);
 #if 0
 	if (IsNegative(x))
 	{
@@ -82,9 +81,9 @@ extern const float *mathFuncs[];
 
 
 //!! these tables are unused now
-extern float sqrtTable[];
+/*extern float sqrtTable[];
 extern int   noiseTablei[];
-extern float noiseTablef[];
+extern float noiseTablef[]; */
 
 
 void InitFuncTables();	//?? InitMath()

@@ -115,13 +115,16 @@ public:
 	}
 };
 
+#if !NO_DEDICATED
 static COutputDeviceWin32Console Win32Log;
+#endif
 
 
 char *Sys_ConsoleInput()
 {
 	guard(Sys_ConsoleInput);
 
+#if !NO_DEDICATED
 	if (console_drawInput)
 	{
 		// display input line
@@ -205,7 +208,7 @@ char *Sys_ConsoleInput()
 			}
 		}
 	}
-
+#endif
 	return NULL;
 
 	unguard;
@@ -270,14 +273,14 @@ int main(int argc, const char **argv) // force to link as console application
 		// init-time output
 		COutputDeviceMem *TempLog = new COutputDeviceMem(16384);
 		TempLog->Register();
-#else
+#elif !NO_DEDICATED
 		Win32Log.Init();
 #endif
 
 		appInit();		//!! cmdline should be used here
 		Com_Init(cmdline);
 
-#if !IS_CONSOLE_APP
+#if !IS_CONSOLE_APP && !NO_DEDICATED
 		COutputDeviceCon ConLog;
 		// create real logger and flush init-time log
 		if (DEDICATED)

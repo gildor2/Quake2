@@ -414,7 +414,12 @@ void SV_SendClientMessages()
 		else if (c->state == cs_spawned)
 		{
 			// don't overrun bandwidth
-			if (RateDrop(c)) continue;
+			if (RateDrop(c))
+			{
+				if (sv_shownet->integer) appPrintf("send data to %s\n", *c->Name);
+				continue;
+			}
+			if (sv_shownet->integer) appPrintf("send data to %s\n", *c->Name);
 			SV_SendClientDatagram(c);
 		}
 		else

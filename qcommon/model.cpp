@@ -246,7 +246,6 @@ static void ProcessQ3BspFile(bspfile_t *f)
 }
 
 
-//?? should move LoadQxSubmodels() to cmodel.cpp, but this work will be used for entstring processing
 static void LoadQ2Submodels(bspfile_t *f, dBsp2Model_t *data)
 {
 	if (f->numModels < 1)

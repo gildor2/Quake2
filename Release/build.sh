@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #PLATFORM="mingw32"
-TARGET="STATIC"
+[ "$TARGET" ] || TARGET="STATIC"
 #export vc_ver=7
 
 source ../build-common
@@ -22,8 +22,5 @@ cd ..
 [ makefile-$PLATFORM -ot quake2.project ] &&
 	echo -e "\e[31mWARNING: makefile for $PLATFORM is older than project file -- recreate it!\e[0m"
 
-time $build makefile-$PLATFORM $TARGET || exit 1
-# generate symbols.dbg
-$tools/SymInfoBuilder/work.pl $OUT $maptype
-
+BuildTarget
 echo "Build done."

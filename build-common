@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# allow to specify target from command line
+if [ "$1" == "--help" ] || [ "$1" == "/?" ] || [ "$1" == "-?" ]; then
+	echo "Usage: $0 [target]"
+	echo "  default target is $TARGET"
+	exit 1
+fi
+
+[ $1 ] && TARGET=$1
+
 
 TIMEFORMAT="Build time: %1R sec"
 
@@ -68,3 +77,15 @@ if ! [ -f "$rootdir/lib/libs-$PLATFORM.$libext" ]; then
 	$build libs-$PLATFORM
 	popd >/dev/null
 fi
+
+
+#----------------------------------------------------------
+#	helper functions
+#----------------------------------------------------------
+
+function BuildTarget()
+{
+	time $build makefile-$PLATFORM $TARGET || exit 1
+	# generate symbols.dbg
+	$tools/SymInfoBuilder/work.pl $OUT $maptype
+}

@@ -283,9 +283,11 @@ CVAR_END
 	appInitFileSystem(FS);
 	CFileSystem::RegisterFormat(CFileContainerPak::Create);
 	CFileSystem::RegisterFormat(CFileContainerZip::Create);
+#if !DEDICATED_ONLY
 	// mount resources
 	Mnt = CZResource::Mount("resources", zresource, ".");
 	Mnt->locked = true;
+#endif
 	// mount CDROM
 	if (fs_cddir->string[0])
 	{

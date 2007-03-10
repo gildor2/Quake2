@@ -81,10 +81,12 @@ void appInit(/*?? const char *_cmdLine */)
 {
 	guard(appInit);
 
-	// verify fundamental sizes
+	// verify type sizes
 	staticAssert(sizeof(short)==2, Sizeof_Short_2);
 	staticAssert(sizeof(int)==4, Sizeof_Int_4);
+	staticAssert(sizeof(int64)==8, Sizeof_Int64_8);
 	staticAssert((char)127 > (char)128, Char_Should_Be_Signed);
+	staticAssert(sizeof(address_t)==sizeof(void*), Wrong_Address_t_Size);
 
 	appInitPlatform();
 	appInitMemory();

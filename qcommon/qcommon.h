@@ -115,10 +115,12 @@ struct CBrush;
 
 #define VERSION_STR		STR(VERSION) " " CPUSTRING " " __DATE__ " " BUILDSTRING
 
-#if !DEDICATED_ONLY
-#define DEDICATED		dedicated->integer
-#else
+#if NO_DEDICATED
+#define DEDICATED		0
+#elif DEDICATED_ONLY
 #define DEDICATED		1
+#else
+#define DEDICATED		dedicated->integer
 #endif
 
 

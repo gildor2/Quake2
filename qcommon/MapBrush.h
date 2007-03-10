@@ -33,8 +33,10 @@ struct CBrushSide
 
 struct CBrush
 {
+	// data
 	CBrushSide *sides;
 	unsigned contents;		//!! should be set outside
+	// methods
 	CBrush()
 	{}
 	CBrush(const CBox &Bounds);

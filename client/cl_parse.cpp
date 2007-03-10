@@ -293,8 +293,7 @@ void CL_ParseServerMessage()
 		if (cmd >= svc_last)
 			Com_DropError("bad net cmd %d", cmd);
 
-		if (cl_shownet->integer >= 2)
-			SHOWNET(svc_strings[cmd]);
+		SHOWNET(svc_strings[cmd]);
 
 		// other commands
 		switch (cmd)

@@ -93,7 +93,7 @@ void Netchan_Init()
 }
 
 
-//Sends a text message in an out-of-band datagram
+// Sends a text message in an out-of-band datagram
 void Netchan_OutOfBandPrint(netsrc_t net_socket, netadr_t adr, const char *format, ...)
 {
 	va_list argptr;
@@ -136,7 +136,6 @@ void netchan_t::Setup(netsrc_t sock, netadr_t adr, int qport)
 bool netchan_t::NeedReliable()
 {
 	// if the remote side dropped the last reliable message, resend it
-
 	if (incoming_acknowledged > last_reliable_sequence &&
 		incoming_reliable_acknowledged != reliable_sequence)
 		return true;
@@ -176,8 +175,8 @@ void netchan_t::Transmit(void *data, int length)
 	byte		send_buf[MAX_MSGLEN];
 	send.Init(ARRAY_ARG(send_buf));
 
-	unsigned w1 = (outgoing_sequence & 0x7FFFFFFF) | (send_reliable<<31);
-	unsigned w2 = (incoming_sequence & 0x7FFFFFFF) | (incoming_reliable_sequence<<31);
+	unsigned w1 = (outgoing_sequence & 0x7FFFFFFF) | (send_reliable << 31);
+	unsigned w2 = (incoming_sequence & 0x7FFFFFFF) | (incoming_reliable_sequence << 31);
 
 	outgoing_sequence++;
 	last_sent = appMilliseconds();
@@ -227,9 +226,9 @@ bool netchan_t::Process(sizebuf_t *msg)
 
 	unsigned sequence     = MSG_ReadLong(msg);
 	unsigned sequence_ack = MSG_ReadLong(msg);
-	unsigned reliable_message = sequence >> 31;
+	unsigned reliable_message = sequence     >> 31;
 	unsigned reliable_ack     = sequence_ack >> 31;
-	sequence &= 0x7FFFFFFF;
+	sequence     &= 0x7FFFFFFF;
 	sequence_ack &= 0x7FFFFFFF;
 
 	// read the qport if we are a server
@@ -250,7 +249,7 @@ bool netchan_t::Process(sizebuf_t *msg)
 	if (sequence <= incoming_sequence)
 	{
 		if (showdrop->integer)
-			appPrintf("%s:Out of order packet %i at %i\n",
+			appPrintf("%s: out of order packet %i at %i\n",
 				NET_AdrToString(&remote_address), sequence, incoming_sequence);
 		return false;
 	}
@@ -260,7 +259,7 @@ bool netchan_t::Process(sizebuf_t *msg)
 	if (dropped > 0)
 	{
 		if (showdrop->integer)
-			appPrintf("%s:Dropped %i packets at %i\n",
+			appPrintf("%s: dropped %i packets at %i\n",
 				NET_AdrToString(&remote_address), dropped, sequence);
 	}
 

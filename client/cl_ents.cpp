@@ -98,19 +98,20 @@ static void DeltaEntity(frame_t *frame, int newnum, clEntityState_t *old, unsign
 		ent.serverframe != cl.frame.serverframe - 1)
 	{
 		// duplicate the current state so lerping doesn't hurt anything
-		ent.prev = state;				// new entity: prev = new
-		if (state.event == EV_PLAYER_TELEPORT)
+		ent.prev = state;				// new entity: prev = new, current = new (below)
+		if (state.event != EV_OTHER_TELEPORT)
 			ent.prev.origin = state.old_origin;
+
 		// init some non-transferred fields (reset entity)
 		ent.prevTrail = ent.prev.origin;
 		ent.trailLen  = 0;
 		ent.Teleported();
 	}
 	else
-		ent.prev = ent.current;			// normal delta: prev = current, current = new
+		ent.prev = ent.current;			// normal delta: prev = current, current = new (below)
 
 	ent.serverframe = cl.frame.serverframe;
-	ent.current     = state;
+	ent.current     = state;			// current = new
 }
 
 

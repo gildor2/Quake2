@@ -32,6 +32,12 @@ inline unsigned IsNegative(float f)
 		s = mask >> 31;	\
 	}
 
+#define FAbsSign2(f,d,s) \
+	{					\
+		s = uint_cast_const(f) & 0x80000000;	\
+		uint_cast(d) = uint_cast_const(f) ^ s;	\
+	}
+
 inline void FAbs(float &a)
 {
 	uint_cast(a) &= 0x7FFFFFFF;
@@ -47,6 +53,10 @@ inline void FNegate(float &a)
 {
 	uint_cast(a) ^= 0x80000000;
 }
+
+// change sign of 'f' using value 's', taken from FAbsSign2()
+#define FChangeSign(f,s) \
+	uint_cast(f) ^= s;
 
 #else
 
@@ -65,6 +75,8 @@ inline unsigned IsNegative(f)
 		d = fabs(f);		\
 	}
 
+#define FAbsSign2(f,d,s)	FAbsSign(f,d,s)
+
 inline void FAbs(float &a)
 {
 	a = fabs(a);
@@ -78,6 +90,12 @@ inline void FNegate(float &a)
 {
 	a = -a;
 }
+
+#define FChangeSign(f,s)			\
+	{								\
+		float mul[] = { 1, -1 };	\
+		f *= mul[s];				\
+	}
 
 #endif
 

@@ -752,13 +752,13 @@ static void DrawInventory()
 
 	for (i = top; i < num && i < top+DISPLAY_ITEMS; i++)
 	{
-		int		key;
-		char	binding[256];
-		const char *keyName;
-
 		int item = index[i];
-		appSprintf(ARRAY_ARG(binding), "use %s", cl.configstrings[CS_ITEMS+item]);
-		if (Key_FindBinding(binding, &key, 1))
+		TString<256> Binding;
+		Binding.sprintf("use %s", cl.configstrings[CS_ITEMS+item]);
+
+		int		key;
+		const char *keyName;
+		if (Key_FindBinding(Binding, &key, 1))
 			keyName = Key_KeynumToString(key);
 		else
 			keyName = "";
@@ -773,7 +773,7 @@ static void DrawInventory()
 }
 
 
-static char	crosshair_pic[MAX_QPATH];
+static TString<MAX_QPATH> CrosshairPic;
 
 static void DrawCrosshair()
 {
@@ -786,9 +786,9 @@ static void DrawCrosshair()
 		SCR_TouchPics();
 	}
 
-	if (!crosshair_pic[0]) return;
+	if (!CrosshairPic[0]) return;
 
-	RE_DrawPic(viddef.width / 2, viddef.height / 2, crosshair_pic, ANCHOR_CENTER, crosshairColor->integer);
+	RE_DrawPic(viddef.width / 2, viddef.height / 2, CrosshairPic, ANCHOR_CENTER, crosshairColor->integer);
 }
 
 
@@ -853,8 +853,6 @@ static void ExecuteLayoutString(const char *s)
 		}
 		else if (!strcmp(token, "ctf"))
 		{	// draw a ctf client block
-			char	block[80];
-
 			x = viddef.width/2 - 160 + atoi(COM_Parse(s));
 			y = viddef.height/2 - 120 + atoi(COM_Parse(s));
 
@@ -867,12 +865,13 @@ static void ExecuteLayoutString(const char *s)
 			int ping = atoi(COM_Parse(s));
 			if (ping > 999) ping = 999;
 
-			appSprintf(ARRAY_ARG(block), "%3d %3d %-12.12s", score, ping, *ci->PlayerName);
+			TString<64> Str;
+			Str.sprintf("%3d %3d %-12.12s", score, ping, *ci->PlayerName);
 
 			if (value == cl.playernum)
-				DrawString(x, y, va(S_RED"%s", block));
+				DrawString(x, y, va(S_RED"%s", *Str));
 			else
-				DrawString(x, y, block);
+				DrawString(x, y, *Str);
 		}
 		else if (!strcmp(token, "picn"))
 		{	// draw a pic from a name
@@ -966,13 +965,13 @@ void SCR_TouchPics()
 	{
 		if (ch_num > 0)
 		{
-			appSprintf(ARRAY_ARG(crosshair_pic), "pics/ch%d", crosshair->integer);
-			if (!RE_RegisterPic(crosshair_pic))
+			CrosshairPic.sprintf("pics/ch%d", crosshair->integer);
+			if (!RE_RegisterPic(CrosshairPic))
 				ch_num = -1;								// invalid value
 		}
 		if (ch_num <= 0)
 		{
-			crosshair_pic[0] = 0;
+			CrosshairPic[0] = 0;
 			if (ch_num < 0) Cvar_Set("crosshair", "0");	// invalid value becomes zero
 		}
 	}

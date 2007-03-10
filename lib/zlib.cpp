@@ -15,10 +15,10 @@
 extern "C" void *zcalloc(int opaque, int items, int size)
 {
 	MEM_ALLOCATOR(opaque);
-	return appMalloc (items * size);
+	return appMalloc(items * size);
 }
 
 extern "C" void zcfree(int opaque, void *ptr)
 {
-	appFree (ptr);
+	appFree(ptr);
 }

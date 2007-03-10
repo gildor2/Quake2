@@ -91,7 +91,7 @@ sfxcache_t *S_LoadSound(sfx_t *s)
 {
 	guard(S_LoadSound);
 
-	char		namebuffer[MAX_QPATH], *name;
+	char		*name;
 	byte		*data;
 	int			len;
 	unsigned	size;
@@ -111,14 +111,15 @@ sfxcache_t *S_LoadSound(sfx_t *s)
 	// load it in
 	name = s->TrueName[0] ? s->TrueName : s->Name;
 
+	TString<MAX_QPATH> Namebuffer;
 	if (name[0] == '#')
-		strcpy(namebuffer, &name[1]);
+		Namebuffer = name + 1;
 	else
-		appSprintf(ARRAY_ARG(namebuffer), "sound/%s", name);
+		Namebuffer.sprintf("sound/%s", name);
 
-	if (!(data = (byte*) GFileSystem->LoadFile(namebuffer, &size)))
+	if (!(data = (byte*) GFileSystem->LoadFile(Namebuffer, &size)))
 	{
-		Com_DPrintf("Couldn't load %s\n", namebuffer);
+		Com_DPrintf("Couldn't load %s\n", *Namebuffer);
 		s->absent = true;
 		return NULL;
 	}

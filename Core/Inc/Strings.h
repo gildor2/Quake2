@@ -145,37 +145,37 @@ public:
 	//?? add const_iterator -- not just "const TListIterator<T>" - such iterator should use "const T *item" instead of "T *item"
 
 	// list enumeration
-	T *First()
+	inline T *First()
 	{
 		return static_cast<T*>(first);
 	}
-	T *Next(const T* prev)
+	inline T *Next(const T* prev)
 	{
 		return static_cast<T*>(prev->next);
 	}
 	// searching items
-	T *Find(const char *name, T **after = NULL)
+	inline T *Find(const char *name, T **after = NULL)
 	{
 		return static_cast<T*>(CStringList::Find(name, (CStringItem **) after));
 	}
-	const T *Find(const char *name) const
+	inline const T *Find(const char *name) const
 	{
 		return static_cast<const T*>(CStringList::Find(name));
 	}
-	T *Find(int index)
+	inline T *Find(int index)
 	{
 		return static_cast<T*>(CStringList::Find(index));
 	}
 	// unsorted list insertion
-	void InsertFirst(T *item)
+	inline void InsertFirst(T *item)
 	{
 		CStringList::InsertFirst(item);
 	}
-	void InsertLast(T *item)
+	inline void InsertLast(T *item)
 	{
 		CStringList::InsertLast(item);
 	}
-	void InsertAfter(T *Item, T *Point)
+	inline void InsertAfter(T *Item, T *Point)
 	{
 		if (Point)
 		{
@@ -189,7 +189,7 @@ public:
 		}
 	}
 	// sorted list insertion
-	bool Insert(T *item)
+	inline bool Insert(T *item)
 	{
 		T *prev;
 		Find(item->name, &prev);		// allow duplicates
@@ -197,20 +197,20 @@ public:
 		return true;
 	}
 	// creation and sorted insertion
-	T *CreateAndInsert(const char *name)
+	inline T *CreateAndInsert(const char *name)
 	{
 		T *item = new (name) T;
 		Insert(item);
 		return item;
 	}
-	T *CreateAndInsert(const char *name, CMemoryChain *chain)
+	inline T *CreateAndInsert(const char *name, CMemoryChain *chain)
 	{
 		T *item = new (name, chain) T;
 		Insert(item);
 		return item;
 	}
 	// WARNING: this function can return &NULL when index is out of bounds (generate appError ??)
-	T& operator[](int index)
+	inline T& operator[](int index)
 	{
 		return static_cast<T&>(*CStringList::Find(index));
 	}
@@ -225,37 +225,37 @@ protected:
 
 public:
 	// initialization
-	CListIterator()
+	inline CListIterator()
 	:	item(NULL)
 	{}
-	CListIterator(CStringList &list)
+	inline CListIterator(CStringList &list)
 	:	item(list.first)
 	{}
-	CListIterator& operator=(const CStringList &list)
+	inline CListIterator& operator=(const CStringList &list)
 	{
 		item = list.first;
 		return *this;
 	}
 	// enumerator
-	void operator++()		// prefix form
+	inline void operator++()		// prefix form
 	{
 		item = item->next;
 	}
 	// do not define postfix form to require use of "++item" - style (better readability)
-//	void operator++(int)	// postfix form
+//	inline void operator++(int)		// postfix form
 //	{
 //		item = item->next;
 //	}
-	operator bool()
+	inline operator bool()
 	{
 		return item != NULL;
 	}
 	// accessing enumerated data
-	CStringItem* operator->()
+	inline CStringItem* operator->()
 	{
 		return item;
 	}
-	CStringItem* operator*()
+	inline CStringItem* operator*()
 	{
 		return item;
 	}
@@ -267,20 +267,20 @@ template<class T> class TListIterator : public CListIterator
 {
 public:
 	// initialization
-	TListIterator(TList<T> &list)
+	inline TListIterator(TList<T> &list)
 	:	CListIterator(list)
 	{}
-	TListIterator& operator=(const T &list)
+	inline TListIterator& operator=(const T &list)
 	{
 		item = list.First();
 		return *this;
 	}
 	// data access
-	T* operator->()
+	inline T* operator->()
 	{
 		return static_cast<T*>(item);
 	}
-	T* operator*()
+	inline T* operator*()
 	{
 		return static_cast<T*>(item);
 	}
@@ -313,18 +313,18 @@ private:
 
 public:
 	// initialization
-	TStringSplitter()
+	inline TStringSplitter()
 	:	curr(NULL)
 	,	next(NULL)
 	{
 		buf[0] = 0;
 	}
-	TStringSplitter(const char *string)
+	inline TStringSplitter(const char *string)
 	:	next(string)
 	{
 		++(*this);
 	}
-	TStringSplitter& operator=(const char *string)
+	inline TStringSplitter& operator=(const char *string)
 	{
 		next = string;
 		++(*this);
@@ -332,7 +332,7 @@ public:
 	}
 	// enumerator
 	// note: only this function uses BufSize const
-	void operator++()			// prefix form
+	inline void operator++()	// prefix form
 	{
 		if (!next)
 		{
@@ -351,16 +351,16 @@ public:
 		if (next[0]) next++;
 		else		 next = NULL;
 	}
-	operator bool()
+	inline operator bool()
 	{
 		return (curr != NULL);
 	}
 	// implicit use as "const char*"
-	operator const char*() const			{ return buf; }
-	operator char*()						{ return buf; }
-	// use "*Str" when used in printf()-like functions (no type conversion by default ...)
-	const char* operator*() const			{ return buf; }
-	char* operator*()						{ return buf; }
+	// usage warning: use "*Str" when used in printf()-like functions (no type conversion by default ...)
+	inline operator const char*() const		{ return buf; }
+	inline operator char*()					{ return buf; }
+	inline const char* operator*() const	{ return buf; }
+	inline char* operator*()				{ return buf; }
 };
 
 
@@ -373,50 +373,49 @@ template<int N> class TString
 private:
 	char	str[N];
 public:
-// no constructors ... anyway, 1/2 of initialization will be done with filename()
+	// no constructors ... anyway, 1/2 of all initializations will be done with filename()
 #if 0
-	inline TString()						{}
-	inline TString(const char *s)			{ appStrncpyz(str, s, N); }
+	inline TString()								{}
+	inline TString(const char *s)					{ appStrncpyz(str, s, N); }
 #endif
-	int len() const							{ return strlen(str); }
-	char& operator[](int idx)				{ return str[idx]; }
-	const char& operator[](int idx) const	{ return str[idx]; }
+	inline int len() const							{ return strlen(str); }
+	inline char& operator[](int idx)				{ return str[idx]; }
+	inline const char& operator[](int idx) const	{ return str[idx]; }
 	// copying
-	void cpy(const char *s2, int len = N)	{ strncpy(str, s2, min(N,len)); }
-	void cpyz(const char *s2)				{ appStrncpyz(str, s2, N); }
-	void filename(const char *s2)			{ appCopyFilename(str, s2, N); }	//?? rename function
-	void cat(const char *s2)				{ appStrcatn(str, N, s2); }
-	TString<N>& operator+=(const char *s2)	{ appStrcatn(str, N, s2); return *this; }
-	int NOINLINE sprintf(const char *fmt, ...) PRINTF(2,3)						// `NOINLINE' here to disable GCC warning only
+	inline void filename(const char *s2)			{ appCopyFilename(str, s2, N); }	//?? rename function
+	inline TString<N>& operator+=(const char *s2)	{ appStrcatn(str, N, s2); return *this; }
+	// assignment
+	inline TString& operator=(const char *s2)
+	{
+		appStrncpyz(str, s2, N);
+		return *this;
+	}
+	// formatting
+	int NOINLINE sprintf(const char *fmt, ...) PRINTF(2,3)		// `NOINLINE' here to disable GCC warning only
 	{
 		va_list	argptr;
 		va_start(argptr, fmt);
 		int len = vsnprintf(str, N, fmt, argptr);
+		str[N-1] = 0;											// force overflowed buffers to be null-terninated
 		va_end(argptr);
 		return len;
 	}
 	// searching
-	char *chr(char c)						{ return strchr(str, c); }
-	const char *chr(char c) const			{ return strchr(str, c); }
-	char *rchr(char c)						{ return strrchr(str, c); }
-	const char *rchr(char c) const			{ return strrchr(str, c); }
+	inline char *chr(char c)						{ return strchr(str, c); }
+	inline const char *chr(char c) const			{ return strchr(str, c); }
+	inline char *rchr(char c)						{ return strrchr(str, c); }
+	inline const char *rchr(char c) const			{ return strrchr(str, c); }
 	// lowercasing
-	void toLower()							{ appStrncpylwr(str, str, N); }
-	void toLower(const char *s2, int len = N) { appStrncpylwr(str, s2, min(N,len)); }
-	// assignment
-	TString& operator=(const char *s2)
-	{
-		strncpy(str, s2, N);
-		return *this;
-	}
-	// string comparision
+	inline void toLower()							{ appStrncpylwr(str, str, N); }
+	inline void toLower(const char *s2, int len = N) { appStrncpylwr(str, s2, min(N,len)); }
+	// string comparison
 	// NOTE: comparision as class members suitable for cases, when TString<> is on a left
 	// side of operator; when TString on the right side, and "char*" on the left, by default,
 	// will be executed "str <operator> char*(Str)", i.e. will be performed address comparision;
 	// so, to correct this situation, we overloaded binary operator (char*,TString<>&) too
-	int cmp(const char *s2) const			{ return strcmp(str, s2); }
-	int icmp(const char *s2) const			{ return stricmp(str, s2); }
-	// comparision operators
+	inline int cmp(const char *s2) const			{ return strcmp(str, s2); }
+	inline int icmp(const char *s2) const			{ return stricmp(str, s2); }
+	// comparison operators
 #define OP(op)										\
 	inline bool operator op(const char *s2) const	\
 	{ return strcmp(str, s2) op 0; };				\
@@ -430,16 +429,16 @@ public:
 #undef OP
 
 	// implicit use as "const char*"
-	operator const char*() const			{ return str; }
-	operator char*()						{ return str; }
-	// use "*Str" when used in printf()-like functions (no type conversion by default ...)
-	const char* operator*() const			{ return str; }
-	char* operator*()						{ return str; }
+	// usage warning: use "*Str" when used in printf()-like functions (no type conversion by default ...)
+	inline operator const char*() const				{ return str; }
+	inline operator char*()							{ return str; }
+	inline const char* operator*() const			{ return str; }
+	inline char* operator*()						{ return str; }
 #if 0
-// do not make "operator bool", because this will introduce conflicts with "operator char*" -- compiler
-// can not deside, which conversion to use in statements ...
+	// do not make "operator bool", because this will introduce conflicts with "operator char*" -- compiler
+	// can not deside, which conversion to use in statements ...
 	// check for empty string (true when non-empty)
-	operator bool() const					{ return str[0] != 0; }
+	inline operator bool() const					{ return str[0] != 0; }
 #endif
 };
 

@@ -1,6 +1,5 @@
 /*?? TODO:
   - add functions:
-	- CM_PointCluster(CVec3&) -- PointLeafnum()+LeafCluster()
 	- CM_BoxClusters(CBox&, dst) -- BoxLeafnums()+LeafCluster()+compress list (no duplicated clusters) -- used few times in server
 	- CM_BoxPVS(CBox&, dst) -- have SV_FatPVS() func; may be useful for renderer too
 	? CM_InPVS(pos1, pos2) -- have func in sv_game.cpp (uses PVS + areas)
@@ -42,10 +41,16 @@ struct cbrushside_t
 };
 
 //?? we can use CBrush instead of cbrush_t:
-//?? 1. on q1/hl maps: we should build them anyway
+//?? 1. on q1/hl maps: we should build them anyway,
+//??    - we will not be able to clean unneeded vertex data, because allocated them in the same CMemoryChain,
+//??    - "map_brushes" is ptr to array, but brushes allocated in CMemoryChain with interleaving with CBrushSide
+//??      and CBrushVert
+//??    ? can resolve this by creating 2nd copy of brush array with copying required data from built data
+//??      (currently, doing the same, but copying performed with conversion CBrush->cbrush_t etc)
 //?? 2. on q2 maps: there is not too much space required for brush allocation (brush count is not too large)
 //?? 3. on q3 maps: should load/convert brushes anyway
 //?? This will require "csurface_t *surface" field in CBrushSide and "int traceFrame" in CBrush
+//?? Code should work without CBrushSide.verts (required for Q1 brush building and used for brush visualization)
 struct cbrush_t
 {
 	unsigned contents;
@@ -213,9 +218,6 @@ static int GetSurfMaterial(const char *name)
 	common bsp loading code
 -----------------------------------------------------------------------------*/
 
-// T is dBsp[123]Node_t
-// Should be called after LoadLeafs()
-
 static void SetChild(CBspNode *node, int index, int nodeIndex)
 {
 	// setup child node
@@ -228,6 +230,8 @@ static void SetChild(CBspNode *node, int index, int nodeIndex)
 	node->children[index]->parent = node;
 }
 
+// T is dBsp[123]Node_t
+// Should be called after LoadLeafs()
 template<class T> static void LoadNodes(T *data, int size)
 {
 	if (size < 1) Com_DropError("map with no nodes");
@@ -493,7 +497,7 @@ static void LoadSurfaces1(dBsp1Texinfo_t *data, int size)
 				{
 					char field1[128];
 					int r, g, b, intens;
-					if (sscanf(line, "%s %d %d %d %d", &field1, &r, &g, &b, &intens) != 5) continue;
+					if (sscanf(line, "%s %d %d %d %d", field1, &r, &g, &b, &intens) != 5) continue;
 					if (!stricmp(field1, tex->name))
 					{
 						flags |= SURF_LIGHT;
@@ -768,7 +772,7 @@ static void BuildBrushes1(int numLeafsOrig)
 	int64 brushConvertTime = 0;
 #endif
 
-	map_brushes = new (dataChain) cbrush_t [numBrushes+HULL_BRUSHES];
+	map_brushes = new (dataChain) cbrush_t [numBrushes + HULL_BRUSHES];
 
 	CBrush *leafBrushes[MAX_MAP_LEAFS];
 	memset(leafBrushes, 0, sizeof(leafBrushes));
@@ -864,10 +868,10 @@ static void BuildBrushes1(int numLeafsOrig)
 	Com_DPrintf("Built %d brushes in %g msec, used temporary memory %dKb\n",
 		numBrushes, appCyclesToMsecf(time), CBrush::mem->GetSize() >> 10);
 #if BRUSH_PROFILE
-	Com_DPrintf("FindPlane: %g ms (found %d/%d)\n"
-				 "SplitBrush: %g ms\n"
-				 "BrushBevels: %g ms\n"
-				 "Convert: %g ms\n",
+	Com_DPrintf("FindPlane:   %g ms (found %d/%d)\n"
+				"SplitBrush:  %g ms\n"
+				"BrushBevels: %g ms\n"
+				"Convert:     %g ms\n",
 		appCyclesToMsecf(brushFindPlaneTime), brushFindPlaneSuccess, brushFindPlaneCount,
 		appCyclesToMsecf(brushSplitTime),
 		appCyclesToMsecf(brushBevelTime),
@@ -879,7 +883,7 @@ static void BuildBrushes1(int numLeafsOrig)
 }
 
 
-//?? recursive (use 'stack'?)
+// recursive
 static void SetNodeContents(CBspNode *node, unsigned contents)
 {
 	while (true)
@@ -1138,7 +1142,7 @@ CBspModel *CM_LoadMap(const char *name, bool clientload, unsigned *checksum)
 		break;
 #endif
 	default:
-		Com_DropError("unknown bsp->type for %s", name);
+		Com_DropError("unknown bsp type for %s", name);
 	}
 #if MAX_DEBUG
 	if (bspfile.models[0].headnode)
@@ -1485,19 +1489,17 @@ FORCEINLINE float SplitTrace(const CVec3 &p1, const CVec3 &p2, const CPlane &pla
 // return 'true' when brush clipped trace
 static bool TraceBrush(const cbrush_t &brush)
 {
-	int		i;
-	cbrushside_t *side;
-
 	if (!brush.numSides) return false;
 
 	float enterfrac = -1;
 	float leavefrac = 1;					// used only for validating enterfrac
 	const CPlane *clipplane = NULL;
 
-	bool	getout, startout;
-	getout = startout = false;
+	bool getout = false, startout = false;
 	cbrushside_t *leadside = NULL;
 
+	int		i;
+	cbrushside_t *side;
 	for (i = 0, side = brush.sides; i < brush.numSides; i++, side++)
 	{
 		const CPlane *plane = side->plane;
@@ -1586,7 +1588,7 @@ static void TraceLeaf(const CBspLeaf &leaf)
 	for (int i = 0; i < leaf.numBrushes; i++)
 	{
 		cbrush_t *b = leaf.brushes[i];
-		TRACE(va("--- %d cont=%X numSides=%d ---", b - map_brushes, b->contents, b->numsides),RGB(0.3,1,0.3));
+		TRACE(va("--- %d cont=%X numSides=%d ---", b - map_brushes, b->contents, b->numSides),RGB(0.3,1,0.3));
 		if (b->traceFrame == traceFrame)
 			continue;					// already checked this brush in another leaf
 		b->traceFrame = traceFrame;

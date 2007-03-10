@@ -1013,12 +1013,12 @@ static void S_Play_f(int argc, char **argv)
 {
 	for (int i = 1; i < argc; i++)
 	{
-		char name[256];
+		TString<256> Name;
 		if (!strrchr(argv[i], '.'))
-			appSprintf(ARRAY_ARG(name), "%s.wav", argv[i]);
+			Name.sprintf("%s.wav", argv[i]);
 		else
-			strcpy(name, argv[i]);
-		sfx_t *sfx = S_RegisterSound(name);
+			Name = argv[i];
+		sfx_t *sfx = S_RegisterSound(Name);
 		S_StartSound(NULL, cl.playernum+1, 0, sfx, 1.0, 1.0, 0);
 	}
 }
