@@ -256,6 +256,47 @@ template<class T> static void LoadNodes(T *data, int size)
 }
 
 
+// T is "unsigned short" or "unsigned int"
+// L is dBsp[23]Leaf_t
+// should be called after LoadLeafs() and LoadBrushes()
+template<class T, class L> static void LoadLeafBrushes(T *data, int size, L *srcLeafs)
+{
+	if (size < 1) Com_DropError("Map with no leafbrushes");
+
+	CBspLeaf *leaf = bspfile.leafs;
+	for (int i = 0; i < bspfile.numLeafs; i++, leaf++, srcLeafs++)
+	{
+		if (!srcLeafs->numleafbrushes) continue;
+		leaf->numBrushes = srcLeafs->numleafbrushes;
+		leaf->brushes    = new (dataChain) cbrush_t* [leaf->numBrushes];
+		T *src = data + srcLeafs->firstleafbrush;
+		for (int j = 0; j < leaf->numBrushes; j++)
+			leaf->brushes[j] = map_brushes + src[j];
+	}
+}
+
+
+// T is bBsp[12]Model_t
+template<class T> static void LoadSubmodels(T *data, int size)
+{
+	if (size < 1) Com_DropError("Map with no models");
+
+	CBspModel *out;
+	out = bspfile.models = new (dataChain) CBspModel[size];
+	for (int i = 0; i < size; i++, data++, out++)
+	{
+		out->bounds     = data->bounds;
+		out->radius     = VectorDistance(out->bounds.mins, out->bounds.maxs) / 2;
+		out->headnode   = data->headnode;
+		out->flags      = 0;
+		out->firstFace  = data->firstface;
+		out->numFaces   = data->numfaces;
+		out->color.rgba = RGBA(1,1,1,1);
+		// dBsp[12]Model_t have unused field "origin"
+	}
+}
+
+
 /*-----------------------------------------------------------------------------
 	q2 bsp map loading
 -----------------------------------------------------------------------------*/
@@ -363,26 +404,6 @@ static void LoadPlanes2(dBsp2Plane_t *data, int size)
 }
 
 
-// should be called after LoadLeafs() and LoadBrushes()
-//?? may be used as template for 16/32-bit "*data" (q2/q3 formats)
-inline void LoadLeafBrushes(unsigned short *data, int size)
-{
-	if (size < 1) Com_DropError("Map with no leafbrushes");
-
-	CBspLeaf *leaf = bspfile.leafs;
-	dBsp2Leaf_t *leaf0 = bspfile.leafs2;
-	for (int i = 0; i < bspfile.numLeafs; i++, leaf++, leaf0++)
-	{
-		if (!leaf0->numleafbrushes) continue;
-		leaf->numBrushes = leaf0->numleafbrushes;
-		leaf->brushes    = new (dataChain) cbrush_t* [leaf->numBrushes];
-		unsigned short *src = data + leaf0->firstleafbrush;
-		for (int j = 0; j < leaf->numBrushes; j++)
-			leaf->brushes[j] = map_brushes + src[j];
-	}
-}
-
-
 static void LoadAreas(dArea_t *data, int size)
 {
 	carea_t *out;
@@ -413,9 +434,10 @@ static void LoadQ2Map(bspfile_t *bsp)
 	LoadBrushes2(bsp->brushes2, bsp->numBrushes, bsp->brushsides2, bsp->numBrushSides);
 	LoadLeafs2(bsp->leafs2, bsp->numLeafs);
 	LoadNodes(bsp->nodes2, bsp->numNodes);
-	LoadLeafBrushes(bsp->leafbrushes2, bsp->numLeafbrushes);
+	LoadLeafBrushes(bsp->leafbrushes2, bsp->numLeafbrushes, bsp->leafs2);
 	LoadAreas(bsp->areas, bsp->numAreas);
 	LoadAreaPortals(bsp->areaportals, bsp->numAreaportals);
+	LoadSubmodels(bsp->models2, bsp->numModels);
 }
 
 
@@ -758,6 +780,7 @@ static CPlane *FindBackplane(CPlane *plane)
 
 
 //?? profile function parts, optimize
+// should be called after LoadSubmodels()
 static void BuildBrushes1(int numLeafsOrig)
 {
 	guard(BuildBrushes1);
@@ -928,6 +951,7 @@ static void LoadQ1Map(bspfile_t *bsp)
 	LoadSurfaces1(bsp->texinfo1, bsp->numTexinfo);
 	LoadLeafs1(bsp->leafs1, bsp->numLeafs);
 	LoadNodes(bsp->nodes1, bsp->numNodes);
+	LoadSubmodels(bsp->models1, bsp->numModels);
 	BuildBrushes1(numLeafsOrig);
 	LoadFaces1(bsp->faces2, bsp->numFaces);
 
@@ -948,9 +972,6 @@ static void LoadQ1Map(bspfile_t *bsp)
 	q3 bsp loading
 -----------------------------------------------------------------------------*/
 
-#if 0
-#define Q3MAP_SUPPORT	1		//!!! REMOVE CONST !!!
-
 static unsigned Q3Contents(unsigned f)
 {
 	unsigned r = 0;
@@ -965,63 +986,83 @@ static unsigned Q3Contents(unsigned f)
 	return r;
 }
 
-static void LoadBrushes3(dBsp3Brush_t *data, int size)
+// function similar to LoadBrushes2()
+static void LoadBrushes3(dBsp3Brush_t *srcBrush, int brushCount, dBsp3Brushside_t *srcSides, int sideCount)
 {
 	cbrush_t	*out;
-	out = map_brushes = new (dataChain) cbrush_t [size + HULL_BRUSHES];
-	numBrushes = size;
+	out = map_brushes = new (dataChain) cbrush_t [brushCount + HULL_BRUSHES];
+	numBrushes = brushCount;
 
-	for (int i = 0; i < size; i++, data++, out++)
+	for (int i = 0; i < brushCount; i++, srcBrush++, out++)
 	{
-		out->firstbrushside = data->firstside;
-		out->numsides       = data->numsides;
-		out->contents       = Q3Contents(bspfile.texinfo3[data->shaderNum].contentFlags);
+		out->contents = Q3Contents(bspfile.texinfo3[srcBrush->shaderNum].contentFlags); //?? Q3: check
+		out->numSides = srcBrush->numsides;
+		if (!out->numSides) continue;
+
+		cbrushside_t *s;
+		s = out->sides = new (dataChain) cbrushside_t [out->numSides];
+		dBsp3Brushside_t *s0 = srcSides + srcBrush->firstside;
+		for (int j = 0; j < out->numSides; j++, s++, s0++)
+		{
+			s->plane = &bspfile.planes[s0->planenum];
+			int t = s0->shaderNum;
+			if (t >= bspfile.numTexinfo)
+				Com_DropError("Bad brushside shaderNum");
+			s->surface = (t >= 0) ? &bspfile.surfaces[t] : &nullsurface;
+		}
 	}
 }
 
-
-void LoadLeafBrushes3(unsigned *data, int size)
-{
-	if (size < 1) Com_DropError("Map with no leafbrushes");
-
-	// NOTE: uses int -> short conversion
-	//!!! CHANGE !!!
-	unsigned short *out;
-	out = map_leafBrushes = new (dataChain) unsigned short [size+1];	// extra for box hull
-	numLeafBrushes = size;
-	for (int i = 0; i < size; i++, data++, out++)
-	{
-		assert(*data < 65535);
-		*out = *data;
-	}
-}
-
-
+// function similar to LoadLeafs2()
 static void LoadLeafs3(dBsp3Leaf_t *data, int size)
 {
 	if (size < 1) Com_DropError("Map with no leafs");
 
-	dBsp2Leaf_t *out;
-	out = map_leafs = new (dataChain) dBsp2Leaf_t [size + HULL_LEAFS];
-	numLeafs = size;
-
+	CBspLeaf *out;
+	out = bspfile.leafs = new (dataChain) CBspLeaf [size + HULL_LEAFS];
 	for (int i = 0; i < size; i++, data++, out++)
 	{
-		// NOTE: some fields uses "short" in q2, but corresponding q3 field used "int"
-		// To increase limits should use something else than dBsp2Leaf_t
-		assert(data->cluster < 65536);
-		assert(data->firstleafbrush < 65536);
-		out->cluster        = data->cluster;
-		out->area           = 0;  //?? data->area -- q3 areas too different from q2
-		out->firstleafbrush = data->firstleafbrush;
-		out->numleafbrushes = data->numleafbrushes;
-
-		out->contents = 0xFFFFFFFF; //!! compute leaf contents from brushes
+		out->isLeaf    = true;
+		out->num       = i;
+		out->contents  = CONTENTS_SOLID; // contents will be computred after LoadLeafBrushes
+		out->cluster   = data->cluster;
+		out->area      = 0;			//?? data->area -- q3 areas too different from q2
+		out->firstFace = data->firstleafface;
+		out->numFaces  = data->numleaffaces;
+		for (int j = 0; j < 3; j++)
+		{
+			// int[3] -> CVec
+			out->bounds.mins[j] = data->mins[j];
+			out->bounds.maxs[j] = data->maxs[j];
+		}
 		//!! NOTE: q3 uses surfaces from leafs to trace with patches!
 	}
 
-	if (!(map_leafs[0].contents & CONTENTS_SOLID))
+	if (!(bspfile.leafs[0].contents & CONTENTS_SOLID))
 		Com_DropError("map leaf 0 is not CONTENTS_SOLID");
+}
+
+
+static void LoadSubmodels3(dBsp3Model_t *data, int size)
+{
+appPrintf("---SUBMODELS---\n");	//!!!! Q3
+//!!!! Q3: do not need to create model[0]->leaf->leafBrushes
+	if (size < 1) Com_DropError("Map with no models");
+
+	CBspModel *out;
+	out = bspfile.models = new (dataChain) CBspModel[size];
+	for (int i = 0; i < size; i++, data++, out++)
+	{
+appPrintf("[%d] %d\n", i, data->numBrushes); //!!!! Q3
+		out->bounds     = data->bounds;
+		out->radius     = VectorDistance(out->bounds.mins, out->bounds.maxs) / 2;
+//!!		out->headnode   = data->headnode;
+		out->flags      = 0;
+		out->firstFace  = data->firstface;
+		out->numFaces   = data->numfaces;
+		out->color.rgba = RGBA(1,1,1,1);
+		// dBsp[12]Model_t have unused field "origin"
+	}
 }
 
 
@@ -1049,8 +1090,10 @@ static void LoadSurfaces3(dBsp3Shader_t *data, int size)
 
 	for (int i = 0; i < size; i++, data++, out++)
 	{
-		appStrncpyz(out->shortName, data->name, sizeof(out->shortName));	// texture name limited to 16 chars (compatibility with older mods?)
-		appStrncpyz(out->fullName, data->name, sizeof(out->fullName));		// name limited to 32 chars (w/o "textures/" and ".wal")
+		const char *name = data->name;
+		if (!strnicmp(name, "textures/", 9)) name += 9;				// cut "textures/" prefix
+		appStrncpyz(out->shortName, name, sizeof(out->shortName));	// texture name limited to 16 chars (compatibility with older mods?)
+		appStrncpyz(out->fullName, name, sizeof(out->fullName));	// name limited to 32 chars (w/o "textures/" and ".wal")
 		out->value = 0; //!! get light value from shader
 		out->flags = 0; //!! convert from data->surfaceFlags
 
@@ -1061,23 +1104,24 @@ static void LoadSurfaces3(dBsp3Shader_t *data, int size)
 }
 
 
-//!! LoadSubmodels3(): should create 1 leaf to hold all brushes
-
 static void LoadQ3Map(bspfile_t *bsp)
 {
 	LoadPlanes3(bsp->planes3, bsp->numPlanes);
-	LoadNodes(bsp->nodes3, bsp->numNodes);
 	LoadSurfaces3(bsp->texinfo3, bsp->numTexinfo);
-	LoadBrushes3(bsp->brushes3, bsp->numBrushes);
-//!!	LoadBrushSides2(bsp->brushsides2, bsp->numBrushSides);
-	LoadLeafBrushes3(bsp->leafbrushes3, bsp->numLeafbrushes);
+	LoadBrushes3(bsp->brushes3, bsp->numBrushes, bsp->brushsides3, bsp->numBrushSides);
 	LoadLeafs3(bsp->leafs3, bsp->numLeafs);
-//!!	LoadSubmodels3(bsp->models, bsp->numModels);
+	LoadNodes(bsp->nodes3, bsp->numNodes);
+	LoadLeafBrushes(bsp->leafbrushes3, bsp->numLeafbrushes, bsp->leafs3);
+	LoadSubmodels3(bsp->models3, bsp->numModels);
+
 //!!	LoadAreas(bsp->areas, bsp->numAreas);
 //!!	LoadAreaPortals(bsp->areaportals, bsp->numAreaportals);
+	// Q3 areas: simulate loading (create 1 area)
+	map_areas = new (dataChain) carea_t;
+	numAreas  = 1;
+	numareaportals = 0;
 }
 
-#endif
 
 /*-----------------------------------------------------------------------------
 	Common map loading code
@@ -1136,11 +1180,9 @@ CBspModel *CM_LoadMap(const char *name, bool clientload, unsigned *checksum)
 	case map_hl:
 		LoadQ1Map(bsp);
 		break;
-#if Q3MAP_SUPPORT
 	case map_q3:
 		LoadQ3Map(bsp);
 		break;
-#endif
 	default:
 		Com_DropError("unknown bsp type for %s", name);
 	}
@@ -1309,7 +1351,27 @@ const CBspLeaf *CM_FindLeaf(const CVec3 &p, int headnode)
 int CM_PointContents(const CVec3 &p, int headnode)
 {
 	guard(CM_PointContents);
-	return CM_FindLeaf(p, headnode)->contents;
+
+	const CBspLeaf *leaf = CM_FindLeaf(p, headnode);
+	if (bspfile.type != map_q3)
+		return leaf->contents;
+	// Q3 bsp have no "contents" info in leaf, check nodes
+	unsigned contents = 0;
+	for (int i = 0; i < leaf->numBrushes; i++)
+	{
+		cbrush_t *b = leaf->brushes[i];
+		int j;
+		cbrushside_t *side;
+		for (j = 0, side = b->sides; j < b->numSides; j++, side++)
+		{
+			if (side->plane->DistanceTo(p) > 0)
+				break;
+		}
+		if (j == b->numSides)
+			contents |= b->contents;
+	}
+	return contents;
+
 	unguard;
 }
 
@@ -1343,7 +1405,7 @@ int	CM_TransformedPointContents(const CVec3 &p, int headnode, const CVec3 &origi
 	else
 		VectorSubtract(p, origin, p1);
 
-	return CM_FindLeaf(p1, headnode)->contents;
+	return CM_PointContents(p1, headnode);
 
 	unguard;
 }
@@ -1358,7 +1420,7 @@ int	CM_TransformedPointContents(const CVec3 &p, int headnode, const CVec3 &origi
 	else
 		VectorSubtract(p, origin, p1);
 
-	return CM_FindLeaf(p1, headnode)->contents;
+	return CM_PointContents(p1, headnode);
 
 	unguard;
 }

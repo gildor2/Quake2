@@ -254,6 +254,7 @@ static CSimpleCommand shaderFuncs[] = {
 	TBL(tessSize),
 	//!! skyParms: should set sh.width/sh.height from skybox textures (for seamless sky drawing)
 	TBL(skyParms),
+	TBL_IGNORE(light),
 	TBL_IGNORE(entityMergable)
 };
 
@@ -296,10 +297,10 @@ FUNC(map)
 	shaderStage_t &s = st[sh.numStages];
 	if (IS(1, "$lightmap"))
 	{
+		s.isLightmap = true;
 		if (sh.lightmapNumber >= 0)
 		{
 			img = GetLightmapImage(sh.lightmapNumber);
-			s.isLightmap   = true;
 			s.glState      |= GLSTATE_DEPTHWRITE;
 			s.rgbGenType   = RGBGEN_IDENTITY;
 			s.alphaGenType = ALPHAGEN_IDENTITY;

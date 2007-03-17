@@ -209,6 +209,8 @@ static const CVec3& FindEntityTarget(const char *name)
 
 static bool LoadLight()
 {
+	guard(LoadLight);
+
 	entField_t *f;
 
 	// "style": if >= 32 ... (def: 0)
@@ -304,7 +306,7 @@ static bool LoadLight()
 
 	if (bspfile.type != map_hl)
 	{
-		// Quake1, Quake2, Kingpin
+		// Quake1, Quake2, Quake3, Kingpin
 		if (f = FindField("light,_light"))
 			slight->intens = atof(f->value);
 		else
@@ -317,29 +319,37 @@ static bool LoadLight()
 		}
 		else
 			slight->color.Set(1, 1, 1);			// default
-
-		if (bspfile.type == map_q1)
-		{
-			// IKLite: "angle" field can change attenuation
-			if (!FindField("target") &&			// not spotlight
-				(f = FindField("angle")))
-			{
-				static const slightType_t types[] = {sl_linear, sl_inverse2, sl_nofade, sl_inverse};
-				int n = atoi(f->value);
-				if (n >= 0 && n <= 3)				// if outside range - possibly, not attenuation field ...
-					slight->type = types[n];
-			}
-			// TyrLite: "delay": 0 - linear, 1 - 1/dist, 2 - 1/(dist*dist), 3 - no fade
-			if (f = FindField("delay"))
-				slight->type = (slightType_t)atoi(f->value);
-			// adjust intensity for inverse lights (take from TyrLite source)
-			if (slight->type == sl_inverse)
-				slight->intens *= 128;
-			else if (slight->type == sl_inverse2)
-				slight->intens *= 16384;
-		}
 	}
-	else
+
+	if (bspfile.type == map_q1)
+	{
+		// IKLite: "angle" field can change attenuation
+		if (!FindField("target") &&				// not spotlight
+			(f = FindField("angle")))
+		{
+			static const slightType_t types[] = {sl_linear, sl_inverse2, sl_nofade, sl_inverse};
+			int n = atoi(f->value);
+			if (n >= 0 && n <= 3)				// if outside range - possibly, not attenuation field ...
+				slight->type = types[n];
+		}
+		// TyrLite: "delay": 0 - linear, 1 - 1/dist, 2 - 1/(dist*dist), 3 - no fade
+		if (f = FindField("delay"))
+			slight->type = (slightType_t)atoi(f->value);
+		// adjust intensity for inverse lights (take from TyrLite source)
+		if (slight->type == sl_inverse)
+			slight->intens *= 128;
+		else if (slight->type == sl_inverse2)
+			slight->intens *= 16384;
+	}
+
+	if (bspfile.type == map_q3)
+	{
+		// Quake3
+		slight->type   = (spawnflags & 1) ? sl_linear : sl_inverse2;
+		slight->intens *= 7500;					// pointScale in q3map
+	}
+
+	if (bspfile.type == map_hl)
 	{
 		// Half-Life light entity
 		if (f = FindField("_light"))
@@ -366,7 +376,19 @@ static bool LoadLight()
 		const CVec3 &dst = FindEntityTarget(f->value);
 		CVec3	vec;
 		VectorSubtract(dst, slight->origin, vec);
-		VectorNormalize(vec, slight->spotDir);
+		float dist = VectorNormalize(vec, slight->spotDir);
+
+		if (bspfile.type == map_q3)
+		{
+			entField_t *f2;
+			float radius = 64;
+			if (f2 = FindField("radius"))
+				radius = atof(f2->value);
+			if (!dist) dist = 64;
+			float radiusByDist = (radius + 16) / dist;
+			slight->spotDot = cos(atan(radiusByDist));
+			slight->type    = sl_inverse2;
+		}
 
 		for (int i = 0; i < MAX_SUNS; i++)
 			if (!strcmp(f->value, sunTarget[i]))
@@ -414,9 +436,9 @@ static bool LoadLight()
 			angle = 0;
 			if (f = FindField("angle"))			// yaw
 				angle = atof(f->value);
-			if (angle == -1)		// ANGLE_UP
+			if (angle == -1)					// ANGLE_UP
 				slight->spotDir.Set(0, 0, 1);
-			else if (angle == -2)	// ANGLE_DOWN
+			else if (angle == -2)				// ANGLE_DOWN
 				slight->spotDir.Set(0, 0, -1);
 			else
 			{
@@ -440,36 +462,50 @@ static bool LoadLight()
 			}
 		}
 	}
+
 	// additional spotlight params
 	if (slight->spot)
 	{
-		float	cone;
-
-		if (f = FindField("_cone"))
-			cone = atof(f->value);
-		else
-			cone = 10;		// default
-
-		// Q1 bsp uses "angle" field for cone; default = 20
-		if (bspfile.type == map_q1)
+		if (!slight->spotDot)		// may be set by q3 parser
 		{
-			cone = 0;
-			if (f = FindField("angle"))
-				cone = atof(f->value) / 2;
-			if (!cone) cone = 20;
+			float	cone;
+
+			if (f = FindField("_cone"))
+				cone = atof(f->value);
+			else
+				cone = 10;			// default
+
+			// Q1 bsp uses "angle" field for cone; default = 20
+			if (bspfile.type == map_q1)
+			{
+				cone = 0;
+				if (f = FindField("angle"))
+					cone = atof(f->value) / 2;
+				if (!cone) cone = 20;
+			}
+
+			slight->spotDot = cos(cone * M_PI / 180.0f);
 		}
 
-		slight->spotDot = cos(cone * M_PI / 180.0f);
 		if (f = FindField("_focus"))
 			slight->focus = atof(f->value);
 		else
 			slight->focus = 1;
 	}
 
+	// additiona Quake3 processing (light type may be changed during processing above)
+	if (bspfile.type == map_q3)
+	{
+		if (slight->type == sl_linear)
+			slight->intens /= 8000;		// linearScale in q3map
+	}
+
 	if ((!classname[5] && style < 32) || classname[5])
 		return false;		// remove: "lightflare", non-switchable "light" etc
 
 	return true;
+
+	unguard;
 }
 
 
@@ -942,8 +978,8 @@ static void ParseWorldSpawn()
 	// sky
 	if (bspfile.type == map_kp && !FindField("sky"))
 		AddField("sky", "sr");		// set default Kingpin sky
-	if (bspfile.type == map_q1)
-		AddField("sky", "q1sky");	// do not allow q2 game to set default sky
+	if (bspfile.type == map_q1 || bspfile.type == map_q3)
+		AddField("sky", "default");	// do not allow q2 game to set default sky
 	if (bspfile.type == map_hl && (f = FindField("skyname")))
 		strcpy(f->name, "sky");
 	// map message

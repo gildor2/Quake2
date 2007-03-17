@@ -74,6 +74,7 @@ struct edict_s
 	edict_t		*owner;
 
 	// the game dll can add anything it wants after this point in the structure
+	// (or derive new class from edict_s)
 	// ...
 };
 

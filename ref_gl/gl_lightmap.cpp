@@ -277,6 +277,13 @@ static void CopyLightmap(byte *dst, byte *src, int w, int h, int stride, byte a)
 }
 
 
+// copy non-formatted lightmap data
+void LM_Copy(byte *dst, byte *src, int size)
+{
+	CopyLightmap(dst, src, size, 1, 0, 0);
+}
+
+
 void LM_PutBlock(dynamicLightmap_t *dl)
 {
 	guardSlow(LM_PutBlock);
@@ -306,6 +313,7 @@ void LM_PutBlock(dynamicLightmap_t *dl)
 }
 
 
+// monochrome lightmap
 static void CopyLightmap1(byte *dst, byte *src, int w, int h, int stride, byte a)
 {
 	for (int y = 0; y < h; y++)

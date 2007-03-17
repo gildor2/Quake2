@@ -31,7 +31,7 @@
   12) fogParms ( <r> <g> <b> ) <dist_to_opaque>
   13) portal		          -- set SORT_PORTAL
 * 14) skyparms <farbox|-> <cloud height> <nearbox|->  -- nearbox unsupported (not supported in q3 too)
-  15) light		          -- ignore
+* 15) light		          -- ignore
 * 16) cull
      - node, twosided, disable
      - back, backside, backsided

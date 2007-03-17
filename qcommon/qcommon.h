@@ -70,7 +70,7 @@ struct CBrush;
 //--------------- some constants ------------------------------
 
 // version number
-#define	VERSION			4.16
+#define	VERSION			4.17
 
 #if _WIN32
 

@@ -729,7 +729,6 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 						if (TransformedCull(pl->bounds, e) == FRUSTUM_OUTSIDE) CULL_SURF;
 					}
 				}
-#undef CULL_SURF
 
 				// dlights
 				numDlights = 0;
@@ -773,7 +772,6 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 							numDlights++;
 							sdl++;
 						}
-#undef CULL_DLIGHT
 					if (pl->dlights)
 						ResizeDynamicMemory(pl->dlights, sizeof(surfDlight_t) * numDlights);
 					if (numDlights)
@@ -788,10 +786,34 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 					pl->dlightMask = 0;
 			}
 			break;
+
+		case SURFACE_TRISURF:
+			{
+				surfaceTrisurf_t *tri = static_cast<surfaceTrisurf_t*>(surf);
+				// frustum culling
+				if (frustumMask)
+				{
+					if (e->worldMatrix)
+					{
+						if (Cull(tri->bounds, frustumMask) == FRUSTUM_OUTSIDE) CULL_SURF;
+					}
+					else
+					{
+						if (TransformedCull(tri->bounds, e) == FRUSTUM_OUTSIDE) CULL_SURF;
+					}
+				}
+				//?? dlights
+			}
+			break;
+
 		default:
 			DrawTextLeft("unknows surface type", RGB(1, 0, 0));
 			continue;
+#undef CULL_SURF
+#undef CULL_DLIGHT
 		}
+
+		// add surface, separately process sky surfaces
 		if (surf->shader->type != SHADERTYPE_SKY)
 		{
 			//!! apply fog

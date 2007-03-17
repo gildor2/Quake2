@@ -12,12 +12,10 @@ static void SwapQ2BspFile(bspfile_t *f)
 {
 	int		i, j;
 
-	//!! ERROR HERE: should swap models before loading as CBspModel !!
 	// models
 	for (i = 0; i < f->numModels; i++)
 	{
-		//!! swap dBsp2Model_t !!
-		CBspModel &d = f->models[i];
+		dBsp2Model_t &d = f->models2[i];
 		LTL(d.firstface);
 		LTL(d.numfaces);
 		LTL(d.headnode);
@@ -171,7 +169,7 @@ static void ProcessQ2BspFile(bspfile_t *f)
 	//?? this is to avoid precision errors ?
 	for (i = 0; i < f->numModels; i++)
 	{
-		CBspModel &d = f->models[i];
+		dBsp2Model_t &d = f->models2[i];
 
 		for (j = 0; j < 3; j++)
 		{
@@ -214,7 +212,7 @@ static void ProcessQ1BspFile(bspfile_t *f)
 	//?? this is to avoid precision errors ?
 	for (i = 0; i < f->numModels; i++)
 	{
-		CBspModel &d = f->models[i];
+		dBsp1Model_t &d = f->models1[i];
 
 		for (j = 0; j < 3; j++)
 		{
@@ -243,50 +241,6 @@ static void ProcessQ3BspFile(bspfile_t *f)
 	for (i = 0; i < f->numLeafs; i++)
 		if (f->leafs3[i].cluster >= f->numClusters)
 			f->numClusters = f->leafs3[i].cluster + 1;
-}
-
-
-static void LoadQ2Submodels(bspfile_t *f, dBsp2Model_t *data)
-{
-	if (f->numModels < 1)
-		Com_DropError("Map with no models");
-
-	CBspModel *out = f->models = new (f->extraChain) CBspModel[f->numModels];
-	for (int i = 0; i < f->numModels; i++, data++, out++)
-	{
-		out->bounds     = data->bounds;
-		out->radius     = VectorDistance(out->bounds.mins, out->bounds.maxs) / 2;
-		out->headnode   = data->headnode;
-		out->flags      = 0;
-		out->firstFace  = data->firstface;
-		out->numFaces   = data->numfaces;
-		out->color.rgba = RGBA(1,1,1,1);
-		// dBsp2Model_t have unused field "origin"
-	}
-}
-
-static void LoadQ1Submodels(bspfile_t *f, dBsp1Model_t *data)
-{
-	if (f->numModels < 1)
-		Com_DropError("Map with no models");
-
-	CBspModel *out = f->models = new (f->extraChain) CBspModel[f->numModels];
-	for (int i = 0; i < f->numModels; i++, data++, out++)
-	{
-		out->bounds     = data->bounds;
-		out->radius     = VectorDistance(out->bounds.mins, out->bounds.maxs) / 2;
-		out->headnode   = data->headnode[0];
-		out->flags      = 0;
-		out->firstFace  = data->firstface;
-		out->numFaces   = data->numfaces;
-		out->color.rgba = RGBA(1,1,1,1);
-		// dBsp1Model_t have unused field "origin"
-	}
-}
-
-static void LoadQ3Submodels(bspfile_t *f, dBsp3Model_t *data)
-{
-	//!! implement
 }
 
 
@@ -459,10 +413,7 @@ void LoadQ2BspFile()
 	C(BRUSHSIDES, brushsides2, numBrushSides, dBsp2Brushside_t);
 	C(AREAS, areas, numAreas, dArea_t);
 	C(AREAPORTALS, areaportals, numAreaportals, dAreaPortal_t);
-
-	dBsp2Model_t *models;
-	bspfile.numModels = CheckLump(dBsp2Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp2Model_t));	// not in bspfile_t struc
-	LoadQ2Submodels(&bspfile, models);
+	C(MODELS, models2, numModels, dBsp2Model_t);
 
 #if !LITTLE_ENDIAN
 	// swap everything
@@ -522,6 +473,7 @@ void LoadQ1BspFile()
 	C(MARKSURFACES, leaffaces2, numLeaffaces, unsigned short);
 	C(SURFEDGES, surfedges, numSurfedges, int);
 	C(EDGES, edges, numEdges, dEdge_t);
+	C(MODELS, models1, numModels, dBsp1Model_t);
 
 	// load miptex lump
 	bspfile.miptex1 = (dBsp1MiptexLump_t*)(bspfile.file + lumps[dBsp1Hdr_t::LUMP_TEXTURES].fileofs);
@@ -538,10 +490,6 @@ void LoadQ1BspFile()
 		if (!tex->name[0])
 			appSprintf(ARRAY_ARG(tex->name), "unnamed#%d", miptex);
 	}
-
-	dBsp1Model_t *models;
-	bspfile.numModels = CheckLump(dBsp1Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp1Model_t));	// not in bspfile_t struc
-	LoadQ1Submodels(&bspfile, models);
 
 #if !LITTLE_ENDIAN
 	// swap everything
@@ -580,7 +528,7 @@ void LoadQ3BspFile()
 
 #define C(num,field,count,type) \
 	bspfile.count = CheckLump(dBsp3Hdr_t::LUMP_##num, (void**)&bspfile.field, sizeof(type))
-//	C(LIGHTING, lighting, lightDataSize, byte);
+	C(LIGHTMAPS, lighting, lightDataSize, byte);
 	C(VERTEXES, vertexes3, numVertexes, dBsp3Vert_t);
 	C(INDEXES, indexes3, numIndexes, int);
 	C(PLANES, planes3, numPlanes, dBsp3Plane_t);
@@ -590,13 +538,10 @@ void LoadQ3BspFile()
 	C(FACES, faces3, numFaces, dBsp3Face_t);
 	C(LEAFFACES, leaffaces3, numLeaffaces, int);
 	C(LEAFBRUSHES, leafbrushes3, numLeafbrushes, int);
-	C(BRUSHES, brushes3, numBrushes, dBsp2Brush_t);
-	C(BRUSHSIDES, brushsides3, numBrushSides, dBsp2Brushside_t);
+	C(BRUSHES, brushes3, numBrushes, dBsp3Brush_t);
+	C(BRUSHSIDES, brushsides3, numBrushSides, dBsp3Brushside_t);
+	C(MODELS, models3, numModels, dBsp3Model_t);
 	//!! C(FOGS, ...);
-
-	dBsp3Model_t *models;
-	bspfile.numModels = CheckLump(dBsp3Hdr_t::LUMP_MODELS, (void**)&models, sizeof(dBsp3Model_t));	// not in bspfile_t struc
-	LoadQ3Submodels(&bspfile, models);		//!!! empty
 
 #if !LITTLE_ENDIAN
 	// swap everything

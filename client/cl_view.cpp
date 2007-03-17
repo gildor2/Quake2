@@ -666,7 +666,7 @@ static void DrawSurfInfo()
 
 			CL_AddEntityBox(ent, RGB(1,0.1,0.1));
 		}
-		RE_DrawTextLeft("", RGB(0,0,0));	// empty line
+		RE_DrawTextLeft("");	// empty line
 	}
 }
 
@@ -682,7 +682,7 @@ static void DrawOriginInfo()
 	const CBspLeaf *leaf = CM_FindLeaf(cl.refdef.vieworg);
 	RE_DrawTextLeft(va("Leaf: %d, cluster: %d, area: %d", leaf->num, leaf->cluster, leaf->area), RGB(0.2,0.4,0.1));
 	DecodeContents(leaf->contents | CM_PointModelContents(cl.refdef.vieworg));
-	RE_DrawTextLeft("", RGB(0,0,0));	// empty line
+	RE_DrawTextLeft("");		// empty line
 }
 
 static void DrawBrush()

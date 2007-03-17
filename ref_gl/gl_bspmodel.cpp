@@ -270,7 +270,7 @@ static void LoadLeafsNodes(CBspNode *nodes, int numNodes, CBspLeaf *leafs, int n
 }
 
 
-static void BuildPlanarSurfAxis(surfacePlanar_t *pl)
+static void BuildPlanarSurf(surfacePlanar_t *pl)
 {
 	// generate axis
 	if (pl->plane.normal[2] == 1 || pl->plane.normal[2] == -1)
@@ -293,6 +293,7 @@ static void BuildPlanarSurfAxis(surfacePlanar_t *pl)
 	max1 = max2 = -BIG_NUMBER;
 	int	i;
 	vertex_t *v;
+	pl->bounds.Clear();
 	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
 	{
 		float p1 = dot(v->xyz, pl->axis[0]);
@@ -301,6 +302,7 @@ static void BuildPlanarSurfAxis(surfacePlanar_t *pl)
 		v->pos[1] = p2;
 		EXPAND_BOUNDS(p1, min1, max1);
 		EXPAND_BOUNDS(p2, min2, max2);
+		pl->bounds.Expand(v->xyz);
 	}
 	pl->mins2[0] = min1;
 	pl->mins2[1] = min2;
@@ -309,11 +311,7 @@ static void BuildPlanarSurfAxis(surfacePlanar_t *pl)
 }
 
 
-/*-----------------------------------------------------------------------------
-	Loading Quake2 BSP file
------------------------------------------------------------------------------*/
-
-static void LoadInlineModels2(CBspModel *data, int count)
+static void LoadInlineModels(CBspModel *data, int count)
 {
 	inlineModel_t	*out;
 
@@ -342,6 +340,10 @@ static void LoadInlineModels2(CBspModel *data, int count)
 	}
 }
 
+
+/*-----------------------------------------------------------------------------
+	Loading Quake2 BSP file
+-----------------------------------------------------------------------------*/
 
 //-------------------------- surface loading ----------------------------------
 
@@ -504,6 +506,7 @@ static shader_t *CreateSurfShader1(unsigned sflags, const dBsp2Texinfo_t *stex)
 	if (sflags & SHADER_SKY)
 	{
 		map.haveSkySurfaces = true;
+		map.SkyShader = "env/q1sky";
 		return gl_skyShader;
 	}
 
@@ -734,7 +737,7 @@ static void LoadSurfaces2(const dBspFace_t *surfs, int numSurfaces, const int *s
 				if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA|SHADER_TURB|SHADER_ENT_ALPHA))
 				{
 					if (surfs->lightofs > 0)	// when uninitialized by radiocity, will be 0 (not "-1")
-						sflags |= SHADER_TRYLIGHTMAP;
+						sflags |= SHADER_VERTEXLIGHT;
 					else
 						needLightmap = false;
 				}
@@ -780,8 +783,7 @@ static void LoadSurfaces2(const dBspFace_t *surfs, int numSurfaces, const int *s
 
 		/*------- Prepare for vertex generation ----------------*/
 		// alloc new surface
-		surfacePlanar_t *s = (surfacePlanar_t*) map.dataChain->Alloc(sizeof(surfacePlanar_t) + sizeof(vertex_t)*numVerts + sizeof(int)*numIndexes);
-		CALL_CONSTRUCTOR(s);
+		surfacePlanar_t *s = new (map.dataChain) surfacePlanar_t;
 		s->shader = shader;
 		map.faces[i] = s;
 
@@ -794,9 +796,9 @@ static void LoadSurfaces2(const dBspFace_t *surfs, int numSurfaces, const int *s
 			s->plane.Setup();
 		}
 		s->numVerts   = numVerts;
-		s->verts      = (vertex_t *) (s+1);	//!!! allocate verts separately (for fast draw - in AGP memory)
+		s->verts      = new (map.dataChain) vertex_t [numVerts];
 		s->numIndexes = numIndexes;
-		s->indexes    = (int *) (s->verts+numVerts);
+		s->indexes    = new (map.dataChain) int [numIndexes];
 
 		/*-------------- Generate indexes ----------------------*/
 		if (shader->tessSize)
@@ -818,8 +820,7 @@ static void LoadSurfaces2(const dBspFace_t *surfs, int numSurfaces, const int *s
 		float mins[2], maxs[2];				// surface extents
 		mins[0] = mins[1] =  BIG_NUMBER;
 		maxs[0] = maxs[1] = -BIG_NUMBER;
-		s->bounds.Clear();
-		// Enumerate vertexes
+		// Enumerate vertexes, prepare data for lightmap
 		for (j = 0; j < numVerts; j++, v++)
 		{
 			v->xyz = *pverts[j];
@@ -830,7 +831,6 @@ static void LoadSurfaces2(const dBspFace_t *surfs, int numSurfaces, const int *s
 			// Update bounds
 			EXPAND_BOUNDS(v1, mins[0], maxs[0]);
 			EXPAND_BOUNDS(v2, mins[1], maxs[1]);
-			s->bounds.Expand(v->xyz);
 			// Texture coordinates
 			if (!(sflags & SHADER_TURB)) //?? (!shader->tessSize)
 			{
@@ -872,7 +872,7 @@ static void LoadSurfaces2(const dBspFace_t *surfs, int numSurfaces, const int *s
 			lm->externalSource = true;
 		}
 
-		BuildPlanarSurfAxis(s);
+		BuildPlanarSurf(s);
 		if (stex->flags & SURF_LIGHT)		//!! + sky when ambient <> 0
 		{
 			static const color_t defColor = {96, 96, 96, 255};// {255, 255, 255, 255};
@@ -904,9 +904,9 @@ static int LightmapCompare(surfacePlanar_t* const* s1, surfacePlanar_t* const* s
 	if (v1 == v2 && v1)
 	{
 		// TRYLIGHTMAP should go after normal lightmaps
-		if (surf1->shader->style & SHADER_TRYLIGHTMAP)
+		if (surf1->shader->style & SHADER_VERTEXLIGHT)
 			return 1;
-		else if (surf2->shader->style & SHADER_TRYLIGHTMAP)
+		else if (surf2->shader->style & SHADER_VERTEXLIGHT)
 			return -1;
 		else // situation, when 2 shaders have save lightmap pointers, but no TRYLIGHTMAP (bad, but supported)
 			return 0;
@@ -973,7 +973,7 @@ static void GenerateLightmaps2(byte *lightData, int lightDataSize)
 				{
 					// convert to a vertex lightmap
 					//!! UNFINISHED: need SPECIAL vertex lm, which will be combined with dyn. lm with ENV_ADD
-					s->shader = FindShader(s->shader->Name, s->shader->style | SHADER_TRYLIGHTMAP);
+					s->shader = FindShader(s->shader->Name, s->shader->style | SHADER_VERTEXLIGHT);
 					optLmTexels += dl->w * dl->h;
 				}
 			}
@@ -1004,7 +1004,7 @@ static void GenerateLightmaps2(byte *lightData, int lightDataSize)
 			: dl->w * dl->h * dl->numStyles;			// Q1
 		if (dl->source[0] + lmSize > lightData + lightDataSize)
 			bad = true;				// out of bsp file
-		else if (ptr && ptr > dl->source[0] && (s->shader->style & SHADER_TRYLIGHTMAP))
+		else if (ptr && ptr > dl->source[0] && (s->shader->style & SHADER_VERTEXLIGHT))
 			bad = true;				// erased by previous block
 
 		if (dl->externalSource) bad = false;
@@ -1172,8 +1172,9 @@ static void GenerateLightmaps2(byte *lightData, int lightDataSize)
 }
 
 
+// T is "unsigned short" or "unsigned int"
 // Q3's leafFaces are int, Q1/2 - short
-static void LoadLeafSurfaces2(const unsigned short *data, int count)
+template<class T> static void LoadLeafSurfaces(const T *data, int count)
 {
 	surfaceBase_t **out;
 
@@ -1193,13 +1194,13 @@ START_PROFILE(LoadSurfaces2)
 	LoadSurfaces2(bspfile.faces2, bspfile.numFaces, bspfile.surfedges, bspfile.edges, bspfile.vertexes2,
 		bspfile.texinfo2, bspfile.models, bspfile.numModels);
 END_PROFILE
-	LoadLeafSurfaces2(bspfile.leaffaces2, bspfile.numLeaffaces);
+	LoadLeafSurfaces(bspfile.leaffaces2, bspfile.numLeaffaces);
 START_PROFILE(GenerateLightmaps2)
 	GenerateLightmaps2(bspfile.lighting, bspfile.lightDataSize);
 END_PROFILE
 	// Load bsp (leafs and nodes)
 	LoadLeafsNodes(bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);
-	LoadInlineModels2(bspfile.models, bspfile.numModels);
+	LoadInlineModels(bspfile.models, bspfile.numModels);
 
 	switch (bspfile.fogMode)
 	{
@@ -1283,14 +1284,169 @@ START_PROFILE(LoadSurfaces2)
 	LoadSurfaces2(bspfile.faces2, bspfile.numFaces, bspfile.surfedges, bspfile.edges, bspfile.vertexes2,
 		bspfile.texinfo2, bspfile.models, bspfile.numModels);
 END_PROFILE
-	LoadLeafSurfaces2(bspfile.leaffaces2, bspfile.numLeaffaces);
+	LoadLeafSurfaces(bspfile.leaffaces2, bspfile.numLeaffaces);
 START_PROFILE(GenerateLightmaps2)
 	GenerateLightmaps2(bspfile.lighting, bspfile.lightDataSize);
 END_PROFILE
 	// Load bsp (leafs and nodes)
 	LoadLeafsNodes(bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);
-	LoadInlineModels2(bspfile.models, bspfile.numModels);
+	LoadInlineModels(bspfile.models, bspfile.numModels);
 	LoadSky1();
+
+	unguard;
+}
+
+
+/*-----------------------------------------------------------------------------
+	Loading Quake3 BSP file
+-----------------------------------------------------------------------------*/
+
+//!! TEMP
+class surfaceNull_t : public surfaceBase_t
+{
+public:
+	inline surfaceNull_t() { type = SURFACE_BAD; }
+	virtual void Tesselate(refEntity_t &ent)
+	{}
+};
+
+
+// should be loaded before surfaces
+static void LoadLigntmaps3(byte *lightData, int lightDataSize)
+{
+	if (gl_config.vertexLight) return;
+
+#define Q3_LM_BYTES  (Q3_LIGHTMAP_SIZE * Q3_LIGHTMAP_SIZE * 3)
+	int numLightmaps = lightDataSize / Q3_LM_BYTES;
+	for (int i = 0; i < numLightmaps; i++, lightData += Q3_LM_BYTES)
+	{
+		//?? move code to gl_lightmap.cpp ??
+		byte buffer[Q3_LIGHTMAP_SIZE * Q3_LIGHTMAP_SIZE * 4]; // rgba
+		LM_Copy(buffer, lightData, Q3_LIGHTMAP_SIZE * Q3_LIGHTMAP_SIZE);
+		CreateImage(va("*lightmap%d", i), buffer, Q3_LIGHTMAP_SIZE, Q3_LIGHTMAP_SIZE,
+			IMAGE_CLAMP|IMAGE_LIGHTMAP);
+	}
+}
+
+
+static shader_t *CreateSurfShader3(unsigned sflags, const dBsp3Shader_t *stex)
+{
+	shader_t *shader = FindShader(stex->name, sflags);
+
+	if (shader->type == SHADERTYPE_SKY && !map.haveSkySurfaces)
+	{
+		map.haveSkySurfaces = true;
+		map.SkyShader = stex->name;
+	}
+	return shader;
+}
+
+
+static void LoadSurfaces3(const dBsp3Face_t *surfs, int numSurfaces, dBsp3Vert_t *verts, unsigned *indexes,
+	const dBsp3Shader_t *tex /*?? const CBspModel *models, int numModels */)
+{
+	map.numFaces = numSurfaces;
+	map.faces = new (map.dataChain) surfaceBase_t* [numSurfaces];
+	for (int i = 0; i < numSurfaces; i++, surfs++)
+	{
+		int numVerts   = surfs->numVerts;
+		int numIndexes = surfs->numIndexes;
+
+		switch (surfs->surfaceType)
+		{
+		case dBsp3Face_t::PLANAR:
+			{
+				surfacePlanar_t *s = new (map.dataChain) surfacePlanar_t;
+				shader_t *shader = CreateSurfShader3(surfs->lightmapNum >= 0 ?
+					SHADER_LIGHTMAP|SHADER_WALL : SHADER_WALL,
+					tex + surfs->shaderNum);
+				shader = SetShaderLightmap(shader, surfs->lightmapNum);
+				s->shader = shader;
+				map.faces[i] = s;
+
+				s->numVerts   = numVerts;
+				s->verts      = new (map.dataChain) vertex_t [numVerts];
+				s->numIndexes = numIndexes;
+				s->indexes    = new (map.dataChain) int [numIndexes];
+				// copy verts
+				dBsp3Vert_t *src = verts + surfs->firstVert;
+				vertex_t    *dst = s->verts;
+				for (int j = 0; j < numVerts; j++, src++, dst++)
+				{
+					dst->xyz    = src->v;
+					dst->st[0]  = src->st[0];
+					dst->st[1]  = src->st[1];
+					dst->lm[0]  = src->lm[0];
+					dst->lm[1]  = src->lm[1];
+					dst->c.rgba = src->c.rgba;		//!! saturate
+					//?? check for same normal for all verts
+				}
+				// copy indexes
+				memcpy(s->indexes, indexes + surfs->firstIndex, numIndexes * sizeof(int));
+
+				// surface plane
+				s->plane.normal = surfs->lightmapVecs[2]; // Q3 bsp format ...
+				s->plane.dist   = dot(s->verts[0].xyz, s->plane.normal);
+				s->plane.Setup();
+
+				BuildPlanarSurf(s);
+			}
+			break;
+
+		case dBsp3Face_t::TRISURF:
+			{
+				surfaceTrisurf_t *s = new (map.dataChain) surfaceTrisurf_t;
+				shader_t *shader = CreateSurfShader3(SHADER_WALL|SHADER_VERTEXLIGHT,
+					tex + surfs->shaderNum);
+				s->shader = shader;
+				map.faces[i] = s;
+
+				s->numVerts   = numVerts;
+				s->verts      = new (map.dataChain) vertexNormal_t [numVerts];
+				s->numIndexes = numIndexes;
+				s->indexes    = new (map.dataChain) int [numIndexes];
+				// copy verts
+				dBsp3Vert_t *src = verts + surfs->firstVert;
+				vertexNormal_t *dst = s->verts;
+				s->bounds.Clear();
+				for (int j = 0; j < numVerts; j++, src++, dst++)
+				{
+					dst->xyz    = src->v;
+					dst->st[0]  = src->st[0];
+					dst->st[1]  = src->st[1];
+					dst->lm[0]  = src->lm[0];
+					dst->lm[1]  = src->lm[1];
+					dst->c.rgba = src->c.rgba;		//!! saturate
+					dst->normal = src->normal;
+					s->bounds.Expand(dst->xyz);
+				}
+				// copy indexes
+				memcpy(s->indexes, indexes + surfs->firstIndex, numIndexes * sizeof(int));
+			}
+			break;
+
+		default:
+			{
+				//!! should Com_DropError(); may be, in cmodel.cpp
+				surfaceNull_t *s = new (map.dataChain) surfaceNull_t;
+				CALL_CONSTRUCTOR(s);
+				s->shader = gl_defaultShader;
+				map.faces[i] = s;
+			}
+		}
+	}
+}
+
+
+static void LoadBsp3()
+{
+	guard(LoadBsp3);
+
+	LoadLigntmaps3(bspfile.lighting, bspfile.lightDataSize);
+	LoadSurfaces3(bspfile.faces3, bspfile.numFaces, bspfile.vertexes3, bspfile.indexes3, bspfile.texinfo3);
+	LoadLeafSurfaces(bspfile.leaffaces3, bspfile.numLeaffaces);
+	LoadLeafsNodes(bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);
+	LoadInlineModels(bspfile.models, bspfile.numModels);
 
 	unguard;
 }
@@ -1333,6 +1489,9 @@ void LoadWorldMap()
 	case map_hl:
 		LoadBsp1();
 		//?? ambient light?
+		break;
+	case map_q3:
+		LoadBsp3();
 		break;
 	default:
 		Com_DropError("R_LoadWorldMap: unknown BSP type");

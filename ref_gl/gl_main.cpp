@@ -947,7 +947,11 @@ void SetSky(const char *name, float rotate, const CVec3 &axis)
 	shader_t *shader = NULL;
 	TString<64> Name2;
 
-	if (bspfile.type == map_hl)
+	if (!strcmp(name, "default") && map.SkyShader)			// this name set by entity parser
+	{
+		shader = FindShader(map.SkyShader, SHADER_SKY);
+	}
+	else if (bspfile.type == map_hl)
 	{
 		Name2.sprintf("gfx/env/%s", name);
 		shader = FindShader(Name2, SHADER_SKY);

@@ -1,0 +1,6 @@
+Not loaded:
+~~~~~~~~~~~
+- q3dm3: crash in ge.RunFrame (map not loaded)
+- q3dm6: Game Error: ED_ParseEntity: closing brace without data
+
+- cpm18: "lightmap stage is not found"

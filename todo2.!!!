@@ -1,3 +1,4 @@
+- sort levelshort by numeric strcmp
 - check misc/ut/network.htm
 - try LZMA decoder for resources and for .7z
 

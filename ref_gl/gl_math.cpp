@@ -34,7 +34,7 @@ void InitFuncTables()
 		float j = i;					// just to avoid "(float)i"
 		float f = j / TABLE_SIZE;
 		float f1 = j / (TABLE_SIZE-1);	// for non-periodic funcs: cell # TABLE_SIZE-1 corresponds to 1
-		squareTable[i] = (i < TABLE_SIZE/2) ? -1 : 1;
+		squareTable[i] = (i < TABLE_SIZE/2) ? 1 : -1;
 		sinTable[i] = sin(j / (TABLE_SIZE/2) * M_PI);		// 0 -- 0, last -- 2*pi
 		sawtoothTable[i] = f;
 

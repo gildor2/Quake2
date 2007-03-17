@@ -434,6 +434,7 @@ image_t *GetLightmapImage(int num)
 
 shader_t *SetShaderLightmap(shader_t *shader, int lightmapNumber)
 {
+	// can REMOVE lightmap from vertex-lm shader only
 	if (lightmapNumber == LIGHTMAP_NONE)
 	{
 		if (shader->lightmapNumber != LIGHTMAP_VERTEX || shader->numStages != 1)
@@ -450,6 +451,7 @@ shader_t *SetShaderLightmap(shader_t *shader, int lightmapNumber)
 		return shader;
 	}
 
+	// do not change vertex lightmap
 	if (shader->lightmapNumber == LIGHTMAP_VERTEX)
 		return shader;
 
@@ -672,6 +674,7 @@ shader_t *FindShader(const char *name, unsigned style)
 				if (lightmapNumber == LIGHTMAP_RESERVE)
 					return shader;				// want to get reserved -- return any
 
+				//?? if here lightmapNumber == VERTEX|RESERVE|NONE - don't need SetShaderLightmap()
 				if (shader->lightmapNumber == LIGHTMAP_RESERVE)
 					return SetShaderLightmap(shader, lightmapNumber);	// reserved -> used
 			}
@@ -741,7 +744,7 @@ shader_t *FindShader(const char *name, unsigned style)
 	shaderStage_t *stage = &st[0];
 	int stageIdx = 0;
 
-	if (style & SHADER_TRYLIGHTMAP)
+	if (style & SHADER_VERTEXLIGHT)
 	{
 		lightmapNumber = LIGHTMAP_NONE;
 		stage->rgbGenType = (style & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ENT_ALPHA)) ? RGBGEN_BOOST_VERTEX : RGBGEN_EXACT_VERTEX;

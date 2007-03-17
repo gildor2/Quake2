@@ -1,0 +1,114 @@
+- with gamma==1 Q3-rendered maps looks brighter, than in my renderer; reason: q3 uses
+  r_mapOverbrightBits==2 instead of 1; should be overbrighted:
+  - lightmaps
+  - vertex colors
+  - lights
+? vertex light (at least for trisurfs): use isDoubleRgba
+
+! r_lightmap: complex shaders (jumppads etc) disappeared when set to "1"
+! reorder stages to make lightmap 1st
+! surface and sky light
+- particles does not works: uses leaf->contents (should use brush)
+- trisurfs: dlights does not works for surfaces with "diffuse light", owned by world entity
+  (code uses uses ent->center ...)
+  q3 path: trisurfs uses vertex lighting, but my code requires dynamicLightmap for this
+
+- surface flags (at least, SURF_SKY)
+- LoadSubmodels3(): build model->leaf->leafBrushes
+- check areas
+- display curves
+- trace curves
+- fog
+- entities (jumppads etc)
+- vertex lighting (no lightmap loading, using vertex light from bsp)
+? flares
+- color saturation (lightmaps, vertex light)
+
+
+------------------"Strange blend for LM"-----------------------
+*** q3dm7 ***
+textures/gothic_wall/iron01_m
+textures/gothic_wall/iron01_ndark
+{
+	{
+		map $lightmap			<------- should work fine ! LM is 1st, tex is 2nd
+		rgbgen identity
+	}
+	{
+		map ...
+		blendFunc GL_DST_COLOR GL_SRC_ALPHA
+		rgbGen identity
+		alphaGen lightingSpecular
+	}
+}
+
+<---- here: exchange 1st and 2nd stages, LM will go 1st ---->
+textures/sfx/bouncepad01block18b
+textures/sfx/computerpurptileb
+textures/gothic_button/timbutton
+{
+	{
+		map ...
+		rgbGen identity
+	}
+	{
+		map $lightmap
+		rgbGen identity
+		blendfunc gl_dst_color gl_zero
+	}
+	....
+}
+
+*** q3dm1 *** (no "bad lm blend" message, simply bad lm)
+textures/gothic_floor/center2trn
+{
+        {
+		map textures/sfx/fireswirl2.tga
+                tcmod rotate 333
+                tcMod stretch sin .8 0.2 0 9.7
+	        rgbGen identity
+	}
+        {
+	        map textures/gothic_floor/center2trn.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+                tcmod rotate 30
+                tcMod stretch sin .8 0.2 0 .2
+	        rgbGen identity
+	}
+        {
+	        map textures/gothic_floor/center2trn.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+	        rgbGen identity
+	}
+        {
+		map $lightmap
+                blendFunc GL_DST_COLOR GL_ONE_MINUS_DST_ALPHA
+		rgbGen identity
+	}
+}
+
+textures/gothic_block/largerblock3blood
+{
+        {
+		map textures/liquids/proto_grueldark2.tga
+                blendFunc GL_ONE GL_ZERO
+                tcmod scale 2 2
+                tcMod scroll .01 .03
+                tcMod turb 0 0.05 0 .05
+        }
+        {
+		map textures/effects/tinfx3.tga
+                blendFunc GL_ONE GL_ONE
+                tcGen environment
+        }
+	{
+	        map textures/gothic_block/largerblock3blood.tga
+		blendFunc blend
+	        rgbGen identity
+	}
+        {
+		map $lightmap
+                blendFunc filter
+		rgbGen identity
+	}
+}

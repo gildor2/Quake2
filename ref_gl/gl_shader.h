@@ -335,7 +335,7 @@ void	ResetShaders();				// should be called every time before loading a new map
 #define SHADER_SKY			0x00200		// SURF_SKY (use surface for sky drawing)
 #define SHADER_ANIM			0x00400		// main stage will contain more than 1 texture (names passed as name1<0>name2<0>...nameN<0><0>)
 #define SHADER_LIGHTMAP		0x00800		// reserve lightmap stage (need GL_SetShaderLightmap() later)
-#define SHADER_TRYLIGHTMAP	0x01000		// usualy not containing lightmap, but if present - generate it
+#define SHADER_VERTEXLIGHT	0x01000		// use vertex lighting
 #define SHADER_ENVMAP		0x02000		// make additional rendering pass with specular environment map
 #define SHADER_ENVMAP2		0x04000		// add diffuse environment map
 #define SHADER_CLAMP		0x08000		// load image with IMAGE_CLAMP flag

@@ -158,6 +158,11 @@ struct bspfile_t
 	unsigned	*indexes3;
 
 	int			numModels;
+	union {
+		dBsp1Model_t *models1;
+		dBsp2Model_t *models2;
+		dBsp3Model_t *models3;
+	};
 	CBspModel	*models;
 
 	int			lightDataSize;

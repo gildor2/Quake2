@@ -13,7 +13,7 @@
 #define M_PI				(3.14159265358979323846)
 
 CORE_API float appRsqrt(float number);
-#define SQRTFAST(x)			(x * appRsqrt(x))
+#define SQRTFAST(x)			((x) * appRsqrt(x))
 
 #if 1
 

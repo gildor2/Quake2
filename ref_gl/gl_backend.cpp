@@ -1478,6 +1478,48 @@ void surfacePlanar_t::Tesselate(refEntity_t &ent)
 }
 
 
+void surfaceTrisurf_t::Tesselate(refEntity_t &ent)
+{
+	ReserveVerts(numVerts, numIndexes);
+
+	int firstVert = gl_numVerts;
+	gl_numVerts += numVerts;
+	int firstIndex = gl_numIndexes;
+	gl_numIndexes += numIndexes;
+
+	bufExtra_t *ex = &gl_extra[gl_numExtra];
+	gl_numExtra += numVerts;
+
+	bufVertex_t *v = &vb->verts[firstVert];
+	bufTexCoordSrc_t *t = &srcTexCoord[firstVert];
+	unsigned *c = &srcVertexColor[firstVert].rgba;
+
+	int i;
+	// copy vertexes
+	vertexNormal_t *vs = verts;
+	for (i = 0; i < numVerts; i++, vs++, v++, t++, c++, ex++)
+	{
+		v->xyz = vs->xyz;			// copy vertex
+		t->tex[0] = vs->st[0];		// copy texture coords
+		t->tex[1] = vs->st[1];
+		t->lm[0]  = vs->lm[0];		// copy lightmap coords
+		t->lm[1]  = vs->lm[1];
+		*c = vs->c.rgba;			// copy vertex color (sometimes may be ignored??)
+
+		ex->numVerts = 1;
+		ex->normal   = vs->normal;
+		ex->axis     = NULL;
+		ex->dlight   = NULL;
+	}
+
+	// copy indexes
+	int *idx = &gl_indexesArray[firstIndex];
+	int *idxSrc = indexes;
+	for (i = 0; i < numIndexes; i++)
+		*idx++ = *idxSrc++ + firstVert;
+}
+
+
 void surfacePoly_t::Tesselate(refEntity_t &ent)
 {
 	int		i;

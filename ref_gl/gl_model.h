@@ -93,6 +93,7 @@ struct vertexMd3_t				//?? == dMd3XyzNormal_t (rename one of types? derive struc
 
 enum surfaceType_t
 {
+	SURFACE_BAD,
 	SURFACE_PLANAR,				// surfacePlanar_t
 	SURFACE_TRISURF,			// surfaceTrisurf_t
 	SURFACE_MD3,				// surfaceMd3_t
@@ -119,7 +120,7 @@ public:
 class surfacePlanar_t : public surfaceBase_t
 {
 public:
-	inline surfacePlanar_t() { type = SURFACE_PLANAR; };
+	inline surfacePlanar_t() { type = SURFACE_PLANAR; }
 	CBox	bounds;
 	CPlane	plane;
 	CVec3	axis[2];			// 2 orthogonal identity vectors from surface
@@ -138,18 +139,18 @@ public:
 class surfaceTrisurf_t : public surfaceBase_t
 {
 public:
-	inline surfaceTrisurf_t() { type = SURFACE_TRISURF; };
-	CBox	bounds;		//?? origin/radius?
+	inline surfaceTrisurf_t() { type = SURFACE_TRISURF; }
+	CBox	bounds;
 	int		numVerts, numIndexes;
 	vertexNormal_t *verts;
 	int		*indexes;
-//!!	virtual void Tesselate(refEntity_t &ent);
+	virtual void Tesselate(refEntity_t &ent);
 };
 
 class surfaceMd3_t : public surfaceBase_t
 {
 public:
-	inline surfaceMd3_t() { type = SURFACE_MD3; };
+	inline surfaceMd3_t() { type = SURFACE_MD3; }
 
 	TString<32> Name;			// for skin application
 	// fields, same on all surfaces
@@ -171,7 +172,7 @@ public:
 class surfacePoly_t : public surfaceBase_t
 {
 public:
-	inline surfacePoly_t() { type = SURFACE_POLY; };
+	inline surfacePoly_t() { type = SURFACE_POLY; }
 	int		numVerts;
 	vertexPoly_t verts[1];		// [numVerts]
 	virtual void Tesselate(refEntity_t &ent);
@@ -182,7 +183,7 @@ public:
 class surfaceParticle_t : public surfaceBase_t
 {
 public:
-	inline surfaceParticle_t() { type = SURFACE_PARTICLE; };
+	inline surfaceParticle_t() { type = SURFACE_PARTICLE; }
 	particle_t *part;
 	virtual void Tesselate(refEntity_t &ent);
 };
@@ -192,7 +193,7 @@ public:
 class surfaceEntity_t : public surfaceBase_t
 {
 public:
-	inline surfaceEntity_t() { type = SURFACE_ENTITY; };
+	inline surfaceEntity_t() { type = SURFACE_ENTITY; }
 	refEntity_t *entity;
 	virtual void Tesselate(refEntity_t &ent);
 };
@@ -243,13 +244,15 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 	CLight	*lights;			// static lights
 	CLight	*flashLights;		// lights with dynamic lightstyle; rename !!
 	int		numFlares;
+	// sky
+	bool	haveSkySurfaces;
+	TString<64> SkyShader;		// name of texture for sky (when taken directly from map surfaces)
 	// sun
 	CVec3	sunSurfColor;		// color of sun surface (default sun color)
 	CVec3	sunAvgColor;		// for sun ambient
 	bool	haveSunAmbient;
 	CVec3	sunAmbient;
 	CVec3	ambientLight;
-	bool	haveSkySurfaces;
 };
 
 

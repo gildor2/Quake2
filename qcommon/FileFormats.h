@@ -426,26 +426,26 @@ struct dBsp1Hdr_t
 {
 	enum
 	{
-		LUMP_ENTITIES,		// char[]
-		LUMP_PLANES,		// dBsp2Plane_t[]
+		LUMP_ENTITIES,				// char[]
+		LUMP_PLANES,				// dBsp2Plane_t[]
 		LUMP_TEXTURES,
-		LUMP_VERTEXES,		// CVec3[]
+		LUMP_VERTEXES,				// CVec3[]
 		LUMP_VISIBILITY,
-		LUMP_NODES,			// dBsp1Node_t (q2->q1: int->short children[2])
-		LUMP_TEXINFO,		// dBsp1Texinfo_t[]
-		LUMP_FACES,			// dBspFace_t
-		LUMP_LIGHTING,		// byte[] (q1: monochrome, hl: rgb == q2)
+		LUMP_NODES,					// dBsp1Node_t (q2->q1: int->short children[2])
+		LUMP_TEXINFO,				// dBsp1Texinfo_t[]
+		LUMP_FACES,					// dBspFace_t
+		LUMP_LIGHTING,				// byte[] (q1: monochrome, hl: rgb == q2)
 		LUMP_CLIPNODES,
-		LUMP_LEAFS,			// dBsp1Leaf_t[]
-		LUMP_MARKSURFACES,	// short[] (== Q2LUMP_LEAFFACES)
-		LUMP_EDGES,			// dEdge_t[]
-		LUMP_SURFEDGES,		// int[]
-		LUMP_MODELS,		// dBsp1Model_t[] (almost as in q2)
+		LUMP_LEAFS,					// dBsp1Leaf_t[]
+		LUMP_MARKSURFACES,			// short[] (== Q2LUMP_LEAFFACES)
+		LUMP_EDGES,					// dEdge_t[]
+		LUMP_SURFEDGES,				// int[]
+		LUMP_MODELS,				// dBsp1Model_t[] (almost as in q2)
 
-		LUMP_COUNT			// should be last
+		LUMP_COUNT					// should be last
 	};
 
-	unsigned version;		// BSP1_VERSION or BSPHL_VERSION
+	unsigned version;				// BSP1_VERSION or BSPHL_VERSION
 	lump_t	lumps[LUMP_COUNT];
 };
 
@@ -454,14 +454,15 @@ struct dBsp1Hdr_t
 struct dBsp1Model_t
 {
 	CBox	bounds;
-	CVec3	origin;						// unused
-	int		headnode[Q1_MAP_HULLS]; 	// used mostly headnode[0]; other - for entity clipping
-	int		visleafs;					// not including the solid leaf 0 (UNUSED field!)
+	CVec3	origin;					// unused
+	int		headnode;				// separated from headnode[Q1_MAP_HULLS] to be name-compatible with dBsp*Model_t
+	int		headnode2[Q1_MAP_HULLS-1]; // secondary clipping hulls; not used here
+	int		visleafs;				// not including the solid leaf 0 (UNUSED field!)
 	int		firstface, numfaces;
 };
 
 
-#define	Q1_NUM_AMBIENTS		4			// automatic ambient sounds
+#define	Q1_NUM_AMBIENTS		4		// automatic ambient sounds
 
 // Q1/HL contents
 #define	Q1_CONTENTS_EMPTY			-1
@@ -567,7 +568,7 @@ struct dBsp3Hdr_t
 		LUMP_INDEXES,				// int[]
 		LUMP_FOGS,					// dBsp3Fog_t
 		LUMP_FACES,					// dBsp3Face_t[]
-		LUMP_LIGHTMAPS,				//?? byte[]
+		LUMP_LIGHTMAPS,				// byte[]
 		LUMP_LIGHTGRID,				// unused
 		LUMP_VISIBILITY,			// dBsp3Vis_t[] + byte[]
 
@@ -620,6 +621,8 @@ struct dBsp3Shader_t
 	unsigned surfaceFlags;
 	unsigned contentFlags;
 };
+
+#define Q3_LIGHTMAP_SIZE	128
 
 struct dBsp3Face_t
 {
