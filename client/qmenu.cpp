@@ -549,7 +549,7 @@ static void SpinControl_Draw(menuList_t *s)
 		s->curvalue = maxIndex;
 	// draw value
 	const char *text = s->itemnames[s->curvalue];
-	char *newline;
+	const char *newline;
 	if (!(newline = strchr(text, '\n')))
 		DrawString(RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y, text);
 	else
@@ -600,7 +600,7 @@ static void SpinControl2_Draw(menuList2_t *s)
 	}
 	// draw value
 	const char *text = item->name;
-	char *newline;
+	const char *newline;
 	if (!(newline = strchr(text, '\n')))
 		DrawString(RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y, text);
 	else

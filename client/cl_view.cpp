@@ -670,6 +670,19 @@ static void DrawSurfInfo()
 	}
 }
 
+#if 0
+//!!!!!!!!!
+struct cbrush_t
+{
+	unsigned contents;
+	void	*sides;
+	int		numSides;
+	int		traceFrame;					// to avoid repeated testings
+};
+extern cbrush_t	*map_brushes;
+//!!!!!!!!!
+#endif
+
 static void DrawOriginInfo()
 {
 	RE_DrawTextLeft("Player position:\n----------------", RGB(0.4,0.4,0.6));
@@ -681,7 +694,18 @@ static void DrawOriginInfo()
 
 	const CBspLeaf *leaf = CM_FindLeaf(cl.refdef.vieworg);
 	RE_DrawTextLeft(va("Leaf: %d, cluster: %d, area: %d", leaf->num, leaf->cluster, leaf->area), RGB(0.2,0.4,0.1));
-	DecodeContents(leaf->contents | CM_PointModelContents(cl.refdef.vieworg));
+#if 0
+//!!!!!!!!!
+RE_DrawTextLeft(va("nBrushes: %d", leaf->numBrushes), RGB(1,0.2,0.2));
+for (int i = 0; i < leaf->numBrushes; i++)
+{
+cbrush_t* b = leaf->brushes[i];
+RE_DrawTextLeft(va("%d: b=%d", i, b - map_brushes), RGB(1,0,0));
+DecodeContents(b->contents);
+}
+//!!!!!!!!!
+#endif
+	DecodeContents(leaf->GetContents(cl.refdef.vieworg) | CM_PointModelContents(cl.refdef.vieworg));
 	RE_DrawTextLeft("");		// empty line
 }
 

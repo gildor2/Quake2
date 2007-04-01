@@ -1370,6 +1370,7 @@ DEPENDS_31 = \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_interface.h \
+	win32/WinPrivate.h \
 	win32/gl_win.h
 
 Release/obj-win32/q2stat/gl_win.o : win32/gl_win.cpp $(DEPENDS_31)

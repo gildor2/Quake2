@@ -33,7 +33,6 @@ static cvar_t *gl_debugShaders;
 #define HASH_SIZE		(1 << HASH_BITS)
 #define HASH_MASK		(HASH_SIZE - 1)
 
-#define	MAX_SHADERS		1024
 
 static shader_t *shadersArray[MAX_SHADERS];	// sorted in ascending order with key = sortParam
 				// it's easier to keep array sorted, than sort it with "sortParam" later
@@ -153,6 +152,7 @@ static shaderStage_t	st[MAX_SHADER_STAGES];
 static const image_t	*shaderImages[MAX_SHADER_STAGES * MAX_STAGE_TEXTURES];
 static int				numTcModStages;
 static tcModParms_t		tcMods[MAX_SHADER_STAGES * MAX_STAGE_TCMODS];
+static TString<64>		ShaderLightImage;
 
 
 static void ResortShader(shader_t *shader, int startIndex)
@@ -213,6 +213,10 @@ static void ClearTempShader()
 	memset(&shaderImages, 0, sizeof(shaderImages));
 	memset(&tcMods, 0, sizeof(tcMods));
 	numTcModStages = 0;
+	ShaderLightImage[0] = 0;
+	// defaults from q3map (note: direction negated)
+	sh.sunDirection.Set(-0.45f, -0.3f, -0.9f);
+	sh.sunColor.Set(100, 100, 50);
 }
 
 
@@ -299,12 +303,38 @@ static shader_t *FinishShader()
 	else if (!sh.sortParam && sh.usePolygonOffset)
 		sh.sortParam = SORT_DECAL;
 
+	if (sh.lightValue)
+	{
+		// shader have specified surface light, should take light color
+		if (!ShaderLightImage[0])
+		{
+			// light image was not specified or not found - use shader name
+			if (FindImage(sh.Name, IMAGE_ANY))
+				ShaderLightImage = sh.Name;
+		}
+		if (ShaderLightImage[0])
+		{
+			// image found - compute its color
+			GetImageColor(ShaderLightImage, IMAGE_MIPMAP, &sh.lightColor);
+		}
+		else
+		{
+			// use default color
+			Com_DPrintf("Shader %s: using default light color\n", *sh.Name);
+			sh.lightColor.rgba = RGB(1,1,1);
+		}
+	}
+
 	// enum and count stages
+	bool haveLightmap = false;
 	int numStages;
 	for (numStages = 0; numStages < MAX_SHADER_STAGES; numStages++)
 	{
 		shaderStage_t *s = &st[numStages];
 		if (!s->numAnimTextures) break;
+
+		if (s->isLightmap)
+			haveLightmap = true;
 
 		if (sh.type == SHADERTYPE_SKY)
 		{
@@ -415,6 +445,10 @@ static shader_t *FinishShader()
 		}
 	}
 
+	// scripted shaders may skip lightmap stage
+	if (!haveLightmap)
+		sh.lightmapNumber = LIGHTMAP_NONE;
+
 	// if sortParam is not yet set - set it to opaque
 	if (!sh.sortParam)
 		sh.sortParam = SORT_OPAQUE;
@@ -434,6 +468,12 @@ image_t *GetLightmapImage(int num)
 
 shader_t *SetShaderLightmap(shader_t *shader, int lightmapNumber)
 {
+	guard(SetShaderLightmap);
+
+	// is lightmaps number already as we want?
+	if (shader->lightmapNumber == lightmapNumber)
+		return shader;
+
 	// can REMOVE lightmap from vertex-lm shader only
 	if (lightmapNumber == LIGHTMAP_NONE)
 	{
@@ -472,7 +512,24 @@ shader_t *SetShaderLightmap(shader_t *shader, int lightmapNumber)
 
 	if (!dest)
 	{
-		// shader is not found -- duplicate source and change its lightmap
+		// required shader was not found
+
+		// check for lightmap stage in shader
+		int i;
+		for (i = 0; i < shader->numStages; i++)
+			if (shader->stages[i]->isLightmap)
+				break;
+
+		if (i == shader->numStages)
+		{
+			// lightmap stage was not found
+			if (!shader->scripted && !shader->bad && shader->Name[0] != '*')
+				Com_DropError("SetShaderLightmap(%s, %d): lightmap stage is not found", *shader->Name, lightmapNumber);
+			// scripted shader may skip lightmap stage
+			return shader;
+		}
+
+		// duplicate source and change its lightmap
 		ExtractShader(shader);
 		sh.lightmapNumber = LIGHTMAP_RESERVE;	// temporarily mark as reserved (for CreateShader())
 		dest = CreateShader();
@@ -493,8 +550,13 @@ shader_t *SetShaderLightmap(shader_t *shader, int lightmapNumber)
 		}
 	}
 
-	Com_DropError("SetShaderLightmap(%s, %d): lightmap stage is not found", *shader->Name, lightmapNumber);
-	return NULL;	// make compiler happy (will not go here)
+	// here shader SHOULD have lightmap stage
+	assert(0);
+	return gl_defaultShader;	// make compiler happy (will not go here)
+	// NOTE: can go here, when MAX_SHADERS will be hit: CreateShader() will
+	// not produce required shader
+
+	unguardf(("%s, %d", *shader->Name, lightmapNumber));
 }
 
 

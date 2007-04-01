@@ -336,7 +336,7 @@ bool appMatchWildcard(const char *name, const char *mask, bool ignoreCase)
 	int namelen = strlen(name);
 
 	// can use TStringSplitter here
-	char *next;
+	const char *next;
 	for (mask = MaskCopy; mask; mask = next)
 	{
 		// find next wildcard (comma-separated)
@@ -377,7 +377,7 @@ bool appMatchWildcard(const char *name, const char *mask, bool ignoreCase)
 		else
 		{
 			// "*text" or "text*" mask
-			char *suff = strchr(mask, '*');
+			const char *suff = strchr(mask, '*');
 			if (next && suff >= next) suff = NULL;		// suff can be in next wildcard
 			if (suff)
 			{

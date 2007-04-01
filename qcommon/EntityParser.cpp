@@ -1014,7 +1014,7 @@ static void ParseWorldSpawn()
 		for (TStringSplitter<64, ';'> wad = f->value; wad; ++wad)
 		{
 			if (!wad[0]) continue;
-			const char *s = strrchr(wad, '/');
+			char   *s = strrchr(wad, '/');
 			if (!s) s = strrchr(wad, '\\');
 			if (!s) s = wad;
 			else	s++;								// skip path separator

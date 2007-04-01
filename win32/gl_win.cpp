@@ -1,5 +1,4 @@
-#define WIN32_LEAN_AND_MEAN			// exclude rarely-used services from windown headers
-#include <windows.h>				// need this include, because have wgl and GDI functions in gl.h
+#include "WinPrivate.h"
 
 #include "../ref_gl/OpenGLDrv.h"
 #include "gl_win.h"
@@ -337,18 +336,21 @@ bool GLimp_SetMode(unsigned *pwidth, unsigned *pheight, int mode, bool fullscree
 			appPrintf("...using desktop color depth of %d\n", bitspixel);
 		}
 
+		MSGLOG(("CDS(%dx%d, FS)\n", dm.dmPelsWidth, dm.dmPelsHeight));
 		if (ChangeDisplaySettings(&dm, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL)
 		{
 			appWPrintf("...fullscreen unavailable in this mode\n");
 			appPrintf("...setting windowed mode\n");
 			fullscreen = false;
 
+			MSGLOG(("CDS(NULL)\n"));
 			ChangeDisplaySettings(NULL, 0);
 		}
 	}
 	else	// not fullscreen
 	{
 		appPrintf("...setting windowed mode\n");
+		MSGLOG(("CDS(NULL)\n"));
 		ChangeDisplaySettings(NULL, 0);
 	}
 
@@ -389,6 +391,7 @@ void GLimp_Shutdown(bool complete)
 		if (complete)
 		{
 			Com_DPrintf("...restore display mode\n");
+			MSGLOG(("CDS(NULL)\n"));
 			ChangeDisplaySettings(NULL, 0);
 		}
 		gl_config.fullscreen = false;

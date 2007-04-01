@@ -1555,6 +1555,100 @@ void ShowImages()
 
 //------------- Loading images --------------------------
 
+// In:  name - filename
+// Out: name - (corrected) filename (note: name modified!)
+//      width, height - image dimensions
+//      returns buffer pointer, when image was found (should be freed)
+static byte *LoadImage(char *name, int &width, int &height)
+{
+	guard(LoadImage);
+
+	char *s = strrchr(name, '.');
+	if (!s) s = strchr(name, 0);	// point to place for extension
+
+	// select preferred format
+	int prefFmt = 0;
+	if (!strcmp(s, ".tga"))
+		prefFmt = IMAGE_TGA;
+	else if (!strcmp(s, ".jpg"))
+		prefFmt = IMAGE_JPG;
+//	else if (!strcmp(s, ".pcx"))	//-- disabled: never prefer 8-bit textures
+//		prefFmt = IMAGE_PCX;
+//	else if (!strcmp(s, ".wal"))
+//		prefFmt = IMAGE_WAL;
+
+	*s = 0; // cut extension
+	int fmt = ImageExists(name, IMAGE_32BIT);
+	if (fmt & prefFmt)
+		fmt = prefFmt;				// restrict loading to this image type
+
+	byte *pic;
+	// load image within a preferred (or prioritized) format
+	if (fmt & IMAGE_TGA)
+	{
+		strcpy(s, ".tga");
+		pic = LoadTGA(name, width, height);
+	}
+	else if (fmt & IMAGE_JPG)
+	{
+		strcpy(s, ".jpg");
+		pic = LoadJPG(name, width, height);
+	}
+	else if (fmt & IMAGE_PCX)
+	{
+		strcpy(s, ".pcx");
+		byte *palette;
+		byte *pic8 = LoadPCX(name, width, height, palette);
+		if (pic8)
+		{
+			//?? should use "palette"; sometimes should use 0xFF as color (not transparency)
+#if 0
+			unsigned pal[256];
+
+			byte *p = palette;
+			for (int i = 0; i < 256; i++, p += 3)
+			{
+				unsigned v = RGB255(p[0], p[1], p[2]);
+				pal[i] = LittleLong(v);
+			}
+			pal[255] &= LittleLong(0x00FFFFFF);						// #255 is transparent (alpha = 0)
+			pic = Convert8to32bit(pic8, width, height, pal);
+#else
+			pic = Convert8to32bit(pic8, width, height, NULL);
+#endif
+			appFree(pic8);
+			appFree(palette);
+		}
+		else
+			pic = NULL;
+	}
+	else if (fmt & IMAGE_WAL)
+	{
+		strcpy(s, ".wal");
+		if (dWal_t *mt = (dWal_t*) GFileSystem->LoadFile(name))
+		{
+			width  = LittleLong(mt->width);
+			height = LittleLong(mt->height);
+			pic    = Convert8to32bit((byte*)mt + LittleLong(mt->offsets[0]), width, height, NULL);
+			delete mt;
+		}
+		else
+			pic = NULL;
+	}
+	else
+	{
+		//!! use img_debug
+//		Com_DPrintf("Cannot find image %s.*\n", *Name2);
+		return NULL;
+	}
+	if (!pic) appWPrintf("R_LoadImage(%s): cannot load texture\n", name);
+
+	return pic;
+
+	unguard;
+}
+
+
 // FindImage -- main image creating/loading function
 image_t *FindImage(const char *name, unsigned flags)
 {
@@ -1614,7 +1708,7 @@ image_t *FindImage(const char *name, unsigned flags)
 						appWPrintf("R_FindImage(%s): using different flags (%X != %X) for system image\n", *Name2, flags, img->flags);
 						return img;
 					}
-					hash = -1;	// mark: image used with a different flags (for displaying a warning message)
+					hash = -1;		// mark: image used with a different flags (for displaying a warning message)
 				}
 				// continue search ...
 			}
@@ -1622,99 +1716,45 @@ image_t *FindImage(const char *name, unsigned flags)
 	if (hash == -1)
 		appWPrintf("R_FindImage: reusing \"%s\" with a different flags %X\n", *Name2, flags);
 
-	/*---------- image not found -----------*/
-//	appPrintf("FindImage: disk name = %s\n",name2);//!!
-	// select preferred format
-	int prefFmt = 0;
-	if (!strcmp(s, ".tga"))
-		prefFmt = IMAGE_TGA;
-	else if (!strcmp(s, ".jpg"))
-		prefFmt = IMAGE_JPG;
-//	else if (!strcmp(s, ".pcx"))	//-- disabled: never prefer 8-bit textures
-//		prefFmt = IMAGE_PCX;
-//	else if (!strcmp(s, ".wal"))
-//		prefFmt = IMAGE_WAL;
+	/*---------- loaded image not found -----------*/
 
-	*s = 0; // cut extension
-	int fmt = ImageExists(Name2, IMAGE_32BIT);
-	if (fmt & prefFmt)
-		fmt = prefFmt;				// restrict loading to this image type
+	if (flags & IMAGE_CHECKLOADED)	// do not load image
+		return NULL;
 
 	int width, height;
-	byte *pic;
-	// load image within a preferred (or prioritized) format
-	if (fmt & IMAGE_TGA)
+	if (byte *pic = LoadImage(Name2, width, height))
 	{
-		strcpy(s, ".tga");
-		pic = LoadTGA(Name2, width, height);
-	}
-	else if (fmt & IMAGE_JPG)
-	{
-		strcpy(s, ".jpg");
-		pic = LoadJPG(Name2, width, height);
-	}
-	else if (fmt & IMAGE_PCX)
-	{
-		strcpy(s, ".pcx");
-		byte *palette;
-		byte *pic8 = LoadPCX(Name2, width, height, palette);
-		if (pic8)
-		{
-			//?? should use "palette"; sometimes should use 0xFF as color (not transparency)
-#if 0
-			unsigned pal[256];
-
-			byte *p = palette;
-			for (int i = 0; i < 256; i++, p += 3)
-			{
-				unsigned v = RGB255(p[0], p[1], p[2]);
-				pal[i] = LittleLong(v);
-			}
-			pal[255] &= LittleLong(0x00FFFFFF);						// #255 is transparent (alpha = 0)
-			pic = Convert8to32bit(pic8, width, height, pal);
-#else
-			pic = Convert8to32bit(pic8, width, height, NULL);
-#endif
-			appFree(pic8);
-			appFree(palette);
-		}
-		else
-			pic = NULL;
-	}
-	else if (fmt & IMAGE_WAL)
-	{
-		strcpy(s, ".wal");
-		if (dWal_t *mt = (dWal_t*) GFileSystem->LoadFile(Name2))
-		{
-			width  = LittleLong(mt->width);
-			height = LittleLong(mt->height);
-			pic    = Convert8to32bit((byte*)mt + LittleLong(mt->offsets[0]), width, height, NULL);
-			delete mt;
-		}
-		else
-			pic = NULL;
-	}
-	else
-	{
-		//!! use img_debug
-//		Com_DPrintf("Cannot find image %s.*\n", *Name2);
-		return NULL;
-	}
-
-	// upload image
-	if (pic)
-	{
+		// upload image
 		image_t *img = CreateImage(Name2, pic, width, height, flags);
 		appFree(pic);
 		return img;
 	}
-	else
-	{
-		appWPrintf("R_FindImage(%s): cannot load texture\n", *Name2);
-		return NULL;
-	}
+
+	// image not loaded
+	return NULL;
 
 	unguardf(("img=%s", name));
+}
+
+
+//?? try to eliminate 'flags'
+bool GetImageColor(const char *name, unsigned flags, color_t *color)
+{
+	// check for already loaded texture
+	if (image_t *img = FindImage(name, flags|IMAGE_CHECKLOADED))
+	{
+		color->rgba = img->color.rgba;
+		return true;
+	}
+	// try to load texture
+	TString<64> Name; Name.filename(name);
+	int width, height;
+	byte *pic = LoadImage(Name, width, height);
+	if (!pic) return false;
+	// compute color
+	ComputeImageColor(pic, width, height, color);
+	appFree(pic);
+	return true;
 }
 
 

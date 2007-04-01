@@ -349,7 +349,7 @@ void M_Draw();
 void M_Menu_Main_f();
 void M_ForceMenuOff();
 void M_ForceMenuOn();
-void M_AddToServerList(netadr_t adr, char *info);
+void M_AddToServerList(netadr_t adr, const char *info);
 
 struct menuFramework_t;
 extern menuFramework_t *m_current;

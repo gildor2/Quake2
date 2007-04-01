@@ -986,6 +986,26 @@ static unsigned Q3Contents(unsigned f)
 	return r;
 }
 
+static unsigned Q3Surface(unsigned f)
+{
+	unsigned r = 0;
+#define T(c)	if (f & Q3_SURF_##c) r |= SURF_##c;
+	T(SKY)
+	T(NODRAW)
+#undef T
+	return r;
+}
+
+static unsigned Q3Material(unsigned f)
+{
+	if (f & Q3_SURF_METALSTEPS)
+		return MATERIAL_METAL;
+	else if (f & Q3_SURF_NOSTEPS)
+		return MATERIAL_SILENT;
+	return MATERIAL_CONCRETE;
+}
+
+
 // function similar to LoadBrushes2()
 static void LoadBrushes3(dBsp3Brush_t *srcBrush, int brushCount, dBsp3Brushside_t *srcSides, int sideCount)
 {
@@ -1024,7 +1044,7 @@ static void LoadLeafs3(dBsp3Leaf_t *data, int size)
 	{
 		out->isLeaf    = true;
 		out->num       = i;
-		out->contents  = CONTENTS_SOLID; // contents will be computred after LoadLeafBrushes
+		out->contents  = i == 0 ? CONTENTS_SOLID : 0;	// will be computed after LoadLeafBrushes()
 		out->cluster   = data->cluster;
 		out->area      = 0;			//?? data->area -- q3 areas too different from q2
 		out->firstFace = data->firstleafface;
@@ -1040,6 +1060,18 @@ static void LoadLeafs3(dBsp3Leaf_t *data, int size)
 
 	if (!(bspfile.leafs[0].contents & CONTENTS_SOLID))
 		Com_DropError("map leaf 0 is not CONTENTS_SOLID");
+}
+
+
+static void ComputeLeafContents3()
+{
+	for (int i = 1; i < bspfile.numLeafs; i++) // skip leaf 0
+	{
+		CBspLeaf &leaf = bspfile.leafs[i];
+		leaf.contents = 0;
+		for (int j = 0; j < leaf.numBrushes; j++)
+			leaf.contents |= leaf.brushes[j]->contents;
+	}
 }
 
 
@@ -1095,10 +1127,11 @@ static void LoadSurfaces3(dBsp3Shader_t *data, int size)
 		appStrncpyz(out->shortName, name, sizeof(out->shortName));	// texture name limited to 16 chars (compatibility with older mods?)
 		appStrncpyz(out->fullName, name, sizeof(out->fullName));	// name limited to 32 chars (w/o "textures/" and ".wal")
 		out->value = 0; //!! get light value from shader
-		out->flags = 0; //!! convert from data->surfaceFlags
+		out->flags = Q3Surface(data->surfaceFlags);
+		//?? also have data->contentsFlags
 
 		//?? SURF_FLESH, SURF_NOSTEPS, SURF_METALSTEPS, SURF_DUST
-		int m = GetSurfMaterial(data->name);
+		int m = Q3Material(data->surfaceFlags);
 		out->material = m;
 	}
 }
@@ -1113,6 +1146,7 @@ static void LoadQ3Map(bspfile_t *bsp)
 	LoadNodes(bsp->nodes3, bsp->numNodes);
 	LoadLeafBrushes(bsp->leafbrushes3, bsp->numLeafbrushes, bsp->leafs3);
 	LoadSubmodels3(bsp->models3, bsp->numModels);
+	ComputeLeafContents3();
 
 //!!	LoadAreas(bsp->areas, bsp->numAreas);
 //!!	LoadAreaPortals(bsp->areaportals, bsp->numAreaportals);
@@ -1348,18 +1382,16 @@ const CBspLeaf *CM_FindLeaf(const CVec3 &p, int headnode)
 }
 
 
-int CM_PointContents(const CVec3 &p, int headnode)
+unsigned CBspLeaf::GetContents(const CVec3 &p) const
 {
-	guard(CM_PointContents);
-
-	const CBspLeaf *leaf = CM_FindLeaf(p, headnode);
 	if (bspfile.type != map_q3)
-		return leaf->contents;
-	// Q3 bsp have no "contents" info in leaf, check nodes
-	unsigned contents = 0;
-	for (int i = 0; i < leaf->numBrushes; i++)
+		return contents;
+
+	// q3bsp code
+	unsigned v = 0;
+	for (int i = 0; i < numBrushes; i++)
 	{
-		cbrush_t *b = leaf->brushes[i];
+		cbrush_t *b = brushes[i];
 		int j;
 		cbrushside_t *side;
 		for (j = 0, side = b->sides; j < b->numSides; j++, side++)
@@ -1368,10 +1400,17 @@ int CM_PointContents(const CVec3 &p, int headnode)
 				break;
 		}
 		if (j == b->numSides)
-			contents |= b->contents;
+			v |= b->contents;
 	}
-	return contents;
+	return v;
+}
 
+
+int CM_PointContents(const CVec3 &p, int headnode)
+{
+	guard(CM_PointContents);
+	const CBspLeaf *leaf = CM_FindLeaf(p, headnode);
+	return leaf->GetContents(p);
 	unguard;
 }
 

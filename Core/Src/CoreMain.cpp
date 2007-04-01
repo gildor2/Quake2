@@ -1,5 +1,5 @@
-#include <time.h>						// for logging time funcs
 #include "CorePrivate.h"
+#include <time.h>						// for logging time funcs
 
 
 int GScreenWidth = 80;					//?? where to place

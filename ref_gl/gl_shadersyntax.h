@@ -240,6 +240,56 @@ FUNC(skyParms)
 }
 
 
+FUNC(q3map_surfacelight)
+{
+	sh.lightValue = atof(argv[1]);
+}
+
+
+static void SetShaderColorTex(const char *name, bool priority)
+{
+	if (ShaderLightImage[0] && !priority)
+		return;			// already set
+	TString<64> Name; Name.filename(name);
+	char *s = Name.rchr('.');
+	if (s) *s = 0;		// cut extension for ImageExists()
+	if (!ImageExists(Name, IMAGE_ANY)) return;
+	// use this texture
+	ShaderLightImage = Name;
+}
+
+
+FUNC(q3map_lightimage)
+{
+	SetShaderColorTex(argv[1], true);
+}
+
+
+FUNC(qer_editorimage)
+{
+	SetShaderColorTex(argv[1], false);
+}
+
+
+FUNC(q3map_sun)
+{
+	// get color
+	sh.sunColor[0] = atof(argv[1]);
+	sh.sunColor[1] = atof(argv[2]);
+	sh.sunColor[2] = atof(argv[3]);
+	sh.sunColor.Normalize();
+	// get intensity
+	float intens = atof(argv[4]);
+	sh.sunColor.Scale(intens);
+	// get direction (note: q3map uses opposite direction, so negate vector)
+	float yaw   = atof(argv[5]) / 180 * M_PI;
+	float pitch = atof(argv[6]) / 180 * M_PI;
+	sh.sunDirection[0] = - cos(yaw) * cos(pitch);
+	sh.sunDirection[1] = - sin(yaw) * cos(pitch);
+	sh.sunDirection[2] = - sin(pitch);
+}
+
+
 // registration
 
 static CSimpleCommand shaderFuncs[] = {
@@ -252,8 +302,13 @@ static CSimpleCommand shaderFuncs[] = {
 	TBL(deformVertexes),
 	TBL(surfaceparm),
 	TBL(tessSize),
-	//!! skyParms: should set sh.width/sh.height from skybox textures (for seamless sky drawing)
+	// sky, light
 	TBL(skyParms),
+	TBL(q3map_surfacelight),
+	TBL(q3map_lightimage),
+	TBL(qer_editorimage),
+	TBL(q3map_sun),
+	// ignored keywords
 	TBL_IGNORE(light),
 	TBL_IGNORE(entityMergable)
 };

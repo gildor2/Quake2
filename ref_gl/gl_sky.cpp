@@ -18,7 +18,7 @@ static void ClipSkyPolygon(CVec3 *verts, int numVerts, int stage)
 {
 	if (!numVerts) return;				// empty polygon
 
-	if (numVerts > MAX_CLIP_VERTS - 2)	// may require to add 2 verts for slitting
+	if (numVerts > MAX_CLIP_VERTS - 2)	// may require to add 2 verts for splitting
 		Com_DropError("ClipSkyPolygon: overflow");
 
 	int		i;
@@ -216,6 +216,7 @@ void AddSkySurface(surfacePlanar_t *pl, byte flag)
 	CVec3 verts[MAX_CLIP_VERTS]; // buffer for polygon
 	int i;
 	vertex_t *v;
+	// transform all surface verts
 	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
 	{
 		if (skyRotated)
@@ -223,7 +224,19 @@ void AddSkySurface(surfacePlanar_t *pl, byte flag)
 		else
 			VectorSubtract(v->xyz, vp.view.origin, verts[i]);
 	}
+	// compute surface bounds on skybox
+#if 1 // version for any vertex order
+	for (i = 0; i < pl->numIndexes; i += 3)
+	{
+		CVec3 tri[MAX_CLIP_VERTS];
+		tri[0] = verts[pl->indexes[i]];
+		tri[1] = verts[pl->indexes[i+1]];
+		tri[2] = verts[pl->indexes[i+2]];
+		ClipSkyPolygon(tri, 3, 0);
+	}
+#else // this version requires special verts order
 	ClipSkyPolygon(verts, pl->numVerts, 0);
+#endif
 
 	// analyse skyMins/skyMaxs, detect occupied cells
 	for (side = 0; side < 6; side++)
@@ -421,8 +434,11 @@ void DrawSky()
 	VectorAdd(tmp1, right, fv[3].xyz);
 	// rasterize frustum
 	surfacePlanar_t pl;
-	pl.numVerts = 4;
-	pl.verts    = fv;
+	pl.numVerts   = 4;
+	pl.verts      = fv;
+	int frustInds[] = { 0, 1, 3, 1, 2, 3 };
+	pl.indexes    = frustInds;
+	pl.numIndexes = 6;
 	AddSkySurface(&pl, SKY_FRUSTUM);
 
 	if (!SkyVisible()) return;				// all sky surfaces are outside frustum
@@ -435,7 +451,7 @@ void DrawSky()
 	GL_DepthRange(gl_showSky->integer ? DEPTH_NEAR : DEPTH_FAR);
 	GL_EnableFog(false);
 	// if we will add "NODEPTHTEST" if gl_showSky mode -- DEPTHWITE will no effect
-	stage->glState = (gl_showSky->integer) ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST;
+	stage->glState = (gl_showSky->integer == 1) ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST;
 
 	glPushMatrix();
 	// modify modelview matrix
@@ -466,10 +482,10 @@ void DrawSky()
 	glColor3f(0, 0, 0);
 	GL_CullFace(CULL_NONE);
 	glBegin(GL_QUADS);
-	glVertex3fv(fv[0].xyz);
-	glVertex3fv(fv[1].xyz);
-	glVertex3fv(fv[2].xyz);
-	glVertex3fv(fv[3].xyz);
+	glVertex3fv(fv[0].xyz.v);
+	glVertex3fv(fv[1].xyz.v);
+	glVertex3fv(fv[2].xyz.v);
+	glVertex3fv(fv[3].xyz.v);
 	glEnd();
 	glPopMatrix();
 #endif

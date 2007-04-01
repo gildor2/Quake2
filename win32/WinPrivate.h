@@ -33,3 +33,10 @@ typedef bool (*MSGHOOK_FUNC) (UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 void AddMsgHook(MSGHOOK_FUNC func);
 void RemoveMsgHook(MSGHOOK_FUNC func);
+
+
+#if 0
+#	define MSGLOG(x)	DebugPrintf x
+#else
+#	define MSGLOG(x)
+#endif

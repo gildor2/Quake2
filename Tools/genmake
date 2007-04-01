@@ -389,7 +389,11 @@ sub getline {
 			# var += value
 			my ($var, $value) = $line =~ /^\s*(\w+)\s*\+\=\s*(\S+.*)/;
 			$value = GetMultiLine() if defined($value) && $value eq "{";
-			$vars{$var} = "$vars{$var} ".ExpandVars($value);
+			if (exists($vars{$var})) {
+				$vars{$var} = "$vars{$var} ".ExpandVars($value);
+			} else {
+				$vars{$var} = ExpandVars($value);
+			}
 		} else {
 			# ordinary line
 			return 1;
@@ -553,9 +557,9 @@ sub AddObjectList {
 			# C++ exceptions
 			$opt = GetSrcOption ("CPP_EXCEPT");
 			if ($opt eq "1" || $opt eq "") {
-				$options .= " -GX";
+				$options .= " -EHsc";	# old compilers: "-GX"
 			} elsif ($opt eq "0") {
-				$options .= " -GX-";
+				$options .= " -EHs-";	# old compilers: "-GX-"
 			} else {
 				WarningOnce ("unknown CPP_EXCEPT option: [$opt]");
 			}

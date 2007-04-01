@@ -88,7 +88,7 @@ void BK_FlushShader();
 #define ENTITYNUM_BITS		10
 #define ENTITYNUM_MASK		((1<<ENTITYNUM_BITS) - 1)
 
-#define SHADERNUM_BITS		10
+#define SHADERNUM_BITS		12
 #define SHADERNUM_MASK		((1<<SHADERNUM_BITS) - 1)
 
 #define DLIGHTNUM_BITS		2

@@ -15,6 +15,7 @@ CPP_EXCEPT = 0
 #	INLINES   = explicit
 #	LIBC      = static
 #	PDB       = 1
+	COM_DEFINES = _CRT_SECURE_NO_WARNINGS	# VC8: ignore "unsafe strcpy()" etc
 !elif "$COMPILER" eq "GnuC"
 #	INLINES   = explicit	-- not supported?
 	LIBC      = shared
@@ -66,7 +67,7 @@ MAX_DEBUG = 0
 !endif
 
 # build common defines string
-COM_DEFINES = MAX_DEBUG=$MAX_DEBUG
+COM_DEFINES += MAX_DEBUG=$MAX_DEBUG
 
 
 #------------------------------------------------------------------------------

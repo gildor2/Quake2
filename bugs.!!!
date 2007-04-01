@@ -163,6 +163,11 @@ COMPILERS:
   - cannot use default arguments for functions, which are part of structure
     Workaround: should use `inline Struc_Func()' (with default args) instead of struc.Func() call
   - not inlined most TString<> calls (e.g. 'operator=') unless specify "__forceinline" (see dot() for VC6 above ...)
+- (VisualC++ 8)
+  - compilation: should define _CRT_SECURE_NO_WARNINGS before any includes; when defined in Core.h, have
+    warnings for Win32 and OpenGLDrv files (when _CRT... not defined -- LOTS of warnings)
+  - VC 8 have worse issues with not-inlined functions (see VC7 bugs)
+  - AppName.exe.manifest issues
 - GNU C++ 3.4: optimization: "-O2"-level: (all bugs - from FP hacks!?)
     ! all these bugs are covered with "strict-aliasing" optimization; can use "-fno-strict-aliasing" to allow FP-hack constructions.
     - incorrect code, when use uint_cast():

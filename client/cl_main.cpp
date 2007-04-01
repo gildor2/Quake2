@@ -621,7 +621,7 @@ void CL_PingServers_f()
 	Responses to broadcasts, etc
 -----------------------------------------------------------------------------*/
 
-static char *connectStr;
+static const char *connectStr;
 
 static void cClientConnect(int argc, char **argv)
 {

@@ -220,7 +220,7 @@ void Cvar_GetVars(const cvarInfo_t *vars, int count)
 	{
 		char	name[256];
 
-		char *value = strchr(vars->string, '=');
+		const char *value = strchr(vars->string, '=');
 		if (!value)	// should not happens
 		{
 			strcpy(name, vars->string);

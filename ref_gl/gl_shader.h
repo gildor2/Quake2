@@ -129,6 +129,9 @@ enum deformType_t
 	Shader stage
 -----------------------------------------------------------------------------*/
 
+#define	MAX_SHADERS			4096
+
+
 #define MAX_SHADER_DEFORMS	3
 #define MAX_STAGE_TCMODS	4
 #define MAX_SHADER_STAGES	32
@@ -276,6 +279,13 @@ public:
 			float	portalRange;
 		};
 	}; */
+
+	// lighting
+	float	lightValue;
+	color_t	lightColor;
+	// sunlight (for sky shaders only)
+	CVec3	sunColor;
+	CVec3	sunDirection;
 
 	// remap shader
 	shader_t *alphaShader;		// for skins: same shader as current, but translucent

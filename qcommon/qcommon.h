@@ -947,7 +947,7 @@ void	SV_Frame(float msec);
 #define	SURF_TRANS33			0x0010
 #define	SURF_TRANS66			0x0020
 #define	SURF_FLOWING			0x0040		// scroll towards angle
-#define	SURF_NODRAW				0x0080		// don't bother referencing the texture
+#define	SURF_NODRAW				0x0080		// do not draw texture
 
 // added since 4.00
 // Kingpin (used for non-KP maps from scripts too)

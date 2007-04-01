@@ -62,12 +62,14 @@ struct CBspNode : public CBspBaseNode
 struct CBspLeaf : public CBspBaseNode
 {
 	CBspLeafExtra *ex;					// first
-	unsigned	contents;
+	unsigned	contents;				// for q3 map, this is OR of all brushes.contents; use GetContents() method
 	int			cluster;
 	int			area;
 	unsigned	firstFace, numFaces;
 	unsigned	numBrushes;
 	cbrush_t	**brushes;
+	// methods
+	unsigned GetContents(const CVec3 &p) const;
 };
 
 

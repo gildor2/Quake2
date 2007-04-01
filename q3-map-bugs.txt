@@ -1,6 +1,30 @@
+- cpm15:
+  - have trisurf SURF_LIGHT (blemish/blem_lava)
+  - have lift (no collision with it)
+- pom: incorrect dlights
+- aedesert: lots of pickup items, which should be suspended in air, but dropped to floor
+
+Large maps (out of possible q2 ranges)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- qxctf2
+
 Not loaded:
 ~~~~~~~~~~~
-- q3dm3: crash in ge.RunFrame (map not loaded)
+? q3dm3: crash in ge.RunFrame (map not loaded)
 - q3dm6: Game Error: ED_ParseEntity: closing brace without data
 
-- cpm18: "lightmap stage is not found"
+unsupported surfaces:
+  wvwq3dm7: trisurf sky: textures/wvwq3dm7/foghull/wvw7hull
+  cpm15:    trisurf sky: textures/blemish/blem_sky
+  milktdm1: curve sky: textures/skies/hellsky2bright
+
+Patch lights:
+~~~~~~~~~~~~~
+- aetime
+- pro-q3dm6
+- q3dm10, q3dm11, q3dm12
+- cpm14
+
+Trisurf lights:
+~~~~~~~~~~~~~~~
+- cpm15, cpm17: lava

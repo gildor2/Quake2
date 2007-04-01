@@ -23,9 +23,12 @@ namespace OpenGLDrv {
 
 
 // forwards
+#if !NO_DEBUG
 // debug
 static bool DrawTriangles();
 static bool DrawNormals();
+static void DrawSkySurface(surfaceBase_t *surf);
+#endif
 
 
 /*-----------------------------------------------------------------------------
@@ -426,8 +429,7 @@ static void GenerateTexCoordArray(shaderStage_t *st, int tmu, const image_t *tex
 {
 	guard(GenerateTexCoordArray);
 
-	if (tex && tex->target == GL_TEXTURE_RECTANGLE_NV && st->tcGenType != TCGEN_TEXTURE)
-		Com_DropError("shader %s uses TEXTURE_RECTANGLE with not \"tcGen texture\"", *currentShader->Name);
+	// NOTE: drawing sky using src->lm[] for skybox and src->tex[] for cloud layer
 
 	int j, k;
 	// process tcGen
@@ -454,10 +456,22 @@ static void GenerateTexCoordArray(shaderStage_t *st, int tmu, const image_t *tex
 		}
 		break;
 	case TCGEN_LIGHTMAP:
-		for (j = 0; j < gl_numVerts; j++, src++, dst++)
+		// same code as for TCGEN_TEXTURE, but using src->lm instead of src->tex
+		if (!tex || tex->target != GL_TEXTURE_RECTANGLE_NV)
+			for (j = 0; j < gl_numVerts; j++, src++, dst++)
+			{
+				dst->tex[0] = src->lm[0];
+				dst->tex[1] = src->lm[1];
+			}
+		else
 		{
-			dst->tex[0] = src->lm[0];
-			dst->tex[1] = src->lm[1];
+			float w = tex->internalWidth;
+			float h = tex->internalHeight;
+			for (j = 0; j < gl_numVerts; j++, src++, dst++)
+			{
+				dst->tex[0] = src->lm[0] * w;
+				dst->tex[1] = src->lm[1] * h;
+			}
 		}
 		break;
 	case TCGEN_LIGHTMAP1:
@@ -1396,11 +1410,11 @@ static void ReserveVerts(int verts, int inds)
 
 static void CheckDynamicLightmap(surfacePlanar_t *surf)
 {
-	if (!gl_dynamic->integer)
-		return;
-
 	// check for lightstyle modification (or vertex colors)
 	if (!surf->lightmap) return;
+
+	if (!gl_dynamic->integer)	// debug: disable lighting
+		return;
 
 	dynamicLightmap_t *dl = surf->lightmap;
 	int updateType = 0;
@@ -1906,6 +1920,28 @@ static void DrawBrushes()
 	numDrawBrushes = 0;
 }
 
+
+
+static void DrawSkySurface(surfaceBase_t *surf)
+{
+	if (surf->type != SURFACE_PLANAR) return;	//??
+	surfacePlanar_t *pl = static_cast<surfacePlanar_t*>(surf);
+
+	GL_SetMultitexture(0);
+	GL_State(GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
+	GL_DepthRange(DEPTH_NEAR);
+	glDisableClientState(GL_COLOR_ARRAY);
+	glColor3f(1, 1, 1);
+	GL_CullFace(CULL_NONE);
+	glBegin(GL_TRIANGLES);
+	int i;
+	for (i = 0; i < pl->numIndexes; i++)
+		glVertex3fv(pl->verts[pl->indexes[i]].xyz.v);
+	glEnd();
+
+	GL_DepthRange(DEPTH_NORMAL);
+}
+
 #endif // NO_DEBUG
 
 
@@ -2054,19 +2090,33 @@ void BK_DrawScene()
 	for (index = 0, si = sortedSurfaces; index < vp.numSurfaces; index++, si++)
 	{
 		surfaceBase_t *surf = (*si)->surf;
-		if (surf && surf->type == SURFACE_PLANAR)
+		if (surf->type == SURFACE_PLANAR)
 			CheckDynamicLightmap(static_cast<surfacePlanar_t*>(surf));
 	}
+
+	index = 0;
+#if !NO_DEBUG
+	if (gl_showSky->integer == 3)
+	{
+		for (si = sortedSurfaces; index < vp.numSurfaces; index++, si++)
+		{
+			surfaceBase_t *surf = (*si)->surf;
+			if (surf->shader->type != SHADERTYPE_SKY)
+				break;
+			DrawSkySurface(surf);
+		}
+	}
+#endif
 
 	/*-------- draw world/models ---------*/
 
 	int currentShaderNum = -1, currentEntityNum = -1;
 	bool currentWorld = false;
-	for (index = 0, si = sortedSurfaces; index < vp.numSurfaces; index++, si++)
+	for ( /* index = 0, */ si = sortedSurfaces + index; index < vp.numSurfaces; index++, si++)
 	{
 		surfaceBase_t *surf = (*si)->surf;
 		unsigned code   = (*si)->sort;
-		unsigned shNum  = (code >> SHADERNUM_SHIFT) & SHADERNUM_MASK;
+		unsigned shNum  = (code >> SHADERNUM_SHIFT) & SHADERNUM_MASK;	//?? can use surf->shader ?
 		unsigned entNum = (code >> ENTITYNUM_SHIFT) & ENTITYNUM_MASK;
 		unsigned dlightMask;
 		if ((code >> DLIGHTNUM_SHIFT) & DLIGHTNUM_MASK)
@@ -2345,6 +2395,9 @@ CVAR_BEGIN(vars)
 CVAR_END
 	Cvar_GetVars(ARRAY_ARG(vars));
 	ClearBuffers();
+
+	staticAssert(SHADERNUM_SHIFT+SHADERNUM_BITS <= 32, TooMuchShadernumBits);
+	staticAssert(MAX_SHADERS == 1 << SHADERNUM_SHIFT, InvalidMaxShaders);
 
 	// size of 1 buffer (depends on multitexturing ability)
 	int vbSize = vertexBuffer_t::getSize(gl_config.maxActiveTextures);

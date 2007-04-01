@@ -807,7 +807,7 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 			break;
 
 		default:
-			DrawTextLeft("unknows surface type", RGB(1, 0, 0));
+			DrawTextLeft("unknown surface type", RGB(1, 0, 0));
 			continue;
 #undef CULL_SURF
 #undef CULL_DLIGHT
@@ -823,8 +823,14 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 				entNum = ENTITYNUM_WORLD;
 			AddSurfaceToPortal(surf, surf->shader, entNum, numDlights);
 		}
-		else if (surf->type == SURFACE_PLANAR)
+		else if (surf->type == SURFACE_PLANAR)			//!! other types ?!
+		{
 			AddSkySurface(static_cast<surfacePlanar_t*>(surf));
+#if !NO_DEBUG
+			if (gl_showSky->integer == 3)
+				AddSurfaceToPortal(surf, gl_skyShader, ENTITYNUM_WORLD, 0);
+#endif
+		}
 		else
 			DrawTextLeft(va("non-planar sky surface %s", *surf->shader->Name), RGB(1,0,0));	//?? make this load-time ?
 	}
@@ -1012,13 +1018,13 @@ void md3Model_t::AddSurfaces(refEntity_t *e)
 				}
 			if (!shader)
 			{
-				// it seems, this surface not listed (or "nodraw" shader used) -- skip it
+				// it seems, this surface is not listed (or "nodraw" shader used) -- skip it
 #if SHOW_MD3_SURFS
 				DrawTextLeft(va("  skip: %s", *s->Name));
 #endif
 				continue;
 			}
-		} // {} required for correct "else" attachment ...
+		}
 		else if (e->skinNum >= 0 && e->skinNum < s->numShaders)
 			shader = s->shaders[e->skinNum];
 

@@ -1169,7 +1169,7 @@ char joinserverMenu_t::local_server_names[MAX_LOCAL_SERVERS][80];
 netadr_t joinserverMenu_t::local_server_netadr[MAX_LOCAL_SERVERS];
 
 
-void M_AddToServerList(netadr_t adr, char *info)
+void M_AddToServerList(netadr_t adr, const char *info)
 {
 	if (joinserverMenu.num_servers == MAX_LOCAL_SERVERS) return;
 

@@ -284,7 +284,7 @@ int RemoveCollinearPoints(CVec3 **pverts, int numVerts)
 
 /*-------------------------------------------------------*/
 
-float GetPolyArea(CVec3 **pverts, int numVerts)	//?? should be "const CVec3 **pverts" ?
+float GetPolyArea(CVec3 **pverts, int numVerts)	//?? should be "const CVec3 **pverts" ?  (function is not used)
 {
 	float area = 0;
 	for (int i = 1; i < numVerts - 1; i++)

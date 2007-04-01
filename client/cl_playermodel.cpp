@@ -259,7 +259,7 @@ static bool SetMd3Skin(const char *skinName, CModelSkin &skin)
 	int numSurfs = 0;
 	while (const char *line = text.GetLine())
 	{
-		char *p = strchr(line, ',');
+		const char *p = strchr(line, ',');
 		if (!p || !p[1]) continue;		// no shader
 		// check/load shader
 
@@ -283,7 +283,7 @@ static bool SetMd3Skin(const char *skinName, CModelSkin &skin)
 			if (mPtr)	mPtr++;			// skip '/'
 			else		mPtr = MName;
 
-			char *sPtr = strrchr(p+1, '/');
+			const char *sPtr = strrchr(p+1, '/');
 			if (sPtr)	sPtr++;			// skip '/'
 			else		sPtr = p+1;
 

@@ -197,7 +197,7 @@ static LONG WINAPI MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 {
 	guard(MainWndProc);
 
-//	DebugPrintf("msg=%X w=%X l=%X\n",uMsg,wParam,lParam);//!!
+	MSGLOG(("msg=%X w=%X l=%X\n", uMsg, wParam, lParam));
 	if (uMsg == MSH_MOUSEWHEEL) uMsg = WM_MOUSEWHEEL;
 
 	guard(callHook);
@@ -221,7 +221,7 @@ static LONG WINAPI MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			static DEVMODE dm;
 			static bool desktopMode = false;
 
-//			appPrintf("WM_SIZE: %d (act=%d min=%d)\n",wParam, ActiveApp, MinimizedApp);//!!
+			MSGLOG(("WM_SIZE: %dx%d wp=%d (act=%d min=%d)\n", LOWORD(lParam), HIWORD(lParam), wParam, ActiveApp, MinimizedApp));
 			if (wParam == SIZE_MINIMIZED && !desktopMode)
 			{
 				Com_DPrintf("Setting desktop resolution\n");
@@ -234,12 +234,14 @@ static LONG WINAPI MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				dm.dmPelsHeight = GetDeviceCaps(dc, VERTRES);
 				dm.dmBitsPerPel = GetDeviceCaps(dc, BITSPIXEL);
 				// restore mode
+				MSGLOG(("CDS(NULL)\n"));
 				ChangeDisplaySettings(NULL, 0);
 				desktopMode = true;
 			}
 			else if (wParam == SIZE_RESTORED && MinimizedApp && desktopMode)
 			{
 				Com_DPrintf("Setting game resolution\n");
+				MSGLOG(("CDS(%dx%d, FS)\n", dm.dmPelsWidth, dm.dmPelsHeight));
 				ChangeDisplaySettings(&dm, CDS_FULLSCREEN);
 				SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE);
 				SetForegroundWindow(hWnd);
@@ -252,12 +254,13 @@ static LONG WINAPI MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		{
 			bool active    = LOWORD(wParam) != WA_INACTIVE;
 			bool minimized = HIWORD(wParam) != 0;
-//			appPrintf("WM_ACTIVATE: a=%d m=%d (act=%d min=%d)\n",active, minimized, ActiveApp, MinimizedApp);//!!
+			MSGLOG(("WM_ACTIVATE: a=%d m=%d (act=%d min=%d)\n",active, minimized, ActiveApp, MinimizedApp));
 			AppActivate(active, minimized);
 		}
 		break;
 
 	case WM_MOVE:
+		MSGLOG(("WM_MOVE: x=%d, y=%d\n", LOWORD(lParam), HIWORD(lParam)));
 		if (!FullscreenApp)
 		{
 			// using (short) type conversion to convert "unsigned short" to signed
@@ -289,6 +292,7 @@ static LONG WINAPI MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		}
 		break;
 
+	//?? use AddMgsHook to capture keyboard messages
 	case WM_SYSKEYDOWN:
 		if (wParam == VK_RETURN)	// Alt+Enter
 		{
@@ -335,11 +339,18 @@ static LONG WINAPI MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	Window creation/destroying
 -----------------------------------------------------------------------------*/
 
+//#define ALLOW_WND_RESIZE	1
+
 void *Vid_CreateWindow(int width, int height, bool fullscreen)
 {
 	guard(Vid_CreateWindow);
 
+	MSGLOG(("CreateWindow(%d, %d, fs=%d)\n", width, height, fullscreen));
 	FullscreenApp = fullscreen;
+
+#if !ALLOW_WND_RESIZE
+	HWND oldWnd = cl_hwnd;
+#endif
 
 	DWORD stylebits, exstyle;
 	int x, y, w, h;
@@ -373,26 +384,35 @@ void *Vid_CreateWindow(int width, int height, bool fullscreen)
 //	if (width || height)		// if enable this, window will be created without taskbar button!
 //		stylebits |= WS_VISIBLE;
 
+#if ALLOW_WND_RESIZE
 	if (cl_hwnd)
 	{
+		// window already exists - simply reposition it
 		SetWindowLong(cl_hwnd, GWL_STYLE, stylebits);
 		// NOTE: SetWindowLong(wnd, GWL_EXSTYLE, WS_EX_TOPMOST) works bad, SetWindowPos() have a better effect
 		ShowWindow(cl_hwnd, SW_SHOW);
 		SetWindowPos(cl_hwnd, fullscreen ? HWND_TOPMOST : HWND_NOTOPMOST, x, y, w, h, 0);
 	}
 	else
+#endif
 	{
+		// create a window
 		const char *app = appPackage();
-		// Register the window class
-		WNDCLASS wc;
-		memset(&wc, 0, sizeof(WNDCLASS));
-		wc.lpfnWndProc   = MainWndProc;
-		wc.hInstance     = hInstance;
-		wc.hIcon         = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
-		wc.hCursor       = LoadCursor(NULL,IDC_ARROW);
-//		wc.hbrBackground = (HBRUSH) COLOR_GRAYTEXT;
-		wc.lpszClassName = app;
-		if (!RegisterClass(&wc)) appError("Cannot register window class");
+#if !ALLOW_WND_RESIZE
+		if (!oldWnd)			// when oldWnd exists, window class already registered
+#endif
+		{
+			// Register the window class
+			WNDCLASS wc;
+			memset(&wc, 0, sizeof(WNDCLASS));
+			wc.lpfnWndProc   = MainWndProc;
+			wc.hInstance     = hInstance;
+			wc.hIcon         = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+			wc.hCursor       = LoadCursor(NULL,IDC_ARROW);
+//			wc.hbrBackground = (HBRUSH) COLOR_GRAYTEXT;
+			wc.lpszClassName = app;
+			if (!RegisterClass(&wc)) appError("Cannot register window class");
+		}
 
 		cl_hwnd = CreateWindowEx(exstyle, app, app, stylebits, x, y, w, h, NULL, NULL, hInstance, NULL);
 		if (!cl_hwnd) appError("Cannot create window");
@@ -409,6 +429,10 @@ void *Vid_CreateWindow(int width, int height, bool fullscreen)
 	UpdateWindow(cl_hwnd);
 	SetForegroundWindow(cl_hwnd);
 	SetFocus(cl_hwnd);		//?? capture keyboard; is it really necessary ?
+
+#if !ALLOW_WND_RESIZE
+	if (oldWnd) DestroyWindow(oldWnd);
+#endif
 
 	return cl_hwnd;
 

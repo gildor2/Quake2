@@ -499,8 +499,8 @@ void UpdateDynamicLightmap(surfacePlanar_t *surf, bool vertexOnly, unsigned dlig
 		// apply vertex dlights
 		if (dlightMask)
 		{
-			surfDlight_t *sdl = surf->dlights;
-			for ( ; dlightMask; dlightMask >>= 1)
+			const surfDlight_t *sdl = surf->dlights;
+			for ( ; dlightMask; dlightMask >>= 1, sdl++)
 			{
 				if (!(dlightMask & 1)) continue;
 				refDlight_t *dlight = sdl->dlight;
@@ -522,7 +522,6 @@ void UpdateDynamicLightmap(surfacePlanar_t *surf, bool vertexOnly, unsigned dlig
 					v->c.c[1] = g;
 					v->c.c[2] = b;
 				}
-				sdl++;
 			}
 		}
 	}

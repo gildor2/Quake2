@@ -681,12 +681,24 @@ struct dBsp3Vis_t
 };
 
 #define Q3_CONTENTS_SOLID			0x000001
-#define Q3_CONTENTS_LAVA			0x000002
+#define Q3_CONTENTS_LAVA			0x000008
 #define	Q3_CONTENTS_SLIME			0x000010
 #define	Q3_CONTENTS_WATER			0x000020
 #define	Q3_CONTENTS_FOG				0x000040
 #define	Q3_CONTENTS_PLAYERCLIP		0x010000
 #define	Q3_CONTENTS_MONSTERCLIP		0x020000
+
+#define Q3_SURF_NODAMAGE			0x000001		// no falling damage
+#define Q3_SURF_SLICK				0x000002
+#define Q3_SURF_SKY					0x000004
+#define	Q3_SURF_LADDER				0x000008		// not used in Q3
+#define	Q3_SURF_NOIMPACT			0x000010		//!! bullet hits will not produce any fx
+#define	Q3_SURF_NOMARKS				0x000020		// no decals on surface
+#define	Q3_SURF_FLESH				0x000040		//!! sound: flesh
+#define	Q3_SURF_NODRAW				0x000080		//!! do not draw surface
+#define	Q3_SURF_METALSTEPS			0x001000		// sound: metal
+#define	Q3_SURF_NOSTEPS				0x002000		// sound: silent
+#define	Q3_SURF_NODLIGHT			0x020000		//!! not affected by dlight
 
 
 #endif // FILE_FORMATS_H

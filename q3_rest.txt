@@ -1,3 +1,8 @@
+? q3map_backsplash <frac> <dist> -- generate point lights near surface light
+
+- make dlight updates for vertex lightmap DYNAMIC: do not call UpdateDynamicLightmap
+  every time -- dlights should be applied in backend inside PreprocessShader()
+
 - with gamma==1 Q3-rendered maps looks brighter, than in my renderer; reason: q3 uses
   r_mapOverbrightBits==2 instead of 1; should be overbrighted:
   - lightmaps
@@ -7,13 +12,11 @@
 
 ! r_lightmap: complex shaders (jumppads etc) disappeared when set to "1"
 ! reorder stages to make lightmap 1st
-! surface and sky light
-- particles does not works: uses leaf->contents (should use brush)
+? particles does not works in some places (should collide with patches?)
 - trisurfs: dlights does not works for surfaces with "diffuse light", owned by world entity
   (code uses uses ent->center ...)
   q3 path: trisurfs uses vertex lighting, but my code requires dynamicLightmap for this
 
-- surface flags (at least, SURF_SKY)
 - LoadSubmodels3(): build model->leaf->leafBrushes
 - check areas
 - display curves
@@ -23,6 +26,7 @@
 - vertex lighting (no lightmap loading, using vertex light from bsp)
 ? flares
 - color saturation (lightmaps, vertex light)
+- surface lighting from "autosprite" -> point light
 
 
 ------------------"Strange blend for LM"-----------------------
@@ -31,12 +35,12 @@ textures/gothic_wall/iron01_m
 textures/gothic_wall/iron01_ndark
 {
 	{
-		map $lightmap			<------- should work fine ! LM is 1st, tex is 2nd
+		map $lightmap
 		rgbgen identity
 	}
 	{
 		map ...
-		blendFunc GL_DST_COLOR GL_SRC_ALPHA
+		blendFunc GL_DST_COLOR GL_SRC_ALPHA   <---- bad ...
 		rgbGen identity
 		alphaGen lightingSpecular
 	}

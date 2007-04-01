@@ -107,8 +107,8 @@ static void LoadSlights(slight_t *data)
 			sun->intens = data->intens;
 			sun->color  = data->color;
 			sun->origin = data->origin;	// for HL suns
-			// insert to list
-			sun->next = map.lights;
+			// insert into list
+			sun->next  = map.lights;
 			map.lights = sun;
 			continue;
 		}
@@ -224,6 +224,26 @@ static void BuildSurfLight(surfacePlanar_t *pl, const color_t *color, float area
 	SaturateColor3f(sl->color);
 
 	pl->light = sl;
+}
+
+
+static float GetSurfArea(surfacePlanar_t *s)
+{
+	float area = 0;
+
+	for (int i = 0; i < s->numIndexes; i += 3)
+	{
+		int idx1 = s->indexes[i];
+		int idx2 = s->indexes[i+1];
+		int idx3 = s->indexes[i+2];
+		CVec3	d1, d2, cr;
+		VectorSubtract(s->verts[idx1].xyz, s->verts[idx2].xyz, d1);
+		VectorSubtract(s->verts[idx1].xyz, s->verts[idx3].xyz, d2);
+		cross(d1, d2, cr);
+		// we use a property of cross product vector length = parallelogram area = 2 * triangle area
+		area += cr.GetLength() / 2;
+	}
+	return area;
 }
 
 
@@ -654,6 +674,8 @@ static void InitSurfaceLightmap2(const dBspFace_t *face, surfacePlanar_t *surf, 
 static void LoadSurfaces2(const dBspFace_t *surfs, int numSurfaces, const int *surfedges, const dEdge_t *edges,
 	CVec3 *verts, const dBsp2Texinfo_t *tex, const CBspModel *models, int numModels)
 {
+	guard(LoadSurfaces2);
+
 	int		j;
 
 	map.numFaces = numSurfaces;
@@ -877,7 +899,7 @@ static void LoadSurfaces2(const dBspFace_t *surfs, int numSurfaces, const int *s
 		{
 			static const color_t defColor = {96, 96, 96, 255};// {255, 255, 255, 255};
 
-			float area = GetPolyArea(pverts, numVerts);
+			float area = GetSurfArea(s);
 			image_t *img = FindImage(va("textures/%s", stex->texture), IMAGE_MIPMAP);
 			BuildSurfLight(s, img ? &img->color : &defColor, area, stex->value, (stex->flags & SURF_SKY) != 0);
 			if (stex->flags & SURF_AUTOFLARE && !(stex->flags & SURF_SKY))
@@ -888,6 +910,8 @@ static void LoadSurfaces2(const dBspFace_t *surfs, int numSurfaces, const int *s
 		if (shader->tessSize)
 			FreeSubdividedPlane();
 	}
+
+	unguard;
 }
 
 
@@ -1335,9 +1359,22 @@ static shader_t *CreateSurfShader3(unsigned sflags, const dBsp3Shader_t *stex)
 
 	if (shader->type == SHADERTYPE_SKY && !map.haveSkySurfaces)
 	{
+		// remember sky shader, mark map as "have sky"
 		map.haveSkySurfaces = true;
 		map.SkyShader = stex->name;
+		// create sunlight
+		CSunLight *sun = new (map.dataChain) CSunLight;
+		sun->dir    = shader->sunDirection;
+		sun->color  = shader->sunColor;
+		sun->intens = sun->color.Normalize();
+		// and insert into list
+		sun->next  = map.lights;
+		map.lights = sun;
 	}
+
+	if (shader->type == SHADERTYPE_SKY && gl_showSky->integer == 2)
+		return gl_defaultShader;
+
 	return shader;
 }
 
@@ -1345,6 +1382,8 @@ static shader_t *CreateSurfShader3(unsigned sflags, const dBsp3Shader_t *stex)
 static void LoadSurfaces3(const dBsp3Face_t *surfs, int numSurfaces, dBsp3Vert_t *verts, unsigned *indexes,
 	const dBsp3Shader_t *tex /*?? const CBspModel *models, int numModels */)
 {
+	guard(LoadSurfaces3);
+
 	map.numFaces = numSurfaces;
 	map.faces = new (map.dataChain) surfaceBase_t* [numSurfaces];
 	for (int i = 0; i < numSurfaces; i++, surfs++)
@@ -1390,6 +1429,12 @@ static void LoadSurfaces3(const dBsp3Face_t *surfs, int numSurfaces, dBsp3Vert_t
 				s->plane.Setup();
 
 				BuildPlanarSurf(s);
+				// surface light
+				if (shader->lightValue)
+				{
+					float area = GetSurfArea(s);
+					BuildSurfLight(s, &shader->lightColor, area, shader->lightValue, false /*?? (stex->flags & SURF_SKY) != 0*/);
+				}
 			}
 			break;
 
@@ -1400,6 +1445,12 @@ static void LoadSurfaces3(const dBsp3Face_t *surfs, int numSurfaces, dBsp3Vert_t
 					tex + surfs->shaderNum);
 				s->shader = shader;
 				map.faces[i] = s;
+#if 1
+				if (shader->type == SHADERTYPE_SKY)
+					DebugPrintf("%s: trisurf sky: %s\n", *bspfile.Name, *shader->Name);
+				else if (shader->lightValue)
+					appWPrintf("Trisurf light: %s\n", *shader->Name);
+#endif
 
 				s->numVerts   = numVerts;
 				s->verts      = new (map.dataChain) vertexNormal_t [numVerts];
@@ -1425,16 +1476,34 @@ static void LoadSurfaces3(const dBsp3Face_t *surfs, int numSurfaces, dBsp3Vert_t
 			}
 			break;
 
+		case dBsp3Face_t::PATCH:
+			{
+				surfaceNull_t *s = new (map.dataChain) surfaceNull_t;	//!!!
+				shader_t *shader = CreateSurfShader3(SHADER_WALL|SHADER_VERTEXLIGHT,
+					tex + surfs->shaderNum);
+				s->shader = shader;
+				map.faces[i] = s;
+#if 1
+				if (shader->type == SHADERTYPE_SKY)
+					DebugPrintf("%s: curve sky: %s\n", *bspfile.Name, *shader->Name);
+				else if (shader->lightValue)
+					appWPrintf("Curve light: %s\n", *shader->Name);
+#endif
+			}
+			break;
+
+		//!! other: dBsp3Face_t::FLARE
 		default:
 			{
 				//!! should Com_DropError(); may be, in cmodel.cpp
 				surfaceNull_t *s = new (map.dataChain) surfaceNull_t;
-				CALL_CONSTRUCTOR(s);
 				s->shader = gl_defaultShader;
 				map.faces[i] = s;
 			}
 		}
 	}
+
+	unguard;
 }
 
 

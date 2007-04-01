@@ -497,8 +497,10 @@ static void UpdateParticles()
 			VectorMA(p->vel, timeDelta, p->accel);
 		}
 
-		// remove particle if it is faded out or out of world
-		if (p->alpha <= 0 || p->leaf->contents & MASK_SOLID)
+		// remove particle if it is faded out
+		//?? can check "out of the world", but this will require CM_PointContents() call, which is slow
+		//?? can do this, when particle count is small
+		if (p->alpha <= 0)
 		{
 			if (prev)
 				prev->next = p->next;

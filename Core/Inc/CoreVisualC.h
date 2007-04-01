@@ -15,6 +15,19 @@
 
 
 /*-----------------------------------------------------------------------------
+	Disable some compiler warnings
+-----------------------------------------------------------------------------*/
+
+#pragma warning(disable : 4018)			// signed/unsigned mismatch
+#pragma warning(disable : 4244)			// conversion from 'int'/'double' to 'float'
+#pragma warning(disable : 4251)			// class 'Name' needs to have dll-interface to be used by clients of class 'Class'
+#pragma warning(disable : 4275)			// non dll-interface class used as base for dll-interface class
+#pragma warning(disable : 4291)			// no matched operator delete found
+#pragma warning(disable : 4305)			// truncation from 'const double' to 'const float'
+#pragma warning(disable : 4509)			// nonstandard extension used: function uses SEH and object has destructor
+
+
+/*-----------------------------------------------------------------------------
 	Type defines
 -----------------------------------------------------------------------------*/
 
@@ -58,17 +71,9 @@ typedef unsigned int		address_t;
 
 #define	GET_RETADDR(firstarg)	(* ( ((unsigned*)&firstarg) -1 ) )
 
-#define vsnprintf _vsnprintf
-
-
-// disable some compiler warnings
-#pragma warning(disable : 4018)			// signed/unsigned mismatch
-#pragma warning(disable : 4244)			// conversion from 'int'/'double' to 'float'
-#pragma warning(disable : 4251)			// class 'Name' needs to have dll-interface to be used by clients of class 'Class'
-#pragma warning(disable : 4275)			// non dll-interface class used as base for dll-interface class
-#pragma warning(disable : 4291)			// no matched operator delete found
-#pragma warning(disable : 4305)			// truncation from 'const double' to 'const float'
-#pragma warning(disable : 4509)			// nonstandard extension used: function uses SEH and object has destructor
+#define vsnprintf	_vsnprintf
+#define stricmp		_stricmp
+#define strnicmp	_strnicmp
 
 
 /*-----------------------------------------------------------------------------
