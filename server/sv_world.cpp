@@ -218,6 +218,7 @@ void SV_LinkEdict(edict_t *ent)
 		return;
 
 	entityHull_t &ex = ents[NUM_FOR_EDICT(ent)];
+	memset(&ex, 0, sizeof(entityHull_t));
 	ex.owner = ent;
 	ex.axis.FromEuler(ent->s.angles);
 
@@ -262,6 +263,28 @@ void SV_LinkEdict(edict_t *ent)
 		ex.radius = ex.model->radius;
 
 		ent->s.solid = 31;		// a SOLID_BBOX will never create this value (mins=(-248,-248,0) maxs=(248,248,-32))
+	}
+	else if (ent->solid == SOLID_TRIGGER)
+	{
+		ent->s.solid = 0;
+		// check for model link
+		ex.model = sv.models[ent->s.modelindex];
+		if (!ex.model)
+		{
+			// model not attached by game, check entstring
+			//?? can optimize: add 'bool spawningEnts', set to 'true' before SpawnEntities()
+			//?? and 'false' after; skip code below when 'false'
+			for (triggerModelLink_t *link = bspfile.modelLinks; link; link = link->next)
+#define CMP(n)	(fabs(ent->s.origin[n] - link->origin[n]) < 0.5f)
+				if (CMP(0) && CMP(1) && CMP(2))
+				{
+					CBspModel *model = CM_InlineModel(link->modelIdx);
+					VectorSubtract(model->bounds.maxs, ent->s.origin, ent->bounds.maxs);
+					VectorSubtract(model->bounds.mins, ent->s.origin, ent->bounds.mins);
+					break;
+				}
+#undef CMP
+		}
 	}
 	else
 		ent->s.solid = 0;
@@ -474,12 +497,12 @@ int SV_PointContents(const CVec3 &p)
 	for (int i = 0; i < num; i++)
 	{
 		edict_t *edict = list[i];
-		entityHull_t *ent = &ents[NUM_FOR_EDICT(edict)];
+		entityHull_t &ent = ents[NUM_FOR_EDICT(edict)];
 
-		if (ent->model)
-			contents |= CM_TransformedPointContents(p, ent->model->headnode, edict->s.origin, ent->axis);
+		if (ent.model)
+			contents |= CM_TransformedPointContents(p, ent.model->headnode, edict->s.origin, ent.axis);
 		else
-			contents |= CM_TransformedPointContents(p, CM_HeadnodeForBox(ent->bounds), edict->s.origin, nullVec3);
+			contents |= CM_TransformedPointContents(p, CM_HeadnodeForBox(ent.bounds), edict->s.origin, nullVec3);
 	}
 	return contents;
 

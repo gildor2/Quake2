@@ -29,9 +29,9 @@ static void LoadFlares(lightFlare_t *data, int count)
 	}
 
 	map.numFlares += count;
-	out = new (map.dataChain) gl_flare_t [count];
-	for (int i = 0; i < count; i++, data = data->next, out++)
+	for (int i = 0; i < count; i++, data = data->next)
 	{
+		out = new (map.dataChain) gl_flare_t;
 		out->origin = data->origin;
 		out->size   = data->size;
 		out->radius = data->radius;
@@ -258,13 +258,16 @@ static void SetNodesAlpha()
 	for (leaf = bspfile.leafs, i = 0; i < bspfile.numLeafs; leaf++, i++)
 		// check for alpha surfaces
 		for (psurf = leaf->ex->faces, j = 0; j < leaf->numFaces; psurf++, j++)
+		{
 			if ((*psurf)->shader->style & (SHADER_ALPHA|SHADER_TRANS33|SHADER_TRANS66))
 			{
 				// set "haveAlpha" for leaf and all parent nodes
 				leaf->ex->haveAlpha = true;
+
 				for (node = leaf->parent; node; node = node->parent) node->ex->haveAlpha = true;
 				break;
 			}
+		}
 }
 
 
@@ -287,6 +290,19 @@ static void LoadLeafsNodes(CBspNode *nodes, int numNodes, CBspLeaf *leafs, int n
 
 	// Setup node/leaf parents
 	SetNodesAlpha();
+}
+
+
+// T is "unsigned short" or "unsigned int"
+// Q3's leafFaces are int, Q1/2 - short
+template<class T> static void LoadLeafSurfaces(const T *data, int count)
+{
+	surfaceBase_t **out;
+
+	map.numLeafFaces = count;
+	map.leafFaces = out = new (map.dataChain) surfaceBase_t* [count];
+	for (int i = 0; i < count; i++, data++, out++)
+		*out = map.faces[*data];
 }
 
 
@@ -373,7 +389,7 @@ static unsigned SurfFlagsToShaderFlags2(unsigned flags)
 	if (flags & SURF_ALPHA)		f |= SHADER_ALPHA;
 	if (flags & SURF_TRANS33)	f |= SHADER_TRANS33;
 	if (flags & SURF_TRANS66)	f |= SHADER_TRANS66;
-	if (flags & SURF_SKY && gl_showSky->integer != 2) f |= SHADER_SKY;
+	if (flags & SURF_SKY && SHOWSKY != 2) f |= SHADER_SKY;
 	if (flags & SURF_FLOWING)	f |= SHADER_SCROLL;
 	if (flags & SURF_WARP)		f |= SHADER_TURB;
 	if (flags & SURF_SPECULAR)	f |= SHADER_ENVMAP;
@@ -701,6 +717,7 @@ static void LoadSurfaces2(const dBspFace_t *surfs, int numSurfaces, const int *s
 		unsigned sflags = SurfFlagsToShaderFlags2(stex->flags);
 
 		// find owner model
+		//?? LoadInlineModels() will set owner too
 		const CBspModel *owner;
 		for (j = 0, owner = models; j < numModels; j++, owner++)
 			if (i >= owner->firstFace && i < owner->firstFace + owner->numFaces)
@@ -1196,19 +1213,6 @@ static void GenerateLightmaps2(byte *lightData, int lightDataSize)
 }
 
 
-// T is "unsigned short" or "unsigned int"
-// Q3's leafFaces are int, Q1/2 - short
-template<class T> static void LoadLeafSurfaces(const T *data, int count)
-{
-	surfaceBase_t **out;
-
-	map.numLeafFaces = count;
-	map.leafFaces = out = new (map.dataChain) surfaceBase_t* [count];
-	for (int i = 0; i < count; i++, data++, out++)
-		*out = map.faces[*data];
-}
-
-
 static void LoadBsp2()
 {
 	guard(LoadBsp2);
@@ -1325,6 +1329,7 @@ END_PROFILE
 	Loading Quake3 BSP file
 -----------------------------------------------------------------------------*/
 
+#if 1
 //!! TEMP
 class surfaceNull_t : public surfaceBase_t
 {
@@ -1333,6 +1338,9 @@ public:
 	virtual void Tesselate(refEntity_t &ent)
 	{}
 };
+
+static surfaceNull_t nullSurface;
+#endif
 
 
 // should be loaded before surfaces
@@ -1372,7 +1380,7 @@ static shader_t *CreateSurfShader3(unsigned sflags, const dBsp3Shader_t *stex)
 		map.lights = sun;
 	}
 
-	if (shader->type == SHADERTYPE_SKY && gl_showSky->integer == 2)
+	if (shader->type == SHADERTYPE_SKY && SHOWSKY == 2)
 		return gl_defaultShader;
 
 	return shader;
@@ -1380,9 +1388,11 @@ static shader_t *CreateSurfShader3(unsigned sflags, const dBsp3Shader_t *stex)
 
 
 static void LoadSurfaces3(const dBsp3Face_t *surfs, int numSurfaces, dBsp3Vert_t *verts, unsigned *indexes,
-	const dBsp3Shader_t *tex /*?? const CBspModel *models, int numModels */)
+	const dBsp3Shader_t *tex)
 {
 	guard(LoadSurfaces3);
+
+	nullSurface.shader = gl_defaultShader;
 
 	map.numFaces = numSurfaces;
 	map.faces = new (map.dataChain) surfaceBase_t* [numSurfaces];
@@ -1446,9 +1456,7 @@ static void LoadSurfaces3(const dBsp3Face_t *surfs, int numSurfaces, dBsp3Vert_t
 				s->shader = shader;
 				map.faces[i] = s;
 #if 1
-				if (shader->type == SHADERTYPE_SKY)
-					DebugPrintf("%s: trisurf sky: %s\n", *bspfile.Name, *shader->Name);
-				else if (shader->lightValue)
+				if (shader->type != SHADERTYPE_SKY && shader->lightValue)
 					appWPrintf("Trisurf light: %s\n", *shader->Name);
 #endif
 
@@ -1492,18 +1500,49 @@ static void LoadSurfaces3(const dBsp3Face_t *surfs, int numSurfaces, dBsp3Vert_t
 			}
 			break;
 
-		//!! other: dBsp3Face_t::FLARE
+		case dBsp3Face_t::FLARE:			// will be loaded in LoadFlares3()
+			map.faces[i] = &nullSurface;	// it's easier to do "nullSurface", than remove flares from surface lists
+			break;
+
 		default:
-			{
-				//!! should Com_DropError(); may be, in cmodel.cpp
-				surfaceNull_t *s = new (map.dataChain) surfaceNull_t;
-				s->shader = gl_defaultShader;
-				map.faces[i] = s;
-			}
+			Com_DropError("unknown surface type: %d", surfs->surfaceType);
 		}
 	}
 
 	unguard;
+}
+
+
+// should be called after LoadInlineModels()
+static void LoadFlares3(const dBsp3Face_t *surfs, int numSurfaces, const CBspModel *models, int numModels)
+{
+	for (int i = 0; i < numSurfaces; i++, surfs++)
+	{
+		if (surfs->surfaceType != dBsp3Face_t::FLARE) continue;
+
+		map.numFlares++;
+		gl_flare_t *out = new (map.dataChain) gl_flare_t;
+		out->origin = surfs->flareOrigin;
+		out->size   = 64;
+		out->radius = 0;
+		const CVec3& color = surfs->lightmapVecs[0];
+		out->color.rgba = RGBS(color[0], color[1], color[2]);
+		SaturateColor4b(&out->color);
+		out->style  = 0;
+		out->leaf   = CM_FindLeaf(out->origin);
+		// insert into list as first
+		out->next = map.flares;
+		map.flares = out;
+
+		// find owner model
+		const CBspModel *model;
+		int j;
+		for (j = 1, model = models+1; j < numModels; j++, model++)
+			if (i >= model->firstFace && i < model->firstFace + model->numFaces)
+				break;
+		if (j < numModels)
+			out->owner = map.models + j;
+	}
 }
 
 
@@ -1516,6 +1555,7 @@ static void LoadBsp3()
 	LoadLeafSurfaces(bspfile.leaffaces3, bspfile.numLeaffaces);
 	LoadLeafsNodes(bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);
 	LoadInlineModels(bspfile.models, bspfile.numModels);
+	LoadFlares3(bspfile.faces3, bspfile.numFaces, bspfile.models, bspfile.numModels);
 
 	unguard;
 }

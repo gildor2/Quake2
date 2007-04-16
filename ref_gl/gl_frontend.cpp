@@ -823,16 +823,12 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 				entNum = ENTITYNUM_WORLD;
 			AddSurfaceToPortal(surf, surf->shader, entNum, numDlights);
 		}
-		else if (surf->type == SURFACE_PLANAR)			//!! other types ?!
-		{
-			AddSkySurface(static_cast<surfacePlanar_t*>(surf));
-#if !NO_DEBUG
-			if (gl_showSky->integer == 3)
-				AddSurfaceToPortal(surf, gl_skyShader, ENTITYNUM_WORLD, 0);
-#endif
-		}
 		else
-			DrawTextLeft(va("non-planar sky surface %s", *surf->shader->Name), RGB(1,0,0));	//?? make this load-time ?
+		{
+			surf->AddToSky();
+			if (SHOWSKY == 3)
+				AddSurfaceToPortal(surf, gl_skyShader, ENTITYNUM_WORLD, 0);
+		}
 	}
 }
 
@@ -1607,7 +1603,9 @@ static void DrawEntities(int firstEntity, int numEntities)
 			continue;
 		}
 
+#if !NO_DEBUG
 		if (!r_drawentities->integer) continue;		// do not draw entities with model in this mode
+#endif
 
 		const CBspLeaf *leaf = e->model->GetLeaf(e);
 		if (!leaf)
@@ -1629,15 +1627,19 @@ static void DrawEntities(int firstEntity, int numEntities)
 		{
 			if (BoxOccluded(e, e->size2))
 			{
+#if !NO_DEBUG
 				if (gl_labels->integer == 2)
 					DrawText3D(e->center, va("occluded\n%s", *e->model->Name), RGB(0.1,0.2,0.4));
+#endif
 				STAT(gl_stats.ocullEnts++);
 				continue;
 			}
 		}
 
+#if !NO_DEBUG
 		if (e->model && gl_labels->integer)
 			e->model->DrawLabel(e);
+#endif
 
 		e->visible = true;
 
@@ -2136,7 +2138,11 @@ void DrawPortal()
 	int		i;
 	refEntity_t *e;
 
-	if (r_drawworld->integer && !(vp.flags & RDF_NOWORLDMODEL))
+	if (
+#if !NO_DEBUG
+		r_drawworld->integer &&
+#endif
+		!(vp.flags & RDF_NOWORLDMODEL))
 	{
 		drawFrame++;
 
@@ -2158,6 +2164,7 @@ void DrawPortal()
 			DrawFlares();
 	}
 	else
+	{
 		for (i = 0, e = gl_entities + vp.firstEntity; i < vp.numEntities; i++, e++)
 		{
 			if (!e->model) continue;
@@ -2171,6 +2178,7 @@ void DrawPortal()
 				e->model->AddSurfaces(e);
 			}
 		}
+	}
 	unguardSlow;
 }
 

@@ -120,6 +120,14 @@ struct splash_t
 };
 
 
+struct triggerModelLink_t
+{
+	CVec3		origin;
+	int			modelIdx;
+	triggerModelLink_t *next;
+};
+
+
 enum mapType_t
 {
 	map_q2, map_kp, map_q1, map_hl, map_q3
@@ -252,6 +260,8 @@ struct bspfile_t
 
 	// static effects
 	splash_t	*splashes;				// target_splash entities
+	// model links
+	triggerModelLink_t *modelLinks;
 
 	// fog
 	//?? remove

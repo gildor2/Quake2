@@ -115,6 +115,7 @@ public:
 	unsigned dlightMask;
 	inlineModel_t *owner;
 	virtual void Tesselate(refEntity_t &ent) = 0;
+	virtual void AddToSky(bool showDebug = false);
 };
 
 class surfacePlanar_t : public surfaceBase_t
@@ -133,6 +134,7 @@ public:
 	CLight	*light;
 	surfDlight_t *dlights;
 	virtual void Tesselate(refEntity_t &ent);
+	virtual void AddToSky(bool showDebug);
 };
 
 // Triangular surface: non-planar, every vertex have its own normal vector
@@ -145,6 +147,7 @@ public:
 	vertexNormal_t *verts;
 	int		*indexes;
 	virtual void Tesselate(refEntity_t &ent);
+	virtual void AddToSky(bool showDebug);
 };
 
 class surfaceMd3_t : public surfaceBase_t

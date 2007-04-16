@@ -1039,12 +1039,15 @@ static void LoadLeafs3(dBsp3Leaf_t *data, int size)
 	if (size < 1) Com_DropError("Map with no leafs");
 
 	CBspLeaf *out;
-	out = bspfile.leafs = new (dataChain) CBspLeaf [size + HULL_LEAFS];
-	for (int i = 0; i < size; i++, data++, out++)
+	int newLeafs = size + HULL_LEAFS + bspfile.numModels;
+	out = bspfile.leafs = new (dataChain) CBspLeaf [newLeafs];
+	for (int i = 0; i < newLeafs; i++, data++, out++)
 	{
 		out->isLeaf    = true;
 		out->num       = i;
-		out->contents  = i == 0 ? CONTENTS_SOLID : 0;	// will be computed after LoadLeafBrushes()
+		out->contents  = 0;			// will be computed after LoadLeafBrushes()
+		if (i >= size) continue;
+
 		out->cluster   = data->cluster;
 		out->area      = 0;			//?? data->area -- q3 areas too different from q2
 		out->firstFace = data->firstleafface;
@@ -1057,16 +1060,16 @@ static void LoadLeafs3(dBsp3Leaf_t *data, int size)
 		}
 		//!! NOTE: q3 uses surfaces from leafs to trace with patches!
 	}
-
-	if (!(bspfile.leafs[0].contents & CONTENTS_SOLID))
-		Com_DropError("map leaf 0 is not CONTENTS_SOLID");
 }
 
 
+// should be called after LoadLeafs3 and LoadSubmodels3
 static void ComputeLeafContents3()
 {
-	for (int i = 1; i < bspfile.numLeafs; i++) // skip leaf 0
+	bspfile.leafs[0].contents = CONTENTS_SOLID;	// requirement
+	for (int i = 1; i < bspfile.numLeafs + HULL_LEAFS + bspfile.numModels; i++)	// skip leaf 0
 	{
+		// can avoid skipping of hull leaf and model#0 leafs, because their numBrushes==0
 		CBspLeaf &leaf = bspfile.leafs[i];
 		leaf.contents = 0;
 		for (int j = 0; j < leaf.numBrushes; j++)
@@ -1077,18 +1080,34 @@ static void ComputeLeafContents3()
 
 static void LoadSubmodels3(dBsp3Model_t *data, int size)
 {
-appPrintf("---SUBMODELS---\n");	//!!!! Q3
-//!!!! Q3: do not need to create model[0]->leaf->leafBrushes
 	if (size < 1) Com_DropError("Map with no models");
 
 	CBspModel *out;
 	out = bspfile.models = new (dataChain) CBspModel[size];
 	for (int i = 0; i < size; i++, data++, out++)
 	{
-appPrintf("[%d] %d\n", i, data->numBrushes); //!!!! Q3
+		int leafNum = bspfile.numLeafs + HULL_LEAFS + i;
+		CBspLeaf &leaf = bspfile.leafs[leafNum];
+		int numBrushes = data->numBrushes;
+		if (i == 0)
+		{
+			// do not generate leaf brushes for model #0 (world)
+			numBrushes = 0;
+		}
+		leaf.numBrushes = numBrushes;
+		// generate leafBrushes
+		if (numBrushes)
+		{
+			leaf.brushes = new (dataChain) cbrush_t* [numBrushes];
+			int brushNum = data->firstBrush;
+			for (int j = 0; j < numBrushes; j++, brushNum++)
+				leaf.brushes[j] = map_brushes + brushNum;
+		}
+
+
 		out->bounds     = data->bounds;
 		out->radius     = VectorDistance(out->bounds.mins, out->bounds.maxs) / 2;
-//!!		out->headnode   = data->headnode;
+		out->headnode   = (i == 0) ? 0 : -1 - leafNum;			// point to generated leaf
 		out->flags      = 0;
 		out->firstFace  = data->firstface;
 		out->numFaces   = data->numfaces;
@@ -1103,7 +1122,7 @@ static void LoadPlanes3(dBsp3Plane_t *data, int size)
 	if (size < 1) Com_DropError("Map with no planes");
 
 	CPlane *out;
-	out = bspfile.planes = new CPlane [size];
+	out = bspfile.planes = new (dataChain) CPlane [size];
 	for (int i = 0; i < size; i++, data++, out++)
 	{
 		out->normal = data->normal;
@@ -1137,6 +1156,40 @@ static void LoadSurfaces3(dBsp3Shader_t *data, int size)
 }
 
 
+//!!! REMOVE !!!!!!!!!!!!!!!!
+/*static void ShowNode(CBspNode* node)
+{
+	if (!node->isLeaf)
+	{
+		ShowNode(node->children[0]);
+		ShowNode(node->children[1]);
+	}
+	else
+	{
+		const CBspLeaf* leaf = (CBspLeaf*)node;
+		appPrintf("leaf %d[%d]: ", leaf - bspfile.leafs, leaf->numBrushes);
+		for (int i = 0; i < leaf->numBrushes; i++)
+			appPrintf(" %d[%X]", leaf->brushes[i] - map_brushes, leaf->brushes[i]->contents);
+		appPrintf("\n");
+	}
+}
+
+static void ShowModels()
+{
+	for (int i = 0; i < bspfile.numModels; i++)
+	{
+		CBspModel* out = bspfile.models + i;
+		appPrintf(S_GREEN"*%d: %d\n", i, out->headnode);
+		if (out->headnode > 0)
+			ShowNode(bspfile.nodes + out->headnode);
+		else if (out->headnode < 0)
+			ShowNode((CBspNode*)(bspfile.leafs - 1 - out->headnode));
+	}
+}//*/
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
 static void LoadQ3Map(bspfile_t *bsp)
 {
 	LoadPlanes3(bsp->planes3, bsp->numPlanes);
@@ -1147,6 +1200,7 @@ static void LoadQ3Map(bspfile_t *bsp)
 	LoadLeafBrushes(bsp->leafbrushes3, bsp->numLeafbrushes, bsp->leafs3);
 	LoadSubmodels3(bsp->models3, bsp->numModels);
 	ComputeLeafContents3();
+//	ShowModels();
 
 //!!	LoadAreas(bsp->areas, bsp->numAreas);
 //!!	LoadAreaPortals(bsp->areaportals, bsp->numAreaportals);

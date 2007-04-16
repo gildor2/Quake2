@@ -1,6 +1,7 @@
 # script file; perl highlighting
 
 MAX_DEBUG = 1			#!! while implementing Q1/HL map support
+#NO_DEBUG = 1
 
 NOSHARED  = 1			#!!!! shared; currently, shared build is not possible: Core is not yet finished
 				#!! make only 1 of STATIC/SHARED builds (not both in single makefile) - no problems with filenames etc ...
@@ -66,8 +67,12 @@ MAPFILES = 1
 MAX_DEBUG = 0
 !endif
 
+!ifndef NO_DEBUG
+NO_DEBUG = 0
+!endif
+
 # build common defines string
-COM_DEFINES += MAX_DEBUG=$MAX_DEBUG
+COM_DEFINES += MAX_DEBUG=$MAX_DEBUG NO_DEBUG=$NO_DEBUG
 
 
 #------------------------------------------------------------------------------

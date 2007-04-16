@@ -21,6 +21,8 @@
 #define MAX_SUNS			4		// arghrad limit
 #define MAX_DOORS			256		// for Q1
 
+#define GRAVITY				800		// should be value of sv_gravity
+
 struct entField_t
 {
 	char	name[64];
@@ -31,6 +33,7 @@ struct target_t
 {
 	char	name[64];
 	CVec3	origin;
+	float	angle;					// yaw (Q3A teleporter target)
 };
 
 struct door_t
@@ -68,6 +71,9 @@ static entField_t *modelField;
 static int modelIdx;
 static CBspModel *entModel;
 
+static char bufForNewEntity[512];
+static int numNewEntities;
+
 
 static entField_t *FindField(const char *name)
 {
@@ -87,13 +93,14 @@ static void RemoveField(const char *name)
 }
 
 
-static void AddField(const char *name, const char *value)
+static entField_t *AddField(const char *name, const char *value)
 {
-	if (numEntFields >= MAX_ENT_FIELDS) return;
+	if (numEntFields >= MAX_ENT_FIELDS) return NULL;
 
-	strcpy(entity[numEntFields].name, name);
-	strcpy(entity[numEntFields].value, value);
-	numEntFields++;
+	entField_t *f = &entity[numEntFields++];
+	strcpy(f->name, name);
+	strcpy(f->value, value);
+	return f;
 }
 
 
@@ -184,22 +191,35 @@ static void ProcessEntityTarget()
 		}
 		strcpy(targets[numTargets].name, f->value);
 		if (f = FindField("origin"))	// target can be without origin, but we are not interested with it
-		{
 			GetVector(f->value, targets[numTargets].origin);
-			numTargets++;
-		}
+		if (f = FindField("angle"))
+			targets[numTargets].angle = atof(f->value);
+		numTargets++;
 	}
 }
 
 
-static const CVec3& FindEntityTarget(const char *name)
+static const target_t& FindEntityTarget(const char *name)
 {
 	for (int i = 0; i < numTargets; i++)
 		if (!strcmp(targets[i].name, name))
-			return targets[i].origin;
+			return targets[i];
 
 	Com_DPrintf("target \"%s\" is not found\n", name);
-	return nullVec3;		// not found
+	static target_t nullTarget;
+	return nullTarget;		// not found
+}
+
+
+static void RememberModelLink(const CVec3 &org)
+{
+	if (!modelField) return;
+
+	triggerModelLink_t *link = new (bspfile.extraChain) triggerModelLink_t;
+	link->next = bspfile.modelLinks;
+	bspfile.modelLinks = link;
+	link->origin   = org;
+	link->modelIdx = modelIdx;
 }
 
 
@@ -373,7 +393,7 @@ static bool LoadLight()
 	if (f = FindField("target"))
 	{
 		slight->spot = true;
-		const CVec3 &dst = FindEntityTarget(f->value);
+		const CVec3 &dst = FindEntityTarget(f->value).origin;
 		CVec3	vec;
 		VectorSubtract(dst, slight->origin, vec);
 		float dist = VectorNormalize(vec, slight->spotDir);
@@ -533,8 +553,9 @@ static bool ProcessEntity1()
 		{
 			CVec3 org;
 			entModel->bounds.GetCenter(org);
-			org[2] = entModel->bounds.mins[2] - 17;
 			AddField("origin", va("%g %g %g", VECTOR_ARG(org)));
+			RememberModelLink(org);
+			RemoveField("model");			// not used by teleporters
 		}
 	}
 	else if (!strcmp(classname, "info_teleport_destination"))
@@ -685,6 +706,156 @@ static bool ProcessEntity1()
 			strcpy(originField->value, va("%g %g %g", VECTOR_ARG(entOrigin)));
 		}
 	}
+
+	return true;
+}
+
+
+static bool ProcessEntity3()
+{
+	entField_t *f;
+
+	if (!strcmp(classname, "func_rotating"))
+	{
+		spawnflags |= 1;
+		if (!spawnflagsField)
+			spawnflagsField = AddField("spawnflags", "1");		// set to "1": always activated
+		else
+			appSprintf(ARRAY_ARG(spawnflagsField->value), "%d", spawnflags);
+	}
+	else if (!strcmp(classname, "func_bobbing"))
+	{
+		// best replacement is func_train; but: no sin(t) movement
+		strcpy(classNameField->value, "func_train");
+		CVec3 org1 = entOrigin;
+		if (entModel) org1.Add(entModel->bounds.mins);			// Q2 game code will subtract this ...
+		CVec3 org2 = org1;
+		float height = 32;
+		if (f = FindField("height"))
+			height = atof(f->value);
+		if (spawnflags & 1)
+		{
+			org1[0] -= height;
+			org2[0] += height;
+		}
+		else if (spawnflags & 2)
+		{
+			org1[1] -= height;
+			org2[1] += height;
+		}
+		else
+		{
+			org1[2] -= height;
+			org2[2] += height;
+		}
+		CVec3 org0 = org1;
+		if (f = FindField("phase"))
+			Lerp(org1, org2, atof(f->value), org0);
+		float speed = 4;
+		if (f = FindField("speed"))
+			speed = atof(f->value);
+		appSprintf(ARRAY_ARG(f->value), "%g", height * 4 / speed);	// time to complete full cycle -> speed
+		// remove fields
+		RemoveField("origin");				// not needed
+		RemoveField("spawnflags");			// not needed
+		RemoveField("phase");				// not needed
+		char tgtName[32];
+		appSprintf(ARRAY_ARG(tgtName), "bob_%d", numNewEntities++);
+		AddField("target", va("%s_0", tgtName));
+
+		// cycle: bob_N_0 -> bob_N_a -> bob_N -> bob_N_a -> ....
+		appSprintf(ARRAY_ARG(bufForNewEntity),
+			"{\n"
+			"classname path_corner\n"
+			"origin \"%g %g %g\"\n"
+			"targetname %s_0\n"				// bob_N_0 -> bob_N_a
+			"target %s_a\n"
+			"}\n"
+			"{\n"
+			"classname path_corner\n"
+			"origin \"%g %g %g\"\n"
+			"targetname %s\n"				// bob_N -> bob_N_a
+			"target %s_a\n"
+			"}\n"
+			"{\n"
+			"classname path_corner\n"
+			"origin \"%g %g %g\"\n"
+			"targetname %s_a\n"				// bob_N_a -> bob_N
+			"target %s\n"
+			"}\n",
+			VECTOR_ARG(org0), tgtName, tgtName,
+			VECTOR_ARG(org1), tgtName, tgtName,
+			VECTOR_ARG(org2), tgtName, tgtName);
+//		appPrintf("GEN(%s):\n"S_RED"%s\n", modelField->value, bufForNewEntity);
+	}
+	else if (!strcmp(classname, "trigger_push"))
+	{
+		// get start point
+		CVec3 start = entOrigin;
+		if (entModel)
+			entModel->bounds.GetCenter(start);
+		// get destination point
+		if (!(f = FindField("target")))
+		{
+			Com_DPrintf("q3: trigger_push: no \"target\" field\n");
+			return false;					// Q3A removes such entities
+		}
+		const CVec3 &dst = FindEntityTarget(f->value).origin;
+//		appPrintf("-----------\nstart: %g %g %g\nend: %g %g %g\n",VECTOR_ARG(start),VECTOR_ARG(dst));
+
+		CVec3 dir;
+		VectorSubtract(dst, start, dir);
+
+		// algorithm based on Q3A's AimAtTarget()
+		float time = sqrt(2 * dir[2] / GRAVITY);
+		if (!time) return false;			// Q3A does this ...
+
+		dir[2] = 0;
+		float dist = dir.Normalize();
+		dir.Scale(dist / time);
+		dir[2] = time * GRAVITY;
+
+		float speed = dir.Normalize() / 10;
+
+		CVec3 angles;
+		Vec2Euler(dir, angles);
+//		appPrintf("dir: %g %g %g  (ang: %g %g %g)\n", VECTOR_ARG(dir), VECTOR_ARG(angles));
+//		appPrintf("speed: %g\n", speed);
+		AddField("speed", va("%g", speed));
+		AddField("angles", va("%g %g %g", VECTOR_ARG(angles)));
+		RemoveField("target");				// not needed
+	}
+	else if (!strcmp(classname, "trigger_teleport"))
+	{
+		if (spawnflags & 1) return false;	// spectator-only teleporter
+		if (!(f = FindField("target")))
+			return false;					// valid target should be specified
+		char *tgtName = f->value;
+		const target_t &t = FindEntityTarget(tgtName);
+		strcpy(classNameField->value, "misc_teleporter");
+		strcat(tgtName, "_a");				// modify name (just in case)
+		if (entModel)
+		{
+			CVec3 org;
+			entModel->bounds.GetCenter(org);
+			AddField("origin", va("%g %g %g", VECTOR_ARG(org)));
+			RememberModelLink(org);
+			RemoveField("model");			// not used by teleporters
+		}
+		appSprintf(ARRAY_ARG(bufForNewEntity),
+			"{\n"
+			"classname misc_teleporter_dest\n"
+			"targetname %s\n"
+			"angle %g\n"
+			"origin \"%g %g %g\""
+			"}\n",
+			tgtName,
+			t.angle,
+			t.origin[0], t.origin[1], t.origin[2] + 10
+		);
+	}
+	else if (!strcmp(classname, "target_position") || !strcmp(classname, "target_location"))
+		return false;
 
 	return true;
 }
@@ -848,9 +1019,8 @@ static bool ProcessEntityHL()
 		}
 		else if (!strcmp(classname, "trigger_push"))
 		{
-			if (!FindField("angle") && !FindField("angles"))
-				AddField("angles", "0 0 0");
-			return false;		//?? cannot get this to work
+			if (f = FindField("speed"))
+				appSprintf(ARRAY_ARG(f->value), "%d", atoi(f->value) / 28);
 		}
 	}
 	if (!strcmp(classname, "env_sprite") || !(strcmp(classname, "env_glow")))
@@ -1256,6 +1426,9 @@ static bool ProcessEntity()
 	case map_kp:
 		if (!ProcessEntityKP()) return false;
 		break;
+	case map_q3:
+		if (!ProcessEntity3()) return false;
+		break;
 	}
 
 	// q1/hl
@@ -1299,7 +1472,8 @@ const char *ProcessEntstring(const char *entString)
 	plen++;	// add 1 byte for trailing zero
 
 	char *dst, *dst2;
-	dst = dst2 = (char*) bspfile.extraChain->Alloc(strlen(entString) + 1 + plen);
+	int entStrLen = strlen(entString) + 1 + plen + 2048;	// 2K for different needs
+	dst = dst2 = (char*) bspfile.extraChain->Alloc(entStrLen);
 
 #if ENT_STATS
 	numEntClassNames = 0;
@@ -1307,7 +1481,7 @@ const char *ProcessEntstring(const char *entString)
 
 	// find all target entities
 	const char *src = entString;
-	numTargets = numDoors = 0;
+	numTargets = numDoors = numNewEntities = 0;
 	while (!haveErrors && ReadEntity(src))
 		ProcessEntityTarget();
 
@@ -1319,8 +1493,20 @@ const char *ProcessEntstring(const char *entString)
 	while (!haveErrors && ReadEntity(src))
 	{
 		if (ProcessEntity())
+		{
 			WriteEntity(&dst);
+			if (bufForNewEntity[0])
+			{
+				// entity parser requested new entity to be added
+				int len = strlen(bufForNewEntity);
+				memcpy(dst, bufForNewEntity, len);
+				dst += len;
+				// clear buffer
+				bufForNewEntity[0] = 0;
+			}
+		}
 	}
+	assert(dst < dst2 + entStrLen);
 
 #if ENT_STATS
 	Com_DPrintf("---- Entity statistics: ----\n-n--ct-mdl-name-------\n");

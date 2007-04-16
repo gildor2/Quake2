@@ -700,6 +700,7 @@ shader_t *FindShader(const char *name, unsigned style)
 		style &= ~SHADER_ENVMAP;
 
 	// debug: gl_singleShader
+#if !NO_DEBUG
 	if (gl_singleShader->integer && name[0] != '*')
 	{
 		if (style & SHADER_LIGHTMAP)
@@ -710,6 +711,7 @@ shader_t *FindShader(const char *name, unsigned style)
 		else if (style & SHADER_SKIN && gl_singleShader->integer == 2)
 			name = "*default";
 	}
+#endif
 
 	TString<64> Name2;
 	Name2.filename(name);

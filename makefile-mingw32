@@ -223,12 +223,12 @@ TestApp/TestApp.exe : $(TEST_DIRS) $(TEST)
 #	compiling source files
 #------------------------------------------------------------------------------
 
-OPT_STATIC = -fno-strict-aliasing -Wno-invalid-offsetof -Wabi -Wnon-virtual-dtor -Woverloaded-virtual -Wformat -Wimplicit -Wparentheses -Wreturn-type -Wunused-function -Wunused-variable -Wunused-value -Wunknown-pragmas -Wmissing-format-attribute -Wredundant-decls -Waggregate-return -Wstrict-aliasing -Os -fno-rtti -fno-exceptions -D MAX_DEBUG=1 -D STATIC_BUILD -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
+OPT_STATIC = -fno-strict-aliasing -Wno-invalid-offsetof -Wabi -Wnon-virtual-dtor -Woverloaded-virtual -Wformat -Wimplicit -Wparentheses -Wreturn-type -Wunused-function -Wunused-variable -Wunused-value -Wunknown-pragmas -Wmissing-format-attribute -Wredundant-decls -Waggregate-return -Wstrict-aliasing -Os -fno-rtti -fno-exceptions -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
 
 Release/obj-win32/q2stat/md4.o : qcommon/md4.cpp
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/md4.o qcommon/md4.cpp
 
-OPT_DEDICATED = -fno-strict-aliasing -Wno-invalid-offsetof -Wabi -Wnon-virtual-dtor -Woverloaded-virtual -Wformat -Wimplicit -Wparentheses -Wreturn-type -Wunused-function -Wunused-variable -Wunused-value -Wunknown-pragmas -Wmissing-format-attribute -Wredundant-decls -Waggregate-return -Wstrict-aliasing -Os -fno-rtti -fno-exceptions -D MAX_DEBUG=1 -D STATIC_BUILD -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
+OPT_DEDICATED = -fno-strict-aliasing -Wno-invalid-offsetof -Wabi -Wnon-virtual-dtor -Woverloaded-virtual -Wformat -Wimplicit -Wparentheses -Wreturn-type -Wunused-function -Wunused-variable -Wunused-value -Wunknown-pragmas -Wmissing-format-attribute -Wredundant-decls -Waggregate-return -Wstrict-aliasing -Os -fno-rtti -fno-exceptions -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
 
 Release/obj-win32/dedstat/md4.o : qcommon/md4.cpp
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/md4.o qcommon/md4.cpp
@@ -270,7 +270,7 @@ Release/obj-win32/q2stat/QuakeFileSystem.o : qcommon/QuakeFileSystem.cpp $(DEPEN
 Release/obj-win32/dedstat/QuakeFileSystem.o : qcommon/QuakeFileSystem.cpp $(DEPENDS_1)
 	$(CPP) $(OPT_DEDICATED) -o Release/obj-win32/dedstat/QuakeFileSystem.o qcommon/QuakeFileSystem.cpp
 
-OPT_TEST = -fno-strict-aliasing -Wno-invalid-offsetof -Wabi -Wnon-virtual-dtor -Woverloaded-virtual -Wformat -Wimplicit -Wparentheses -Wreturn-type -Wunused-function -Wunused-variable -Wunused-value -Wunknown-pragmas -Wmissing-format-attribute -Wredundant-decls -Waggregate-return -Wstrict-aliasing -Os -fno-rtti -fno-exceptions -D MAX_DEBUG=1 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
+OPT_TEST = -fno-strict-aliasing -Wno-invalid-offsetof -Wabi -Wnon-virtual-dtor -Woverloaded-virtual -Wformat -Wimplicit -Wparentheses -Wreturn-type -Wunused-function -Wunused-variable -Wunused-value -Wunknown-pragmas -Wmissing-format-attribute -Wredundant-decls -Waggregate-return -Wstrict-aliasing -Os -fno-rtti -fno-exceptions -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS_2 = \
 	Core/../lib/zlib/zlib.h \

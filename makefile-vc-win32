@@ -223,12 +223,12 @@ TestApp/TestApp.exe : $(TEST_DIRS) $(TEST)
 #	compiling source files
 #------------------------------------------------------------------------------
 
-OPT_STATIC = -W3 -O1 -EHs- -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D STATIC_BUILD -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
+OPT_STATIC = -W3 -O1 -EHs- -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
 
 Release/obj-win32/q2stat/md4.obj : qcommon/md4.cpp
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/md4.obj" qcommon/md4.cpp
 
-OPT_DEDICATED = -W3 -O1 -EHs- -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D STATIC_BUILD -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
+OPT_DEDICATED = -W3 -O1 -EHs- -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
 
 Release/obj-win32/dedstat/md4.obj : qcommon/md4.cpp
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/md4.obj" qcommon/md4.cpp
@@ -270,7 +270,7 @@ Release/obj-win32/q2stat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEP
 Release/obj-win32/dedstat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
 
-OPT_TEST = -W3 -O1 -EHs- -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
+OPT_TEST = -W3 -O1 -EHs- -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
 	Core/../lib/zlib/zlib.h \

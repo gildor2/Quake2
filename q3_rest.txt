@@ -1,4 +1,14 @@
+FOUND BUG from p99 (when moved EntityParser call from model.cpp to cmodel.cpp - after map loading):
+  "wads" needed for HL surface loading, but entities parsed after map loading;
+  ? bug may be easily fixed after reworking entity sustem (and remove "wads" field from bspfile_t)
+  ? try to convert HL's "trigger_push"
+  - also func_ladder, func_water etc (contents changers) does not works
+---------------------------------------------------------------------------------------------------
+
 ? q3map_backsplash <frac> <dist> -- generate point lights near surface light
+- q3 lightgrid support: have some maps with erased pointlight entities
+  - implement as separate light source (global)
+  - may use available lights (surface, sun) to emphasize light effect (may be optional)
 
 - make dlight updates for vertex lightmap DYNAMIC: do not call UpdateDynamicLightmap
   every time -- dlights should be applied in backend inside PreprocessShader()
@@ -17,14 +27,12 @@
   (code uses uses ent->center ...)
   q3 path: trisurfs uses vertex lighting, but my code requires dynamicLightmap for this
 
-- LoadSubmodels3(): build model->leaf->leafBrushes
 - check areas
 - display curves
 - trace curves
 - fog
-- entities (jumppads etc)
+- entities
 - vertex lighting (no lightmap loading, using vertex light from bsp)
-? flares
 - color saturation (lightmaps, vertex light)
 - surface lighting from "autosprite" -> point light
 

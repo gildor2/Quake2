@@ -574,6 +574,7 @@ static void Upload(void *pic, unsigned flags, image_t *image)
 			if (scaledHeight < 1) scaledHeight = 1;
 
 			// show mipmap levels as colors
+#if !NO_DEBUG
 			if (r_colorMipLevels->integer)
 			{
 				// here miplevel >= 1
@@ -589,6 +590,7 @@ static void Upload(void *pic, unsigned flags, image_t *image)
 					p[2] = (c.c[2] + p[2]) / 4;
 				}
 			}
+#endif
 			STAT(clock(gl_ldStats.imgUpload));
 			glTexImage2D(image->target, miplevel, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
 			STAT(unclock(gl_ldStats.imgUpload));
@@ -1260,8 +1262,10 @@ void PerformScreenshot()
 void InitImages()
 {
 CVAR_BEGIN(vars)
+#if !NO_DEBUG
 	CVAR_VAR(gl_showImages, 0, 0),
 	CVAR_VAR(r_colorMipLevels, 0, 0),
+#endif
 	CVAR_VAR(gl_picmip, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(gl_roundImagesDown, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_textureBits, 0, CVAR_ARCHIVE|CVAR_NOUPDATE)
@@ -1466,6 +1470,7 @@ void ShutdownImages()
 }
 
 
+#if !NO_DEBUG
 void ShowImages()
 {
 	int		i;
@@ -1551,6 +1556,7 @@ void ShowImages()
 		}
 	}
 }
+#endif
 
 
 //------------- Loading images --------------------------

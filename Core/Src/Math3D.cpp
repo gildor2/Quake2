@@ -449,7 +449,7 @@ void Vec2Euler(const CVec3 &vec, CVec3 &angles)
 	if (vec[0] == 0 && vec[1] == 0)
 	{
 		angles[YAW]   = 0;
-		angles[PITCH] = (!IsNegative(vec[2])) ? 90 : 270;
+		angles[PITCH] = (IsNegative(vec[2])) ? 90 : 270;
 	}
 	else
 	{

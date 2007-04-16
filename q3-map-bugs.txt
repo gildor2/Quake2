@@ -1,22 +1,27 @@
+! map "q3dm13" (start) -> "q3dm19" (run few seconds) -> "q3matcho...": will display console w/o cursor,
+  when "toggleconsole" -> cursor appears; no game mode; when "vid_restart" ->
+  "R_FindModel: not found: *9"
+  "ERROR: CM_InlineModel: bad number"
+  (unstable, but frequent bug)
+
+- q3dm19: "func_bobbing" with "model2" (attached md3 model)
 - cpm15:
   - have trisurf SURF_LIGHT (blemish/blem_lava)
-  - have lift (no collision with it)
+  - no SURF_SKY on sky surface (incorrect collision) -- may be, should collide with trisurf, not brush?
 - pom: incorrect dlights
 - aedesert: lots of pickup items, which should be suspended in air, but dropped to floor
+- cpm26: have movable surface light: {690, 2760, 160} (sliding door)
+- af3hex: lots of visual bugs (some things not displayed)
 
 Large maps (out of possible q2 ranges)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - qxctf2
+- evotm: map completely outside q2 world bounds
+- rjlctf2
 
-Not loaded:
-~~~~~~~~~~~
-? q3dm3: crash in ge.RunFrame (map not loaded)
-- q3dm6: Game Error: ED_ParseEntity: closing brace without data
-
-unsupported surfaces:
-  wvwq3dm7: trisurf sky: textures/wvwq3dm7/foghull/wvw7hull
-  cpm15:    trisurf sky: textures/blemish/blem_sky
+unsupported sky surfaces:
   milktdm1: curve sky: textures/skies/hellsky2bright
+  ktsdm4, waxxgeo1 - trisurf sky
 
 Patch lights:
 ~~~~~~~~~~~~~
@@ -28,3 +33,8 @@ Patch lights:
 Trisurf lights:
 ~~~~~~~~~~~~~~~
 - cpm15, cpm17: lava
+
+No lights at all:
+~~~~~~~~~~~~~~~~~
+- ermo's-home
+- cpm25, cpm27 - only skylight (+ trisurf light from water)

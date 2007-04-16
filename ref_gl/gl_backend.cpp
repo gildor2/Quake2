@@ -27,7 +27,6 @@ namespace OpenGLDrv {
 // debug
 static bool DrawTriangles();
 static bool DrawNormals();
-static void DrawSkySurface(surfaceBase_t *surf);
 #endif
 
 
@@ -879,6 +878,7 @@ static void PreprocessShader(shader_t *sh)
 	}
 
 	// override current shader when displaying fillrate
+#if !NO_DEBUG
 	if (gl_showFillRate->integer && GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE|
 		QGL_ARB_TEXTURE_ENV_ADD|QGL_NV_TEXTURE_ENV_COMBINE4|QGL_ATI_TEXTURE_ENV_COMBINE3))	// requires env add caps
 	{
@@ -908,6 +908,7 @@ static void PreprocessShader(shader_t *sh)
 		// glState
 		tmpSt[1].glState         = BLEND(1,1)|GLSTATE_NODEPTHTEST|GLSTATE_POLYGON_LINE;
 	}
+#endif
 
 	bool entityLightingDone = false;
 	for (i = 0, st = tmpSt; i < numTmpStages; i++, st++)
@@ -1344,7 +1345,10 @@ void BK_FlushShader()
 
 		//!! glFog does not works with multi-pass rendering
 		//!! + doesn't works, when scr_viewsize!=100
-		if (i == numRenderPasses - 1 && gl_state.haveFullScreen3d && !gl_showFillRate->integer
+		if (i == numRenderPasses - 1 && gl_state.haveFullScreen3d
+#if !NO_DEBUG
+			&& !gl_showFillRate->integer
+#endif
 			&& currentShader->type == SHADERTYPE_NORMAL && !gl_state.is2dMode)
 			GL_EnableFog(true);	//!!! else GL_DisableFog()!!!
 
@@ -1921,27 +1925,6 @@ static void DrawBrushes()
 }
 
 
-
-static void DrawSkySurface(surfaceBase_t *surf)
-{
-	if (surf->type != SURFACE_PLANAR) return;	//??
-	surfacePlanar_t *pl = static_cast<surfacePlanar_t*>(surf);
-
-	GL_SetMultitexture(0);
-	GL_State(GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
-	GL_DepthRange(DEPTH_NEAR);
-	glDisableClientState(GL_COLOR_ARRAY);
-	glColor3f(1, 1, 1);
-	GL_CullFace(CULL_NONE);
-	glBegin(GL_TRIANGLES);
-	int i;
-	for (i = 0; i < pl->numIndexes; i++)
-		glVertex3fv(pl->verts[pl->indexes[i]].xyz.v);
-	glEnd();
-
-	GL_DepthRange(DEPTH_NORMAL);
-}
-
 #endif // NO_DEBUG
 
 
@@ -2095,18 +2078,16 @@ void BK_DrawScene()
 	}
 
 	index = 0;
-#if !NO_DEBUG
-	if (gl_showSky->integer == 3)
+	if (SHOWSKY == 3)
 	{
 		for (si = sortedSurfaces; index < vp.numSurfaces; index++, si++)
 		{
 			surfaceBase_t *surf = (*si)->surf;
 			if (surf->shader->type != SHADERTYPE_SKY)
 				break;
-			DrawSkySurface(surf);
+			surf->AddToSky(true);	// debug output
 		}
 	}
-#endif
 
 	/*-------- draw world/models ---------*/
 
@@ -2365,7 +2346,9 @@ void BK_EndFrame()
 	BK_FlushShader();
 	if (screenshotName)
 		PerformScreenshot();
+#if !NO_DEBUG
 	ShowImages();					// debug
+#endif
 	STAT(gl_stats.swapBuffers = 0);	// reset manually
 	STAT(clock(gl_stats.swapBuffers));
 	QGL_SwapBuffers();

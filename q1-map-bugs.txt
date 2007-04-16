@@ -1,23 +1,18 @@
+dokkur - trigger_changelevel (looks as movable teleport with "easy", "hard" etc labels)
+  - should not be visible in deathmatch!
 a2 - sky bugs (visible parts of maps, which should be occluded)
 basewalk - have "item_health" with "light" field at "914 352 320" as light source
 damaul3b - sky issues
-damaul7 - not working teleporter near lava
-dokkur - moving teleport, not function (possible reason: q1 teleporter == cmodel,
-  q2 teleporter == created md2 model at specified location + static trigger teleport)
-efdm10 - infinite teleport
+damaul7 - near lava: go up, have animated "flowing up" texture - should work as ladder
 elbow - cannot start (SP only?)
-frivdev1_3 - infinite teleport
-gendm2 - movable teleports, cannot enter
 persia - bug with wind shaft (func_push?)
 rc1 - spawnpoint in solid
 rf - bad collision in {-6, -12, -306}
 rtldm2 - underwater is dark -- water surface break vis but should not break light?
   kasteel -- too
-q1dm6 - have not working teleport {260,-1770,150} (few non-working teleports)
 baldm3 - 3 x "item_health_large" with droptofloor issues (even after fixing for most cases)
 -----------------
 HL:
-bounce - bad "trigger_push" (jumppads)
 undertow - have elevator (CONTENTS_CURRENT) + strange (solid) water
 ahl_engholm - have wall, which not blocks movement
 ahl_casagrande - have walls, which not blocks movement + tree base

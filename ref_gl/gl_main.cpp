@@ -65,7 +65,9 @@ cvar_t	*gl_dynamic;		// enable dynamic lightmaps for Q2/HL maps + dlights
 cvar_t	*gl_dlightBacks;	// when disabled, do not draw dlights on backfaces
 cvar_t	*gl_vertexLight;	// use glColor() against lightmaps
 cvar_t	*gl_noGrid;
+#if !NO_DEBUG
 cvar_t	*gl_showGrid;
+#endif
 
 // renderer settings
 cvar_t	*gl_znear;
@@ -77,15 +79,17 @@ cvar_t	*gl_maxTextureUnits;
 cvar_t	*gl_logFile;
 #endif
 cvar_t	*r_novis, *gl_frustumCull, *gl_oCull, *gl_backfaceCull;
+#if !NO_DEBUG
 cvar_t	*gl_showSky;
 cvar_t	*r_drawworld, *r_drawentities;
-cvar_t	*gl_sortAlpha;
 
 cvar_t	*gl_labels;
 cvar_t	*gl_lightLines, *gl_showLights;		//?? LIGHT_DEBUG
 cvar_t	*gl_singleShader;
 cvar_t	*gl_showFillRate;
+#endif
 
+cvar_t	*gl_sortAlpha;
 
 //?? move to gl_interface.cpp ??
 static void cGfxinfo(bool usage, int argc, char **argv)
@@ -170,7 +174,9 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_dlightBacks, 1, 0),
 	CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(gl_noGrid, 0, 0),
+#if !NO_DEBUG
 	CVAR_VAR(gl_showGrid, 0, CVAR_CHEAT),
+#endif
 
 	CVAR_VAR(gl_znear, 4, 0),
 	CVAR_VAR(gl_swapinterval, 0, CVAR_ARCHIVE|CVAR_UPDATE),
@@ -195,15 +201,17 @@ CVAR_BEGIN(vars)
 #if STATS
 	CVAR_VAR(r_stats, 0, 0),
 #endif
+#if !NO_DEBUG
 	CVAR_VAR(gl_showSky, 0, 0),
 	CVAR_VAR(r_drawworld, 1, CVAR_CHEAT),
 	CVAR_VAR(r_drawentities, 1, 0),
-	CVAR_VAR(gl_sortAlpha, 0, 0),
 	CVAR_VAR(gl_labels, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_lightLines, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showLights, 0, 0),
 	CVAR_VAR(gl_singleShader, 0, CVAR_CHEAT),
-	CVAR_VAR(gl_showFillRate, 0, CVAR_CHEAT)
+	CVAR_VAR(gl_showFillRate, 0, CVAR_CHEAT),
+#endif
+	CVAR_VAR(gl_sortAlpha, 0, 0),
 CVAR_END
 
 	Cvar_GetVars(ARRAY_ARG(vars));
@@ -463,7 +471,11 @@ void BeginFrame(double time)
 	gl_state.maxUsedShaderIndex = -1;
 	//?? useFastSky: when gl_fastSky!=0 - should clear screen only when at least one of sky surfaces visible
 	//?? (perform glClear() in DrawSky() ?)
-	gl_state.useFastSky = gl_fastSky->integer || (r_fullbright->integer && r_lightmap->integer) || gl_showFillRate->integer;
+	gl_state.useFastSky = gl_fastSky->integer || (r_fullbright->integer && r_lightmap->integer)
+#if !NO_DEBUG
+		|| gl_showFillRate->integer
+#endif
+		;
 
 	if (gl_texturemode->modified)
 	{

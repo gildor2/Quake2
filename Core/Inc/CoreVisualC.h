@@ -69,7 +69,13 @@ typedef unsigned int		address_t;
 #define GCC_PACK						// VC uses #pragma pack()
 
 
-#define	GET_RETADDR(firstarg)	(* ( ((unsigned*)&firstarg) -1 ) )
+#if _MSC_VER < 1400
+#	define	GET_RETADDR(firstarg)	(* ( ((address_t*)&firstarg) -1 ) )
+#else
+	extern "C" void * _ReturnAddress(void);
+#	pragma intrinsic(_ReturnAddress)
+#	define	GET_RETADDR(firstarg)	( (address_t)_ReturnAddress() )
+#endif
 
 #define vsnprintf	_vsnprintf
 #define stricmp		_stricmp

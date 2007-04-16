@@ -14,6 +14,11 @@ static float skyMins[2][6], skyMaxs[2][6];
 
 enum {SIDE_FRONT, SIDE_BACK, SIDE_ON};
 
+// bitmask
+#define SKY_FRUSTUM		1
+#define SKY_SURF		2
+
+
 static void ClipSkyPolygon(CVec3 *verts, int numVerts, int stage)
 {
 	if (!numVerts) return;				// empty polygon
@@ -200,42 +205,49 @@ static bool SkyVisible()
 }
 
 
-void AddSkySurface(surfacePlanar_t *pl, byte flag)
+static void AddSkyTris(const CVec3 *verts, int numVerts, int vertexSize, const int *indexes, int numIndexes, byte flag = SKY_SURF)
 {
+	guardSlow(AddSkyTris);
+
 	if (gl_state.useFastSky) return;
 
-	int		side;
-
 	// clear bounds for all sky box planes
+	int side;
 	for (side = 0; side < 6; side++)
 	{
-		skyMins[0][side] = skyMins[1][side] = BIG_NUMBER;
+		skyMins[0][side] = skyMins[1][side] =  BIG_NUMBER;
 		skyMaxs[0][side] = skyMaxs[1][side] = -BIG_NUMBER;
 	}
 	// add verts to bounds
-	CVec3 verts[MAX_CLIP_VERTS]; // buffer for polygon
+	CVec3 drawVerts[MAX_CLIP_VERTS]; // buffer for polygon
 	int i;
-	vertex_t *v;
+	const CVec3 *src;
 	// transform all surface verts
-	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
+	for (i = 0, src = verts; i < numVerts; i++, src = OffsetPointer(src, vertexSize))
 	{
 		if (skyRotated)
-			TransformPoint(vp.view.origin, rotAxis, v->xyz, verts[i]);
+			TransformPoint(vp.view.origin, rotAxis, *src, drawVerts[i]);
 		else
-			VectorSubtract(v->xyz, vp.view.origin, verts[i]);
+			VectorSubtract(*src, vp.view.origin, drawVerts[i]);
 	}
 	// compute surface bounds on skybox
-#if 1 // version for any vertex order
-	for (i = 0; i < pl->numIndexes; i += 3)
+#if 1
+	// version for any vertex order
+	const int *idx, *idxLast;
+	for (idx = indexes, idxLast = indexes + numIndexes; idx < idxLast; idx += 3)
 	{
 		CVec3 tri[MAX_CLIP_VERTS];
-		tri[0] = verts[pl->indexes[i]];
-		tri[1] = verts[pl->indexes[i+1]];
-		tri[2] = verts[pl->indexes[i+2]];
+		assert(idx[0] < numVerts && idx[1] < numVerts && idx[2] < numVerts);
+		tri[0] = drawVerts[idx[0]];
+		tri[1] = drawVerts[idx[1]];
+		tri[2] = drawVerts[idx[2]];
 		ClipSkyPolygon(tri, 3, 0);
 	}
-#else // this version requires special verts order
-	ClipSkyPolygon(verts, pl->numVerts, 0);
+	assert(idx == idxLast);		// should be multiple of 3
+#else
+	// this version requires special verts order; can be used safely
+	//for q1/q2 sky surfaces (our own vertex order)
+	ClipSkyPolygon(drawVerts, numVerts, 0);
 #endif
 
 	// analyse skyMins/skyMaxs, detect occupied cells
@@ -246,10 +258,10 @@ void AddSkySurface(surfacePlanar_t *pl, byte flag)
 		skySideVisible[side] |= flag;
 		// get cell's "x" and "w"
 		int x = appFloor((skyMins[0][side] + 1) * SKY_TESS_SIZE);	// left
-		int w = appCeil  ((skyMaxs[0][side] + 1) * SKY_TESS_SIZE);	// right
+		int w = appCeil ((skyMaxs[0][side] + 1) * SKY_TESS_SIZE);	// right
 		// get cell's "y" and "h"
 		int y = appFloor((skyMins[1][side] + 1) * SKY_TESS_SIZE);	// bottom (or top ?)
-		int h = appCeil  ((skyMaxs[1][side] + 1) * SKY_TESS_SIZE);	// top (or bottom)
+		int h = appCeil ((skyMaxs[1][side] + 1) * SKY_TESS_SIZE);	// top (or bottom)
 #if 1
 		x = bound(x, 0, SKY_CELLS);		// avoid precision errors: when we can get floor((mins==-1 + 1)*SIZE) -> -1 (should be 0)
 		w = bound(w, 0, SKY_CELLS);
@@ -274,6 +286,60 @@ void AddSkySurface(surfacePlanar_t *pl, byte flag)
 			ptr += stride;
 		}
 	}
+
+	unguardSlow;
+}
+
+#if !NO_DEBUG
+static void DrawSkyDebug(const CVec3 *verts, int numVerts, int vertexSize, const int *indexes, int numIndexes, color_t &color)
+{
+	GL_SetMultitexture(0);
+	GL_State(GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
+	GL_DepthRange(DEPTH_NEAR);
+	glDisableClientState(GL_COLOR_ARRAY);
+//	glColor3f(0.8f, 0.8f, 1.0f);
+	glColor4ubv(color.c);
+	GL_CullFace(CULL_NONE);
+	glBegin(GL_TRIANGLES);
+	for (int i = 0; i < numIndexes; i++)
+		glVertex3fv(OffsetPointer(verts, indexes[i] * vertexSize)->v);
+	glEnd();
+
+	GL_DepthRange(DEPTH_NORMAL);
+}
+
+#define DRAW_SKY_SURF(c)	\
+	if (!showDebug)			\
+		AddSkyTris(&verts[0].xyz, numVerts, sizeof(verts[0]), indexes, numIndexes); \
+	else					\
+	{						\
+		color_t color;		\
+		color.rgba = c;		\
+		DrawSkyDebug(&verts[0].xyz, numVerts, sizeof(verts[0]), indexes, numIndexes, color); \
+	}
+
+#else
+
+#define DRAW_SKY_SURF		\
+		AddSkyTris(&verts[0].xyz, numVerts, sizeof(verts[0]), indexes, numIndexes); \
+
+#endif
+
+void surfaceBase_t::AddToSky(bool showDebug)
+{
+	DrawTextLeft("bad sky surface", RGB(1,0,0));
+}
+
+
+void surfacePlanar_t::AddToSky(bool showDebug)
+{
+	DRAW_SKY_SURF(RGB(1,0.5,0.5));
+}
+
+// similar to surfacePlanar_t::AddToSky(), but uses different vertex type
+void surfaceTrisurf_t::AddToSky(bool showDebug)
+{
+	DRAW_SKY_SURF(RGB(0.5,0.5,1));
 }
 
 
@@ -322,7 +388,6 @@ static int AddSkyVec(float s, float t, int axis, bufVertex_t *&vec, bufTexCoordS
 	float z = v[2];
 	float r = 4096 + gl_skyShader->cloudHeight;		// 4096 - came from q3
 	float h = gl_skyShader->cloudHeight;
-//!!	h = Cvar_VariableValue("height");//!!!!
 	if (h < 20) h = 20;
 	float r1 = r-h;
 	// find intersection of sky sphere with generated vector
@@ -344,14 +409,16 @@ static int AddSkyVec(float s, float t, int axis, bufVertex_t *&vec, bufTexCoordS
 
 static void TesselateSkySide(int side, bufVertex_t *vec, bufTexCoordSrc_t *tex)
 {
+	guard(TesselateSkySide);
+
 #if 0
 	DrawTextLeft(va("side %d:", side));
-	for (numIndexes = 0; numIndexes < SKY_CELLS; numIndexes++)
+	for (int k = 0; k < SKY_CELLS; k++)
 	{
 		byte	*p;
 		static const char f[4] = {' ', '.', 'O', 'X'};
 
-		p = skyVis[side] + numIndexes * SKY_CELLS;
+		p = skyVis[side] + k * SKY_CELLS;
 #define C(x) f[p[x]]
 		DrawTextLeft(va("[ %c %c %c %c %c %c %c %c ]", C(0),C(1),C(2),C(3),C(4),C(5),C(6),C(7)), RGB(1,0.5,0.5));
 #undef C
@@ -398,6 +465,8 @@ static void TesselateSkySide(int side, bufVertex_t *vec, bufTexCoordSrc_t *tex)
 		grid2++;
 	}
 //	DrawTextLeft(va("side %d:  %d verts  %d idx", side, gl_numVerts, numIndexes));
+
+	unguard;
 }
 
 
@@ -417,7 +486,7 @@ void DrawSky()
 	if (gl_state.useFastSky) return;
 
 	// build frustum cover
-	vertex_t fv[4];
+	CVec3	fv[4];
 	CVec3	tmp, tmp1, up, right;
 	VectorMA(vp.view.origin, SKY_FRUST_DIST, vp.view.axis[0], tmp);
 	VectorScale(vp.view.axis[1], SKY_FRUST_DIST * vp.t_fov_x * 1.05, right);	// *1.05 -- to avoid FP precision bugs
@@ -427,19 +496,14 @@ void DrawSky()
 	up.Scale(0.9);
 #endif
 	VectorAdd(tmp, up, tmp1);				// up
-	VectorAdd(tmp1, right, fv[0].xyz);
-	VectorSubtract(tmp1, right, fv[1].xyz);
+	VectorAdd(tmp1, right, fv[0]);
+	VectorSubtract(tmp1, right, fv[1]);
 	VectorSubtract(tmp, up, tmp1);			// down
-	VectorSubtract(tmp1, right, fv[2].xyz);
-	VectorAdd(tmp1, right, fv[3].xyz);
+	VectorSubtract(tmp1, right, fv[2]);
+	VectorAdd(tmp1, right, fv[3]);
 	// rasterize frustum
-	surfacePlanar_t pl;
-	pl.numVerts   = 4;
-	pl.verts      = fv;
-	int frustInds[] = { 0, 1, 3, 1, 2, 3 };
-	pl.indexes    = frustInds;
-	pl.numIndexes = 6;
-	AddSkySurface(&pl, SKY_FRUSTUM);
+	static const int frustInds[] = { 0, 1, 3, 1, 2, 3 };
+	AddSkyTris(ARRAY_ARG(fv), sizeof(CVec3), ARRAY_ARG(frustInds), SKY_FRUSTUM);
 
 	if (!SkyVisible()) return;				// all sky surfaces are outside frustum
 
@@ -448,10 +512,10 @@ void DrawSky()
 	shaderStage_t *stage = shader->stages[0];
 	assert(gl_skyShader->numStages && stage);
 
-	GL_DepthRange(gl_showSky->integer ? DEPTH_NEAR : DEPTH_FAR);
+	GL_DepthRange(SHOWSKY ? DEPTH_NEAR : DEPTH_FAR);
 	GL_EnableFog(false);
 	// if we will add "NODEPTHTEST" if gl_showSky mode -- DEPTHWITE will no effect
-	stage->glState = (gl_showSky->integer == 1) ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST;
+	stage->glState = (SHOWSKY == 1) ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST;
 
 	glPushMatrix();
 	// modify modelview matrix
@@ -482,10 +546,10 @@ void DrawSky()
 	glColor3f(0, 0, 0);
 	GL_CullFace(CULL_NONE);
 	glBegin(GL_QUADS);
-	glVertex3fv(fv[0].xyz.v);
-	glVertex3fv(fv[1].xyz.v);
-	glVertex3fv(fv[2].xyz.v);
-	glVertex3fv(fv[3].xyz.v);
+	glVertex3fv(fv[0].v);
+	glVertex3fv(fv[1].v);
+	glVertex3fv(fv[2].v);
+	glVertex3fv(fv[3].v);
 	glEnd();
 	glPopMatrix();
 #endif

@@ -45,6 +45,8 @@ model_t	*FindModel(const char *name)
 			return m;
 		}
 	}
+	if (Name2[0] == '*')
+		Com_DropError("R_FindModel: inline model \"%s\" was not found", *Name2);
 
 	if (modelCount == MAX_GLMODELS)
 	{

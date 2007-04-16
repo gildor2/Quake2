@@ -242,7 +242,12 @@ extern cvar_t	*r_novis;			//?? ~gl_pvsCull ?
 extern cvar_t	*gl_frustumCull;
 extern cvar_t	*gl_oCull;
 extern cvar_t	*gl_backfaceCull;
+#if !NO_DEBUG
 extern cvar_t	*gl_showSky;
+#	define SHOWSKY	gl_showSky->integer
+#else
+#	define SHOWSKY	0
+#endif
 extern cvar_t	*r_drawworld, *r_drawentities;
 extern cvar_t	*gl_sortAlpha;
 
