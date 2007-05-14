@@ -193,7 +193,9 @@ void InitRendererVars();
 
 extern	cvar_t	*r_fullscreen;
 extern	cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
+#if !NO_DEBUG
 extern	cvar_t	*r_fullbright, *r_lightmap;
+#endif
 
 
 /*------------------- Static/dynamic renderer ----------------------------*/

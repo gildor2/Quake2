@@ -715,6 +715,14 @@ static bool ProcessEntity3()
 {
 	entField_t *f;
 
+	// separate fields
+	if (f = FindField("noise"))
+	{
+		if (!strnicmp(f->value, "sound/", 6))
+			strcpy(f->value, f->value + 6);						// cut trailing "sound/"
+	}
+
+	// classes
 	if (!strcmp(classname, "func_rotating"))
 	{
 		spawnflags |= 1;
@@ -753,8 +761,10 @@ static bool ProcessEntity3()
 			Lerp(org1, org2, atof(f->value), org0);
 		float speed = 4;
 		if (f = FindField("speed"))
+		{
 			speed = atof(f->value);
-		appSprintf(ARRAY_ARG(f->value), "%g", height * 4 / speed);	// time to complete full cycle -> speed
+			appSprintf(ARRAY_ARG(f->value), "%g", height * 4 / speed);	// time to complete full cycle -> speed
+		}
 		// remove fields
 		RemoveField("origin");				// not needed
 		RemoveField("spawnflags");			// not needed
@@ -854,8 +864,33 @@ static bool ProcessEntity3()
 			t.origin[0], t.origin[1], t.origin[2] + 10
 		);
 	}
+	else if (!strncmp(classname, "item_", 5) || !strncmp(classname, "weapon_", 7) ||
+		!strncmp(classname, "ammo_", 5)) // also have "holdable_..." and "team_CTF_..."
+	{
+		// weapons, items etc
+		if (spawnflags & 1)
+		{
+			// "suspended" item, should hang in the air
+			spawnflags &= ~1;
+			appSprintf(ARRAY_ARG(spawnflagsField->value), "%d", spawnflags);
+
+			originInfo_t *info = new (bspfile.extraChain) originInfo_t;
+			info->next = bspfile.suspendedItems;
+			bspfile.suspendedItems = info;
+			info->origin = entOrigin;
+		}
+		//?? Have "notfree=1" for (!FreeForAll), "notteam=1" for FreeForAll, and "notsingle=1" for deathmatch;
+		//?? cannot do this in Q2, so - simply remove items
+		//?? What can do: when game calls for getentitystring(), can create string with removed items
+		//?? corresponding to current game mode
+		RemoveField("notfree");
+		RemoveField("notteam");
+		RemoveField("nosingle");
+	}
 	else if (!strcmp(classname, "target_position") || !strcmp(classname, "target_location"))
 		return false;
+	else if (!strcmp(classname, "misc_model"))
+		return false;		// processed by q3map
 
 	return true;
 }
@@ -1444,7 +1479,7 @@ static bool ProcessEntity()
 	{
 		if (originField)
 		{
-			splash_t *spl = new (bspfile.extraChain) splash_t;
+			originInfo_t *spl = new (bspfile.extraChain) originInfo_t;
 			spl->next = bspfile.splashes;
 			bspfile.splashes = spl;
 			spl->origin = entOrigin;

@@ -96,6 +96,10 @@ static void BuildSurfFlare(surfaceBase_t *surf, const color_t *color, float inte
 
 static void LoadSlights(slight_t *data)
 {
+	float lightScale = 1;
+	if (bspfile.type == map_q3 && r_q3map_overbright->integer)
+		lightScale = 2;
+
 	// copy slights from map
 	for ( ; data; data = data->next)
 	{
@@ -104,7 +108,7 @@ static void LoadSlights(slight_t *data)
 		{
 			CSunLight *sun = new (map.dataChain) CSunLight;
 			sun->dir    = data->spotDir;
-			sun->intens = data->intens;
+			sun->intens = data->intens * lightScale;
 			sun->color  = data->color;
 			sun->origin = data->origin;	// for HL suns
 			// insert into list
@@ -135,13 +139,13 @@ static void LoadSlights(slight_t *data)
 		// copy data
 		out->origin  = data->origin;
 		out->color   = data->color;
-		out->intens  = data->intens;
+		out->intens  = data->intens * lightScale;
 		out->style   = data->style;
 		out->spot    = data->spot != 0;
 		out->spotDir = data->spotDir;
 		out->spotDot = data->spotDot;
 		out->focus   = data->focus;
-		out->fade    = data->fade;
+		out->fade    = data->fade * lightScale;		// for linear light: grow brightness, but keep distance
 
 		// insert into list
 		if (out->style == 0)
@@ -1344,17 +1348,18 @@ static surfaceNull_t nullSurface;
 
 
 // should be loaded before surfaces
-static void LoadLigntmaps3(byte *lightData, int lightDataSize)
+static void LoadLightmaps3(byte *lightData, int lightDataSize)
 {
 	if (gl_config.vertexLight) return;
 
 #define Q3_LM_BYTES  (Q3_LIGHTMAP_SIZE * Q3_LIGHTMAP_SIZE * 3)
 	int numLightmaps = lightDataSize / Q3_LM_BYTES;
+	int overbright = r_q3map_overbright->integer ? -1 : 0;
 	for (int i = 0; i < numLightmaps; i++, lightData += Q3_LM_BYTES)
 	{
 		//?? move code to gl_lightmap.cpp ??
 		byte buffer[Q3_LIGHTMAP_SIZE * Q3_LIGHTMAP_SIZE * 4]; // rgba
-		LM_Copy(buffer, lightData, Q3_LIGHTMAP_SIZE * Q3_LIGHTMAP_SIZE);
+		LM_Copy(buffer, lightData, Q3_LIGHTMAP_SIZE * Q3_LIGHTMAP_SIZE, overbright);
 		CreateImage(va("*lightmap%d", i), buffer, Q3_LIGHTMAP_SIZE, Q3_LIGHTMAP_SIZE,
 			IMAGE_CLAMP|IMAGE_LIGHTMAP);
 	}
@@ -1363,6 +1368,7 @@ static void LoadLigntmaps3(byte *lightData, int lightDataSize)
 
 static shader_t *CreateSurfShader3(unsigned sflags, const dBsp3Shader_t *stex)
 {
+	if (stex->surfaceFlags & Q3_SURF_SKY) sflags = SHADER_SKY;
 	shader_t *shader = FindShader(stex->name, sflags);
 
 	if (shader->type == SHADERTYPE_SKY && !map.haveSkySurfaces)
@@ -1394,22 +1400,32 @@ static void LoadSurfaces3(const dBsp3Face_t *surfs, int numSurfaces, dBsp3Vert_t
 
 	nullSurface.shader = gl_defaultShader;
 
+	// prepare scaling factor for surface lights
+	float surfLightScale = 1;
+	if (bspfile.type == map_q3 && r_q3map_overbright->integer)
+		surfLightScale = 2;
+
 	map.numFaces = numSurfaces;
 	map.faces = new (map.dataChain) surfaceBase_t* [numSurfaces];
 	for (int i = 0; i < numSurfaces; i++, surfs++)
 	{
 		int numVerts   = surfs->numVerts;
 		int numIndexes = surfs->numIndexes;
+		unsigned sflags = SHADER_WALL;
 
 		switch (surfs->surfaceType)
 		{
 		case dBsp3Face_t::PLANAR:
 			{
 				surfacePlanar_t *s = new (map.dataChain) surfacePlanar_t;
-				shader_t *shader = CreateSurfShader3(surfs->lightmapNum >= 0 ?
-					SHADER_LIGHTMAP|SHADER_WALL : SHADER_WALL,
-					tex + surfs->shaderNum);
-				shader = SetShaderLightmap(shader, surfs->lightmapNum);
+				int lightmapNum = surfs->lightmapNum;
+				if (lightmapNum >= 0)	// map surface can force lightmapNum==-1 for "no light"
+					sflags |= SHADER_LIGHTMAP;
+				else
+					lightmapNum = LIGHTMAP_NONE;
+				shader_t *shader = CreateSurfShader3(sflags, tex + surfs->shaderNum);
+				if (lightmapNum >= 0)
+					shader = SetShaderLightmap(shader, lightmapNum);
 				s->shader = shader;
 				map.faces[i] = s;
 
@@ -1443,7 +1459,8 @@ static void LoadSurfaces3(const dBsp3Face_t *surfs, int numSurfaces, dBsp3Vert_t
 				if (shader->lightValue)
 				{
 					float area = GetSurfArea(s);
-					BuildSurfLight(s, &shader->lightColor, area, shader->lightValue, false /*?? (stex->flags & SURF_SKY) != 0*/);
+					BuildSurfLight(s, &shader->lightColor, area, shader->lightValue * surfLightScale,
+						false /*?? (stex->flags & SURF_SKY) != 0*/);
 				}
 			}
 			break;
@@ -1451,8 +1468,7 @@ static void LoadSurfaces3(const dBsp3Face_t *surfs, int numSurfaces, dBsp3Vert_t
 		case dBsp3Face_t::TRISURF:
 			{
 				surfaceTrisurf_t *s = new (map.dataChain) surfaceTrisurf_t;
-				shader_t *shader = CreateSurfShader3(SHADER_WALL|SHADER_VERTEXLIGHT,
-					tex + surfs->shaderNum);
+				shader_t *shader = CreateSurfShader3(sflags|SHADER_VERTEXLIGHT, tex + surfs->shaderNum);
 				s->shader = shader;
 				map.faces[i] = s;
 #if 1
@@ -1487,8 +1503,7 @@ static void LoadSurfaces3(const dBsp3Face_t *surfs, int numSurfaces, dBsp3Vert_t
 		case dBsp3Face_t::PATCH:
 			{
 				surfaceNull_t *s = new (map.dataChain) surfaceNull_t;	//!!!
-				shader_t *shader = CreateSurfShader3(SHADER_WALL|SHADER_VERTEXLIGHT,
-					tex + surfs->shaderNum);
+				shader_t *shader = CreateSurfShader3(sflags|SHADER_VERTEXLIGHT, tex + surfs->shaderNum);
 				s->shader = shader;
 				map.faces[i] = s;
 #if 1
@@ -1550,7 +1565,7 @@ static void LoadBsp3()
 {
 	guard(LoadBsp3);
 
-	LoadLigntmaps3(bspfile.lighting, bspfile.lightDataSize);
+	LoadLightmaps3(bspfile.lighting, bspfile.lightDataSize);
 	LoadSurfaces3(bspfile.faces3, bspfile.numFaces, bspfile.vertexes3, bspfile.indexes3, bspfile.texinfo3);
 	LoadLeafSurfaces(bspfile.leaffaces3, bspfile.numLeaffaces);
 	LoadLeafsNodes(bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);

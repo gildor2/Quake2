@@ -636,7 +636,7 @@ struct dBsp3Face_t
 	int		surfaceType;			// value from enum above
 	int		firstVert, numVerts;
 	int		firstIndex, numIndexes;
-	int		lightmapNum;
+	int		lightmapNum;			// -1 for no lightmap, >= 0 for normal lightmap
 	int		lightmapParms[4];		// X, Y, width, height -- unused
 	CVec3	flareOrigin;			// for FLARE
 	CVec3	lightmapVecs[3];		// [2] - normal; for FLARE [0] - color; for PATCH [0,1] - bounds
@@ -691,7 +691,7 @@ struct dBsp3Vis_t
 #define Q3_SURF_NODAMAGE			0x000001		// no falling damage
 #define Q3_SURF_SLICK				0x000002
 #define Q3_SURF_SKY					0x000004
-#define	Q3_SURF_LADDER				0x000008		// not used in Q3
+#define	Q3_SURF_LADDER				0x000008		// not used in Q3, but used in some mods (converted to contents)
 #define	Q3_SURF_NOIMPACT			0x000010		//!! bullet hits will not produce any fx
 #define	Q3_SURF_NOMARKS				0x000020		// no decals on surface
 #define	Q3_SURF_FLESH				0x000040		//!! sound: flesh

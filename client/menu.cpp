@@ -2541,6 +2541,7 @@ static cvar_t *gl_bitdepth;
 static cvar_t *gl_textureBits;
 static cvar_t *gl_vertexLight;
 static cvar_t *gl_overbright;
+static cvar_t *r_q3map_overbright;
 
 
 struct videoMenu_t : menuFramework_t
@@ -2561,6 +2562,7 @@ struct videoMenu_t : menuFramework_t
 	// quality/speed
 	static menuList_t	lightStyle;			// gl_vertexLight
 	static menuList_t	fastSky;			// gl_fastSky
+	static menuList_t	q3mapOverbright;	// r_q3map_overbright
 	// textures
 	static menuSlider_t	tq_slider;			// gl_picmip
 	static menuList_t	textureBits;		// gl_textureBits
@@ -2597,6 +2599,7 @@ struct videoMenu_t : menuFramework_t
 		Cvar_SetInteger("gl_finish", finish_box.curvalue);
 		Cvar_SetInteger("gl_mode", mode_list.curvalue);
 		Cvar_SetInteger("gl_fastsky", fastSky.curvalue);
+		Cvar_SetInteger("r_q3map_overbright", q3mapOverbright.curvalue);
 		Cvar_SetInteger("gl_bitdepth", colorDepth.curvalue * 16);
 		Cvar_SetInteger("gl_overbright", overbright.curvalue);
 		Cvar_SetInteger("gl_textureBits", textureBits.curvalue * 16);
@@ -2619,6 +2622,8 @@ struct videoMenu_t : menuFramework_t
 		CHECK_UPDATE(gl_textureBits);
 		CHECK_UPDATE(gl_overbright);
 		CHECK_UPDATE(gl_bitdepth);
+
+		CHECK_UPDATE(r_q3map_overbright);	// note: affects Q3A maps only
 
 		if (modeChanded)
 		{
@@ -2666,11 +2671,12 @@ CVAR_BEGIN(vars)
 		CVAR_VAR(gl_bitdepth, 0, CVAR_ARCHIVE),
 		CVAR_VAR(gl_textureBits, 0, CVAR_ARCHIVE),
 		CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE),
-		CVAR_VAR(gl_overbright, 2, CVAR_ARCHIVE)
+		CVAR_VAR(gl_overbright, 2, CVAR_ARCHIVE),
+		CVAR_VAR(r_q3map_overbright, 1, CVAR_ARCHIVE)
 CVAR_END
 		Cvar_GetVars(ARRAY_ARG(vars));
 
-		mode_list.curvalue = Cvar_Get("gl_mode", "3", CVAR_ARCHIVE)->integer;
+		mode_list.curvalue = Cvar_VariableInt("gl_mode");
 
 		x = viddef.width / 2;
 		y = viddef.height / 2 - 58;
@@ -2715,8 +2721,11 @@ CVAR_END
 		lightStyle.curvalue = gl_vertexLight->integer;
 		AddItem(&lightStyle);
 		MENU_SPIN(fastSky, y+=10, "fast sky", NULL, yesno_names);
-		fastSky.curvalue = Cvar_Get("gl_fastsky", "0", CVAR_ARCHIVE)->integer;
+		fastSky.curvalue = Cvar_VariableInt("gl_fastsky");
 		AddItem(&fastSky);
+		MENU_SPIN(q3mapOverbright, y+=10, "overbright Q3A maps", NULL, yesno_names);
+		q3mapOverbright.curvalue = Cvar_VariableInt("r_q3map_overbright");
+		AddItem(&q3mapOverbright);
 		MENU_SLIDER(tq_slider, y+=10, "texture detail", NULL, 0, 3);
 		tq_slider.curvalue = 3 - gl_picmip->integer;
 		AddItem(&tq_slider);
@@ -2724,10 +2733,10 @@ CVAR_END
 		textureBits.curvalue = gl_textureBits->integer >> 4;
 		AddItem(&textureBits);
 		MENU_SPIN(textureFilter, y+=10, "texture filter", NULL, filters);
-		textureFilter.curvalue = stricmp(Cvar_Get("gl_texturemode", "bilinear", CVAR_ARCHIVE)->string, "bilinear") ? 1 : 0;
+		textureFilter.curvalue = stricmp(Cvar_VariableString("gl_texturemode"), "bilinear") ? 1 : 0;
 		AddItem(&textureFilter);
 		MENU_SPIN(finish_box, y+=10, "sync every frame", NULL, yesno_names);
-		finish_box.curvalue = Cvar_Get("gl_finish", "0", CVAR_ARCHIVE)->integer;
+		finish_box.curvalue = Cvar_VariableInt("gl_finish");
 		AddItem(&finish_box);
 
 		y += 10;
@@ -2768,6 +2777,7 @@ menuList_t	videoMenu_t::colorDepth;
 menuList_t	videoMenu_t::overbright;
 menuList_t	videoMenu_t::lightStyle;
 menuList_t	videoMenu_t::fastSky;
+menuList_t	videoMenu_t::q3mapOverbright;
 menuSlider_t	videoMenu_t::tq_slider;
 menuList_t	videoMenu_t::textureBits;
 menuList_t	videoMenu_t::textureFilter;

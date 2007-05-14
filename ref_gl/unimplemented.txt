@@ -104,7 +104,7 @@ DLIGHTS:
 - cvar gl_fastDlights (==1 -- current; ==0 -- correct brightness by distance to surface plane);
   correct dlights: DrawScene() should check for dlighted shaders a plane pointer (needs to share planes between coplanar
   surfaces !!) and call Flush() when plane differs; can be optimized: MOST (not all!) shaders can be painted correctly,
-  when plane is different, BUT all surfaces have only 1 dlight (different code path for PreprocessShader(): use glColor,
+  when plane is different, BUT all surfaces have only 1 dlight (different code path for ComputeCombiners(): use glColor,
   not glEnvColor); may be, use 1 dlight for different planes and any number of dlights for same plane in a single Flush()
   (hard to implement ?)
 - far+small dlights on small surfaces: can use vertex light instead of texture
@@ -232,11 +232,10 @@ COLORS (SATURATE/OVERBRIGHT):
   - add GL_SaveState() / GL_RestoreState(): copy struc / enum saved + call funcs for saved fields
     (or GL_SaveState(savePtr) / GL_SetState(glState))
 
-PreprocessShader():
+ComputeCombiners():
   - add GL_DECAL blend: src=SRC_ALPHA, dst=ONE_MINUS_SRC_ALPHA
   - can combine (src_a, 1-src_a)+(1,1)
-  ? constRgba/identRgba -> rgbType,alphaType = {compute,const,ident (const=1),vertex,vertexConst(vetrex*const)}
-  - BUG?: r_lightmap will not hide envmaps, end r_fullbright will not show texture when have envmap
+  ? constRgba/identRgba -> rgbType,alphaType = {compute/var,const,ident (const=1),vertex,vertexConst(vetrex*const)}
 
 - shaders:
   ? make shader_t.name dynamically allocated (~ basenamed_t)

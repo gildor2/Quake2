@@ -113,12 +113,11 @@ struct slight_t
 
 // static map effects
 
-struct splash_t
+struct originInfo_t
 {
 	CVec3		origin;
-	splash_t	*next;
+	originInfo_t *next;
 };
-
 
 struct triggerModelLink_t
 {
@@ -259,9 +258,10 @@ struct bspfile_t
 	slight_t	*slights;
 
 	// static effects
-	splash_t	*splashes;				// target_splash entities
+	originInfo_t *splashes;				// target_splash entities
 	// model links
 	triggerModelLink_t *modelLinks;
+	originInfo_t *suspendedItems;
 
 	// fog
 	//?? remove

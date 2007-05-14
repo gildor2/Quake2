@@ -242,6 +242,9 @@ extern cvar_t	*r_novis;			//?? ~gl_pvsCull ?
 extern cvar_t	*gl_frustumCull;
 extern cvar_t	*gl_oCull;
 extern cvar_t	*gl_backfaceCull;
+
+extern cvar_t	*r_q3map_overbright;
+
 #if !NO_DEBUG
 extern cvar_t	*gl_showSky;
 #	define SHOWSKY	gl_showSky->integer

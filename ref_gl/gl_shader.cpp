@@ -446,7 +446,7 @@ static shader_t *FinishShader()
 	}
 
 	// scripted shaders may skip lightmap stage
-	if (!haveLightmap)
+	if (!haveLightmap && sh.lightmapNumber != LIGHTMAP_VERTEX)
 		sh.lightmapNumber = LIGHTMAP_NONE;
 
 	// if sortParam is not yet set - set it to opaque
@@ -721,6 +721,8 @@ shader_t *FindShader(const char *name, unsigned style)
 	int lightmapNumber = LIGHTMAP_NONE;
 	if (style & SHADER_LIGHTMAP)
 		lightmapNumber = (gl_config.vertexLight) ? LIGHTMAP_VERTEX : LIGHTMAP_RESERVE;
+	else if (style & SHADER_VERTEXLIGHT)
+		lightmapNumber = LIGHTMAP_VERTEX;
 
 	/*----- find shader using hash table -----*/
 	int hash = ComputeHash(Name2);

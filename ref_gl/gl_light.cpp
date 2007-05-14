@@ -199,6 +199,7 @@ void CSurfLight::Show() const
 void ShowLights()
 {
 	if (vp.flags & RDF_NOWORLDMODEL) return;
+	LOG_STRING("***** ShowLights() *****\n");
 
 	glPushMatrix();
 	glLoadMatrixf(&vp.modelMatrix[0][0]);

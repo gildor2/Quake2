@@ -4,41 +4,60 @@ FOUND BUG from p99 (when moved EntityParser call from model.cpp to cmodel.cpp - 
   ? try to convert HL's "trigger_push"
   - also func_ladder, func_water etc (contents changers) does not works
 ---------------------------------------------------------------------------------------------------
-
-? q3map_backsplash <frac> <dist> -- generate point lights near surface light
+areaportals (q2,q3):
+- rename "areas" to "zones" (check UT)
+! can clip visible contents with portal:
+  a) no portals open - draw nothing (q2 does)
+  b) 1 portal open   - compute special fructum for it (should improve performance)
+  c) 2+ portals open - draw everything (q2/q3 does) or expand computed frustum by all portals
+! Q2 portal game code is completely different from Q3 one, so, Q3 map portals will be "invisible"
+  for Q2 game dll -- require server-side hook (or create func_areaportal entity?)
+* info: Q3A areabits computed in SV_AddEntitiesVisibleFromPoint()
+! this will require geometric information about area portal (model, surface, bbox etc)
+* Q2: a) door.target.class == "func_areaportal" -> open areaportal #target.style
+         (check door_use_areaportals() in game code)
+      b) standalone func_areaportal (used with doors only?) - check Use_Areaportal()
+* Q3: when moving entity touched 2 areas, then when entity is in original state, portal will be
+  closed, otherwise portal will be opened
+---------------------------------------------------------------------------------------------------
+shader lighting:
+- make dlight updates for vertex lightmap DYNAMIC: do not call UpdateDynamicLightmap
+  every time -- dlights should be applied in backend inside ComputeCombiners()
 - q3 lightgrid support: have some maps with erased pointlight entities
   - implement as separate light source (global)
   - may use available lights (surface, sun) to emphasize light effect (may be optional)
-
-- make dlight updates for vertex lightmap DYNAMIC: do not call UpdateDynamicLightmap
-  every time -- dlights should be applied in backend inside PreprocessShader()
-
-- with gamma==1 Q3-rendered maps looks brighter, than in my renderer; reason: q3 uses
-  r_mapOverbrightBits==2 instead of 1; should be overbrighted:
-  - lightmaps
-  - vertex colors
-  - lights
+---------------------------------------------------------------------------------------------------
+vertex lighting:
+- overbright vertex light for r_q3map_overbright
 ? vertex light (at least for trisurfs): use isDoubleRgba
+---------------------------------------------------------------------------------------------------
+- fence textures (with alpha-channel):
+  - try to use my code for Kingpin maps/textures to prevent artifacts when far from texture
+  - Q3 have lightmaps on fences; displayed in my Q2, but as separate pass - try to combine
+  - try to use same tech for lighting KP fences
+---------------------------------------------------------------------------------------------------
+- worlspawn "music": can hook cdaudio and replace CD playback with specified music track:
+  - check Q3A code: which function used to playback such audio files
+  - is music completely loaded into RAM?
+  - g_spawn.c::SP_worldspawn(): CD_CDTRACK set up as `va("%i", ent->sounds)', so we cannot
+    send track name as configstring, it should be replaced in client-side hook
+? q3map_backsplash <frac> <dist> -- generate point lights near surface light
 
-! r_lightmap: complex shaders (jumppads etc) disappeared when set to "1"
-! reorder stages to make lightmap 1st
 ? particles does not works in some places (should collide with patches?)
 - trisurfs: dlights does not works for surfaces with "diffuse light", owned by world entity
   (code uses uses ent->center ...)
   q3 path: trisurfs uses vertex lighting, but my code requires dynamicLightmap for this
 
-- check areas
 - display curves
 - trace curves
 - fog
-- entities
-- vertex lighting (no lightmap loading, using vertex light from bsp)
+? vertex lighting (no lightmap loading, using vertex light from bsp) -- q3a vertex light is ugly ...
 - color saturation (lightmaps, vertex light)
 - surface lighting from "autosprite" -> point light
 
 
 ------------------"Strange blend for LM"-----------------------
-*** q3dm7 ***
+*** q3dm7 {1356,-555,-18} ***  (gl_spyShader: shader not combined!)
 textures/gothic_wall/iron01_m
 textures/gothic_wall/iron01_ndark
 {

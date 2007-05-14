@@ -210,6 +210,7 @@ static void CopyLightmap(byte *dst, byte *src, int w, int h, int stride, byte a)
 {
 	int		x, y;
 
+#if !NO_DEBUG
 	if (r_lightmap->integer == 2)
 	{
 		for (y = 0; y < h; y++)
@@ -236,10 +237,13 @@ static void CopyLightmap(byte *dst, byte *src, int w, int h, int stride, byte a)
 		}
 	}
 	else
+#endif
 	{
 		float sat = r_saturation->value;
+#if !NO_DEBUG
 		if (r_lightmap->integer == 3)
 			sat = -sat;
+#endif
 
 		for (y = 0; y < h; y++)
 		{
@@ -278,9 +282,9 @@ static void CopyLightmap(byte *dst, byte *src, int w, int h, int stride, byte a)
 
 
 // copy non-formatted lightmap data
-void LM_Copy(byte *dst, byte *src, int size)
+void LM_Copy(byte *dst, byte *src, int size, int overbright)
 {
-	CopyLightmap(dst, src, size, 1, 0, 0);
+	CopyLightmap(dst, src, size, 1, 0, overbright);
 }
 
 

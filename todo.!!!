@@ -299,6 +299,7 @@ BSP:
     1) PVS: project portal entity to destination, find its leafnums->clusters, combine PVS
     2) shrink frustum by original portal entity (may use GetBoxRect(entityBox)); shring 5th frustum plane too!
     3) use this computed data for determining rendered leafs
+  - requires server-side code to not cull entities by PVS, when player can see it with portal
   - rendering:
     - use glScissor()
     - try to use 'Oblique Frustum Clipping' (NV demos) for free clip plane (aligns near clip plane to user clip

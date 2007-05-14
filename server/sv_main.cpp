@@ -988,7 +988,7 @@ sizebuf_t *SV_MulticastHook(sizebuf_t *original, sizebuf_t *ext)
 				return original;			// not bullet effect
 
 			// find splash origin in static map splashes to avoid bullethit sounds for waterfalls etc.
-			for (const splash_t *spl = bspfile.splashes; spl; spl = spl->next)
+			for (const originInfo_t *spl = bspfile.splashes; spl; spl = spl->next)
 			{
 				if (fabs(spl->origin[0] - v1[0]) < 1 &&
 					fabs(spl->origin[1] - v1[1]) < 1 &&
@@ -1019,8 +1019,39 @@ void SV_TraceHook(trace0_t &trace, const CVec3 &start, const CVec3 *mins, const 
 {
 	guard(SV_TraceHook);
 
-	static edict_t *ent;
-#define RESET  { shotLevel = 0; return; }
+	if (bspfile.suspendedItems && passedict)
+	{
+		// hack for game's droptofloor(): items, listed in bspfile.suspendedItems (for Q3A maps),
+		// should 'fly' in the air; droptofloor always calls trace() with following params:
+		//	trace(ent->s.origin, ent->mins, ent->maxs, dest, ent, MASK_SOLID)
+		//	ent.solid == SOLID_TRIGGER (but: when item picked up, it still "thinking" with
+		//	  droptofloor(), but with SOLID_NOT; see SetRespawn())
+		//	dest = ent->s.origin + (0,0,-128)
+		// Also, check for SV_PushEntity():
+		//	trace(start, ent->mins, ent->maxs, end, ent, mask)
+		//	start == ent->s.origin
+		//	end   == start+delta
+		//	mask  == ent->clipmask or MASK_SOLID (clipmask used for clients/monsters only?)
+		// game source reference: g_phys.c
+		if (start == passedict->s.origin		&&							// compare vectors, not pointers
+			mins == &passedict->bounds.mins && maxs == &passedict->bounds.maxs &&
+			contentmask == MASK_SOLID			&&
+			(passedict->solid == SOLID_TRIGGER || passedict->solid == SOLID_NOT) &&	// trigger entity
+			end[0] == start[0] && end[1] == start[1] && end[2] < start[2])	// falling down
+		{
+			// check list ...
+			for (const originInfo_t *info = bspfile.suspendedItems; info; info = info->next)
+#define CMP(n)	(fabs(start[n] - info->origin[n]) < 0.5f)
+				if (CMP(0) && CMP(1) && CMP(2))
+				{
+					trace.startsolid = false;
+					trace.endpos     = start;
+					trace.fraction   = 1.0f;								// disable SV_Impact()
+					return;
+				}
+#undef CMP
+		}
+	}
 
 	trace_skipAlpha = true;		//!! hack for kingpin CONTENTS_ALPHA
 	if (mins || maxs) trace_skipAlpha = false;
@@ -1037,13 +1068,20 @@ void SV_TraceHook(trace0_t &trace, const CVec3 &start, const CVec3 *mins, const 
 	trace_skipAlpha = false;	//!!
 	if (!sv_extProtocol->integer) return;
 
-	if (mins || maxs) RESET
+	if (mins || maxs)
+	{
+	shot_skip:
+		shotLevel = 0;
+		return;
+	}
+
+	static edict_t *ent;		//??
 
 	// for details, look game/g_weapon.c :: fire_lead()
 	if (contentmask == MASK_SHOT && ((unsigned)passedict) + 4 == (unsigned)&start)
 	{
 		if (ent == passedict && end == shotStart)
-			RESET			// shotgun shot
+			goto shot_skip;			// shotgun shot
 		shotLevel = 1;
 		shotStart = end;
 		ent       = passedict;
@@ -1052,17 +1090,15 @@ void SV_TraceHook(trace0_t &trace, const CVec3 &start, const CVec3 *mins, const 
 	{
 		if (passedict != ent || start != shotStart ||
 			(contentmask != (MASK_SHOT|MASK_WATER) && contentmask != MASK_SHOT))
-			RESET
+			goto shot_skip;
 		shotEnd = end;
 
 		shotLevel = 2;
 	}
 	else if (shotLevel > 1)
 	{
-		if (passedict != ent) RESET
+		if (passedict != ent) goto shot_skip;
 	}
-
-#undef RESET
 
 	unguard;
 }

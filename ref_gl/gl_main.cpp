@@ -79,6 +79,7 @@ cvar_t	*gl_maxTextureUnits;
 cvar_t	*gl_logFile;
 #endif
 cvar_t	*r_novis, *gl_frustumCull, *gl_oCull, *gl_backfaceCull;
+cvar_t	*r_q3map_overbright;
 #if !NO_DEBUG
 cvar_t	*gl_showSky;
 cvar_t	*r_drawworld, *r_drawentities;
@@ -198,6 +199,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_frustumCull, 1, 0),
 	CVAR_VAR(gl_oCull, 1, 0),
 	CVAR_VAR(gl_backfaceCull, 1, 0),
+	CVAR_VAR(r_q3map_overbright, 1, CVAR_ARCHIVE),
 #if STATS
 	CVAR_VAR(r_stats, 0, 0),
 #endif
@@ -344,11 +346,11 @@ bool Init()
 		gl_config.maxActiveTextures = gl_maxTextureUnits->integer;
 	}
 
-	gl_config.doubleModulateLM = true;			// no multitexture or env_combine
+	gl_config.doubleModulateLM = true;								// no multitexture or env_combine
 	if (!GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE|QGL_NV_TEXTURE_ENV_COMBINE4))
 		gl_config.doubleModulateLM = false;
 	if (!GL_SUPPORT(QGL_SGIS_MULTITEXTURE|QGL_ARB_MULTITEXTURE))	// no multitexturing - can do normal blending
-		gl_config.doubleModulateLM = false;
+		gl_config.doubleModulateLM = true;
 
 	if (GL_SUPPORT(QGL_ARB_TEXTURE_COMPRESSION))
 	{
@@ -471,11 +473,10 @@ void BeginFrame(double time)
 	gl_state.maxUsedShaderIndex = -1;
 	//?? useFastSky: when gl_fastSky!=0 - should clear screen only when at least one of sky surfaces visible
 	//?? (perform glClear() in DrawSky() ?)
-	gl_state.useFastSky = gl_fastSky->integer || (r_fullbright->integer && r_lightmap->integer)
+	gl_state.useFastSky = (gl_fastSky->integer != 0);
 #if !NO_DEBUG
-		|| gl_showFillRate->integer
+	gl_state.useFastSky |= (r_fullbright->integer && r_lightmap->integer) || gl_showFillRate->integer;
 #endif
-		;
 
 	if (gl_texturemode->modified)
 	{

@@ -75,7 +75,7 @@ FORCEINLINE void operator delete(void* ptr)
 FORCEINLINE void* operator new(size_t size, CMemoryChain *chain, int alignment = DEFAULT_ALIGNMENT)
 {
 	return chain->Alloc(size, alignment);
-};
+}
 
 #if __GNUC__
 // for GCC: operator new[]/delete[]

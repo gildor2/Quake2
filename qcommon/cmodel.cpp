@@ -61,8 +61,10 @@ struct cbrush_t
 
 struct carea_t
 {
+	// info from bsp file
 	int		numAreaPortals;
 	int		firstAreaPortal;
+	// dynamic info
 	int		floodnum;					// if two areas have equal floodnums, they are connected
 	int		floodvalid;
 };
@@ -972,10 +974,11 @@ static void LoadQ1Map(bspfile_t *bsp)
 	q3 bsp loading
 -----------------------------------------------------------------------------*/
 
-static unsigned Q3Contents(unsigned f)
+static unsigned Q3Contents(unsigned c, unsigned s)
 {
 	unsigned r = 0;
-#define T(c)	if (f & Q3_CONTENTS_##c) r |= CONTENTS_##c;
+	// convert Q3_CONTENTS_...
+#define T(x)	if (c & Q3_CONTENTS_##x) r |= CONTENTS_##x;
 	T(SOLID)
 	T(LAVA)
 	T(SLIME)
@@ -983,13 +986,17 @@ static unsigned Q3Contents(unsigned f)
 	T(PLAYERCLIP)
 	T(MONSTERCLIP)
 #undef T
+	// convert Q3_SURF_...
+#define T(x)	if (s & Q3_SURF_##x) r |= CONTENTS_##x;
+	T(LADDER)
+#undef T
 	return r;
 }
 
 static unsigned Q3Surface(unsigned f)
 {
 	unsigned r = 0;
-#define T(c)	if (f & Q3_SURF_##c) r |= SURF_##c;
+#define T(x)	if (f & Q3_SURF_##x) r |= SURF_##x;
 	T(SKY)
 	T(NODRAW)
 #undef T
@@ -1015,7 +1022,8 @@ static void LoadBrushes3(dBsp3Brush_t *srcBrush, int brushCount, dBsp3Brushside_
 
 	for (int i = 0; i < brushCount; i++, srcBrush++, out++)
 	{
-		out->contents = Q3Contents(bspfile.texinfo3[srcBrush->shaderNum].contentFlags); //?? Q3: check
+		const dBsp3Shader_t &surf = bspfile.texinfo3[srcBrush->shaderNum];
+		out->contents = Q3Contents(surf.contentFlags, surf.surfaceFlags);
 		out->numSides = srcBrush->numsides;
 		if (!out->numSides) continue;
 
@@ -2540,8 +2548,9 @@ bool CM_AreasConnected(int area1, int area2)
 =================
 CM_WriteAreaBits
 
-Writes a length byte followed by a bit vector of all the areas
+Writes a bit vector of all the areas
 that area in the same flood as the area parameter
+Returns the number of bytes needed to hold all the bits.
 
 This is used by the renderer to cull visibility
 =================

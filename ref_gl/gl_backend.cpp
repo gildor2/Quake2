@@ -211,9 +211,9 @@ static void ProcessShaderDeforms(shader_t *sh)
 					vec++;
 					// recompute texcoords
 					tex->tex[0] = 0; tex->tex[1] = 0; tex++;
-					tex->tex[0] = 1; tex->tex[1] = 0; tex++;
-					tex->tex[0] = 1; tex->tex[1] = 1; tex++;
 					tex->tex[0] = 0; tex->tex[1] = 1; tex++;
+					tex->tex[0] = 1; tex->tex[1] = 1; tex++;
+					tex->tex[0] = 1; tex->tex[1] = 0; tex++;
 					// recompute indexes
 					*idx++ = j; *idx++ = j+2; *idx++ = j+1;
 					*idx++ = j; *idx++ = j+3; *idx++ = j+2;
@@ -434,6 +434,9 @@ static void GenerateTexCoordArray(shaderStage_t *st, int tmu, const image_t *tex
 	// process tcGen
 	bufTexCoord_t    *dst = vb->texCoord[tmu];
 	bufTexCoordSrc_t *src = srcTexCoord;
+
+	guardSlow(TcGen);
+
 	switch (st->tcGenType)
 	{
 	case TCGEN_TEXTURE:
@@ -559,6 +562,8 @@ static void GenerateTexCoordArray(shaderStage_t *st, int tmu, const image_t *tex
 		}
 	}
 
+	unguardfSlow(("%d", st->tcGenType));
+
 	// process tcMod
 	tcModParms_t *tcmod;
 	for (j = 0, tcmod = st->tcModParms; j < st->numTcMods; j++, tcmod++)
@@ -566,6 +571,9 @@ static void GenerateTexCoordArray(shaderStage_t *st, int tmu, const image_t *tex
 		float	f1, f2;
 
 		dst = vb->texCoord[tmu];
+
+		guardSlow(TcMod);
+
 		switch (tcmod->type)
 		{
 		case TCMOD_SCROLL:
@@ -666,6 +674,8 @@ static void GenerateTexCoordArray(shaderStage_t *st, int tmu, const image_t *tex
 			}
 			break;
 		}
+
+		unguardfSlow(("%d", tcmod->type));
 	}
 
 	unguard;
@@ -676,9 +686,10 @@ static void GenerateTexCoordArray(shaderStage_t *st, int tmu, const image_t *tex
 	Shader visualization
 -----------------------------------------------------------------------------*/
 
-// should rename "temp", "tmp" ?? (rendererStage_t, combinedStage_t, texUnit_t ?)
-//!! WARNING: should not be constructors, because using *tempStage_t=*shaderStage_t
-struct tempStage_t : public shaderStage_t
+namespace Comb // combiners
+{
+
+struct renderStage_t : public shaderStage_t
 {
 	// modified copy of original stage (or auto-generated stage) + additional fields
 	unsigned texEnv;		// value for GL_TexEnv()
@@ -693,15 +704,15 @@ struct renderPass_t
 {
 	unsigned glState;
 	int		numStages;
-	tempStage_t *stages;
+	renderStage_t *stages;
 	shaderStage_t *colorStage;	//?? remove if it is always the same as "stages[0]"
 };
 
 #define MAX_RENDER_PASSES	(MAX_SHADER_STAGES+8)
 
-static tempStage_t	tmpSt[MAX_RENDER_PASSES];
-static int			numTmpStages;
-static renderPass_t renderPasses[MAX_RENDER_PASSES];
+static renderStage_t rendSt[MAX_RENDER_PASSES];
+static int			numRenderStages;
+static renderPass_t	renderPasses[MAX_RENDER_PASSES];
 static int			numRenderPasses;
 //?? move currentShader here
 
@@ -712,16 +723,14 @@ static int			numRenderPasses;
 #define BLEND_ANY				(BLEND_MULTIPLICATIVE|BLEND_ADDITIVE)
 #define BLEND_INCOMPATIBLE		0x80000000
 
-#define DEBUG_FULLBRIGHT	1
-#define DEBUG_LIGHTMAP		2
-
 //#define LOG_PP(x)	LOG_STRING(x)
 //#define LOG_PP(x) DrawTextLeft(x,RGB(0.3,0.6,0.6))
 
 #ifndef LOG_PP
 #	if SPY_SHADER
 #		define LOG_PP(x)	if (spy) DrawTextLeft(x,RGB(0.3,0.6,0.6));
-		// NOTE: when LOG_PP() placed inside "if" operator, we should use {} around LOG_PP() (because LOG_PP have own "if")
+		// NOTE: when LOG_PP() placed inside "if" operator, we should use {} around LOG_PP()
+		// (because LOG_PP have its own "if")
 #	else
 #		define LOG_PP(x)
 #		define NO_LOG_PP	1
@@ -734,113 +743,101 @@ static int			numRenderPasses;
 #	define LOG_PP2(x)
 #endif
 
-//!! separate copy-stages and combine-with-multitexture to different funcs (make few mtex funcs for different extensions ?)
-//?? and: rename this func
-static void PreprocessShader(shader_t *sh)
+
+// Apply lighting before other stages, when possible - this is an easiest way,
+// all light textures may be added together
+int PreLight(const shader_t *sh)
 {
-	int		i;
-	shaderStage_t *stage;
-	tempStage_t *st;
-
-#if SPY_SHADER
-	bool spy = false;
-	const char *mask = gl_spyShader->string;
-	if ((mask[0] && mask[1]) || mask[0] == '*')		// string >= 2 chars or "*"
-		spy = appMatchWildcard(sh->Name, mask, false);
-#endif
-
-	int debugMode = 0;
-	if (r_fullbright->integer) debugMode |= DEBUG_FULLBRIGHT;
-	if (r_lightmap->integer)   debugMode |= DEBUG_LIGHTMAP;
-
-	st = tmpSt;
-	numTmpStages = 0;
-	memset(tmpSt, 0, sizeof(tmpSt));				// initialize all fields with zeros
+	int i;
+	renderStage_t *st = rendSt;
 
 	// get lightmap stage (should be first ??)
 	shaderStage_t *lmStage = NULL;
-	if (sh->numStages && sh->stages[0]->isLightmap) lmStage = sh->stages[0];
-	int firstStage = 0;
+	if (sh->numStages && sh->stages[0]->isLightmap)
+		lmStage = sh->stages[0];
 
-	if (lmStage && gl_dynamic->integer && !r_fullbright->integer)
+	if (!lmStage || !gl_dynamic->integer)
 	{
-		if (currentDlightMask)
+		// no lightmap stage, lm stage is not first, or dynamic lighting is disabled
+		return 0;
+	}
+#if !NO_DEBUG
+	if (r_fullbright->integer) return 0;
+#endif
+
+	if (currentDlightMask)
+	{
+		unsigned mask;
+		int		num;
+
+		for (i = 0, num = 0, mask = currentDlightMask; mask; i++, mask >>= 1)
 		{
-			unsigned mask;
-			int		num;
+			if (!(mask & 1)) continue;
 
-			for (i = 0, num = 0, mask = currentDlightMask; mask; i++, mask >>= 1)
-			{
-				if (!(mask & 1)) continue;
-
-				st->mapImage[0]    = gl_dlightImage;
-				// set glState
-				st->glState        = (!numTmpStages) ? lmStage->glState : BLEND(1,1); // src+dst
-				// set rgba
-				st->alphaGenType   = ALPHAGEN_CONST;
-				st->rgbGenType     = RGBGEN_CONST;
-				st->rgbaConst.rgba = vp.dlights[i].c.rgba;
-				// set tcGen
-				st->tcGenType = (tcGenType_t)(TCGEN_DLIGHT0 + num);
-				st->numTcMods = 0;
-				// finish
-				st++;
-				numTmpStages++;
-				num++;
-			}
-		}
-
-		if (sh->lightStyles_i || currentDlightMask)
-		{
-			/*------------ add dynamic lightmaps ------------*/
-			// even if shader have no lightstyles, we will get here to add main lightmap stage
-			for (i = 0; i <= 4; i++)		// last iteration reserved for main (slow) lightmap
-			{
-				byte style = (i < 4 ? currentShader->lightStyles[i] : 0);	// if shader have less than 4 styles, we will get 0 earlier
-				if (!style && currentShader->fastStylesOnly) break;
-
-				// set image
-				st->mapImage[0]  = lmStage->mapImage[0];
-				// set glState
-				st->glState      = (!numTmpStages) ? lmStage->glState : BLEND(1,1); // src+dst
-				// set rgba
-				st->alphaGenType = ALPHAGEN_CONST;
-				st->rgbGenType   = RGBGEN_CONST;
-				if (style)
-				{
-					byte c = vp.lightStyles[style].value;
-					st->rgbaConst.rgba = RGB255(c,c,c);
-				}
-				else
-					st->rgbaConst.rgba = RGBA(1,1,1,1);
-				// set tcGen
-				st->tcGenType = style ? (tcGenType_t)(TCGEN_LIGHTMAP1 + i) : TCGEN_LIGHTMAP;
-				st->numTcMods = 0;
-				// finish
-				st++;
-				numTmpStages++;
-				if (!style) break;			// it was main lightmap
-			}
-			firstStage = 1;			// skip lightmap stage
+			st->mapImage[0]    = gl_dlightImage;
+			// set glState
+			st->glState        = (!numRenderStages) ? lmStage->glState : BLEND(1,1); // src+dst
+			// set rgba
+			st->alphaGenType   = ALPHAGEN_CONST;
+			st->rgbGenType     = RGBGEN_CONST;
+			st->rgbaConst.rgba = vp.dlights[i].c.rgba;
+			// set tcGen
+			st->tcGenType = (tcGenType_t)(TCGEN_DLIGHT0 + num);
+			st->numTcMods = 0;
+			// finish
+			st++;
+			numRenderStages++;
+			num++;
 		}
 	}
 
-	/*-------------- copy remainder stages -------------*/
+	if (!sh->lightStyles_i && !currentDlightMask) return 0;			// no dynamic lighting
 
-	unsigned glState = 0xFFFFFFFF;
-	if (lmStage) glState = lmStage->glState;
-	shaderStage_t **pstage;
+	/*------------ add dynamic lightmaps ------------*/
+	// even if shader have no lightstyles, we will get here to add main lightmap stage
+	for (i = 0; i <= 4; i++)		// last iteration reserved for main (slow) lightmap
+	{
+		byte style = (i < 4 ? currentShader->lightStyles[i] : 0);	// if shader have less than 4 styles, we will get 0 earlier
+		if (!style && currentShader->fastStylesOnly) break;
+
+		// set image
+		st->mapImage[0]  = lmStage->mapImage[0];
+		// set glState
+		st->glState      = (!numRenderStages) ? lmStage->glState : BLEND(1,1); // src+dst
+		// set rgba
+		st->alphaGenType = ALPHAGEN_CONST;
+		st->rgbGenType   = RGBGEN_CONST;
+		if (style)
+		{
+			byte c = vp.lightStyles[style].value;
+			st->rgbaConst.rgba = RGB255(c,c,c);
+		}
+		else
+			st->rgbaConst.rgba = RGBA(1,1,1,1);
+		// set tcGen
+		st->tcGenType = style ? (tcGenType_t)(TCGEN_LIGHTMAP1 + i) : TCGEN_LIGHTMAP;
+		st->numTcMods = 0;
+		// finish
+		st++;
+		numRenderStages++;
+		if (!style) break;			// it was main lightmap
+	}
+	return 1;						// skip lightmap stage
+}
+
+
+void AddStaticStages(const shader_t *sh, int firstStage)
+{
+	int i;
+	const shaderStage_t *const *pstage;
+	renderStage_t *st = rendSt + numRenderStages;	// destination
 	for (i = firstStage, pstage = sh->stages + firstStage; i < sh->numStages; i++, pstage++)
 	{
-		stage = *pstage;
-
-		/*---------- fullbright/lightmap ---------------*/
-		if (debugMode == DEBUG_FULLBRIGHT && stage->isLightmap) continue;
-		if (debugMode == DEBUG_LIGHTMAP && currentShader->lightmapNumber >= 0 && !stage->isLightmap) break;
-
-		/*--------------- copy stage -------------------*/
+		// get stage pointer
+		const shaderStage_t *stage = *pstage;
+		// copy stage
 		*static_cast<shaderStage_t*>(st) = *stage;
-		// select stage image from animation
+		// select stage image from animation chain
 		if (stage->numAnimTextures > 1)
 		{
 			int n;
@@ -853,65 +850,19 @@ static void PreprocessShader(shader_t *sh)
 			st->imgNoAlpha = !(img && img->alphaType);
 		}
 
-		/*---------- fullbright/lightmap ---------------*/
-		// fix glState if current stage is first after lightmap with r_fullbright!=0
-		if (debugMode == DEBUG_FULLBRIGHT && glState != 0xFFFFFFFF)
-		{
-			st->glState = glState;
-			glState = 0xFFFFFFFF;
-		}
-		if (debugMode == (DEBUG_LIGHTMAP|DEBUG_FULLBRIGHT) && !gl_state.is2dMode)
-			st->glState |= GLSTATE_POLYGON_LINE;
-		if (!i && (currentShader->lightmapNumber == LIGHTMAP_VERTEX || stage->rgbGenType == RGBGEN_DIFFUSE))
-		{
-			if (debugMode == DEBUG_LIGHTMAP)
-				st->mapImage[0] = NULL;
-			else if (debugMode == DEBUG_FULLBRIGHT)
-			{
-				st->rgbGenType = RGBGEN_CONST;
-				st->rgbaConst.rgba |= RGBA(1,1,1,0);
-			}
-		}
-
 		st++;
-		numTmpStages++;
+		numRenderStages++;
 	}
+}
 
-	// override current shader when displaying fillrate
-#if !NO_DEBUG
-	if (gl_showFillRate->integer && GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE|
-		QGL_ARB_TEXTURE_ENV_ADD|QGL_NV_TEXTURE_ENV_COMBINE4|QGL_ATI_TEXTURE_ENV_COMBINE3))	// requires env add caps
-	{
-		numTmpStages = 2;
-		//---- 1st stage: color.red == fillrate
-		// color
-		tmpSt[0].rgbGenType      = RGBGEN_CONST;
-		tmpSt[0].alphaGenType    = ALPHAGEN_CONST;
-		tmpSt[0].rgbaConst.rgba  = RGB255(sh->numStages * 16, 0, 0);
-		// texture
-		tmpSt[0].tcGenType       = TCGEN_TEXTURE;	// any
-		tmpSt[0].numTcMods       = 0;
-		tmpSt[0].numAnimTextures = 1;
-		tmpSt[0].mapImage[0]     = NULL;
-		// glState
-		tmpSt[0].glState         = BLEND(1,1)|GLSTATE_NODEPTHTEST;
-		//---- 2nd stage: display wireframe with non-red color
-		// color
-		tmpSt[1].rgbGenType      = RGBGEN_CONST;
-		tmpSt[1].alphaGenType    = ALPHAGEN_CONST;
-		tmpSt[1].rgbaConst.rgba  = RGB255(0, 10, 10);
-		// texture
-		tmpSt[1].tcGenType       = TCGEN_TEXTURE;	// any
-		tmpSt[1].numTcMods       = 0;
-		tmpSt[1].numAnimTextures = 1;
-		tmpSt[1].mapImage[0]     = NULL;
-		// glState
-		tmpSt[1].glState         = BLEND(1,1)|GLSTATE_NODEPTHTEST|GLSTATE_POLYGON_LINE;
-	}
-#endif
+
+void ComputeConstColor()
+{
+	int i;
+	renderStage_t *st;
 
 	bool entityLightingDone = false;
-	for (i = 0, st = tmpSt; i < numTmpStages; i++, st++)
+	for (i = 0, st = rendSt; i < numRenderStages; i++, st++)
 	{
 		/*------- convert some rgbaGen to CONST --------*/
 		switch (st->rgbGenType)
@@ -1009,42 +960,46 @@ static void PreprocessShader(shader_t *sh)
 		st->isConstRGBA    = (st->rgbGenType == RGBGEN_CONST && st->alphaGenType == ALPHAGEN_CONST);
 		st->isIdentityRGBA = (st->isConstRGBA && st->rgbaConst.rgba == RGBA(1,1,1,1));
 	}
+}
 
-	if (!numTmpStages)
-		DrawTextLeft(va("R_PreprocessShader(%s): 0 stages", *currentShader->Name), RGB(1,0,0));
 
-	if (numTmpStages > MAX_RENDER_PASSES)
-		appError("R_PreprocessShader: numStages too large (%d)", numTmpStages);
+void NoMultitexture()
+{
+	renderPass_t *pass = renderPasses;
+	renderStage_t *st = rendSt;
+
+	for (int i = 0; i < numRenderStages; i++, st++, pass++)
+	{
+		pass->glState    = st->glState;
+		pass->numStages  = 1;
+		pass->stages     = st;
+		pass->colorStage = static_cast<shaderStage_t*>(st);
+		st->texEnv = st->isDoubleRGBA ?
+			TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX :
+			TEXENV_MODULATE;
+	}
+	numRenderPasses = numRenderStages;
+}
+
+
+void UseMultitexture(const char *shaderName)
+{
+#if SPY_SHADER
+	bool spy = false;
+	const char *mask = gl_spyShader->string;
+	if ((mask[0] && mask[1]) || mask[0] == '*')		// string >= 2 chars or "*"
+		spy = appMatchWildcard(shaderName, mask, false);
+#endif
 
 	renderPass_t *pass = renderPasses;
-	st = tmpSt;
-
-	/*--- if no multitexturing or only 1 stage -- nothing to combine -----*/
-
-	if (numTmpStages < 2 || gl_config.maxActiveTextures < 2)
-	{
-		for (i = 0; i < numTmpStages; i++, st++, pass++)
-		{
-			pass->glState    = st->glState;
-			pass->numStages  = 1;
-			pass->stages     = st;
-			pass->colorStage = static_cast<shaderStage_t*>(st);
-			st->texEnv = st->isDoubleRGBA ?
-				TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX :
-				TEXENV_MODULATE;
-		}
-		numRenderPasses = numTmpStages;
-		return;
-	}
-
-	/*-------------------- have multitexturing ---------------------------*/
+	renderStage_t *st = rendSt;
 
 	numRenderPasses = 0;
 	int tmuLeft = 0;
 	int tmuUsed = 0;
 	unsigned passStyle = BLEND_UNKNOWN;
-	LOG_PP(va("--- PreprocessShader(%s) ---\n", *sh->Name));
-	for (i = 0; i < numTmpStages; i++, st++)
+	LOG_PP(va("--- ComputeCombiners(%s) ---\n", shaderName));
+	for (int i = 0; i < numRenderStages; i++, st++)
 	{
 		if (!tmuLeft)						// all tmu was distributed or just started
 		{
@@ -1087,7 +1042,7 @@ static void PreprocessShader(shader_t *sh)
 		if (tmuUsed > 1)
 			pass->glState |= st[0].glState & (GLSTATE_DEPTHWRITE|GLSTATE_NODEPTHTEST);	// pass.someFlags = OR(stages.someFlags)
 
-		if (i == numTmpStages - 1) break;	// no next stage to combine
+		if (i == numRenderStages - 1) break;	// no next stage to combine
 
 		/* If can combine: pass->numStages++, set st[1].texEnv and continue
 		 * If can't:       set tmuLeft to 0
@@ -1269,6 +1224,189 @@ static void PreprocessShader(shader_t *sh)
 	}
 	LOG_PP("-----------------\n");
 }
+
+
+#if !NO_DEBUG
+
+void ShowFillrate(const shader_t *sh)
+{
+	// override current shader when displaying fillrate
+	if (!gl_showFillRate->integer || !GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE|
+		QGL_ARB_TEXTURE_ENV_ADD|QGL_NV_TEXTURE_ENV_COMBINE4|QGL_ATI_TEXTURE_ENV_COMBINE3))	// requires env add caps
+		return;
+
+	numRenderStages = 2;
+	//---- 1st stage: color.red == fillrate
+	// color
+	rendSt[0].rgbGenType      = RGBGEN_CONST;
+	rendSt[0].alphaGenType    = ALPHAGEN_CONST;
+	rendSt[0].rgbaConst.rgba  = RGB255(sh->numStages * 16, 0, 0);
+	// texture
+	rendSt[0].tcGenType       = TCGEN_TEXTURE;	// any
+	rendSt[0].numTcMods       = 0;
+	rendSt[0].numAnimTextures = 1;
+	rendSt[0].mapImage[0]     = NULL;
+	// glState
+	rendSt[0].glState         = BLEND(1,1)|GLSTATE_NODEPTHTEST;
+	//---- 2nd stage: display wireframe with non-red color
+	// color
+	rendSt[1].rgbGenType      = RGBGEN_CONST;
+	rendSt[1].alphaGenType    = ALPHAGEN_CONST;
+	rendSt[1].rgbaConst.rgba  = RGB255(0, 10, 10);
+	// texture
+	rendSt[1].tcGenType       = TCGEN_TEXTURE;	// any
+	rendSt[1].numTcMods       = 0;
+	rendSt[1].numAnimTextures = 1;
+	rendSt[1].mapImage[0]     = NULL;
+	// glState
+	rendSt[1].glState         = BLEND(1,1)|GLSTATE_NODEPTHTEST|GLSTATE_POLYGON_LINE;
+}
+
+#define DEBUG_FULLBRIGHT	1
+#define DEBUG_LIGHTMAP		2
+
+void DebugLight(const shader_t *sh)
+{
+	int debugMode = 0;
+	if (r_fullbright->integer) debugMode |= DEBUG_FULLBRIGHT;
+	if (r_lightmap->integer)   debugMode |= DEBUG_LIGHTMAP;
+	if (!debugMode) return;
+
+	int i;
+	renderStage_t *st;
+	if (debugMode == (DEBUG_LIGHTMAP|DEBUG_FULLBRIGHT) && !gl_state.is2dMode)
+		for (i = 0, st = rendSt; i < numRenderStages; i++, st++)
+			st->glState |= GLSTATE_POLYGON_LINE;
+	else if (debugMode == DEBUG_FULLBRIGHT)
+		for (i = 0, st = rendSt; i < numRenderStages; i++, st++)
+		{
+			if (sh->lightmapNumber >= 0 && st->tcGenType == TCGEN_LIGHTMAP)
+			{
+				st->mapImage[0]    = NULL;
+				st->rgbGenType     = RGBGEN_CONST;
+				st->rgbaConst.rgba |= RGBA(1,1,1,0);
+			}
+			else if ((sh->lightmapNumber == LIGHTMAP_VERTEX &&
+					 (st->rgbGenType == RGBGEN_VERTEX || st->rgbGenType == RGBGEN_EXACT_VERTEX)) ||
+					 st->rgbGenType == RGBGEN_DIFFUSE)
+			{
+				st->rgbGenType     = RGBGEN_CONST;
+				st->rgbaConst.rgba |= RGBA(1,1,1,0);
+			}
+		}
+	else if (debugMode == DEBUG_LIGHTMAP)
+	{
+		if (sh->lightmapNumber >= 0)
+		{
+			// normal lightmap
+			for (i = 0, st = rendSt; i < numRenderStages; i++, st++)
+			{
+				if (st->tcGenType == TCGEN_LIGHTMAP ||
+					(st->tcGenType >= TCGEN_LIGHTMAP1 && st->tcGenType <= TCGEN_LIGHTMAP4) ||
+					(st->tcGenType >= TCGEN_DLIGHT0 && st->tcGenType < TCGEN_DLIGHT0 + MAX_DLIGHTS))
+				continue;	// keep lighting stage
+				st->mapImage[0]     = NULL;
+				st->numAnimTextures = 1;
+				st->rgbGenType      = RGBGEN_IDENTITY;
+				if (i > 0)
+					st->glState = BLEND(0,1);
+			}
+		}
+		else
+		{
+			bool replace = false;
+			image_t *img;
+			rgbGenType_t rgbGen;
+			if (sh->lightmapNumber == LIGHTMAP_VERTEX)
+			{
+				// vertex light
+				replace = true;
+				img     = NULL;
+				rgbGen  = RGBGEN_VERTEX;
+			}
+			else
+			{
+				// check for diffuse lighting
+				for (i = 0, st = rendSt; i < numRenderStages; i++, st++)
+					if (st->rgbGenType == RGBGEN_DIFFUSE)
+					{
+						replace = true;
+						img     = NULL;
+						rgbGen  = RGBGEN_DIFFUSE;
+						break;
+					}
+			}
+
+			if (replace)
+			{
+				// replace with 1-stage shader
+				numRenderStages = 1;
+				// color
+				rendSt[0].rgbGenType      = rgbGen;
+//				rendSt[0].alphaGenType    = ALPHAGEN_CONST;
+//				rendSt[0].rgbaConst.rgba  |= RGBA(0,0,0,1);
+				// texture
+				rendSt[0].tcGenType       = TCGEN_TEXTURE;	// any
+				rendSt[0].numTcMods       = 0;
+				rendSt[0].numAnimTextures = 1;
+				rendSt[0].mapImage[0]     = img;
+			}
+		}
+	}
+}
+
+#endif
+
+} // namespace
+
+
+static void ComputeCombiners(const shader_t *sh)
+{
+	guard(ComputeCombiners);
+
+	// prepare combined shader
+	Comb::numRenderStages = 0;
+	memset(Comb::rendSt, 0, sizeof(Comb::rendSt));		// initialize all fields with zeros
+
+	// apply dlights if possible
+	int firstStage = Comb::PreLight(sh);
+	// copy remainder stages
+	Comb::AddStaticStages(sh, firstStage);
+
+#if !NO_DEBUG
+	// debug: display fillrate as color
+	// note: will require computation of render passes to display
+	Comb::ShowFillrate(sh);
+	// process r_lightmap and r_fullbright
+	Comb::DebugLight(sh);
+#endif
+
+	// convert some dynamic rgbGen to const (same color for all verts)
+	Comb::ComputeConstColor();
+
+	if (!Comb::numRenderStages)
+	{
+		DrawTextLeft(va("ComputeCombiners(%s): 0 stages", *currentShader->Name), RGB(1,0,0));
+		return;
+	}
+
+	if (Comb::numRenderStages > MAX_RENDER_PASSES)
+		appError("ComputeCombiners: numStages too large (%d)", Comb::numRenderStages);
+
+	// combine single stages to multitextured passes
+
+	// if no multitexturing or only 1 stage -- nothing to combine
+	if (Comb::numRenderStages < 2 || gl_config.maxActiveTextures < 2)
+	{
+		Comb::NoMultitexture();
+		return;
+	}
+
+	// have multitexturing
+	Comb::UseMultitexture(sh->Name);
+
+	unguard;
+}
 #undef LOG_PP
 
 
@@ -1282,7 +1420,7 @@ void BK_FlushShader()
 //	DrawTextLeft(va("FlushShader(%s, %d, %d)\n", *currentShader->Name, gl_numVerts, gl_numIndexes));//!!!
 	LOG_STRING(va("*** FlushShader(%s, %d, %d) ***\n", *currentShader->Name, gl_numVerts, gl_numIndexes));
 
-	PreprocessShader(currentShader);
+	ComputeCombiners(currentShader);
 
 	/*------------- prepare renderer --------------*/
 
@@ -1307,15 +1445,15 @@ void BK_FlushShader()
 
 	/*---------------- draw stages ----------------*/
 	int i;
-	renderPass_t *pass;
-	for (i = 0, pass = renderPasses; i < numRenderPasses; i++, pass++)
+	Comb::renderPass_t *pass;
+	for (i = 0, pass = Comb::renderPasses; i < Comb::numRenderPasses; i++, pass++)
 	{
 		LOG_STRING(va("-- pass %d (mtex %d) --\n", i+1, pass->numStages));
 		GL_Lock();
 		GL_SetMultitexture(pass->numStages);
 
 		int j;
-		tempStage_t *st;
+		Comb::renderStage_t *st;
 		for (j = 0, st = pass->stages; j < pass->numStages; j++, st++)
 		{
 			GL_SelectTexture(j);
@@ -1345,7 +1483,7 @@ void BK_FlushShader()
 
 		//!! glFog does not works with multi-pass rendering
 		//!! + doesn't works, when scr_viewsize!=100
-		if (i == numRenderPasses - 1 && gl_state.haveFullScreen3d
+		if (i == Comb::numRenderPasses - 1 && gl_state.haveFullScreen3d
 #if !NO_DEBUG
 			&& !gl_showFillRate->integer
 #endif
@@ -1370,11 +1508,11 @@ void BK_FlushShader()
 		DrawTriangles();
 		DrawNormals();
 #endif
-		STAT(gl_stats.tris   += gl_numIndexes * numTmpStages / 3);
-		STAT(gl_stats.trisMT += gl_numIndexes * numRenderPasses / 3);
+		STAT(gl_stats.tris   += gl_numIndexes * Comb::numRenderStages / 3);
+		STAT(gl_stats.trisMT += gl_numIndexes * Comb::numRenderPasses / 3);
 	}
 	else
-		STAT(gl_stats.tris2D += gl_numIndexes * numTmpStages / 3);
+		STAT(gl_stats.tris2D += gl_numIndexes * Comb::numRenderStages / 3);
 
 	STAT(gl_stats.numFlushes++);
 	gl_numVerts = gl_numIndexes = gl_numExtra = 0;

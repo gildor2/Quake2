@@ -38,8 +38,9 @@ GRAPHICS
 * Q1: bcdm1  - map without visinfo
 * Q1: hookse - have animated textures, started from frame != 0 (shader "+1name" instead of "+0name")
 * Q1: efdm8  - have surface with miptex offset == -1 (surface not painted at all)
-* AHL: bxht - lots of "infodecal" and "env_glow" entities
+* AHL: bxht  - lots of "infodecal" and "env_glow" entities
 * Q3: q3dm19 - have moving flares (on "func_bobbing")
+* Q3: cpm20  - lighted mostly using surface lights
 
 MISC
 ~~~~

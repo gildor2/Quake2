@@ -1,3 +1,11 @@
+! q3dm2 (as example): water shader painted after rail shader !!!
+
+- ut4_abbey: when shooting, will crash in GenerateTexCoordArray() (dlights?)
+- cpm15: have "target_teleporter" entities
+  - teleporter {-1090,710,-260} does not works (teleport dst == src) + teleporters not displayed
+    (separate model?)
+- cpm18r: {974,-465,558}, look to {1088,-489,620}, gl_labels=2: moving up-down 3 models, central
+  occluded (shold not)
 ! map "q3dm13" (start) -> "q3dm19" (run few seconds) -> "q3matcho...": will display console w/o cursor,
   when "toggleconsole" -> cursor appears; no game mode; when "vid_restart" ->
   "R_FindModel: not found: *9"
@@ -5,29 +13,48 @@
   (unstable, but frequent bug)
 
 - q3dm19: "func_bobbing" with "model2" (attached md3 model)
-- cpm15:
-  - have trisurf SURF_LIGHT (blemish/blem_lava)
-  - no SURF_SKY on sky surface (incorrect collision) -- may be, should collide with trisurf, not brush?
+- cpm15: no SURF_SKY on sky surface (incorrect collision) -- may be, should collide with trisurf, not brush?
 - pom: incorrect dlights
-- aedesert: lots of pickup items, which should be suspended in air, but dropped to floor
 - cpm26: have movable surface light: {690, 2760, 160} (sliding door)
 - af3hex: lots of visual bugs (some things not displayed)
+  ? uses patches for this
+- q3dm7: renderer uses darker lights from sky - possibly, sky shader was changed after lightmaps created
+  (before compilation sky had brighter light values)
+- scienselab (UT): glass textures: draw order issues (look at one glass through another)
+
+Bad maps, kept for incorrect drawing:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- runhamster: lots of glass surfaces, incorrect lighting
+- spacegl: invisible glass surfaces
+
+Jumppad bugs:
+~~~~~~~~~~~~~
+- q3dm17: have floating "armor", which cannot be reached
+- klcurces: incorrect behaviour of 'curved' trampolines
+
+Cannot load:
+~~~~~~~~~~~~
+- q3dm6 (TMP): game.dll parser errors
+  (placed in q3dm6tmp.pk3; contains missing opening quote, but have closing quote: check next entity after
+  "model" "*3" - "trigger_push")
+- paradise: SV_FindIndex(...md2) overflow -- too much models
 
 Large maps (out of possible q2 ranges)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - qxctf2
 - evotm: map completely outside q2 world bounds
 - rjlctf2
+- 17plus-ctf
 
 unsupported sky surfaces:
-  milktdm1: curve sky: textures/skies/hellsky2bright
-  ktsdm4, waxxgeo1 - trisurf sky
+~~~~~~~~~~~~~~~~~~~~~~~~~
+- milktdm1: curve sky: textures/skies/hellsky2bright
 
 Patch lights:
 ~~~~~~~~~~~~~
 - aetime
 - pro-q3dm6
-- q3dm10, q3dm11, q3dm12
+- q3dm4, q3dm10, q3dm11, q3dm12
 - cpm14
 
 Trisurf lights:
