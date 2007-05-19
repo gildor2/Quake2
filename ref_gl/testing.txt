@@ -13,6 +13,7 @@
 - gl_labels == 2 -> show labels of occluded ents
 - gl_showLights == 2 -> display spotlight intensities
 - gl_singleShader == 1 -> default shader for world; == 2 -> for skins too
+- gl_forcePostLight == 1 -> use PostLight() for everything (no PreLight())
 
 -------------------------------------------------------------------------------
 Interesting effects

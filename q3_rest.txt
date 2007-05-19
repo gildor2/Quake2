@@ -1,8 +1,21 @@
+- q3a maps not affected by CL_SetLightstyle(0, ...) - dynamicLightmap_t required?
+
+
 FOUND BUG from p99 (when moved EntityParser call from model.cpp to cmodel.cpp - after map loading):
   "wads" needed for HL surface loading, but entities parsed after map loading;
   ? bug may be easily fixed after reworking entity sustem (and remove "wads" field from bspfile_t)
   ? try to convert HL's "trigger_push"
   - also func_ladder, func_water etc (contents changers) does not works
+
+COMBINER BUGS:
+- q3dm2:
+  - no multitexturing at all:
+    - "wetwall": uses blend mode != src*dst, which cannot be converted to src*dst*2 -- too dark
+    - no PostLight dlights at all
+  - srd multitexturing (no MUL2):
+    - windowed (no gamma overbright): "q1metal7_99spot": PostLight is too bright (when
+      r_q3map_overbright=1; all ok when =0)
+    - fullscreen (have gamma overbright): everything ok
 ---------------------------------------------------------------------------------------------------
 areaportals (q2,q3):
 - rename "areas" to "zones" (check UT)

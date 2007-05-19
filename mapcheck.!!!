@@ -41,6 +41,9 @@ GRAPHICS
 * AHL: bxht  - lots of "infodecal" and "env_glow" entities
 * Q3: q3dm19 - have moving flares (on "func_bobbing")
 * Q3: cpm20  - lighted mostly using surface lights
+* animmap shaders with lightmap (for PostLight()):
+* Q3: dum    - shader with animmap main tex (tv)
+* Q3 (UT): dangercity - shaders with animmap main tex (diaschau,ampelgruen,ampelrot) -- can test with disabling PreLight()
 
 MISC
 ~~~~

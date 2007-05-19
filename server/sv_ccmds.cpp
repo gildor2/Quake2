@@ -345,8 +345,8 @@ static void SV_Savegame_f(bool usage, int argc, char **argv)
 // Puts the server in demo mode on a specific map/cinematic
 static void SV_DemoMap_f(int argc, char **argv)
 {
-	const char *map = argv[1];
-	const char *ext = strchr(map, '.');
+	TString<128> Map; Map = argv[1];
+	const char *ext = Map.chr('.');
 
 	if (Cvar_VariableInt("nointro") == 0 && (!ext || !(stricmp(ext, ".dm2"))))
 	{
@@ -357,10 +357,9 @@ static void SV_DemoMap_f(int argc, char **argv)
 		return;
 	}
 
-	if (!ext)
-		map = va("%s.dm2", map);
+	if (!ext) Map += ".dm2";
 
-	SV_Map(true, map, false);
+	SV_Map(true, Map, false);
 }
 
 

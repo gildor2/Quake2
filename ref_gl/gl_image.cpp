@@ -8,7 +8,7 @@ namespace OpenGLDrv {
 image_t	*gl_defaultImage;
 //image_t	*gl_whiteImage;		//?? unneeded: can use "image = NULL" for this (CHECK THIS WITH MTEX!)
 			//?? may be, use dummy image (static) and handle this pointer specially (when GL_Bind() - use glDisable() etc ...)
-			//?? This may be required, when using $white image, and system will try to get image params
+			//?? This may be required, when using $white image, and system will try to get image params (name etc)
 			//?? May be, instead of special processing, setup img->target == 0 (not TEXTURE2D or TEXTURE_RECTANGLE ...)
 image_t	*gl_identityLightImage;
 image_t	*gl_dlightImage;
@@ -474,7 +474,7 @@ static void ComputeImageColor(void *pic, int width, int height, color_t *color)
 // We need to pass "flags" because image->flags is masked with IMAGE_FLAGMASK
 static void Upload(void *pic, unsigned flags, image_t *image)
 {
-	LOG_STRING(va("// Upload(%s)\n", *image->Name));
+	LOG_STRING(va("// Upload(%s)", *image->Name));
 
 	/*----- Calculate internal dimensions of the new texture --------*/
 	int scaledWidth, scaledHeight;
@@ -952,8 +952,8 @@ void SetupGamma()
 	}
 
 	gl_config.overbright = overbright;
-	gl_config.identityLightValue = 255 / (1 << overbright);
-	gl_config.identityLightValue_f = 1.0f / (float)(1 << overbright);
+	gl_config.identityLightValue   = 255  / (1 << overbright);
+	gl_config.identityLightValue_f = 1.0f / (1 << overbright);
 
 	float invGamma = 1.0 / r_gamma->Clamp(0.5, 3.0);
 

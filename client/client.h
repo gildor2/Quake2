@@ -221,6 +221,7 @@ struct client_static_t
 	FILE		*demofile;
 
 	bool		newprotocol;
+	bool		cheatsEnabled;
 };
 
 extern client_static_t	cls;

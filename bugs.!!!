@@ -1,3 +1,6 @@
+- gl_light.cpp: when lightstyle #0 (any slow lightstyle?) changed, light from grid not changed; to fix should:
+  a) clear lightgrid
+  b) store into lightgrid light as style[0]==1.0, and rescale after GetCellLight()
 - gl: tris2D not displayed for whole scene (currently - display info about 3D scene, when have 2D drawings)
 - r_showBrush, r_surfInfo with brush display: brush can be moved (doors etc), but will be displayed in initial place
 - when typing 'bind key var=value', it will be treated as 'bind key var'=value

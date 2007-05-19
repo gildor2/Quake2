@@ -38,6 +38,7 @@ static cvar_t	*gl_clear;
 static cvar_t	*gl_finish;			// debug ? (can be a situation, when gl_finish==1 is necessary ? (linux))
 #if !NO_DEBUG
 static cvar_t	*gl_showbboxes, *gl_showTris, *gl_showNormals;
+static cvar_t	*gl_forcePostLight;
 #endif
 #if SPY_SHADER
 static cvar_t	*gl_spyShader;
@@ -716,6 +717,9 @@ static renderPass_t	renderPasses[MAX_RENDER_PASSES];
 static int			numRenderPasses;
 //?? move currentShader here
 
+#if SPY_SHADER
+static bool			spy;
+#endif
 
 #define BLEND_UNKNOWN			0
 #define BLEND_MULTIPLICATIVE	1
@@ -763,6 +767,7 @@ int PreLight(const shader_t *sh)
 	}
 #if !NO_DEBUG
 	if (r_fullbright->integer) return 0;
+	if (gl_forcePostLight->integer) return 0;
 #endif
 
 	if (currentDlightMask)
@@ -795,7 +800,7 @@ int PreLight(const shader_t *sh)
 
 	/*------------ add dynamic lightmaps ------------*/
 	// even if shader have no lightstyles, we will get here to add main lightmap stage
-	for (i = 0; i <= 4; i++)		// last iteration reserved for main (slow) lightmap
+	for (i = 0; i <= 4; i++)			// last iteration reserved for main (slow) lightmap
 	{
 		byte style = (i < 4 ? currentShader->lightStyles[i] : 0);	// if shader have less than 4 styles, we will get 0 earlier
 		if (!style && currentShader->fastStylesOnly) break;
@@ -820,9 +825,78 @@ int PreLight(const shader_t *sh)
 		// finish
 		st++;
 		numRenderStages++;
-		if (!style) break;			// it was main lightmap
+		if (!style) break;				// it was main lightmap
 	}
-	return 1;						// skip lightmap stage
+	return 1;							// skip lightmap stage
+}
+
+
+void PostLight(const shader_t *sh)
+{
+#if !NO_DEBUG
+	if (gl_forcePostLight->integer == 0)
+	{
+#endif
+		if (sh->numStages < 2 || sh->stages[0]->isLightmap)
+			return;						// this shader should be lighted with PreLight()
+#if !NO_DEBUG
+	}
+	if (r_fullbright->integer) return;	// lighting disabled at all
+#endif
+	if (!gl_dynamic->integer) return;	// dynamic lights are disabled
+	if (!currentDlightMask) return;		// no dlights for this surface
+	if (sh->primaryStage < 0) return;	// no "primary" stage found, cannot correctly apply dlights
+
+	if (gl_config.maxActiveTextures < 2)
+		return;							// no multitexturing, cannot add PostLight
+
+	unsigned mask;
+	int		i, num;
+	renderPass_t *pass = renderPasses + numRenderPasses;
+	renderStage_t *st  = rendSt + numRenderStages;
+
+	for (i = 0, num = 0, mask = currentDlightMask; mask; i++, mask >>= 1)
+	{
+		if (!(mask & 1)) continue;
+
+		LOG_PP("-- next pass (PostLight)");
+		// start new pass
+		pass->glState        = BLEND(1,1) | GLSTATE_DEPTHEQUALFUNC;
+		pass->numStages      = 2;
+		pass->stages         = st;
+		pass->colorStage     = static_cast<shaderStage_t*>(st);
+		// dlight stage
+		st[0].texEnv         = TEXENV_MODULATE;	// modulate by dlight color
+		st[0].mapImage[0]    = gl_dlightImage;
+		st[0].alphaGenType   = ALPHAGEN_CONST;
+		st[0].rgbGenType     = RGBGEN_CONST;
+		st[0].rgbaConst.rgba = vp.dlights[i].c.rgba;
+		st[0].tcGenType      = (tcGenType_t)(TCGEN_DLIGHT0 + num);
+		// modulate by primary texture
+		st[1].texEnv         = (gl_config.doubleModulateLM) ?
+			TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX :	// same code as in NoMultitexture()
+			TEXENV_MODULATE;
+#if !NO_DEBUG
+		if (r_lightmap->integer) st[1].mapImage[0] = NULL;			// texture -> white
+#endif
+		// use rendSt[] instead of sh->stages[] for correct animmap support
+		// note: assumed, that no stages added before static stages (i.e. no PreLight() used)
+		st[1].mapImage[0]    = rendSt[sh->primaryStage].mapImage[0];
+		st[1].alphaGenType   = ALPHAGEN_CONST;
+		st[1].rgbGenType     = RGBGEN_CONST;
+		st[1].rgbaConst.rgba = RGBA(1,1,1,1);
+		st[1].tcGenType      = TCGEN_TEXTURE;
+		LOG_PP(va("  tmu[0] = \"%s\"", st[0].mapImage[0] ? *st[0].mapImage[0]->Name : "NULL"));
+		LOG_PP("  MT(MUL)");
+		LOG_PP(va("  tmu[1] = \"%s\"", st[1].mapImage[0] ? *st[1].mapImage[0]->Name : "NULL"));
+		// finish
+		st += 2;
+		numRenderStages += 2;
+		num++;
+		pass++;
+		numRenderPasses++;
+	}
+	//!! NOTE: ATI and NV combiners have ability to draw MAX_ACTIVE_TEXTURES-1 dlights in a single pass
 }
 
 
@@ -982,15 +1056,8 @@ void NoMultitexture()
 }
 
 
-void UseMultitexture(const char *shaderName)
+void UseMultitexture()
 {
-#if SPY_SHADER
-	bool spy = false;
-	const char *mask = gl_spyShader->string;
-	if ((mask[0] && mask[1]) || mask[0] == '*')		// string >= 2 chars or "*"
-		spy = appMatchWildcard(shaderName, mask, false);
-#endif
-
 	renderPass_t *pass = renderPasses;
 	renderStage_t *st = rendSt;
 
@@ -998,7 +1065,6 @@ void UseMultitexture(const char *shaderName)
 	int tmuLeft = 0;
 	int tmuUsed = 0;
 	unsigned passStyle = BLEND_UNKNOWN;
-	LOG_PP(va("--- ComputeCombiners(%s) ---\n", shaderName));
 	for (int i = 0; i < numRenderStages; i++, st++)
 	{
 		if (!tmuLeft)						// all tmu was distributed or just started
@@ -1031,9 +1097,9 @@ void UseMultitexture(const char *shaderName)
 			default:
 				passStyle = BLEND_INCOMPATIBLE;
 			}
-			LOG_PP("-- next pass\n");
+			LOG_PP("-- next pass");
 		}
-		LOG_PP(va("  tmu[%d:%d] = \"%s\" (rgba: %s %s %8X)\n", i, tmuUsed, *st[0].mapImage[0]->Name,
+		LOG_PP(va("  tmu[%d:%d] = \"%s\" (rgba: %s %s %8X)", i, tmuUsed, *st[0].mapImage[0]->Name,
 			st[0].isConstRGBA ? "const" : "var", st[0].isIdentityRGBA ? "ident" : "--", st[0].rgbaConst.rgba));
 
 		tmuUsed++;
@@ -1042,28 +1108,40 @@ void UseMultitexture(const char *shaderName)
 		if (tmuUsed > 1)
 			pass->glState |= st[0].glState & (GLSTATE_DEPTHWRITE|GLSTATE_NODEPTHTEST);	// pass.someFlags = OR(stages.someFlags)
 
-		if (i == numRenderStages - 1) break;	// no next stage to combine
+		if (i == numRenderStages - 1) break;		// no next stage to combine
 
 		/* If can combine: pass->numStages++, set st[1].texEnv and continue
-		 * If can't:       set tmuLeft to 0
+		 * If can't:       set tmuLeft to 0 and continue
 		 */
+#define DONT_COMBINE	{ tmuLeft = 0; continue; }
 
 		// check for compatibility of current glState with the next glState
-		if (tmuLeft < 1 ||							// not enough hardware capabilities
-			passStyle == BLEND_INCOMPATIBLE ||
-			(st[0].glState ^ st[1].glState) & ~(GLSTATE_BLENDMASK|GLSTATE_DEPTHWRITE|GLSTATE_NODEPTHTEST))
-		{	// incompatible ... next stage will be 1st in the next rendering pass
-			tmuLeft = 0;
+		if (tmuLeft < 1) DONT_COMBINE;				// not enough hardware capabilities
+		if (passStyle == BLEND_INCOMPATIBLE)
+		{
+			LOG_PP("incompat blend");
+			DONT_COMBINE;
+		}
+		// check situation: prev. stage is alphatest, and text one uses depthFunc==equal (alphatest
+		// texture * lightmap) -- can combine
+		if (i == 0 &&
+			(st[0].glState & GLSTATE_ALPHAMASK) &&
+			(st[1].glState & GLSTATE_DEPTHEQUALFUNC))
+		{
+			// simply continue
+		}
+		else if ((st[0].glState ^ st[1].glState) & ~(GLSTATE_BLENDMASK|GLSTATE_DEPTHWRITE|GLSTATE_NODEPTHTEST))
+		{
+			// incompatible ... next stage will be 1st in the next rendering pass
 #if MAX_DEBUG
-			if (passStyle == BLEND_INCOMPATIBLE) {
-				LOG_PP("incompat blend");
-			} else if ((st[0].glState ^ st[1].glState) & ~(GLSTATE_BLENDMASK|GLSTATE_DEPTHWRITE)) {
-				LOG_PP(va("incompat state: %X", (st[0].glState ^ st[1].glState) & ~(GLSTATE_BLENDMASK|GLSTATE_DEPTHWRITE)));
+			if ((st[0].glState ^ st[1].glState) & ~(GLSTATE_BLENDMASK|GLSTATE_DEPTHWRITE|GLSTATE_NODEPTHTEST)) {
+				LOG_PP(va("incompat state: %X", (st[0].glState ^ st[1].glState) &
+					~(GLSTATE_BLENDMASK|GLSTATE_DEPTHWRITE|GLSTATE_NODEPTHTEST)));
 			} else {
 				LOG_PP("cannot combine");
 			}
 #endif
-			continue;
+			DONT_COMBINE;
 		}
 
 		// now, we can check blendmode and rgbaGen
@@ -1076,7 +1154,7 @@ void UseMultitexture(const char *shaderName)
 			// pure multitexture can emulate only 2 blendmodes: "src*dst" and "src+dst" (when texenv_add)
 			if (blend2 == BLEND(D_COLOR,0) && passStyle & BLEND_MULTIPLICATIVE)
 			{
-				LOG_PP(va("  MT(MUL): with \"%s\"\n", *st[1].mapImage[0]->Name));
+				LOG_PP(va("  MT(MUL): with \"%s\"", *st[1].mapImage[0]->Name));
 				st[1].texEnv = TEXENV_MODULATE;
 				pass->numStages++;
 				continue;
@@ -1085,25 +1163,26 @@ void UseMultitexture(const char *shaderName)
 			if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_ADD|QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE) &&
 				blend2 == BLEND(1,1) && passStyle & BLEND_ADDITIVE)
 			{
-				LOG_PP(va("  MT(ADD): with \"%s\"\n", *st[1].mapImage[0]->Name));
+				LOG_PP(va("  MT(ADD): with \"%s\"", *st[1].mapImage[0]->Name));
 				st[1].texEnv = (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_ADD))
 					? TEXENV_ADD : TEXENV_C_ADD | TEXENV_0PREV_1TEX;
 				pass->numStages++;
 				continue;
 			}
 
-			if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE)
+			if (GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE)
 				&& blend2 == BLEND(D_COLOR,S_COLOR)		// src*dst + dst*src
 				&& passStyle & BLEND_MULTIPLICATIVE)
 			{
-				LOG_PP(va("  MT(MUL2): with \"%s\"\n", *st[1].mapImage[0]->Name));
+				LOG_PP(va("  MT(MUL2): with \"%s\"", *st[1].mapImage[0]->Name));
 				st[1].texEnv = TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX;
 				pass->numStages++;
 				continue;
 			}
 		}
 
-		if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4|QGL_ATI_TEXTURE_ENV_COMBINE3) && st[1].isConstRGBA && (tmuUsed == 1 || st[0].isConstRGBA) &&
+		if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4|QGL_ATI_TEXTURE_ENV_COMBINE3) &&
+			st[1].isConstRGBA && (tmuUsed == 1 || st[0].isConstRGBA) &&
 			// NV: This extension can perform A*T1+B*T2, where A/B is 1|0|prev|tex
 			//   st[1] is B*T2, if rgba is not 1, rgbGen will eat B and we will not be able to use most of blends ...
 			// ATI: can perform A*T1+T2 or T1+A*T2 (similar to NV, but either A or B should be 1)
@@ -1186,10 +1265,10 @@ void UseMultitexture(const char *shaderName)
 #define ENV_NAME(x)		envNames[(env >> TEXENV_SRC##x##_SHIFT) & TEXENV_SRC_MASK]
 
 				if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4)) {
-					LOG_PP(va("  MT(NV): %X -> %08X == %s x %s + %s x %s\n", blend2, env,
+					LOG_PP(va("  MT(NV): %X -> %08X == %s x %s + %s x %s", blend2, env,
 						ENV_NAME(0), ENV_NAME(1), ENV_NAME(2), ENV_NAME(3)));
 				} else { // if (GL_SUPPORT(QGL_ATI_TEXTURE_ENV_COMBINE3))
-					LOG_PP(va("  MT(ATI): %X -> %08X == %s x %s + %s\n", blend2, env,
+					LOG_PP(va("  MT(ATI): %X -> %08X == %s x %s + %s", blend2, env,
 						ENV_NAME(0), ENV_NAME(2), ENV_NAME(1)));
 				}
 #endif // NO_LOG_PP
@@ -1203,7 +1282,7 @@ void UseMultitexture(const char *shaderName)
 		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE) && blend2 == BLEND(1,1)
 			&& passStyle & BLEND_ADDITIVE && st[0].isConstRGBA && st[1].isConstRGBA && tmuUsed == 1)
 		{
-			LOG_PP(va("  MT(INTERP*2): with \"%s\"\n", *st[1].mapImage[0]->Name));
+			LOG_PP(va("  MT(INTERP*2): with \"%s\"", *st[1].mapImage[0]->Name));
 			st[1].texEnv = TEXENV_C_INTERP | TEXENV_MUL2 | TEXENV_ENVCOLOR | TEXENV_0PREV_1TEX | TEXENV(2,CONSTANT);
 			// set RGBA for both stages
 			LOG_PP(va("  (old rgba: %X %X", st[0].rgbaConst.rgba, st[1].rgbaConst.rgba));
@@ -1213,16 +1292,15 @@ void UseMultitexture(const char *shaderName)
 				st[0].rgbaConst.c[k] = st[0].rgbaConst.c[k] * 255 / (255*2 - k2);
 				st[1].rgbaConst.c[k] = 255 - k2 / 2;
 			}
-			LOG_PP(va("   new rgba: %X %X)\n",  st[0].rgbaConst.rgba, st[1].rgbaConst.rgba));
+			LOG_PP(va("   new rgba: %X %X)",  st[0].rgbaConst.rgba, st[1].rgbaConst.rgba));
 			pass->numStages++;
 			continue;
 		}
 
 		// not combined - begin new pass
-		LOG_PP2("  not combined\n");
-		tmuLeft = 0;
+		LOG_PP2("  not combined");
+		DONT_COMBINE;
 	}
-	LOG_PP("-----------------\n");
 }
 
 
@@ -1231,9 +1309,7 @@ void UseMultitexture(const char *shaderName)
 void ShowFillrate(const shader_t *sh)
 {
 	// override current shader when displaying fillrate
-	if (!gl_showFillRate->integer || !GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE|
-		QGL_ARB_TEXTURE_ENV_ADD|QGL_NV_TEXTURE_ENV_COMBINE4|QGL_ATI_TEXTURE_ENV_COMBINE3))	// requires env add caps
-		return;
+	if (!gl_showFillRate->integer) return;
 
 	numRenderStages = 2;
 	//---- 1st stage: color.red == fillrate
@@ -1301,6 +1377,15 @@ void DebugLight(const shader_t *sh)
 			// normal lightmap
 			for (i = 0, st = rendSt; i < numRenderStages; i++, st++)
 			{
+				if (i > 0 && st->tcGenType == TCGEN_LIGHTMAP)
+				{
+					// when lightmap in first stage, it will be simply painted w/o
+					// combining; but, when it is in >1 stage - should prevent
+					// src*dst*2 combination
+					if ((st->glState & GLSTATE_BLENDMASK) == BLEND(D_COLOR,S_COLOR))
+						st->glState = st->glState & ~GLSTATE_BLENDMASK | BLEND(D_COLOR,0);
+					continue;
+				}
 				if (st->tcGenType == TCGEN_LIGHTMAP ||
 					(st->tcGenType >= TCGEN_LIGHTMAP1 && st->tcGenType <= TCGEN_LIGHTMAP4) ||
 					(st->tcGenType >= TCGEN_DLIGHT0 && st->tcGenType < TCGEN_DLIGHT0 + MAX_DLIGHTS))
@@ -1357,57 +1442,72 @@ void DebugLight(const shader_t *sh)
 
 #endif
 
-} // namespace
 
-
-static void ComputeCombiners(const shader_t *sh)
+void ComputeCombiners(const shader_t *sh)
 {
 	guard(ComputeCombiners);
 
+#if SPY_SHADER
+	const char *shaderName = sh->Name;
+	spy = false;
+	const char *mask = gl_spyShader->string;
+	if ((mask[0] && mask[1]) || mask[0] == '*')		// string >= 2 chars or "*"
+		spy = appMatchWildcard(shaderName, mask, false);
+#endif
+	LOG_PP(va("--- ComputeCombiners(%s) ---", shaderName));
+
 	// prepare combined shader
-	Comb::numRenderStages = 0;
-	memset(Comb::rendSt, 0, sizeof(Comb::rendSt));		// initialize all fields with zeros
+	numRenderStages = 0;
+	memset(rendSt, 0, sizeof(rendSt));				// initialize all fields with zeros
 
 	// apply dlights if possible
-	int firstStage = Comb::PreLight(sh);
+	int firstStage = PreLight(sh);
 	// copy remainder stages
-	Comb::AddStaticStages(sh, firstStage);
+	AddStaticStages(sh, firstStage);
 
 #if !NO_DEBUG
 	// debug: display fillrate as color
 	// note: will require computation of render passes to display
-	Comb::ShowFillrate(sh);
+	ShowFillrate(sh);
 	// process r_lightmap and r_fullbright
-	Comb::DebugLight(sh);
+	DebugLight(sh);
 #endif
 
 	// convert some dynamic rgbGen to const (same color for all verts)
-	Comb::ComputeConstColor();
+	ComputeConstColor();
 
-	if (!Comb::numRenderStages)
+	if (!numRenderStages)
 	{
 		DrawTextLeft(va("ComputeCombiners(%s): 0 stages", *currentShader->Name), RGB(1,0,0));
 		return;
 	}
 
-	if (Comb::numRenderStages > MAX_RENDER_PASSES)
-		appError("ComputeCombiners: numStages too large (%d)", Comb::numRenderStages);
+	if (numRenderStages > MAX_RENDER_PASSES)
+		appError("ComputeCombiners: numStages too large (%d)", numRenderStages);
 
 	// combine single stages to multitextured passes
 
 	// if no multitexturing or only 1 stage -- nothing to combine
-	if (Comb::numRenderStages < 2 || gl_config.maxActiveTextures < 2)
+	if (numRenderStages < 2 || gl_config.maxActiveTextures < 2)
 	{
-		Comb::NoMultitexture();
+		NoMultitexture();
+		// note: do not need PostLight() here, because here either 1-stage shader, which
+		// can be easily PreLight()'ed, or cannot PostLight() because of no multitexturing
 		return;
 	}
 
 	// have multitexturing
-	Comb::UseMultitexture(sh->Name);
+	UseMultitexture();
 
+	// apply lights when PreLight() failed
+	PostLight(sh);
+
+	LOG_PP("-----------------");
 	unguard;
 }
 #undef LOG_PP
+
+} // namespace
 
 
 void BK_FlushShader()
@@ -1418,9 +1518,9 @@ void BK_FlushShader()
 	if (!currentShader->numStages) return;		// wrong shader?
 
 //	DrawTextLeft(va("FlushShader(%s, %d, %d)\n", *currentShader->Name, gl_numVerts, gl_numIndexes));//!!!
-	LOG_STRING(va("*** FlushShader(%s, %d, %d) ***\n", *currentShader->Name, gl_numVerts, gl_numIndexes));
+	LOG_STRING(va("*** FlushShader(%s, %d, %d) ***", *currentShader->Name, gl_numVerts, gl_numIndexes));
 
-	ComputeCombiners(currentShader);
+	Comb::ComputeCombiners(currentShader);
 
 	/*------------- prepare renderer --------------*/
 
@@ -1448,7 +1548,7 @@ void BK_FlushShader()
 	Comb::renderPass_t *pass;
 	for (i = 0, pass = Comb::renderPasses; i < Comb::numRenderPasses; i++, pass++)
 	{
-		LOG_STRING(va("-- pass %d (mtex %d) --\n", i+1, pass->numStages));
+		LOG_STRING(va("-- pass %d (mtex %d) --", i+1, pass->numStages));
 		GL_Lock();
 		GL_SetMultitexture(pass->numStages);
 
@@ -2177,7 +2277,7 @@ void BK_DrawScene()
 
 	if (!renderingEnabled) return;
 
-	LOG_STRING(va("******** R_DrawScene: (%d, %d) - (%d, %d) ********\n", vp.x, vp.y, vp.x+vp.w, vp.y+vp.h));
+	LOG_STRING(va("******** R_DrawScene: (%d, %d) - (%d, %d) ********", vp.x, vp.y, vp.x+vp.w, vp.y+vp.h));
 
 	if (gl_numVerts) BK_FlushShader();
 	GL_Set3DMode(&vp);
@@ -2252,7 +2352,7 @@ void BK_DrawScene()
 			shader_t *shader = GetShaderByNum(shNum);
 			SetCurrentShader(shader);
 			currentDlightMask = dlightMask;
-			LOG_STRING(va("******** shader = %s ********\n", *shader->Name));
+			LOG_STRING(va("******** shader = %s ********", *shader->Name));
 			currentShaderNum = shNum;
 		}
 
@@ -2267,7 +2367,7 @@ void BK_DrawScene()
 			{
 				if (!currentWorld)		// previous entity was not world
 				{
-					LOG_STRING(va("******** entity = WORLD ********\n"));
+					LOG_STRING("******** entity = WORLD ********");
 					glLoadMatrixf(&vp.modelMatrix[0][0]);
 				}
 				gl_state.inverseCull = false;
@@ -2275,7 +2375,7 @@ void BK_DrawScene()
 			}
 			else
 			{
-				LOG_STRING(va("******** entity = %s ********\n", *currentEntity->model->Name));
+				LOG_STRING(va("******** entity = %s ********", *currentEntity->model->Name));
 				glLoadMatrixf(&currentEntity->modelMatrix[0][0]);
 				gl_state.inverseCull = currentEntity->mirror;
 				GL_DepthRange(currentEntity->flags & RF_DEPTHHACK ? DEPTH_HACK : DEPTH_NORMAL);
@@ -2510,6 +2610,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_showbboxes, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showTris, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showNormals, 0, CVAR_CHEAT),
+	CVAR_VAR(gl_forcePostLight, 0, 0),
 #endif
 	CVAR_VAR(gl_clear, 0, 0),
 	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE)

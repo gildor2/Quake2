@@ -142,11 +142,15 @@ static void cGfxinfo(bool usage, int argc, char **argv)
 	// gamma info
 	appPrintf("Lighting: %s\n", gl_config.vertexLight ? "vertex" : "lightmap");
 	appPrintf("Gamma: ");
+	// code from LightScaleLightmap()
+	int overbright = gl_config.overbright;
+	if (!gl_config.doubleModulateLM)
+		overbright--;
 	if (gl_config.deviceSupportsGamma)
 		appPrintf("hardware, overbright: %s (%s), lightmap overbright: %s\n",
 			//?? NOTE: here used gl_overbright->integer, which can be modified after vid_restart
 			boolNames[gl_config.overbright], overbrNames[gl_overbright->integer == 2][gl_config.overbright],
-			boolNames[!gl_config.doubleModulateLM]);
+			boolNames[overbright != 0]);
 	else
 		appPrintf("software\n");
 }
@@ -467,7 +471,7 @@ void BeginFrame(double time)
 	}
 #endif
 
-	LOG_STRING("\n---------- Begin Frame ----------\n\n");
+	LOG_STRING("\n---------- Begin Frame ----------\n");
 
 	gl_state.have3d = gl_state.haveFullScreen3d = false;
 	gl_state.maxUsedShaderIndex = -1;

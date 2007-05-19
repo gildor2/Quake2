@@ -290,6 +290,9 @@ public:
 	// remap shader
 	shader_t *alphaShader;		// for skins: same shader as current, but translucent
 
+	// primary stage index - with TCGEN_TEXTURE; -1 when not detected
+	int		primaryStage;
+
 	shader_t *hashNext;
 
 	// stages: variable length

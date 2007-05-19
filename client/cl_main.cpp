@@ -80,9 +80,8 @@ clEntityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 -----------------------------------------------------------------------------*/
 
 static bool statusRequest;
-static bool cl_cheats;				// value of "cheats" cvar from server
-static char	cl_mapname[MAX_QPATH];
-static char	cl_gamename[MAX_QPATH];
+static char	cl_mapname[MAX_QPATH];		//?? move to cls
+static char	cl_gamename[MAX_QPATH];		//?? ...
 
 static bool TryParseStatus(const char *str)
 {
@@ -104,9 +103,9 @@ static bool TryParseStatus(const char *str)
 	strcpy(cl_gamename, v);
 
 	if (!(v = Info_ValueForKey(Buf, "cheats"))) return false;
-	cl_cheats = atoi(v) != 0;
+	cls.cheatsEnabled = (atoi(v) != 0);
 
-	appPrintf("map: %s game: %s cheats: %d\n", cl_mapname, cl_gamename, cl_cheats);
+	appPrintf("map: %s game: %s cheats: %d\n", cl_mapname, cl_gamename, cls.cheatsEnabled);
 
 	statusRequest = false;
 	return true;
@@ -114,10 +113,10 @@ static bool TryParseStatus(const char *str)
 
 static void SendStatusRequest()
 {
-	statusRequest  = true;
-	cl_cheats      = false;
-	cl_mapname[0]  = 0;		// needed ??
-	cl_gamename[0] = 0;
+	statusRequest     = true;
+	cls.cheatsEnabled = false;
+	cl_mapname[0]     = 0;		// needed ??
+	cl_gamename[0]    = 0;
 	Netchan_OutOfBandPrint(NS_CLIENT, cls.serverAddr, "status");
 }
 
@@ -333,7 +332,7 @@ void CL_ForwardToServer_f(int argc, char **argv)
 
 void CL_Pause(bool enable)
 {
-	if ((Cvar_VariableInt("maxclients") == 1 || cl_cheats) && Com_ServerState() || cl.attractloop)
+	if ((Cvar_VariableInt("maxclients") == 1 || cls.cheatsEnabled) && Com_ServerState() || cl.attractloop)
 		Cvar_SetInteger("paused", enable);
 	else
 		Cvar_SetInteger("paused", 0);
@@ -961,7 +960,7 @@ CVAR_END
 
 void CL_FixCvarCheats()
 {
-	bool cheats = cl_cheats;						// value from server
+	bool cheats = cls.cheatsEnabled;					// value from server
 
 	if (cl.attractloop) cheats = true;
 	if (cls.state != ca_connected && cls.state != ca_active) cheats = true;

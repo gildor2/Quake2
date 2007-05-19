@@ -88,6 +88,7 @@ void	QGL_SwapBuffers();
 
 extern cvar_t	*gl_logFile;
 
+// note: LOG_STRING(x) will automatically add "\n" at the end
 void	QGL_EnableLogging(bool enable);
 void	QGL_LogMessage(const char *text);
 #define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage(str);

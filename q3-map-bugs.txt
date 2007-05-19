@@ -1,3 +1,7 @@
+- dum:
+  - have long entity string (not enough +4k for entstring, added 16k)
+  - have unsupported here "target_push" and "target_teleporter" entities
+  - undergroung: skeleton cell: uses translucent surface with lightmap (?) - incorrect PostLight()
 ! q3dm2 (as example): water shader painted after rail shader !!!
 
 - ut4_abbey: when shooting, will crash in GenerateTexCoordArray() (dlights?)

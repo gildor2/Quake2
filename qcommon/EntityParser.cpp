@@ -713,6 +713,14 @@ static bool ProcessEntity1()
 
 static bool ProcessEntity3()
 {
+	// remove some classes
+	if (!strcmp(classname, "target_position") || !strcmp(classname, "target_location"))
+		return false;
+	else if (!strcmp(classname, "misc_model"))
+		return false;						// processed by q3map
+	else if (!strcmp(classname, "item_botroam"))
+		return false;						// empty spawn function in Q3A
+
 	entField_t *f;
 
 	// separate fields
@@ -769,6 +777,7 @@ static bool ProcessEntity3()
 		RemoveField("origin");				// not needed
 		RemoveField("spawnflags");			// not needed
 		RemoveField("phase");				// not needed
+		RemoveField("height");				// not needed
 		char tgtName[32];
 		appSprintf(ARRAY_ARG(tgtName), "bob_%d", numNewEntities++);
 		AddField("target", va("%s_0", tgtName));
@@ -865,7 +874,7 @@ static bool ProcessEntity3()
 		);
 	}
 	else if (!strncmp(classname, "item_", 5) || !strncmp(classname, "weapon_", 7) ||
-		!strncmp(classname, "ammo_", 5)) // also have "holdable_..." and "team_CTF_..."
+		!strncmp(classname, "ammo_", 5))	// also have "holdable_..." and "team_CTF_..."
 	{
 		// weapons, items etc
 		if (spawnflags & 1)
@@ -886,11 +895,8 @@ static bool ProcessEntity3()
 		RemoveField("notfree");
 		RemoveField("notteam");
 		RemoveField("nosingle");
+		RemoveField("spawnflags");			// not used in Q3A unless "suspended" item
 	}
-	else if (!strcmp(classname, "target_position") || !strcmp(classname, "target_location"))
-		return false;
-	else if (!strcmp(classname, "misc_model"))
-		return false;		// processed by q3map
 
 	return true;
 }
@@ -1507,7 +1513,7 @@ const char *ProcessEntstring(const char *entString)
 	plen++;	// add 1 byte for trailing zero
 
 	char *dst, *dst2;
-	int entStrLen = strlen(entString) + 1 + plen + 2048;	// 2K for different needs
+	int entStrLen = strlen(entString) + 1 + plen + 16384;	// 16K for different needs
 	dst = dst2 = (char*) bspfile.extraChain->Alloc(entStrLen);
 
 #if ENT_STATS

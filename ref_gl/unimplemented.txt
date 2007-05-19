@@ -1,25 +1,3 @@
-? cmodel_t/CBspModel:
-  - add "void *faces"   - filled/used by renderer (and clean R_LoadSubmodels)
-  - add "CVec3 center" - who will fill/update this ? ((mod->mins+mod->maxs)/2+ent->origin)
-
-FAST TODO:
-~~~~~~~~~~
-1) 2x for vertex lighting (optimized lightmaps)
-  AND for general vertex lighting (see (2))
-2) RGBGEN_VERTEX: when 2x available - use it (only when gl_vertexLight==0 !)
-  -- check all places, when VERTEX->EXACT_VERTEX
-3) ? overbright for coronas (color *= 2) -- center will be white
-  (at least, try it !)
-- rect textures & already_power_of_2 textures: should process alpha-channel (look at ResampleTexture() or MipMap()):
-  - when img !IMAGE_NOALPHA - when a==0 => r=g=b=0
-  - when IMAGE_NOALPHA - make a=255, keep r,g,b unchanged
-  * this is required for magnified textures (for example, when FSAA active, without this around all menu pics will appear pink border)
-- BUG: no world + gl_showFillrate -- needs glClear() (should be implemented with fastsky)
-- surface lights:
-  - when nearest and center points occluded, check far point too
-  - when distance/size is large, check center point only
-- move SPY_SHADER, LIGHT_DEBUG, DEBUG_SHADERS, some other -> "RenBuild.h" - separate options file
-
 -------------------------------------------------------------------------------
 	new lightgrid:
 -------------------------------------------------------------------------------
@@ -168,9 +146,9 @@ VIS:
       (oldgl: same as non-transparent water, combines 2 clusters vis)
     - "ground" (not #3!): pos=(347,-755,318), dir=(1,0,0) -- vis bug
 - require to perform MarkLeafs() every frame (can replace node.vidFrame and node.frame with a single one); check MarkLeafs() speed --
-    may be, speedup this process
-    ? may be, do not MarkLeafs(), but use visinfo, combined from few near points (see above); should cache few least vis points
-      (to not combine vis every frame / few times per frams (when have visible portals))
+  may be, speedup this process
+  ? may be, do not MarkLeafs(), but use visinfo, combined from few near points (see above); should cache few least vis points
+    (to not combine vis every frame / few times per frams (when have visible portals))
 
 GAMMA:
 ~~~~~~
@@ -331,15 +309,11 @@ FOR GAME:
 ? image formats: bmp, pcx32 (using OWN palette instead of colormap)
 - finish shader support:
   - deform autosprite2, normal
-  - skyParms, fogParms, portal
+  - fogParms, portal
   - detail (?)
   - videomap
   - tcmod entityTranslate (?)
   - wave noise (for deform normal)
-- lighting:
-  - reading lighting info from shaders
-  - correct lighting for multipass shaders with lightmap in non-first stage (may be, convert lightmap->vertex light
-    with subtesselation)
 - renderer interface
   - DrawStretchRaw32()
   - dlights
@@ -370,11 +344,29 @@ FOR GAME:
 - fast vid_restart: can reload all (necessary!?) textures/lightmaps (+ update vertex colors); problems:
   - some changes requires vid_restart (GL_Register/GL_Init etc.) -- extensions, overbright etc. -- just check all cvars in gl_main.c
   - should restart shaders: remove unnecessary shaders
-?! make refEntity_t (rename it!), particle_t, beam_t to be derived from a single structure (template?): { strucType, next, drawNext }; CBspLeafExtra
-  should have a single pointer to this list, not separate pointers to entities, particles, beams (sprites too ??)
+?! make refEntity_t (rename it!), particle_t, beam_t to be derived from a single structure (template?): { strucType, next, drawNext };
+  CBspLeafExtra should have a single pointer to this list, not separate pointers to entities, particles, beams (sprites too ??)
 ? GL_Cull() --(insert)-> GL_State()
 ? RGBGEN_SPECULAR (rgb depends on viewer direction and light positions) -- for windows/water
 ? reflect flares from water/windows (see Raiman3)
 - shaders (load-time, Q3 shaders): when texture have no alpha-channel, but alpha-channel used as specular mask by shader, remove
   specular mask
 - support ARB_texture_non_power_of_two (GeForce6+)
+? cmodel_t/CBspModel:
+  - add "void *faces"  - filled/used by renderer (and clean R_LoadSubmodels)
+  - add "CVec3 center" - who will fill/update this ? ((mod->mins+mod->maxs)/2+ent->origin)
+- 2x for vertex lighting (optimized lightmaps)
+  AND for general vertex lighting (see (2))
+- RGBGEN_VERTEX: when 2x available - use it (only when gl_vertexLight==0 !)
+  -- check all places, when VERTEX->EXACT_VERTEX
+? overbright for coronas (color *= 2) -- center will be white
+  (at least, try it !)
+- rect textures & already_power_of_2 textures: should process alpha-channel (look at ResampleTexture() or MipMap()):
+  - when img !IMAGE_NOALPHA - when a==0 => r=g=b=0
+  - when IMAGE_NOALPHA - make a=255, keep r,g,b unchanged
+  * this is required for magnified textures (for example, when FSAA active, without this around all menu pics will appear pink border)
+- BUG: no world + gl_showFillrate -- needs glClear() (should be implemented with fastsky)
+- surface lights occlusion:
+  - when nearest and center points occluded, check far point too
+  - when distance/size is large, check center point only
+- move SPY_SHADER, LIGHT_DEBUG, DEBUG_SHADERS, some other -> "RenBuild.h" - separate options file

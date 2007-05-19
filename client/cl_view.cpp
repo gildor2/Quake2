@@ -171,7 +171,7 @@ void V_AddLight(const CVec3 &org, float intensity, float r, float g, float b)
 // If cl_testentities is set, create 32 player models
 #if !NO_DEBUG
 
-void V_TestEntities()
+static void TestEntities()
 {
 	r_numentities = 32;
 	memset(r_entities, 0, sizeof(r_entities));
@@ -210,7 +210,7 @@ void V_TestEntities()
 
 
 // If cl_testlights is set, create 32 lights models
-void V_TestLights()
+static void TestLights()
 {
 	int		i;
 	dlight_t *dl;
@@ -238,6 +238,27 @@ void V_TestLights()
 		dl->color[2] = (((i % 6) + 1) & 4) >> 2;
 		dl->intensity = 200;
 	}
+}
+
+static void SetLight_f(bool usage, int argc, char **argv)
+{
+	if (usage || argc != 3)
+	{
+		appPrintf("Usage: setlight <style> <value=0..2>\n");
+		return;
+	}
+	if (!cls.cheatsEnabled)
+		return;
+	int style = atoi(argv[1]);
+	if (style < 0 || style > 255)
+	{
+		appWPrintf("bad style: %d\n", style);
+		return;
+	}
+	char str[2];
+	str[0] = appRound(atof(argv[2]) * ('m' - 'a')) + 'a';
+	str[1] = 0;
+	CL_SetLightstyle(style, str);
 }
 
 #endif // NO_DEBUG
@@ -441,13 +462,13 @@ float CalcFov(float fov_x, float width, float height)
 #if GUN_DEBUG
 
 // gun frame debugging functions
-void V_Gun_Next_f()
+static void Gun_Next_f()
 {
 	gun_frame++;
 	appPrintf("frame %i\n", gun_frame);
 }
 
-void V_Gun_Prev_f()
+static void Gun_Prev_f()
 {
 	gun_frame--;
 	if (gun_frame < 0)
@@ -455,7 +476,7 @@ void V_Gun_Prev_f()
 	appPrintf("frame %i\n", gun_frame);
 }
 
-void V_Gun_Model_f(int argc, char **argv)
+static void Gun_Model_f(int argc, char **argv)
 {
 	if (argc != 2)
 	{
@@ -917,8 +938,8 @@ bool V_RenderView()
 		CL_AddTEnts();
 
 #if !NO_DEBUG
-		if (cl_testentities->integer)	V_TestEntities();
-		if (cl_testlights->integer)		V_TestLights();
+		if (cl_testentities->integer)	TestEntities();
+		if (cl_testlights->integer)		TestLights();
 		if (cl_testblend->integer)
 		{
 			r_blend[0] = 1;
@@ -1028,9 +1049,12 @@ CVAR_END
 	Cvar_GetVars(ARRAY_ARG(vars));
 
 #if GUN_DEBUG
-	RegisterCommand("gun_next",  V_Gun_Next_f);
-	RegisterCommand("gun_prev",  V_Gun_Prev_f);
-	RegisterCommand("gun_model", V_Gun_Model_f);
+	RegisterCommand("gun_next",  Gun_Next_f);
+	RegisterCommand("gun_prev",  Gun_Prev_f);
+	RegisterCommand("gun_model", Gun_Model_f);
+#endif
+#if !NO_DEBUG
+	RegisterCommand("setlight", SetLight_f);
 #endif
 	RegisterCommand("sky", Sky_f);
 }

@@ -482,7 +482,7 @@ void DrawSky()
 {
 	guard(DrawSky);
 
-	LOG_STRING("***** DrawSky() *****\n");
+	LOG_STRING("***** DrawSky() *****");
 	if (gl_state.useFastSky) return;
 
 	// build frustum cover

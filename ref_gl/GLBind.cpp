@@ -411,7 +411,7 @@ void QGL_EnableLogging(bool enable)
 void QGL_LogMessage(const char *text)
 {
 	if (!LogFile) return;
-	LogFile->Printf(text);
+	LogFile->Printf("%s\n", text);	// output text with "\n"
 }
 
 #endif
@@ -423,7 +423,7 @@ void QGL_LogMessage(const char *text)
 
 void QGL_SwapBuffers()
 {
-	LOG_STRING("// QGL_SwapBuffers()\n");
+	LOG_STRING("// QGL_SwapBuffers()");
 #if _WIN32
 	// swapinterval stuff
 	if (gl_swapinterval->modified)

@@ -221,7 +221,7 @@ void GL_Bind(const image_t *tex)
 			if ((gl_config.platformId & HW_GF2MX) &&
 				tex->alphaType && tex != gl_state.currentBinds[tmu]) // BUG001 FIX
 			{
-				LOG_STRING("// fix BUG001\n");
+				LOG_STRING("// fix BUG001");
 				// bind any TEXTURE_2D texture within alpha channel
 				glBindTexture(GL_TEXTURE_2D, gl_dlightImage->texnum);
 			}
@@ -233,7 +233,7 @@ void GL_Bind(const image_t *tex)
 		if (tex == gl_state.currentBinds[tmu]) return;
 
 		gl_state.currentBinds[tmu] = tex;
-		LOG_STRING(va("// GL_Bind(%s)\n", *tex->Name));
+		LOG_STRING(va("// GL_Bind(%s)", *tex->Name));
 		glBindTexture(tex->target, tex->texnum);
 #if MAX_DEBUG
 		GLenum err = glGetError();
@@ -260,7 +260,7 @@ void GL_BindForce(const image_t *tex)
 	if (gl_state.currentBinds[tmu] == tex) return;
 
 	gl_state.currentBinds[tmu] = tex;
-	LOG_STRING(va("// GL_Bind(%s)\n", *tex->Name));
+	LOG_STRING(va("// GL_Bind(%s)", *tex->Name));
 	glBindTexture(tex->target, tex->texnum);
 #if MAX_DEBUG
 	GLenum err = glGetError();
@@ -369,7 +369,7 @@ void GL_TexEnvColor(const color_t *c)
 	if (!(gl_state.newEnv[tmu] & TEXENV_ENVCOLOR) || gl_state.texEnvColor[tmu].rgba == c->rgba)
 		return;
 
-//	LOG_STRING(va("// GL_TexEnvColor(%d, %d, %d, %d)\n", c->c[0], c->c[1], c->c[2], c->c[3]));
+//	LOG_STRING(va("// GL_TexEnvColor(%d, %d, %d, %d)", c->c[0], c->c[1], c->c[2], c->c[3]));
 	gl_state.texEnvColor[tmu].rgba = c->rgba;
 	float	color[4];
 	color[0] = c->c[0] / 255.0f;
@@ -677,7 +677,7 @@ void GL_Set2DMode()
 	if (screenshotName && (screenshotFlags & SHOT_NO_2D))	// can move this to gl_main.cpp::RenderScene(), but this will wait for 3D
 		PerformScreenshot();
 
-	LOG_STRING("***** Set2DMode() *****\n");
+	LOG_STRING("***** Set2DMode() *****");
 	glViewport(0, 0, vid_width, vid_height);
 	glScissor(0, 0, vid_width, vid_height);
 	glMatrixMode(GL_PROJECTION);
@@ -697,7 +697,7 @@ void GL_Set2DMode()
 // Setup OpenGL as specified in active portal
 void GL_Set3DMode(viewPortal_t *port)
 {
-	LOG_STRING("*** GL_Set3DMode() ***\n");
+	LOG_STRING("*** GL_Set3DMode() ***");
 	gl_state.is2dMode = false;
 	glMatrixMode(GL_PROJECTION);
 	glLoadMatrixf(&port->projectionMatrix[0][0]);
