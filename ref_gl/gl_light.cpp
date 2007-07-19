@@ -149,7 +149,7 @@ void CPointLight::Show() const
 			VectorMA(forward, i & 2 ? scale : -scale, i & 1 ? up : right, vecs[i + 1].xyz);
 		vecs[0].xyz = origin;
 		glVertexPointer(3, GL_FLOAT, sizeof(bufVertex_t), vecs);
-		glDrawElements(GL_LINES, 16, GL_UNSIGNED_INT, indexes);
+		GL_DrawRangeElements(GL_LINES, 0, 4, 16, GL_UNSIGNED_INT, indexes);
 	}
 	else
 	{
@@ -189,7 +189,7 @@ void CSurfLight::Show() const
 	}
 
 	glVertexPointer(3, GL_FLOAT, sizeof(bufVertex_t), vecs);
-	glDrawElements(GL_LINES, 8, GL_UNSIGNED_INT, indexes);
+	GL_DrawRangeElements(GL_LINES, 0, 3, 8, GL_UNSIGNED_INT, indexes);
 
 	if (gl_showLights->integer == 2)
 		DrawText3D(center, va("%g\n%g", intens, SQRTFAST(maxDist2)), RGBS(color[0], color[1], color[2]));

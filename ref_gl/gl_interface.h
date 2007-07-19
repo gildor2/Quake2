@@ -245,6 +245,17 @@ void	GL_Set2DMode();
 void	GL_Set3DMode(viewPortal_t *port);
 void	GL_ResetState();
 
+// Function with provided minimal and maximal indices (start and end);
+// note: real vertex count is end-start+1, e.g. all indices restricted
+// to [start,end] but not to [start,end-1]
+inline void GL_DrawRangeElements(GLenum mode, GLuint start, GLuint end,
+	GLsizei count, GLenum type, const GLvoid *indices)
+{
+	if (GL_SUPPORT(QGL_EXT_DRAW_RANGE_ELEMENTS))
+		glDrawRangeElementsEXT(mode, start, end, count, type, indices);
+	else
+		glDrawElements(mode, count, type, indices);
+}
 
 //} // namespace
 

@@ -60,7 +60,6 @@ inline void FNegate(float &a)
 
 #else
 
-//!! should be in a Core (appRound,appFloor,appCeil)
 #define appRound(f)			((int) (f >= 0 ? (f)+0.5f : (f)-0.5f))
 #define appFloor(f)			((int) floor(f))
 #define appCeil(f)			((int) ceil(f))
@@ -123,7 +122,7 @@ union color_t
 #define RGBA255(r,g,b,a)	((r) | ((g)<<8) | ((b)<<16) | ((a)<<24))
 
 // computed colors
-//?? make as methods; or - constructor or CColor
+//?? make as methods; or - constructor of CColor
 #define RGBAS(r,g,b,a)		(appRound((r)*255) | (appRound((g)*255)<<8) | (appRound((b)*255)<<16) | (appRound((a)*255)<<24))
 #define RGBS(r,g,b)			(appRound((r)*255) | (appRound((g)*255)<<8) | (appRound((b)*255)<<16) | (255<<24))
 

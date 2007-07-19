@@ -132,15 +132,15 @@ FUNC(sort)
 		const char *name;
 		int		sort;
 	} sortNames[] = {
-		{"portal",		SORT_PORTAL	},
-		{"sky",			SORT_SKY	},
-		{"opaque",		SORT_OPAQUE	},
-		{"decal",		SORT_DECAL	},
-		{"seeThrough",	SORT_SEETHROUGH},
-		{"banner",		SORT_BANNER	},
-		{"underwater",	SORT_UNDERWATER},
-		{"additive",	SORT_SPRITE	},
-		{"nearest",		16}
+		{"portal",		SORT_PORTAL		},
+		{"sky",			SORT_SKY		},
+		{"opaque",		SORT_OPAQUE		},
+		{"decal",		SORT_DECAL		},
+		{"seeThrough",	SORT_SEETHROUGH	},
+		{"banner",		SORT_BANNER		},
+		{"underwater",	SORT_UNDERWATER	},
+		{"additive",	SORT_SPRITE		},
+		{"nearest",		16				}
 	};
 	int sort = SORT_BAD;
 	for (int i = 0; i < ARRAY_COUNT(sortNames); i++)
@@ -161,10 +161,11 @@ FUNC(deformVertexes)
 		const char *name;
 		deformType_t type;
 	} deformNames[] = {
-		{"wave",		DEFORM_WAVE		},
-		{"autoSprite",	DEFORM_AUTOSPRITE},
-		{"move",		DEFORM_MOVE		},
-		{"bulge",		DEFORM_BULGE	}
+		{"wave",		DEFORM_WAVE			},
+		{"autoSprite",	DEFORM_AUTOSPRITE	},
+		{"autoSprite2", DEFORM_AUTOSPRITE2	},
+		{"move",		DEFORM_MOVE			},
+		{"bulge",		DEFORM_BULGE		}
 		//!! other
 	};
 	deformType_t type;
@@ -523,17 +524,17 @@ FUNC(rgbGen)
 		rgbGenType_t rgbGen;
 	} rgbNames[] = {
 		// simple
-		{"identity",		RGBGEN_IDENTITY	},
+		{"identity",		RGBGEN_IDENTITY			},
 		{"identityLighting",RGBGEN_IDENTITY_LIGHTING},
-		{"entity",			RGBGEN_ENTITY	},
-		{"oneMinusEntity",	RGBGEN_ONE_MINUS_ENTITY},
-		{"vertex",			RGBGEN_VERTEX	},
-		{"oneMinusVertex",	RGBGEN_ONE_MINUS_VERTEX},
-		{"exactVertex",		RGBGEN_EXACT_VERTEX},
-		{"lightingDiffuse",	RGBGEN_DIFFUSE	},
+		{"entity",			RGBGEN_ENTITY			},
+		{"oneMinusEntity",	RGBGEN_ONE_MINUS_ENTITY	},
+		{"vertex",			RGBGEN_VERTEX			},
+		{"oneMinusVertex",	RGBGEN_ONE_MINUS_VERTEX	},
+		{"exactVertex",		RGBGEN_EXACT_VERTEX		},
+		{"lightingDiffuse",	RGBGEN_DIFFUSE			},
 		// parametrized
-		{"const",			RGBGEN_CONST	},
-		{"constant",		RGBGEN_CONST	}
+		{"const",			RGBGEN_CONST			},
+		{"constant",		RGBGEN_CONST			}
 	};
 
 	rgbGenType_t rgbGen = RGBGEN_NONE;

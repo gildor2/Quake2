@@ -341,8 +341,8 @@ void CCoords::UnTransformPoint(const CVec3 &src, CVec3 &dst) const
 {
 	CVec3 tmp;
 	VectorMA(origin, src[0], axis[0], tmp);
-	VectorMA(tmp,	  src[1], axis[1], tmp);
-	VectorMA(tmp,	  src[2], axis[2], dst);
+	VectorMA(tmp,	 src[1], axis[1], tmp);
+	VectorMA(tmp,	 src[2], axis[2], dst);
 }
 
 void CCoords::TransformCoords(const CCoords &src, CCoords &dst) const
@@ -379,8 +379,8 @@ void UnTransformPoint(const CVec3 &origin, const CAxis &axis, const CVec3 &src, 
 {
 	CVec3 tmp;
 	VectorMA(origin, src[0], axis[0], tmp);
-	VectorMA(tmp,	  src[1], axis[1], tmp);
-	VectorMA(tmp,	  src[2], axis[2], dst);
+	VectorMA(tmp,	 src[1], axis[1], tmp);
+	VectorMA(tmp,	 src[2], axis[2], dst);
 }
 
 

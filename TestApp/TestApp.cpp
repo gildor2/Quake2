@@ -285,35 +285,66 @@ void cInput()
 
 //???????????????????????????????????????????
 
+class CBaseObject
+{
+	int i;
+	virtual void Unused0() {}
+};
+
 class CClassEvent
 {
 private:
 	// local types
-	class CDummy { /* empty */ };
-	typedef void (CDummy::*EventFunc_t)();
+//	class CDummy;// { /* empty */ };
+//	typedef void (CDummy::*EventFunc_t)();
+	typedef void (CBaseObject::*EventFunc_t)();
 	// data fields
 	EventFunc_t func;
-	CDummy		*obj;
+//	CDummy		*obj;
+	CBaseObject *obj;
 public:
 	CClassEvent()
 	{}
 	template<class T> CClassEvent(T &object, void (T::*method)())
-	:	func((EventFunc_t)method)
-	,	obj((CDummy*)&object)
-	{}
-	template<class T> void set(T &object, void (T::*method)())
+#if 1
+	:	obj((CBaseObject*)(void*)(&object))	// intermediate cast to (void*) is required
+//	:	obj((CDummy*)(void*)&object)
+///	:	obj(reinterpret_cast<CDummy*>(&object))
+//	,	func((EventFunc_t)method)
+#else
+	:	obj(object)
+	,	func(method)
+#endif
+	{
+		// convert one pointer type to another via union
+		union {
+			EventFunc_t method1;
+			void (T::*method2)();
+		} u;
+		u.method2 = method;
+		func = u.method1;
+//		obj = (CBaseObject*)&object;
+	}
+/*	template<class T> void set(T &object, void (T::*method)())
 	{
 		func = (EventFunc_t)method;
-		obj  = (CDummy*)&object;
-	}
-	FORCEINLINE void operator()() const
+		obj  = static_cast<CBaseObject*>(&object);
+//		obj  = (CDummy*)&object;
+	} */
+	NOINLINE void operator()() const
 	{
 		(obj->*func)();
 	}
 };
 
+class Dummy
+{
+	int i;
+	virtual void Unused1()
+	{}
+};
 
-class CTest
+class CTest : public Dummy, public CBaseObject
 {
 private:
 	int		n;
@@ -325,6 +356,8 @@ public:
 	{
 		appPrintf("n=%d\n", n);
 	}
+	virtual void Unused()
+	{}
 };
 
 
@@ -334,11 +367,11 @@ int main(int argc, char** argv)
 		Out.Register();
 		appInit();
 
-/*		CTest tst1(13);
+		CTest tst1(13);
 		CTest tst2(24);
 		CClassEvent evt(tst2, &CTest::OnT);
 		evt();
-*/
+
 		// testing file system
 		CFileSystem FS;
 		appInitFileSystem(FS);

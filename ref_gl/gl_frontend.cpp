@@ -730,7 +730,7 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 					}
 				}
 
-				// dlights
+				// project dlights
 				numDlights = 0;
 				pl->dlights = NULL;
 				if (pl->dlightMask && pl->shader->lightmapNumber != LIGHTMAP_NONE)
@@ -807,7 +807,7 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 			break;
 
 		default:
-			DrawTextLeft("unknown surface type", RGB(1, 0, 0));
+			DrawTextLeft(va("bad surface: %s", *surf->shader->Name), RGB(1, 0, 0));
 			continue;
 #undef CULL_SURF
 #undef CULL_DLIGHT

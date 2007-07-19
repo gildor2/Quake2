@@ -326,6 +326,7 @@ static shader_t *FinishShader()
 	}
 
 	sh.primaryStage = -1;
+	int primStageWeight = 0;
 
 	// enum and count stages
 	bool haveLightmap = false;
@@ -420,13 +421,19 @@ static shader_t *FinishShader()
 				sh.dependOnTime = true;
 
 		// detect primary stage
-		if (s->rgbGenType == RGBGEN_IDENTITY && s->tcGenType == TCGEN_TEXTURE && !s->numTcMods)
+		if (s->rgbGenType == RGBGEN_IDENTITY && s->tcGenType == TCGEN_TEXTURE)
 		{
-			if (sh.primaryStage < 0)
+			int weight = 100 - s->numTcMods;
+			if (weight > primStageWeight)
+			{
 				sh.primaryStage = numStages;
-			else
+				primStageWeight = weight;
+			}
+			else if (weight == primStageWeight)
+			{
 				Com_DPrintf("R_FinishShader(%s): multiple primary stages found: %d and %d\n",
 					*sh.Name, sh.primaryStage, numStages);
+			}
 		}
 	}
 	sh.numStages = numStages;

@@ -308,7 +308,7 @@ FOR GAME:
 ? fonts (Q3 format: font.tga+font.dat) -- Q3 uses this for Q3TA; may be migrated to Q3 UI interface
 ? image formats: bmp, pcx32 (using OWN palette instead of colormap)
 - finish shader support:
-  - deform autosprite2, normal
+  - deform normal
   - fogParms, portal
   - detail (?)
   - videomap

@@ -77,6 +77,171 @@ static surfaceInfo_t *sortedSurfaces[MAX_SCENE_SURFACES];
 	Process deforms, ...gens etc.
 -----------------------------------------------------------------------------*/
 
+static void DeformAutosprite(bufVertex_t *vec)
+{
+	// autoSprite deform require quads
+	if (gl_numVerts & 3 || gl_numIndexes != gl_numVerts / 2 * 3)
+	{
+		DrawTextLeft(va("Incorrect surface for AUTOSPRITE in %s", *currentShader->Name), RGB(1,0,0));	//?? developer
+		return;
+	}
+	// rotate view axis to model coords
+	CAxis mViewAxis;
+	if (currentEntity->worldMatrix)
+		mViewAxis = vp.view.axis;
+	else
+		currentEntity->coord.axis.TransformAxis(vp.view.axis, mViewAxis);
+
+	// process vertices
+	bufTexCoordSrc_t *tex = &srcTexCoord[0];
+	int *idx = gl_indexesArray;
+
+	int i;
+	for (i = 0; i < gl_numVerts; i += 4)
+	{
+		// find middle point
+		CVec3 center = vec[0].xyz;
+		for (int k = 1; k < 4; k++)
+			center.Add(vec[k].xyz);
+		center.Scale(1.0f/4);								// average
+		// assume source shape is square (as Q3 does)
+		CVec3 tmp;
+		VectorSubtract(vec[0].xyz, center, tmp);
+		// square side = sqrt(dot(tmp,tmp)) / sqrt(2) = sqrt(dot(tmp,tmp)/2)
+		float radius = dot(tmp,tmp) / 2;
+		radius = SQRTFAST(radius);
+		// compute vertexes
+		VectorMA(center,  radius, mViewAxis[1], tmp);		// right
+		VectorMA(tmp,     radius, mViewAxis[2], vec->xyz);
+		vec++;
+		VectorMA(tmp,    -radius, mViewAxis[2], vec->xyz);
+		vec++;
+		VectorMA(center, -radius, mViewAxis[1], tmp);		// left
+		VectorMA(tmp,    -radius, mViewAxis[2], vec->xyz);
+		vec++;
+		VectorMA(tmp,     radius, mViewAxis[2], vec->xyz);
+		vec++;
+		// recompute texcoords
+		tex->tex[0] = 0; tex->tex[1] = 0; tex++;
+		tex->tex[0] = 0; tex->tex[1] = 1; tex++;
+		tex->tex[0] = 1; tex->tex[1] = 1; tex++;
+		tex->tex[0] = 1; tex->tex[1] = 0; tex++;
+		// recompute indexes
+		*idx++ = i; *idx++ = i+2; *idx++ = i+1;
+		*idx++ = i; *idx++ = i+3; *idx++ = i+2;
+	}
+	// store normals
+	mViewAxis[0].Negate();
+	bufExtra_t *ex;
+	for (i = 0, ex = gl_extra; i < gl_numExtra; i++, ex++)
+		ex->normal.Zero();
+}
+
+
+static void DeformAutosprite2(bufVertex_t *vec)
+{
+	// autoSprite2 deform require quads
+	if (gl_numVerts & 3 || gl_numIndexes != gl_numVerts / 2 * 3)
+	{
+		DrawTextLeft(va("Incorrect surface for AUTOSPRITE2 in %s", *currentShader->Name), RGB(1,0,0));	//?? developer
+		return;
+	}
+	// rotate view axis to model coords
+	CVec3 mViewDir;
+	if (currentEntity->worldMatrix)
+		mViewDir = vp.view.axis[0];
+	else
+		currentEntity->coord.axis.TransformVector(vp.view.axis[0], mViewDir);
+
+	// process vertices
+	int i, idx;
+	for (i = 0, idx = 0; i < gl_numVerts; i += 4, idx += 6)
+	{
+		// edge list
+		static const short edges[6][2] = {	// connects all verts with all
+			{0,1}, {0,2}, {0,3},
+			{1,2}, {1,3},
+			{2,3}
+		};
+		// find 2 shortest edges
+		CVec3 tmp;
+		int j;
+		float dist1 = BIG_NUMBER, dist2 = BIG_NUMBER;
+		int   edge1 = 0,          edge2 = 0;
+		for (j = 0; j < 6; j++)
+		{
+			VectorSubtract(vec[edges[j][0]].xyz, vec[edges[j][1]].xyz, tmp);
+			float dist = dot(tmp, tmp);
+			if (dist < dist1)
+			{
+				// dist1 is minimal, dist2 - next one
+				dist2 = dist1;
+				edge2 = edge1;
+				dist1 = dist;
+				edge1 = j;
+			}
+			else if (dist < dist2)
+			{
+				// larger than dist1, but smaller than dist2
+				dist2 = dist;
+				edge2 = j;
+			}
+		}
+		// compute major axis
+		CVec3 pt1, pt2;		// pt1 - mid of most shortest edge, pt2 - next shortest edge
+		VectorAdd(vec[edges[edge1][0]].xyz, vec[edges[edge1][1]].xyz, pt1);
+		pt1.Scale(0.5f);
+		VectorAdd(vec[edges[edge2][0]].xyz, vec[edges[edge2][1]].xyz, pt2);
+		pt2.Scale(0.5f);
+
+		CCoords prevCoords, newCoords;
+		// compute prevCoords -- coordinate system of original poly
+		prevCoords.origin  = pt2;
+		VectorSubtract(pt1, pt2, prevCoords.axis[0]);
+		prevCoords.axis[0].NormalizeFast();
+		VectorSubtract(vec[edges[edge2][1]].xyz, vec[edges[edge2][0]].xyz, tmp);
+		cross(prevCoords.axis[0], tmp, prevCoords.axis[2]);
+		prevCoords.axis[2].NormalizeFast();
+		cross(prevCoords.axis[0], prevCoords.axis[2], prevCoords.axis[1]);
+		// compute newCoords -- coordinate system of rotated poly
+		newCoords.origin  = prevCoords.origin;
+		newCoords.axis[0] = prevCoords.axis[0];
+		cross(newCoords.axis[0], mViewDir, newCoords.axis[1]);
+		newCoords.axis[1].NormalizeFast();
+		cross(newCoords.axis[0], newCoords.axis[1], newCoords.axis[2]);
+		newCoords.axis[1].Negate();
+		// rotate all 4 vertexes
+		for (j = 0; j < 4; j++)
+		{
+			prevCoords.TransformPoint(vec->xyz, tmp);	// put vector into prevCoords
+			newCoords.UnTransformPoint(tmp, vec->xyz);	// put back into world coords, rotated
+			vec++;
+		}
+
+#if 0
+	int nn = Cvar_VariableInt("test");
+	if (nn) {
+	CCoords *crd = nn == 1 ? &prevCoords : &newCoords;
+	//!! testing maps: q3dm10 (chains under sculls), estatica
+	GL_SetMultitexture(0);		// disable texturing
+	GL_State(GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
+	glDisableClientState(GL_COLOR_ARRAY);
+	glBegin(GL_LINES);
+	glColor3f(0,0,1);
+		glVertex3fv(pt1.v);	glVertex3fv(pt2.v);
+	glColor3f(1,0,0);
+		VectorMA(pt1, 5, crd->axis[1], tmp);
+		glVertex3fv(pt1.v); glVertex3fv(tmp.v);
+	glColor3f(0,1,0);
+		VectorMA(pt1, 5, crd->axis[2], tmp);
+		glVertex3fv(pt1.v); glVertex3fv(tmp.v);
+	glEnd();
+	}
+#endif
+	}
+}
+
+
 static void ProcessShaderDeforms(shader_t *sh)
 {
 	int		i, j;
@@ -150,83 +315,12 @@ static void ProcessShaderDeforms(shader_t *sh)
 			}
 			break;
 		case DEFORM_AUTOSPRITE:
-			{
-				// autoSprite deform require quads
-				if (gl_numVerts & 3 || gl_numIndexes != gl_numVerts / 2 * 3)
-				{
-					DrawTextLeft(va("Incorrect surface for AUTOSPRITE in %s", *currentShader->Name), RGB(1,0,0));	//?? developer
-					break;
-				}
-				// rotate view axis to model coords
-				CAxis mViewAxis;
-				if (currentEntity->worldMatrix)
-					mViewAxis = vp.view.axis;
-				else
-					currentEntity->coord.axis.TransformAxis(vp.view.axis, mViewAxis);
-				// process vertices
-				bufTexCoordSrc_t *tex = &srcTexCoord[0];
-				int *idx = gl_indexesArray;
-
-				for (j = 0; j < gl_numVerts; j += 4)
-				{
-					// find middle point
-					CVec3 center = vec[0].xyz;
-					for (int k = 1; k < 4; k++)
-						center.Add(vec[k].xyz);
-					center.Scale(1.0f/4);								// average
-#if 0
-					// compute current quad axis
-					CVec3 axis_s, axis_t;
-					VectorSubtract(vec[0].xyz, vec[2].xyz, axis_s);
-					axis_s.NormalizeFast();
-					VectorSubtract(vec[3].xyz, vec[0].xyz, axis_t);
-					VectorMA(axis_t, -dot(axis_t, axis_s), axis_s);	// make axis_t to be orthogonal to axis_s
-					axis_t.NormalizeFast();
-					// rotate each vertex
-					for (k = 0; k < 4; k++, vec++)
-					{
-						CVec3 tmp;
-						VectorSubtract(vec->xyz, center, tmp);
-						float s = dot(tmp, axis_s);
-						float t = dot(tmp, axis_t);
-						VectorMA(center, s, mViewAxis[1], tmp);
-						VectorMA(tmp,    t, mViewAxis[2], vec->xyz);
-					}
-#else
-					// assume source shape is square
-					CVec3 tmp;
-					VectorSubtract(vec[0].xyz, center, tmp);
-					// square side = sqrt(dot(tmp,tmp)) / sqrt(2) = sqrt(dot(tmp,tmp)/2)
-					float radius = dot(tmp,tmp) / 2;
-					radius = SQRTFAST(radius);
-					// compute vertexes
-					VectorMA(center,  radius, mViewAxis[1], tmp);		// right
-					VectorMA(tmp,     radius, mViewAxis[2], vec->xyz);
-					vec++;
-					VectorMA(tmp,    -radius, mViewAxis[2], vec->xyz);
-					vec++;
-					VectorMA(center, -radius, mViewAxis[1], tmp);		// left
-					VectorMA(tmp,    -radius, mViewAxis[2], vec->xyz);
-					vec++;
-					VectorMA(tmp,     radius, mViewAxis[2], vec->xyz);
-					vec++;
-					// recompute texcoords
-					tex->tex[0] = 0; tex->tex[1] = 0; tex++;
-					tex->tex[0] = 0; tex->tex[1] = 1; tex++;
-					tex->tex[0] = 1; tex->tex[1] = 1; tex++;
-					tex->tex[0] = 1; tex->tex[1] = 0; tex++;
-					// recompute indexes
-					*idx++ = j; *idx++ = j+2; *idx++ = j+1;
-					*idx++ = j; *idx++ = j+3; *idx++ = j+2;
-#endif
-				}
-				// store normals
-				mViewAxis[0].Negate();
-				for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
-					ex->normal.Zero();
-			}
+			DeformAutosprite(vec);
 			break;
-		//?? other types: AUTOSPRITE2, NORMAL, PROJECTION_SHADOW (?)
+		case DEFORM_AUTOSPRITE2:
+			DeformAutosprite2(vec);
+			break;
+		//?? other types: NORMAL, PROJECTION_SHADOW (?)
 		}
 	}
 }
@@ -750,25 +844,30 @@ static bool			spy;
 
 // Apply lighting before other stages, when possible - this is an easiest way,
 // all light textures may be added together
-int PreLight(const shader_t *sh)
+// Return true, when PostLight required for this shader
+bool PreLight(const shader_t *sh, int &skipStages)
 {
 	int i;
 	renderStage_t *st = rendSt;
 
-	// get lightmap stage (should be first ??)
+	skipStages = 0;
+	if (!gl_dynamic->integer) return false;	// dynamic lighting is disabled
+#if !NO_DEBUG
+	if (r_fullbright->integer) return false;
+	if (gl_forcePostLight->integer) return true;
+#endif
+
+	// get lightmap stage (should be first for PreLight)
 	shaderStage_t *lmStage = NULL;
 	if (sh->numStages && sh->stages[0]->isLightmap)
 		lmStage = sh->stages[0];
-
-	if (!lmStage || !gl_dynamic->integer)
+	if (!lmStage)
 	{
-		// no lightmap stage, lm stage is not first, or dynamic lighting is disabled
-		return 0;
+		// no lightmap stage, or lm stage is not first - try PostLight
+		return true;
 	}
-#if !NO_DEBUG
-	if (r_fullbright->integer) return 0;
-	if (gl_forcePostLight->integer) return 0;
-#endif
+	if (lmStage->tcGenType != TCGEN_LIGHTMAP)
+		return true;		// only TCGEN_LIGHTMAP can be processed here
 
 	if (currentDlightMask)
 	{
@@ -796,7 +895,7 @@ int PreLight(const shader_t *sh)
 		}
 	}
 
-	if (!sh->lightStyles_i && !currentDlightMask) return 0;			// no dynamic lighting
+	if (!sh->lightStyles_i && !currentDlightMask) return false;		// no dynamic lighting
 
 	/*------------ add dynamic lightmaps ------------*/
 	// even if shader have no lightstyles, we will get here to add main lightmap stage
@@ -827,23 +926,13 @@ int PreLight(const shader_t *sh)
 		numRenderStages++;
 		if (!style) break;				// it was main lightmap
 	}
-	return 1;							// skip lightmap stage
+	skipStages = 1;						// skip lightmap stage
+	return false;						// no PostLight needed
 }
 
 
 void PostLight(const shader_t *sh)
 {
-#if !NO_DEBUG
-	if (gl_forcePostLight->integer == 0)
-	{
-#endif
-		if (sh->numStages < 2 || sh->stages[0]->isLightmap)
-			return;						// this shader should be lighted with PreLight()
-#if !NO_DEBUG
-	}
-	if (r_fullbright->integer) return;	// lighting disabled at all
-#endif
-	if (!gl_dynamic->integer) return;	// dynamic lights are disabled
 	if (!currentDlightMask) return;		// no dlights for this surface
 	if (sh->primaryStage < 0) return;	// no "primary" stage found, cannot correctly apply dlights
 
@@ -881,13 +970,17 @@ void PostLight(const shader_t *sh)
 #endif
 		// use rendSt[] instead of sh->stages[] for correct animmap support
 		// note: assumed, that no stages added before static stages (i.e. no PreLight() used)
-		st[1].mapImage[0]    = rendSt[sh->primaryStage].mapImage[0];
+		const renderStage_t &primStage = rendSt[sh->primaryStage];
+		st[1].mapImage[0]    = primStage.mapImage[0];
 		st[1].alphaGenType   = ALPHAGEN_CONST;
 		st[1].rgbGenType     = RGBGEN_CONST;
 		st[1].rgbaConst.rgba = RGBA(1,1,1,1);
 		st[1].tcGenType      = TCGEN_TEXTURE;
+		// primary stage may have tcMods, should copy it
+		st[1].numTcMods      = primStage.numTcMods;
+		st[1].tcModParms     = primStage.tcModParms;
 		LOG_PP(va("  tmu[0] = \"%s\"", st[0].mapImage[0] ? *st[0].mapImage[0]->Name : "NULL"));
-		LOG_PP("  MT(MUL)");
+		LOG_PP(gl_config.doubleModulateLM ? "  MT(MUL2)" : "  MT(MUL)");
 		LOG_PP(va("  tmu[1] = \"%s\"", st[1].mapImage[0] ? *st[1].mapImage[0]->Name : "NULL"));
 		// finish
 		st += 2;
@@ -1461,7 +1554,8 @@ void ComputeCombiners(const shader_t *sh)
 	memset(rendSt, 0, sizeof(rendSt));				// initialize all fields with zeros
 
 	// apply dlights if possible
-	int firstStage = PreLight(sh);
+	int firstStage;
+	bool needPostLight = PreLight(sh, firstStage);
 	// copy remainder stages
 	AddStaticStages(sh, firstStage);
 
@@ -1500,7 +1594,7 @@ void ComputeCombiners(const shader_t *sh)
 	UseMultitexture();
 
 	// apply lights when PreLight() failed
-	PostLight(sh);
+	if (needPostLight) PostLight(sh);
 
 	LOG_PP("-----------------");
 	unguard;
@@ -1590,7 +1684,7 @@ void BK_FlushShader()
 			&& currentShader->type == SHADERTYPE_NORMAL && !gl_state.is2dMode)
 			GL_EnableFog(true);	//!!! else GL_DisableFog()!!!
 
-		glDrawElements(GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
+		GL_DrawRangeElements(GL_TRIANGLES, 0, gl_numVerts-1, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
 	}
 
 	/*----------------- finalize ------------------*/
@@ -1981,7 +2075,7 @@ static void DrawBBoxes()
 				GL_DepthRange(DEPTH_NEAR);
 				glVertexPointer(3, GL_FLOAT, sizeof(bufVertex_t), v);
 				glColor3f(0.5, 0.1, 0.1);
-				glDrawElements(GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
+				GL_DrawRangeElements(GL_QUADS, 0, 3, 4, GL_UNSIGNED_INT, idx2);
 
 				GL_State(BLEND(S_ALPHA,M_S_ALPHA));
 				GL_DepthRange(DEPTH_NORMAL);
@@ -1989,7 +2083,7 @@ static void DrawBBoxes()
 					glColor4f(0.1, 0.1, 0.3, 0.4);
 				else
 					glColor4f(0.5, 0.1, 0.1, 0.4);
-				glDrawElements(GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
+				GL_DrawRangeElements(GL_QUADS, 0, 3, 4, GL_UNSIGNED_INT, idx2);
 
 				glColor3f(0.6, 0.6, 0.2);
 			}
@@ -2019,7 +2113,7 @@ static void DrawBBoxes()
 				glColor3f(0.2, 0.8, 0.2);
 		}
 		glVertexPointer(3, GL_FLOAT, sizeof(bufVertex_t), v);
-		glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, inds);
+		GL_DrawRangeElements(GL_LINES, 0, 7, 24, GL_UNSIGNED_INT, inds);
 	}
 }
 
@@ -2045,7 +2139,7 @@ static bool DrawTriangles()
 		glColor3f(0, 0, 0);
 	glDisableClientState(GL_COLOR_ARRAY);
 	// draw
-	glDrawElements(GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
+	GL_DrawRangeElements(GL_TRIANGLES, 0, gl_numVerts-1, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
 	// restore state
 	GL_DepthRange(prevDepth);
 
@@ -2194,7 +2288,7 @@ void surfaceEntity_t::Tesselate(refEntity_t &ent)
 		}
 		// draw it
 		glVertexPointer(3, GL_FLOAT, sizeof(bufVertex_t), v);
-		glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, inds);
+		GL_DrawRangeElements(GL_LINES, 0, 7, 24, GL_UNSIGNED_INT, inds);
 	}
 	else
 		DrawTextLeft(va("Unknown ent surf flags: %X", entity->flags), RGB(1,0,0));

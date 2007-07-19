@@ -807,6 +807,12 @@ static bool ProcessEntity3()
 			VECTOR_ARG(org2), tgtName, tgtName);
 //		appPrintf("GEN(%s):\n"S_RED"%s\n", modelField->value, bufForNewEntity);
 	}
+	else if (!strcmp(classname, "func_static"))
+	{
+		// note: can be used as conditional wall/model
+		entModel->flags |= CMODEL_WALL|CMODEL_SHOW;
+		return false;
+	}
 	else if (!strcmp(classname, "trigger_push"))
 	{
 		// get start point
@@ -826,8 +832,12 @@ static bool ProcessEntity3()
 		VectorSubtract(dst, start, dir);
 
 		// algorithm based on Q3A's AimAtTarget()
+		if (dir[2] <= 0)
+		{
+			Com_DPrintf("q3: trigger_push: bad target \"%s\" for \"%s\"\n", f->value, modelField->value);
+			return false;
+		}
 		float time = sqrt(2 * dir[2] / GRAVITY);
-		if (!time) return false;			// Q3A does this ...
 
 		dir[2] = 0;
 		float dist = dir.Normalize();

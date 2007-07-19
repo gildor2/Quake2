@@ -76,6 +76,7 @@ struct GL_t
 	void	(APIENTRY * ClientActiveTextureARB) (GLenum texture);
 	void	(APIENTRY * LockArraysEXT) (GLint first, GLint count);
 	void	(APIENTRY * UnlockArraysEXT) ();
+	void	(APIENTRY * DrawRangeElementsEXT) (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices);
 
 #if _WIN32
 
@@ -164,6 +165,7 @@ extern GL_t GL;
 #define glClientActiveTextureARB	GL.ClientActiveTextureARB
 #define glLockArraysEXT	GL.LockArraysEXT
 #define glUnlockArraysEXT	GL.UnlockArraysEXT
+#define glDrawRangeElementsEXT	GL.DrawRangeElementsEXT
 
 #if _WIN32
 
@@ -186,12 +188,13 @@ extern GL_t GL;
 #define QGL_ARB_TEXTURE_COMPRESSION	(1 << 8)
 #define QGL_EXT_TEXTURE_COMPRESSION_S3TC	(1 << 9)
 #define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 10)
-#define QGL_NV_TEXTURE_RECTANGLE	(1 << 11)
-#define QGL_EXT_TEXTURE_LOD_BIAS	(1 << 12)
+#define QGL_EXT_DRAW_RANGE_ELEMENTS	(1 << 11)
+#define QGL_NV_TEXTURE_RECTANGLE	(1 << 12)
+#define QGL_EXT_TEXTURE_LOD_BIAS	(1 << 13)
 
 #if _WIN32
 
-#define QWGL_EXT_SWAP_CONTROL	(1 << 13)
+#define QWGL_EXT_SWAP_CONTROL	(1 << 14)
 
 #elif __linux__
 

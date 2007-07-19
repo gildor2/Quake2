@@ -1,4 +1,5 @@
 - q3a maps not affected by CL_SetLightstyle(0, ...) - dynamicLightmap_t required?
+- add "model2" field for most brush model entities to attach md3 model (q3dm19)
 
 
 FOUND BUG from p99 (when moved EntityParser call from model.cpp to cmodel.cpp - after map loading):
@@ -9,12 +10,14 @@ FOUND BUG from p99 (when moved EntityParser call from model.cpp to cmodel.cpp - 
 
 COMBINER BUGS:
 - q3dm2:
+  - with MUL2 multitexturing: "wetwall" is too dark (should use ARB MUL2 mode)
   - no multitexturing at all:
     - "wetwall": uses blend mode != src*dst, which cannot be converted to src*dst*2 -- too dark
     - no PostLight dlights at all
-  - srd multitexturing (no MUL2):
+  - std multitexturing (no MUL2):
     - windowed (no gamma overbright): "q1metal7_99spot": PostLight is too bright (when
-      r_q3map_overbright=1; all ok when =0)
+      r_q3map_overbright=1; all ok when =0) -- this is an overflow of color buffer, combiners are
+      ok (lightmap is too bright?)
     - fullscreen (have gamma overbright): everything ok
 ---------------------------------------------------------------------------------------------------
 areaportals (q2,q3):

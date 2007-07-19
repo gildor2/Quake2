@@ -504,9 +504,10 @@ void UpdateDynamicLightmap(surfacePlanar_t *surf, bool vertexOnly, unsigned dlig
 		if (dlightMask)
 		{
 			const surfDlight_t *sdl = surf->dlights;
-			for ( ; dlightMask; dlightMask >>= 1, sdl++)
+			for ( ; dlightMask; dlightMask >>= 1)
 			{
 				if (!(dlightMask & 1)) continue;
+
 				refDlight_t *dlight = sdl->dlight;
 				float intens2 = sdl->radius * sdl->radius;
 
@@ -526,11 +527,12 @@ void UpdateDynamicLightmap(surfacePlanar_t *surf, bool vertexOnly, unsigned dlig
 					v->c.c[1] = g;
 					v->c.c[2] = b;
 				}
+				sdl++;
 			}
 		}
 	}
 
-	unguardSlow;
+	unguardfSlow(("%s", *surf->shader->Name));
 }
 
 

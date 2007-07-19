@@ -2275,7 +2275,7 @@ int CM_PointModelContents(const CVec3 &p)
 		if (!(model->flags & CMODEL_WALL)) continue;
 		if (!model->bounds.Contains(p)) continue;
 
-		contents |= CM_FindLeaf(p, model->headnode)->contents;
+		contents |= CM_FindLeaf(p, model->headnode)->GetContents(p);
 	}
 
 	return contents;

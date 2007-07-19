@@ -420,6 +420,10 @@ void ClientActiveTextureARB(GLenum texture) ARGS
 void LockArraysEXT(GLint first, GLint count) ARGS
 void UnlockArraysEXT();
 
+#name GL_EXT_draw_range_elements
+#cvar gl_ext_draw_range_elements
+void DrawRangeElementsEXT(GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices) ARGS
+
 #name GL_NV_texture_rectangle
 #alias GL_ARB_texture_rectangle
 #alias GL_EXT_texture_rectangle

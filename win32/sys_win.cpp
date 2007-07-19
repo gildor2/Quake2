@@ -1,6 +1,8 @@
 #include "WinPrivate.h"
 #include "../client/client.h"		//!! for editLine[], CompleteCommand() + COutputDeviceCon
-//#include <float.h>					// for _controlfp()
+#if MAX_DEBUG
+#	include <float.h>				// for _controlfp()
+#endif
 
 //!! TODO: COutputDeviceWin32: derive from COutputDeviceCon
 
@@ -311,11 +313,10 @@ int main(int argc, const char **argv) // force to link as console application
 			long WINAPI mingw32ExceptFilter(struct _EXCEPTION_POINTERS *info);
 			SetUnhandledExceptionFilter(mingw32ExceptFilter);
 #	endif
-#if 0
 			// allow exceptions from FPU
-			-- not works: check "bugs.txt" (crash on any loading of 0.0f to FPU)
-			_controlfp(~(_EM_ZERODIVIDE|_EM_INVALID), _MCW_EM);	// _EM_INVALID -- handle invalid (NAN) data
-#endif
+			unsigned fpMask = _controlfp(0, 0);
+			_controlfp(fpMask & ~(_EM_ZERODIVIDE|_EM_INVALID), _MCW_EM);
+			_clearfp();		// required to prevent re-raising old exceptions on ANY FPU operation
 #endif // MAX_DEBUG
 
 			if (DEDICATED)

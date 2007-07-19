@@ -7,19 +7,6 @@
 - r_showBrush/r_surfInfo=8: often DropError() or not show brush (have error message on screen)
 - "version" cvar: created in common.cpp, but updated when this file or qcommon.h changed only (date is not updated!)
 - check: under Wine: errors does not catched (vc-win32: TRY_S/CATCH_S do works, but TRY/CATCH does not works) -- Wine bugs?
-- FPU exception detection bugs:
-  CODE:  float sss; uint_cast(sss)=0xFF800000; appPrintf("sss=%g\n",sss);
-  - message will be "float zero divide" (error is different! (but FPU too)) -> display all FPU errors -> "FPU exception" ?
-  - error even when loading 0 into FPU register!
-  - no exceptions at all, when sound system used (DirectX ?)
-  - test in pmove.cpp: NAN (was a bug, long time to detect); is it possible to detect it now ?! :
-    static void AirMove ()  // to activate -- simply jump
-    {
-	....
-	AddCurrents (wishvel);
-	float wishspeed = VectorNormalize (wishvel, wishdir);
-	uint_cast(wishdir[2])=0xFF800000; //!! added -- will set to NAN
-	....
 - map "flashfire":
   - when paused, will display network errors (newnum!=oldnum ...)
   ? may be, set numClusters=0 for CM_Xxxxx() funcs (current: set for renderer only)

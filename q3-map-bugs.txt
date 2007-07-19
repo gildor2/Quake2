@@ -1,3 +1,12 @@
+! crash in nvoglnt.dll: FPU exception, BK_FlushShader:textures/sfx/flame1side
+  - reproduction: start with def. map "q3dm10", then start from console "cpm15"
+  - passing bad data to renderer ? (this may slow-down, when exceptions are off)
+  ? check with ATI
+
+- q3map2 bugs/features:
+  - "planar", but curved surfaces: pom, estatica (bugs with dlights)
+- estatica: have raindrops, which are painted incorrectly
+
 - dum:
   - have long entity string (not enough +4k for entstring, added 16k)
   - have unsupported here "target_push" and "target_teleporter" entities
@@ -18,7 +27,6 @@
 
 - q3dm19: "func_bobbing" with "model2" (attached md3 model)
 - cpm15: no SURF_SKY on sky surface (incorrect collision) -- may be, should collide with trisurf, not brush?
-- pom: incorrect dlights
 - cpm26: have movable surface light: {690, 2760, 160} (sliding door)
 - af3hex: lots of visual bugs (some things not displayed)
   ? uses patches for this

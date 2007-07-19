@@ -44,6 +44,7 @@ GRAPHICS
 * animmap shaders with lightmap (for PostLight()):
 * Q3: dum    - shader with animmap main tex (tv)
 * Q3 (UT): dangercity - shaders with animmap main tex (diaschau,ampelgruen,ampelrot) -- can test with disabling PreLight()
+* Q3: q3tourney6 - design bug: trigger_push has bad target "t187" for "*19"
 
 MISC
 ~~~~

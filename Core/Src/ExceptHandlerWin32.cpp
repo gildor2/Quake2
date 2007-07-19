@@ -17,6 +17,9 @@ long WINAPI win32ExceptFilter(struct _EXCEPTION_POINTERS *info)
 	// If we will disable line above, will be dumped context for each appUnwind() entry
 	dumped = true;
 
+	// if FPU exception occured, _clearfp() is required (otherwise, exception will be re-raised again)
+	_clearfp();
+
 	TRY {
 		const char *excName = "Exception";
 		switch (info->ExceptionRecord->ExceptionCode)
@@ -25,14 +28,16 @@ long WINAPI win32ExceptFilter(struct _EXCEPTION_POINTERS *info)
 			excName = "Access violation";
 			break;
 		case EXCEPTION_FLT_DIVIDE_BY_ZERO:
-		case EXCEPTION_FLT_INEXACT_RESULT:
+			excName = "Float zero divide";
+			break;
+		case EXCEPTION_FLT_DENORMAL_OPERAND:
+			excName = "Float denormal operand";
+			break;
 		case EXCEPTION_FLT_INVALID_OPERATION:
+		case EXCEPTION_FLT_INEXACT_RESULT:
 		case EXCEPTION_FLT_OVERFLOW:
 		case EXCEPTION_FLT_STACK_CHECK:
 		case EXCEPTION_FLT_UNDERFLOW:
-		case EXCEPTION_FLT_DENORMAL_OPERAND:
-			// if FPU exception occured, _clearfp() is required (otherwise, exception will be re-raised again)
-			_clearfp();
 			excName = "FPU exception";
 			break;
 		case EXCEPTION_INT_DIVIDE_BY_ZERO:

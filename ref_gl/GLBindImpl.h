@@ -2,16 +2,16 @@
 
 #if _WIN32
 #	define NUM_GLFUNCS	62
-#	define NUM_EXTFUNCS	7
-#	define NUM_EXTENSIONS	14
+#	define NUM_EXTFUNCS	8
+#	define NUM_EXTENSIONS	15
 #elif __linux__
 #	define NUM_GLFUNCS	54
-#	define NUM_EXTFUNCS	6
-#	define NUM_EXTENSIONS	13
+#	define NUM_EXTFUNCS	7
+#	define NUM_EXTENSIONS	14
 #else
 #	define NUM_GLFUNCS	54
-#	define NUM_EXTFUNCS	6
-#	define NUM_EXTENSIONS	13
+#	define NUM_EXTFUNCS	7
+#	define NUM_EXTENSIONS	14
 #endif
 
 
@@ -89,7 +89,8 @@ static const char *GLNames[NUM_GLFUNCS + NUM_EXTFUNCS] = {
 	"glActiveTextureARB",
 	"glClientActiveTextureARB",
 	"glLockArraysEXT",
-	"glUnlockArraysEXT"
+	"glUnlockArraysEXT",
+	"glDrawRangeElementsEXT"
 #if _WIN32
 
 ,
@@ -793,6 +794,12 @@ static void APIENTRY logUnlockArraysEXT()
 	lib.UnlockArraysEXT();
 }
 
+static void APIENTRY logDrawRangeElementsEXT(GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices)
+{
+	LogFile->Printf("%s (GL_%s, %d, %d, %d, GL_%s, $%X)\n", "glDrawRangeElementsEXT", EnumName(mode), start, end, count, EnumName(type), (unsigned)indices);
+	lib.DrawRangeElementsEXT(mode, start, end, count, type, indices);
+}
+
 
 #if _WIN32
 
@@ -881,7 +888,8 @@ static const GL_t logFuncs = {
 	logActiveTextureARB,
 	logClientActiveTextureARB,
 	logLockArraysEXT,
-	logUnlockArraysEXT
+	logUnlockArraysEXT,
+	logDrawRangeElementsEXT
 #if _WIN32
 
 ,
@@ -915,12 +923,13 @@ static extInfo_t extInfo[NUM_EXTENSIONS] = {
 	{"GL_ARB_texture_compression\0", NULL, "gl_ext_texture_compression", 0, 0, 0, QGL_EXT_TEXTURE_COMPRESSION_S3TC},
 	{"GL_EXT_texture_compression_s3tc\0", NULL, "gl_ext_texture_compression", 0, 0, 0, 0},
 	{"GL_EXT_compiled_vertex_array\0", NULL, "gl_ext_compiled_vertex_array", NUM_GLFUNCS+4, 2, 0, 0},
+	{"GL_EXT_draw_range_elements\0", NULL, "gl_ext_draw_range_elements", NUM_GLFUNCS+6, 1, 0, 0},
 	{"GL_NV_texture_rectangle\0" "GL_ARB_texture_rectangle\0" "GL_EXT_texture_rectangle\0", NULL, "gl_ext_texture_rectangle", 0, 0, 0, 0},
 	{"GL_EXT_texture_lod_bias\0", NULL, NULL, 0, 0, 0, 0}
 #if _WIN32
 
 ,
-	{"WGL_EXT_swap_control\0", NULL, NULL, NUM_GLFUNCS+6, 1, 0, 0}
+	{"WGL_EXT_swap_control\0", NULL, NULL, NUM_GLFUNCS+7, 1, 0, 0}
 #elif __linux__
 
 #endif
