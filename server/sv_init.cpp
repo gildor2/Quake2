@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 server_static_t	svs;				// persistant server info
 server_t		sv;					// local server
 
-int SV_FindIndex(const char *name, int start, int max, bool create)
+static int SV_FindIndex(const char *name, int start, int max, bool create)
 {
 	guard(SV_FindIndex);
 

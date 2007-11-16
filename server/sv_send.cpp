@@ -272,11 +272,11 @@ void SV_StartSound(const CVec3 *origin, edict_t *entity, int channel,
 	MSG_WriteByte(&sv.multicast, flags);
 	MSG_WriteByte(&sv.multicast, soundindex);
 
-	if (flags & SND_VOLUME)			MSG_WriteByte  (&sv.multicast, appRound(volume * 255));
-	if (flags & SND_ATTENUATION)	MSG_WriteByte  (&sv.multicast, appRound(attenuation * 64));
-	if (flags & SND_OFFSET)			MSG_WriteByte  (&sv.multicast, appRound(timeofs * 1000));
+	if (flags & SND_VOLUME)			MSG_WriteByte (&sv.multicast, appRound(volume * 255));
+	if (flags & SND_ATTENUATION)	MSG_WriteByte (&sv.multicast, appRound(attenuation * 64));
+	if (flags & SND_OFFSET)			MSG_WriteByte (&sv.multicast, appRound(timeofs * 1000));
 	if (flags & SND_ENT)			MSG_WriteShort(&sv.multicast, sendchan);
-	if (flags & SND_POS)			MSG_WritePos   (&sv.multicast, *origin);
+	if (flags & SND_POS)			MSG_WritePos  (&sv.multicast, *origin);
 
 	multicast_t	to = (channel & CHAN_RELIABLE) ? MULTICAST_ALL_R : MULTICAST_ALL;
 

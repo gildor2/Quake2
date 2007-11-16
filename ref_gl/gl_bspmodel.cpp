@@ -1300,7 +1300,7 @@ static void LoadSky1()
 			memcpy(buf + y*128, data, 128);
 			data += 256;
 		}
-		CreateImage8(va("env/q1sky_%s", names[idx]), buf, 128, 128, IMAGE_WORLD, GetQ1Palette());
+		CreateImage8(va("env/q1sky_%s", names[idx]), buf, 128, 128, IMAGE_WORLD|IMAGE_MIPMAP, GetQ1Palette());
 	}
 }
 

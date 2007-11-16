@@ -23,8 +23,8 @@ void *AllocDynamicMemory(int size)
 {
 	if (dynamicBufferSize + size > MAX_DYNAMIC_BUFFER)
 	{
-		//?? make this message developer-only
-		DrawTextLeft(va("R_AllocDynamicMemory(%d) failed\n", size), RGB(1, 0, 0));
+		if (DEVELOPER)
+			DrawTextLeft(va("R_AllocDynamicMemory(%d) failed\n", size), RGB(1, 0, 0));
 		lastDynamicPtr = NULL;
 		return NULL;
 	}

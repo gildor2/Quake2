@@ -1,11 +1,15 @@
-! crash in nvoglnt.dll: FPU exception, BK_FlushShader:textures/sfx/flame1side
-  - reproduction: start with def. map "q3dm10", then start from console "cpm15"
-  - passing bad data to renderer ? (this may slow-down, when exceptions are off)
-  ? check with ATI
-
+- map "chartres":
+  - have "rgbgen filter" - check Q3 error message
+  - no particle trails from blaster on a whole level
+  - renderer frontend is very slow
 - q3map2 bugs/features:
   - "planar", but curved surfaces: pom, estatica (bugs with dlights)
-- estatica: have raindrops, which are painted incorrectly
+- q3dm7, textures/sfx/computerpurptileb {2480,-246,369 } - have PostLight and PreLight textures near,
+  when shooting to PostLight with r_sfx_pause=1, have VERY bright PostLight texture, and not so bright
+  PreLight ... Looks like visual artefact
+- r_lightmap works incorrect with textures, having alpha-masked textures (some dynamic effect + mask it
+  with other static texture) -- may be, switch to PostLight completely? (this will require more optimal
+  PostLight for multiple lights + should try to implement texture/lm + PostLight as a single pass ...)
 
 - dum:
   - have long entity string (not enough +4k for entstring, added 16k)
@@ -14,9 +18,8 @@
 ! q3dm2 (as example): water shader painted after rail shader !!!
 
 - ut4_abbey: when shooting, will crash in GenerateTexCoordArray() (dlights?)
-- cpm15: have "target_teleporter" entities
-  - teleporter {-1090,710,-260} does not works (teleport dst == src) + teleporters not displayed
-    (separate model?)
+- cpm15: teleporter {-1090,710,-260} does not works; reason: teleporting from "t4" to "t5": at dst of teleport
+  "t5" placed another teleporter, which will immediately teleport player back to "t4"
 - cpm18r: {974,-465,558}, look to {1088,-489,620}, gl_labels=2: moving up-down 3 models, central
   occluded (shold not)
 ! map "q3dm13" (start) -> "q3dm19" (run few seconds) -> "q3matcho...": will display console w/o cursor,
@@ -49,7 +52,7 @@ Cannot load:
 - q3dm6 (TMP): game.dll parser errors
   (placed in q3dm6tmp.pk3; contains missing opening quote, but have closing quote: check next entity after
   "model" "*3" - "trigger_push")
-- paradise: SV_FindIndex(...md2) overflow -- too much models
+- paradise: SV_FindIndex(...md2) overflow -- too much models (CPM hacky movement training map, LOTS of trigger_push)
 
 Large maps (out of possible q2 ranges)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

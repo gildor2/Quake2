@@ -237,6 +237,7 @@ FUNC(skyParms)
 		sh.numStages = 1;
 	}
 	sh.cloudHeight = atof(argv[2]);
+	sh_imgFlags = IMAGE_MIPMAP;				// override texture settings for skies
 	// argv[3] is innerbox, is is not supported in q3
 }
 
@@ -254,7 +255,7 @@ static void SetShaderColorTex(const char *name, bool priority)
 	TString<64> Name; Name.filename(name);
 	char *s = Name.rchr('.');
 	if (s) *s = 0;		// cut extension for ImageExists()
-	if (!ImageExists(Name, IMAGE_ANY)) return;
+	if (!ImageExists(Name)) return;
 	// use this texture
 	ShaderLightImage = Name;
 }

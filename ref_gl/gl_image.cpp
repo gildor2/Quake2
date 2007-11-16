@@ -1575,32 +1575,32 @@ static byte *LoadImage(char *name, int &width, int &height)
 	// select preferred format
 	int prefFmt = 0;
 	if (!strcmp(s, ".tga"))
-		prefFmt = IMAGE_TGA;
+		prefFmt = IMG_FIND_TGA;
 	else if (!strcmp(s, ".jpg"))
-		prefFmt = IMAGE_JPG;
+		prefFmt = IMG_FIND_JPG;
 //	else if (!strcmp(s, ".pcx"))	//-- disabled: never prefer 8-bit textures
-//		prefFmt = IMAGE_PCX;
+//		prefFmt = IMG_FIND_PCX;
 //	else if (!strcmp(s, ".wal"))
-//		prefFmt = IMAGE_WAL;
+//		prefFmt = IMG_FIND_WAL;
 
 	*s = 0; // cut extension
-	int fmt = ImageExists(name, IMAGE_32BIT);
+	int fmt = ImageExists(name, IMG_FIND_32BIT);
 	if (fmt & prefFmt)
 		fmt = prefFmt;				// restrict loading to this image type
 
 	byte *pic;
 	// load image within a preferred (or prioritized) format
-	if (fmt & IMAGE_TGA)
+	if (fmt & IMG_FIND_TGA)
 	{
 		strcpy(s, ".tga");
 		pic = LoadTGA(name, width, height);
 	}
-	else if (fmt & IMAGE_JPG)
+	else if (fmt & IMG_FIND_JPG)
 	{
 		strcpy(s, ".jpg");
 		pic = LoadJPG(name, width, height);
 	}
-	else if (fmt & IMAGE_PCX)
+	else if (fmt & IMG_FIND_PCX)
 	{
 		strcpy(s, ".pcx");
 		byte *palette;
@@ -1628,7 +1628,7 @@ static byte *LoadImage(char *name, int &width, int &height)
 		else
 			pic = NULL;
 	}
-	else if (fmt & IMAGE_WAL)
+	else if (fmt & IMG_FIND_WAL)
 	{
 		strcpy(s, ".wal");
 		if (dWal_t *mt = (dWal_t*) GFileSystem->LoadFile(name))
@@ -1683,6 +1683,9 @@ image_t *FindImage(const char *name, unsigned flags)
 		s = Name2.chr(0);			// == &Name2[strlen(Name2)]; points to a place, where extension will be added
 	int len = s - Name2;			// length of name without extension
 
+	// verify: ANYFLAGS may be used only in conjunction with CHECKLOADED
+	assert(!(flags & IMAGE_ANYFLAGS) || (flags & IMAGE_CHECKLOADED));
+
 	unsigned flags2 = flags & (IMAGE_MIPMAP|IMAGE_CLAMP);
 	if (!(flags & IMAGE_RELOAD))
 	{
@@ -1692,7 +1695,8 @@ image_t *FindImage(const char *name, unsigned flags)
 			{
 				// found a name ...
 				// compare image flags
-				if ((img->flags & (IMAGE_MIPMAP|IMAGE_CLAMP)) == flags2)
+				if ((img->flags & (IMAGE_MIPMAP|IMAGE_CLAMP)) == flags2 ||
+					(flags & IMAGE_ANYFLAGS))
 				{
 					if (img->flags & IMAGE_SYSTEM) return img;
 
@@ -1743,11 +1747,10 @@ image_t *FindImage(const char *name, unsigned flags)
 }
 
 
-//?? try to eliminate 'flags'
-bool GetImageColor(const char *name, unsigned flags, color_t *color)
+bool GetImageColor(const char *name, color_t *color)
 {
 	// check for already loaded texture
-	if (image_t *img = FindImage(name, flags|IMAGE_CHECKLOADED))
+	if (image_t *img = FindImage(name, IMAGE_CHECKLOADED|IMAGE_ANYFLAGS))
 	{
 		color->rgba = img->color.rgba;
 		return true;

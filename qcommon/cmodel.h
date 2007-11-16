@@ -13,13 +13,15 @@
 // CBspModel.flags
 #define CMODEL_ALPHA		0x0001		// all model surfaces will have SURF_ALPHA flag (kingpin)
 #define CMODEL_MOVABLE		0x0002		// non-static inline model
-#define CMODEL_SHOW			0x0004		// will not be sent to game, should draw automatically (func_illusionary in q1/hl)
-#define CMODEL_WALL			0x0008		// will not be sent to game, static collision model
-#define CMODEL_NODRAW		0x0010		// do not draw model even when have visible surfaces
-#define CMODEL_CONTENTS		0x0020		// "CBspModel.contents" contains real model contents
-#define CMODEL_SCROLL		0x0040		// allow SURF_FLOWING on model surfaces (hl)
+#define CMODEL_UNUSED		0x0004		// used as some hint, not used in game
+#define CMODEL_SHOW			0x0008		// will not be sent to game, should draw automatically (func_illusionary in q1/hl)
+#define CMODEL_WALL			0x0010		// will not be sent to game, static collision model
+#define CMODEL_NODRAW		0x0020		// do not draw model even when have visible surfaces
+#define CMODEL_CONTENTS		0x0040		// "CBspModel.contents" contains real model contents
+#define CMODEL_SCROLL		0x0080		// allow SURF_FLOWING on model surfaces (hl)
 
-#define CMODEL_LOCAL		(CMODEL_SHOW|CMODEL_WALL)	// flags of models, not sent to game (processed by engine)
+// flags of models, not sent to game (processed by engine)
+#define CMODEL_LOCAL		(CMODEL_UNUSED|CMODEL_SHOW|CMODEL_WALL)
 
 struct CBspModel
 {

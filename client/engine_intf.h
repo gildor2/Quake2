@@ -109,7 +109,7 @@ inline bool Vid_GetModeInfo(int *width, int *height, int mode)
 {
 	return ri._Vid_GetModeInfo(width, height, mode);
 }
-inline int ImageExists(const char *name, int stop_mask = IMAGE_ANY)
+inline int ImageExists(const char *name, int stop_mask = IMG_FIND_ANY)
 {
 	return ri._ImageExists(name, stop_mask);
 }

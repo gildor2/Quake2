@@ -155,8 +155,10 @@ struct FDrawStats
 	unsigned dlightSurf;		// computing dlight application
 	unsigned occlTest;
 	unsigned flareTrace;
+	unsigned walkBsp;
 	unsigned backend;
 	unsigned sort;				// sorting surfaces
+	unsigned tess;
 	unsigned entLight;
 	unsigned meshLight;
 	unsigned meshTess;

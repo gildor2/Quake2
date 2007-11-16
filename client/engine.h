@@ -23,7 +23,7 @@ void Vid_Restart();
 bool Vid_GetModeInfo(int *width, int *height, int mode);
 
 //--------- images ----------
-int   ImageExists(const char *name, int stop_mask = IMAGE_ANY);
+int   ImageExists(const char *name, int stop_mask = IMG_FIND_ANY);
 byte* LoadPCX(const char *name, int &width, int &height, byte *&palette);
 byte* LoadTGA(const char *name, int &width, int &height);
 byte* LoadJPG(const char *name, int &width, int &height);

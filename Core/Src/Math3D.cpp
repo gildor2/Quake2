@@ -13,7 +13,7 @@ const CAxis identAxis = {1,0,0,  0,1,0,  0,0,1};
 	CVec3
 -----------------------------------------------------------------------------*/
 
-float CVec3::GetLength()
+float CVec3::GetLength() const
 {
 	return sqrt(dot(*this, *this));
 }

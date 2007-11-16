@@ -57,7 +57,7 @@ struct CORE_API CVec3
 		v[2] -= a.v[2];
 	}
 	//!! +ScaleTo(dst)
-	float GetLength();
+	float GetLength() const;
 	float Normalize();			// returns vector length
 	float NormalizeFast();		//?? 2-arg version too?
 	void FindAxisVectors(CVec3 &right, CVec3 &up) const;

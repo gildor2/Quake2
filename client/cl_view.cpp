@@ -422,8 +422,8 @@ static void CalcVrect()
 	scr_vrect.width = appRound(viddef.width * frac);
 	scr_vrect.height = appRound(viddef.height * frac);
 
-	scr_vrect.width &= ~7;		// align(8)
-	scr_vrect.height &= ~7;		// align(8)
+	scr_vrect.width  &= ~1;		// align(2)
+	scr_vrect.height &= ~1;		// align(2)
 
 	scr_vrect.x = (viddef.width - scr_vrect.width) / 2;
 	scr_vrect.y = (viddef.height - scr_vrect.height) / 2;

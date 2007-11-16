@@ -169,6 +169,18 @@ static void WriteEntity(char **dst)
 #if SHOW_WRITE
 	appPrintf(S_CYAN"%s", txt);
 #endif
+	if (bufForNewEntity[0])
+	{
+		// entity parser requested new entity to be added
+		int len = strlen(bufForNewEntity);
+		memcpy(*dst, bufForNewEntity, len);
+		(*dst) += len;
+#if SHOW_WRITE
+		appPrintf(S_MAGENTA"%s", bufForNewEntity);
+#endif
+		// clear buffer
+		bufForNewEntity[0] = 0;
+	}
 }
 
 // gets "%f %f %f" or "%f"
@@ -553,6 +565,7 @@ static bool ProcessEntity1()
 		{
 			CVec3 org;
 			entModel->bounds.GetCenter(org);
+			entModel->flags |= CMODEL_UNUSED;
 			AddField("origin", va("%g %g %g", VECTOR_ARG(org)));
 			RememberModelLink(org);
 			RemoveField("model");			// not used by teleporters
@@ -867,6 +880,7 @@ static bool ProcessEntity3()
 		{
 			CVec3 org;
 			entModel->bounds.GetCenter(org);
+			entModel->flags |= CMODEL_UNUSED;
 			AddField("origin", va("%g %g %g", VECTOR_ARG(org)));
 			RememberModelLink(org);
 			RemoveField("model");			// not used by teleporters
@@ -876,13 +890,15 @@ static bool ProcessEntity3()
 			"classname misc_teleporter_dest\n"
 			"targetname %s\n"
 			"angle %g\n"
-			"origin \"%g %g %g\""
+			"origin \"%g %g %g\"\n"
 			"}\n",
 			tgtName,
 			t.angle,
 			t.origin[0], t.origin[1], t.origin[2] + 10
 		);
 	}
+	else if (!strcmp(classname, "target_teleporter"))
+		return false;						// targets are created in trigger_teleport parser
 	else if (!strncmp(classname, "item_", 5) || !strncmp(classname, "weapon_", 7) ||
 		!strncmp(classname, "ammo_", 5))	// also have "holdable_..." and "team_CTF_..."
 	{
@@ -906,6 +922,7 @@ static bool ProcessEntity3()
 		RemoveField("notteam");
 		RemoveField("nosingle");
 		RemoveField("spawnflags");			// not used in Q3A unless "suspended" item
+		CHANGE("weapon_plasmagun", "weapon_hyperblaster");
 	}
 
 	return true;
@@ -1544,18 +1561,7 @@ const char *ProcessEntstring(const char *entString)
 	while (!haveErrors && ReadEntity(src))
 	{
 		if (ProcessEntity())
-		{
 			WriteEntity(&dst);
-			if (bufForNewEntity[0])
-			{
-				// entity parser requested new entity to be added
-				int len = strlen(bufForNewEntity);
-				memcpy(dst, bufForNewEntity, len);
-				dst += len;
-				// clear buffer
-				bufForNewEntity[0] = 0;
-			}
-		}
 	}
 	assert(dst < dst2 + entStrLen);
 

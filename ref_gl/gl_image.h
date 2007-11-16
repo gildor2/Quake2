@@ -21,6 +21,7 @@ namespace OpenGLDrv {
 #define IMAGE_NOCOMPRESS	0x20000000
 #define IMAGE_RELOAD		0x10000000	// load image from disk even when it was already loaded
 #define IMAGE_CHECKLOADED	0x08000000	// if image loaded, return it, else - NULL
+#define IMAGE_ANYFLAGS		0x04000000	// ignore wrap/clamp/mipmap etc flags; used with CHECKLOADED
 // mask of flags, stored in image (exclude hints)
 #define IMAGE_FLAGMASK		0x0000FFFF
 
@@ -67,7 +68,7 @@ void	LoadDelayedImages();
 image_t *CreateImage(const char *name, void *pic, int width, int height, unsigned flags);
 image_t *CreateImage8(const char *name, void *pic, int width, int height, unsigned flags, unsigned *palette);
 image_t *FindImage(const char *name, unsigned flags);
-bool     GetImageColor(const char *name, unsigned flags, color_t *color);
+bool     GetImageColor(const char *name, color_t *color);
 
 // video support
 //void	DrawStretchRaw8(int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette); -- interface

@@ -54,14 +54,14 @@ struct CBrush;
 
 
 // image flags
-#define IMAGE_PCX	1
-#define IMAGE_WAL	2
-#define IMAGE_TGA	4
-#define IMAGE_JPG	8
+#define IMG_FIND_PCX	1
+#define IMG_FIND_WAL	2
+#define IMG_FIND_TGA	4
+#define IMG_FIND_JPG	8
 
-#define IMAGE_8BIT	(IMAGE_PCX|IMAGE_WAL)
-#define IMAGE_32BIT	(IMAGE_TGA|IMAGE_JPG)
-#define IMAGE_ANY	(IMAGE_8BIT|IMAGE_32BIT)
+#define IMG_FIND_8BIT	(IMG_FIND_PCX|IMG_FIND_WAL)
+#define IMG_FIND_32BIT	(IMG_FIND_TGA|IMG_FIND_JPG)
+#define IMG_FIND_ANY	(IMG_FIND_8BIT|IMG_FIND_32BIT)
 
 // exports for renderer
 #include "../client/engine_intf.h"

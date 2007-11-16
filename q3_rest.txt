@@ -1,3 +1,7 @@
+- CPM map "paradise" have too much trigger_push entities (uses cmodels), total model count > 256,
+  map cannot be loaded:
+  - can try to increase model count by using reserved confinstrings indexes, can be useful for
+    some HL maps too (use with extprotocol)
 - q3a maps not affected by CL_SetLightstyle(0, ...) - dynamicLightmap_t required?
 - add "model2" field for most brush model entities to attach md3 model (q3dm19)
 
@@ -92,7 +96,7 @@ textures/gothic_wall/iron01_ndark
 <---- here: exchange 1st and 2nd stages, LM will go 1st ---->
 textures/sfx/bouncepad01block18b
 textures/sfx/computerpurptileb
-textures/gothic_button/timbutton
+textures/gothic_button/timbutton -- r_lightmap does not works + no dlights ...
 {
 	{
 		map ...
@@ -109,53 +113,27 @@ textures/gothic_button/timbutton
 *** q3dm1 *** (no "bad lm blend" message, simply bad lm)
 textures/gothic_floor/center2trn
 {
-        {
+	{
 		map textures/sfx/fireswirl2.tga
-                tcmod rotate 333
-                tcMod stretch sin .8 0.2 0 9.7
-	        rgbGen identity
-	}
-        {
-	        map textures/gothic_floor/center2trn.tga
-		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
-                tcmod rotate 30
-                tcMod stretch sin .8 0.2 0 .2
-	        rgbGen identity
-	}
-        {
-	        map textures/gothic_floor/center2trn.tga
-		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
-	        rgbGen identity
-	}
-        {
-		map $lightmap
-                blendFunc GL_DST_COLOR GL_ONE_MINUS_DST_ALPHA
+		tcmod rotate 333
+		tcMod stretch sin .8 0.2 0 9.7
 		rgbGen identity
 	}
-}
-
-textures/gothic_block/largerblock3blood
-{
-        {
-		map textures/liquids/proto_grueldark2.tga
-                blendFunc GL_ONE GL_ZERO
-                tcmod scale 2 2
-                tcMod scroll .01 .03
-                tcMod turb 0 0.05 0 .05
-        }
-        {
-		map textures/effects/tinfx3.tga
-                blendFunc GL_ONE GL_ONE
-                tcGen environment
-        }
 	{
-	        map textures/gothic_block/largerblock3blood.tga
-		blendFunc blend
+		map textures/gothic_floor/center2trn.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
+		tcmod rotate 30
+		tcMod stretch sin .8 0.2 0 .2
+		rgbGen identity
+	}
+	{
+	        map textures/gothic_floor/center2trn.tga
+		blendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA
 	        rgbGen identity
 	}
-        {
+	{
 		map $lightmap
-                blendFunc filter
+                blendFunc GL_DST_COLOR GL_ONE_MINUS_DST_ALPHA
 		rgbGen identity
 	}
 }

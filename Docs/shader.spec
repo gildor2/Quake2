@@ -5,7 +5,7 @@
      sunVector = {cos(elev)*cos(deg), cos(elev)*sin(deg), sin(elev)}
 ? 2) deformVertexes:
      * autosprite
-     - autosprite2
+     * autosprite2
      * bulge <width> <height> <speed>   (all - float)
      * wave <div> <func> <base> <amp> <phase> <freq>
        if <div> == 0 --> error, div = 100

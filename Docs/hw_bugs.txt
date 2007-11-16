@@ -7,3 +7,16 @@ FIX (found by me):
 a) make all textures to have alpha-channel
 b) when binding texture within a different texture _target_, bind _any_ texture within alpha-channel and
    target GL_TEXTURE_2D before this
+
+BUG002: NV, GeForce 6800, WinXP, texture compression:
+* tested 25.07.2007 with drivers 93.50, 94.24, 162.18 on GF6800 (512Mb); not appeared on GF8xxx
+- condition is not clean, reproduction: launch q3.bat with def. map "q3dm10", then start map "cpm15"
+  (from console) - will crash in BK_FlushShader->GL_DrawRangeElements->nvoglnt.dll with FPU exception; all
+  OK when FPU exceptions are OFF
+- reason: using compressed formats for textures with alpha channel
+  - crash with any alpha format from any extension: EXT, ARB, or S3; really, should disable texture
+    compression at all ?!
+  - can use gl_nobind=1 or r_lightmap=1 to succesfully load map and turn it off later - game will crash
+  - can disable FPU exceptions while loading map, and enable it after visualization - no crash, but when
+    moving camera to position, when another similar texture used - game crashed
+  - no crash, when gl_picmip >= 1 or when multitexturing is disabled

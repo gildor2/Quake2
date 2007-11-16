@@ -452,8 +452,11 @@ static void UpdateParticles()
 	if (r_sfx_pause->integer) timeDelta = 0;
 	float time2 = timeDelta * timeDelta;
 
-	UpdateParticleBeams(timeDelta);
-	AddParticleTraces(timeDelta);
+	if (timeDelta)
+	{
+		UpdateParticleBeams(timeDelta);
+		AddParticleTraces(timeDelta);
+	}
 
 	particle_t *p, *prev, *next;
 	prev = NULL;

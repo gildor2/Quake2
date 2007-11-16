@@ -23,8 +23,8 @@ bool md3Model_t::LerpTag(int frame1, int frame2, float lerp, const char *tagName
 	bool result = true;
 	if (i == numTags)
 	{
-		//?? developer message
-//		DrawTextLeft(va("no tag \"%s\" in %s", tagName, name), RGB(1,0,0));
+		if (DEVELOPER)
+			DrawTextLeft(va("no tag \"%s\" in %s", tagName, name), RGB(1,0,0));
 		i = 0;			// use 1st tag
 		result = false;
 	}

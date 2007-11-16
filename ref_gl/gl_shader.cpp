@@ -298,6 +298,8 @@ static void ExtractShader(shader_t *shader)
 //!!!! rename function
 static shader_t *FinishShader()
 {
+	guard(FinishShader);
+
 	if (sh.type == SHADERTYPE_SKY)
 		sh.sortParam = SORT_SKY;
 	else if (!sh.sortParam && sh.usePolygonOffset)
@@ -309,13 +311,13 @@ static shader_t *FinishShader()
 		if (!ShaderLightImage[0])
 		{
 			// light image was not specified or not found - use shader name
-			if (FindImage(sh.Name, IMAGE_ANY))
+			if (ImageExists(sh.Name))
 				ShaderLightImage = sh.Name;
 		}
 		if (ShaderLightImage[0])
 		{
 			// image found - compute its color
-			GetImageColor(ShaderLightImage, IMAGE_MIPMAP, &sh.lightColor);
+			GetImageColor(ShaderLightImage, &sh.lightColor);
 		}
 		else
 		{
@@ -474,6 +476,8 @@ static shader_t *FinishShader()
 		sh.sortParam = SORT_OPAQUE;
 
 	return CreateShader();
+
+	unguard;
 }
 
 

@@ -331,6 +331,13 @@ bool Init()
 
 	/*------------------ Check extensions ----------------------*/
 	//?? move this part to gl_interface.cpp ??
+#if MAX_DEBUG
+	if (gl_config.platformId & HW_NV)								// BUG002 FIX when FPU exceptions are ON
+	{
+		Com_DPrintf("BUG002: disabling texture compression\n");
+		gl_config.bugExt |= QGL_ARB_TEXTURE_COMPRESSION|QGL_S3_S3TC|QGL_EXT_TEXTURE_COMPRESSION_S3TC;
+	}
+#endif
 	QGL_InitExtensions();
 
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))
@@ -769,19 +776,21 @@ void RenderFrame(refdef_t *fd)
 #define T(name)		appCyclesToMsecf(gl_stats.name)
 		DrawTextRight(va(
 						"--- frontend %5.2f ---\n"
+						" walk bsp      %.3f\n"
 						" dlight surf   %.3f\n"
 						" occl test     %.3f\n"
 						" flare trace   %.3f\n"
 						"--- backend  %5.2f ---\n"
 						" sort          %.3f\n"
+						" tesselate     %.3f\n"
 						" entity light  %.3f\n"
 						" mesh tess     %.3f\n"
 						" mesh light    %.3f\n"
 						" comp dyn lm   %.3f\n"
 						" swap buffers  %.3f",
-						T(frontend), T(dlightSurf), T(occlTest), T(flareTrace),
-						T(backend), T(sort), T(entLight), T(meshTess), T(meshLight), T(dynLightmap),
-						T(swapBuffers)
+						T(frontend), T(walkBsp), T(dlightSurf), T(occlTest), T(flareTrace),
+						T(backend), T(tess), T(sort), T(entLight), T(meshTess), T(meshLight),
+						T(dynLightmap), T(swapBuffers)
 			), RGB(0.1,0.6,0.1));
 		int lgridSize = map.mapGrid[0]*map.mapGrid[1]*map.mapGrid[2];
 		if (!lgridSize) lgridSize = 1;	// to avoid zero divide

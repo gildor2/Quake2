@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "client.h"
 #include "snd_loc.h"
+#include "cmodel.h"			// for bspfile.type
 
 static void S_Play_f(int argc, char **argv);
 static void S_SoundList_f(bool usage, int argc, char **argv);
@@ -39,9 +40,10 @@ void S_Update_();
 // =======================================================================
 
 // only begin attenuating sound volumes when outside the FULLVOLUME range
-#define		SOUND_FULLVOLUME	80
+#define		SOUND_FULLVOLUME		80
 
-#define		SOUND_LOOPATTENUATE	0.003
+#define		SOUND_LOOPATTENUATE2	0.003		// for Q2 maps
+#define		SOUND_LOOPATTENUATE3	0.0008		// for Q3 maps
 
 static int s_registration_sequence;
 
@@ -516,7 +518,7 @@ void S_IssuePlaysound(playsound_t *ps)
 
 	// spatialize
 	if (ps->attenuation == ATTN_STATIC)
-		ch->dist_mult = ps->attenuation * 0.001f;
+		ch->dist_mult = ps->attenuation * 0.001f;		// will be fixed value: 0.003f
 	else
 		ch->dist_mult = ps->attenuation * 0.0005f;
 	ch->master_vol = ps->volume;
@@ -727,14 +729,14 @@ void S_StopAllSounds_f()
 
 /*
 ==================
-S_AddLoopSounds
+AddLoopSounds
 
 Entities with a ->sound field will generated looped sounds
 that are automatically started, stopped, and merged together
 as the entities are sent to the client
 ==================
 */
-void S_AddLoopSounds()
+static void AddLoopSounds()
 {
 	int		i;
 	int		num;
@@ -752,6 +754,10 @@ void S_AddLoopSounds()
 		sounds[i] = ent->sound;
 	}
 
+	float atten = SOUND_LOOPATTENUATE2;
+	if (bspfile.type == map_q3)
+		atten = SOUND_LOOPATTENUATE3;
+
 	for (i = 0; i < cl.frame.num_entities; i++)
 	{
 		if (!sounds[i]) continue;
@@ -765,7 +771,7 @@ void S_AddLoopSounds()
 
 		// find the total contribution of all sounds of this type
 		int left_total, right_total;
-		S_SpatializeOrigin(ent->origin, 255.0, SOUND_LOOPATTENUATE, &left_total, &right_total);
+		S_SpatializeOrigin(ent->origin, 255.0, atten, &left_total, &right_total);
 		for (int j = i + 1; j < cl.frame.num_entities; j++)
 		{
 			if (sounds[j] != sounds[i]) continue;
@@ -775,7 +781,7 @@ void S_AddLoopSounds()
 			ent = &cl_parse_entities[num];
 
 			int left, right;
-			S_SpatializeOrigin(ent->origin, 255.0, SOUND_LOOPATTENUATE, &left, &right);
+			S_SpatializeOrigin(ent->origin, 255.0, atten, &left, &right);
 			left_total += left;
 			right_total += right;
 		}
@@ -918,7 +924,7 @@ void S_Update(const CVec3 &origin, const CVec3 &right)
 	}
 
 	// add loopsounds
-	S_AddLoopSounds();
+	AddLoopSounds();
 
 	// debugging output
 	if (s_show->integer == 2)

@@ -371,11 +371,15 @@ static int AddSkyVec(float s, float t, int axis, bufVertex_t *&vec, bufTexCoordS
 	}
 
 	// texcoords for skybox
-	float fix = 1.0f - 1.0f / gl_skyShader->width;	// fix skybox side seams
-	s = (s * fix + 1) / 2;							// [-1,1] -> [0,1]
-	s = bound(s, 0, 1);
-	t = (1 - t * fix) / 2;							// [-1,1] -> [1,0]
-	t = bound(t, 0, 1);
+	if (gl_skyShader->width)						// default sky shader may have 0 here
+	{
+		// fix skybox side seams
+		float fix = 1.0f - 1.0f / gl_skyShader->width;
+		s = (s * fix + 1) / 2;						// [-1,1] -> [0,1]
+		s = bound(s, 0, 1);
+		t = (1 - t * fix) / 2;						// [-1,1] -> [1,0]
+		t = bound(t, 0, 1);
+	}
 	tex->lm[0] = s;
 	tex->lm[1] = t;
 	// texcoords for clouds

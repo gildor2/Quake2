@@ -147,10 +147,6 @@ static void SV_BuildClientFrame(client_t *client, const client_frame_t *oldframe
 					if (i == ent->num_clusters)
 						continue;		// not visible
 				}
-
-				// don't send sounds if they will be attenuated away
-				if (!ent->s.modelindex && VectorDistance(org, ent->s.origin) > 400)
-					continue;
 			}
 		}
 

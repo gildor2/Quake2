@@ -423,7 +423,7 @@ byte* LoadJPG(const char *name, int &width, int &height)
 
 
 // Finds name.* images within all game dirs and paks; returns 0 if not found or OR'ed
-// set of IMAGE_XXX flags. Name should be without extension and in a lowercase.
+// set of IMG_FIND_XXX flags. Name should be without extension and in a lowercase.
 int ImageExists(const char *name, int stop_mask)
 {
 	int out = 0;
@@ -441,15 +441,15 @@ int ImageExists(const char *name, int stop_mask)
 			const char *ext = strrchr(item->name, '.');	// find last dot in a filename
 			if (!ext) continue;
 
-			if		(!strcmp(ext, ".pcx")) out |= IMAGE_PCX;
-			else if (!strcmp(ext, ".wal")) out |= IMAGE_WAL;
-			else if (!strcmp(ext, ".tga")) out |= IMAGE_TGA;
-			else if (!strcmp(ext, ".jpg")) out |= IMAGE_JPG;
+			if		(!strcmp(ext, ".pcx")) out |= IMG_FIND_PCX;
+			else if (!strcmp(ext, ".wal")) out |= IMG_FIND_WAL;
+			else if (!strcmp(ext, ".tga")) out |= IMG_FIND_TGA;
+			else if (!strcmp(ext, ".jpg")) out |= IMG_FIND_JPG;
 		}
 		delete list;
 		if (rootBased) break;
 		if (out & stop_mask) break;
-		if ((out & IMAGE_8BIT) && (out & IMAGE_32BIT))
+		if ((out & IMG_FIND_8BIT) && (out & IMG_FIND_32BIT))
 			break; // found both 8 and 32-bit images - stop search
 	}
 

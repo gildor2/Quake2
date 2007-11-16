@@ -686,6 +686,11 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 		surf->frame = drawFrame;
 		if (surf->dlightFrame != drawFrame) surf->dlightMask = 0;
 
+#define CULL_SURF	\
+	{				\
+		STAT(gl_stats.cullSurfs++);	\
+		continue;	\
+	}
 		//!! implement with virtual methods
 		switch (surf->type)
 		{
@@ -697,11 +702,6 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 				if (gl_backfaceCull->integer)
 				{
 					gl_cullMode_t cull = pl->shader->cullMode;
-#define CULL_SURF	\
-	{				\
-		STAT(gl_stats.cullSurfs++);	\
-		continue;	\
-	}
 
 					if (cull != CULL_NONE)
 					{
@@ -807,7 +807,8 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 			break;
 
 		default:
-			DrawTextLeft(va("bad surface: %s", *surf->shader->Name), RGB(1, 0, 0));
+			if (DEVELOPER)
+				DrawTextLeft(va("bad surface: %s", *surf->shader->Name), RGB(1, 0, 0));
 			continue;
 #undef CULL_SURF
 #undef CULL_DLIGHT
@@ -841,7 +842,7 @@ bool model_t::InitEntity(entity_t *ent, refEntity_t *out)
 
 void model_t::AddSurfaces(refEntity_t *e)
 {
-//??	if (developer->integer) -- cvar is not in renderer
+	if (DEVELOPER)
 		DrawText3D(e->coord.origin, va("no model: %s", *e->model->Name), RGB(1,0,0));
 }
 
@@ -939,14 +940,14 @@ bool md3Model_t::InitEntity(entity_t *ent, refEntity_t *out)
 	// sanity check
 	if (out->frame >= numFrames || out->frame < 0)
 	{
-		//?? developer only
-		DrawTextLeft(va("md3Model_t::InitEntity: no frame %d in %s\n", out->frame, *Name), RGB(1,0,0));
+		if (DEVELOPER)
+			DrawTextLeft(va("md3Model_t::InitEntity: no frame %d in %s\n", out->frame, *Name), RGB(1,0,0));
 		out->frame = out->oldFrame = 0;
 	}
 	if (out->oldFrame >= numFrames || out->oldFrame < 0)
 	{
-		//?? developer only
-		DrawTextLeft(va("md3Model_t::InitEntity: no frame %d in %s\n", out->oldFrame, *Name), RGB(1,0,0));
+		if (DEVELOPER)
+			DrawTextLeft(va("md3Model_t::InitEntity: no frame %d in %s\n", out->oldFrame, *Name), RGB(1,0,0));
 		out->frame = out->oldFrame = 0;
 	}
 	md3Frame_t *frame1 = frames + out->frame;
@@ -2159,7 +2160,9 @@ void DrawPortal()
 		DrawEntities(vp.firstEntity, vp.numEntities);
 		DrawParticles();
 
+		STAT(clock(gl_stats.walkBsp));
 		DrawBspSequence(firstLeaf);
+		STAT(unclock(gl_stats.walkBsp));
 		if (gl_flares->integer && gl_flareShader)
 			DrawFlares();
 	}

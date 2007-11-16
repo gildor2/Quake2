@@ -20,6 +20,7 @@ struct glconfig_t
 	int		maxRectTextureSize;
 	unsigned extensionMask;			// for GL_SUPPORT() macro (used extensions)
 	unsigned disabledExt, ignoredExt; // extensions, disabled by user + covered by a different extension; for gfxinfo()
+	unsigned bugExt;				// buggy extensions, disabled by engine
 	// fields for gfxinfo
 	const char	*extensions, *extensions2;
 

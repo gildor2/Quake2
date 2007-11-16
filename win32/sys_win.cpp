@@ -341,8 +341,13 @@ int main(int argc, const char **argv) // force to link as console application
 					// may be, resumed from sleep mode - fix delta
 					//?? may be, implement fix in appMilliseconds() (for global effect) ?
 					Com_DPrintf("fixing timeDelta < 0\n");
+#if 0
 					timeDelta = 1000;                   // replace delta with 1 sec
 					break;
+#else
+					oldtime = newtime;
+					continue;
+#endif
 				}
 				if (timeDelta > 1.0f) break;	//?? client (or server?) time bugs with ">0" condition & cl_maxfps < realFPS -- net/prediction errors
 				Sleep(0);
@@ -350,11 +355,11 @@ int main(int argc, const char **argv) // force to link as console application
 			TRY {
 				Com_Frame(timeDelta);
 			} CATCH {
-				if (!GErr.nonFatalError) THROW_AGAIN;						// go to outer CATCH{}, outside of MainLoop
+				if (!GErr.nonFatalError) THROW_AGAIN;					// go to outer CATCH{}, outside of MainLoop
 				// process DropError()
 				// shutdown server
 				SV_Shutdown(va("Server crashed: %s\n", *GErr.Message));	// message
-				Com_DPrintf("History: %s\n", *GErr.History);				// history
+				Com_DPrintf("History: %s\n", *GErr.History);			// history
 				// drop client
 				if (!DEDICATED) CL_Drop(true);
 				// and continue execution ...

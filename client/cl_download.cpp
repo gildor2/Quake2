@@ -80,7 +80,7 @@ static bool CheckOrDownloadFile(const char *fmt, ...)
 	if (ext && (!strcmp(ext, ".pcx") || !strcmp(ext, ".wal")))
 	{
 		*ext = 0; // strip extension
-		if (ImageExists(Name2, IMAGE_ANY))
+		if (ImageExists(Name2))
 			return true;
 	}
 

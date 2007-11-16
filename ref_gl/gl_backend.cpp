@@ -82,15 +82,23 @@ static void DeformAutosprite(bufVertex_t *vec)
 	// autoSprite deform require quads
 	if (gl_numVerts & 3 || gl_numIndexes != gl_numVerts / 2 * 3)
 	{
-		DrawTextLeft(va("Incorrect surface for AUTOSPRITE in %s", *currentShader->Name), RGB(1,0,0));	//?? developer
+		if (DEVELOPER)
+			DrawTextLeft(va("Incorrect surface for AUTOSPRITE in %s", *currentShader->Name), RGB(1,0,0));
 		return;
 	}
-	// rotate view axis to model coords
+	// compute view origin in model coords
+	CVec3 mViewOrg;
 	CAxis mViewAxis;
 	if (currentEntity->worldMatrix)
-		mViewAxis = vp.view.axis;
+	{
+		mViewOrg     = vp.view.origin;
+		mViewAxis[2] = vp.view.axis[2];
+	}
 	else
-		currentEntity->coord.axis.TransformAxis(vp.view.axis, mViewAxis);
+	{
+		mViewOrg = currentEntity->coord.origin;
+		currentEntity->coord.axis.TransformVector(vp.view.axis[2], mViewAxis[2]);
+	}
 
 	// process vertices
 	bufTexCoordSrc_t *tex = &srcTexCoord[0];
@@ -110,6 +118,10 @@ static void DeformAutosprite(bufVertex_t *vec)
 		// square side = sqrt(dot(tmp,tmp)) / sqrt(2) = sqrt(dot(tmp,tmp)/2)
 		float radius = dot(tmp,tmp) / 2;
 		radius = SQRTFAST(radius);
+		// compute mViewAxis[0] and [1]
+		VectorSubtract(mViewOrg, center, mViewAxis[0]);
+		mViewAxis[0].NormalizeFast();						// really looking from sprite to viewer
+		cross(mViewAxis[0], mViewAxis[2], mViewAxis[1]);
 		// compute vertexes
 		VectorMA(center,  radius, mViewAxis[1], tmp);		// right
 		VectorMA(tmp,     radius, mViewAxis[2], vec->xyz);
@@ -129,9 +141,10 @@ static void DeformAutosprite(bufVertex_t *vec)
 		// recompute indexes
 		*idx++ = i; *idx++ = i+2; *idx++ = i+1;
 		*idx++ = i; *idx++ = i+3; *idx++ = i+2;
+		//!! should store normals as mViewAxis[0], but bufExtra_t can be linked
+		//!! to any number of verts (4, 8, 12 ...); normals will be zeroed later
 	}
 	// store normals
-	mViewAxis[0].Negate();
 	bufExtra_t *ex;
 	for (i = 0, ex = gl_extra; i < gl_numExtra; i++, ex++)
 		ex->normal.Zero();
@@ -143,15 +156,16 @@ static void DeformAutosprite2(bufVertex_t *vec)
 	// autoSprite2 deform require quads
 	if (gl_numVerts & 3 || gl_numIndexes != gl_numVerts / 2 * 3)
 	{
-		DrawTextLeft(va("Incorrect surface for AUTOSPRITE2 in %s", *currentShader->Name), RGB(1,0,0));	//?? developer
+		if (DEVELOPER)
+			DrawTextLeft(va("Incorrect surface for AUTOSPRITE2 in %s", *currentShader->Name), RGB(1,0,0));
 		return;
 	}
-	// rotate view axis to model coords
-	CVec3 mViewDir;
+	// compute view origin in model coords
+	CVec3 mViewOrg;
 	if (currentEntity->worldMatrix)
-		mViewDir = vp.view.axis[0];
+		mViewOrg = vp.view.origin;
 	else
-		currentEntity->coord.axis.TransformVector(vp.view.axis[0], mViewDir);
+		mViewOrg = currentEntity->coord.origin;
 
 	// process vertices
 	int i, idx;
@@ -198,7 +212,7 @@ static void DeformAutosprite2(bufVertex_t *vec)
 		// compute prevCoords -- coordinate system of original poly
 		prevCoords.origin  = pt2;
 		VectorSubtract(pt1, pt2, prevCoords.axis[0]);
-		prevCoords.axis[0].NormalizeFast();
+		prevCoords.axis[0].Normalize();					// main axis should be normalized precisely
 		VectorSubtract(vec[edges[edge2][1]].xyz, vec[edges[edge2][0]].xyz, tmp);
 		cross(prevCoords.axis[0], tmp, prevCoords.axis[2]);
 		prevCoords.axis[2].NormalizeFast();
@@ -206,7 +220,8 @@ static void DeformAutosprite2(bufVertex_t *vec)
 		// compute newCoords -- coordinate system of rotated poly
 		newCoords.origin  = prevCoords.origin;
 		newCoords.axis[0] = prevCoords.axis[0];
-		cross(newCoords.axis[0], mViewDir, newCoords.axis[1]);
+		VectorSubtract(pt2, mViewOrg, tmp);
+		cross(newCoords.axis[0], tmp, newCoords.axis[1]);
 		newCoords.axis[1].NormalizeFast();
 		cross(newCoords.axis[0], newCoords.axis[1], newCoords.axis[2]);
 		newCoords.axis[1].Negate();
@@ -217,28 +232,13 @@ static void DeformAutosprite2(bufVertex_t *vec)
 			newCoords.UnTransformPoint(tmp, vec->xyz);	// put back into world coords, rotated
 			vec++;
 		}
-
-#if 0
-	int nn = Cvar_VariableInt("test");
-	if (nn) {
-	CCoords *crd = nn == 1 ? &prevCoords : &newCoords;
-	//!! testing maps: q3dm10 (chains under sculls), estatica
-	GL_SetMultitexture(0);		// disable texturing
-	GL_State(GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
-	glDisableClientState(GL_COLOR_ARRAY);
-	glBegin(GL_LINES);
-	glColor3f(0,0,1);
-		glVertex3fv(pt1.v);	glVertex3fv(pt2.v);
-	glColor3f(1,0,0);
-		VectorMA(pt1, 5, crd->axis[1], tmp);
-		glVertex3fv(pt1.v); glVertex3fv(tmp.v);
-	glColor3f(0,1,0);
-		VectorMA(pt1, 5, crd->axis[2], tmp);
-		glVertex3fv(pt1.v); glVertex3fv(tmp.v);
-	glEnd();
+		//!! should store normals as mViewAxis[0], but bufExtra_t can be linked
+		//!! to any number of verts (4, 8, 12 ...); normals will be zeroed later
 	}
-#endif
-	}
+	// store normals
+	bufExtra_t *ex;
+	for (i = 0, ex = gl_extra; i < gl_numExtra; i++, ex++)
+		ex->normal.Zero();
 }
 
 
@@ -803,9 +803,12 @@ struct renderPass_t
 	shaderStage_t *colorStage;	//?? remove if it is always the same as "stages[0]"
 };
 
-#define MAX_RENDER_PASSES	(MAX_SHADER_STAGES+8)
+// reserve space for new separate passes for dlights
+#define MAX_RENDER_PASSES	(MAX_SHADER_STAGES+MAX_DLIGHTS)
+// PostLight() will add 2 stages per dlight
+#define MAX_RENDER_STAGES	(MAX_SHADER_STAGES+MAX_DLIGHTS*2)
 
-static renderStage_t rendSt[MAX_RENDER_PASSES];
+static renderStage_t rendSt[MAX_RENDER_STAGES];
 static int			numRenderStages;
 static renderPass_t	renderPasses[MAX_RENDER_PASSES];
 static int			numRenderPasses;
@@ -847,6 +850,8 @@ static bool			spy;
 // Return true, when PostLight required for this shader
 bool PreLight(const shader_t *sh, int &skipStages)
 {
+	guardSlow(PreLight);
+
 	int i;
 	renderStage_t *st = rendSt;
 
@@ -891,6 +896,7 @@ bool PreLight(const shader_t *sh, int &skipStages)
 			// finish
 			st++;
 			numRenderStages++;
+			assert(numRenderStages <= MAX_RENDER_STAGES);
 			num++;
 		}
 	}
@@ -924,15 +930,20 @@ bool PreLight(const shader_t *sh, int &skipStages)
 		// finish
 		st++;
 		numRenderStages++;
+		assert(numRenderStages <= MAX_RENDER_STAGES);
 		if (!style) break;				// it was main lightmap
 	}
 	skipStages = 1;						// skip lightmap stage
 	return false;						// no PostLight needed
+
+	unguardSlow;
 }
 
 
 void PostLight(const shader_t *sh)
 {
+	guardSlow(PostLight);
+
 	if (!currentDlightMask) return;		// no dlights for this surface
 	if (sh->primaryStage < 0) return;	// no "primary" stage found, cannot correctly apply dlights
 
@@ -953,7 +964,7 @@ void PostLight(const shader_t *sh)
 		pass->glState        = BLEND(1,1) | GLSTATE_DEPTHEQUALFUNC;
 		pass->numStages      = 2;
 		pass->stages         = st;
-		pass->colorStage     = static_cast<shaderStage_t*>(st);
+		pass->colorStage     = st;
 		// dlight stage
 		st[0].texEnv         = TEXENV_MODULATE;	// modulate by dlight color
 		st[0].mapImage[0]    = gl_dlightImage;
@@ -985,16 +996,22 @@ void PostLight(const shader_t *sh)
 		// finish
 		st += 2;
 		numRenderStages += 2;
+		assert(numRenderStages <= MAX_RENDER_STAGES);
 		num++;
 		pass++;
 		numRenderPasses++;
+		assert(numRenderPasses <= MAX_RENDER_PASSES);
 	}
 	//!! NOTE: ATI and NV combiners have ability to draw MAX_ACTIVE_TEXTURES-1 dlights in a single pass
+
+	unguardSlow;
 }
 
 
 void AddStaticStages(const shader_t *sh, int firstStage)
 {
+	guardSlow(AddStaticStages);
+
 	int i;
 	const shaderStage_t *const *pstage;
 	renderStage_t *st = rendSt + numRenderStages;	// destination
@@ -1019,7 +1036,10 @@ void AddStaticStages(const shader_t *sh, int firstStage)
 
 		st++;
 		numRenderStages++;
+		assert(numRenderStages <= MAX_RENDER_STAGES);
 	}
+
+	unguardSlow;
 }
 
 
@@ -1140,7 +1160,7 @@ void NoMultitexture()
 		pass->glState    = st->glState;
 		pass->numStages  = 1;
 		pass->stages     = st;
-		pass->colorStage = static_cast<shaderStage_t*>(st);
+		pass->colorStage = st;
 		st->texEnv = st->isDoubleRGBA ?
 			TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX :
 			TEXENV_MODULATE;
@@ -1167,10 +1187,11 @@ void UseMultitexture()
 			tmuUsed = 0;
 			// start new pass
 			numRenderPasses++;
+			assert(numRenderPasses <= MAX_RENDER_PASSES);
 			pass->glState    = st[0].glState;
 			pass->numStages  = 1;
 			pass->stages     = st;
-			pass->colorStage = static_cast<shaderStage_t*>(st);
+			pass->colorStage = st;
 			st[0].texEnv = st->isDoubleRGBA ?
 				TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX :
 				TEXENV_MODULATE;			// modulate with rgbaGen
@@ -1483,7 +1504,7 @@ void DebugLight(const shader_t *sh)
 					(st->tcGenType >= TCGEN_LIGHTMAP1 && st->tcGenType <= TCGEN_LIGHTMAP4) ||
 					(st->tcGenType >= TCGEN_DLIGHT0 && st->tcGenType < TCGEN_DLIGHT0 + MAX_DLIGHTS))
 				continue;	// keep lighting stage
-				st->mapImage[0]     = NULL;
+//				st->mapImage[0]     = NULL;
 				st->numAnimTextures = 1;
 				st->rgbGenType      = RGBGEN_IDENTITY;
 				if (i > 0)
@@ -1576,7 +1597,7 @@ void ComputeCombiners(const shader_t *sh)
 		return;
 	}
 
-	if (numRenderStages > MAX_RENDER_PASSES)
+	if (numRenderStages > MAX_RENDER_STAGES)
 		appError("ComputeCombiners: numStages too large (%d)", numRenderStages);
 
 	// combine single stages to multitextured passes
@@ -1659,6 +1680,7 @@ void BK_FlushShader()
 		}
 
 		//------ setup color arrays / constant ------
+		assert(pass->colorStage == pass->stages);	//!!<<<<<<<<<<<<<< REMOVE <<<<<<<<<<<<<<<<<<
 		shaderStage_t *stage = pass->colorStage;
 		if (stage->rgbGenType != RGBGEN_CONST || stage->alphaGenType != ALPHAGEN_CONST)
 		{
@@ -1717,14 +1739,17 @@ void BK_FlushShader()
 
 static void SetCurrentShader(shader_t *shader)
 {
+	// flush data for the previous shader
+	BK_FlushShader();
+	// check: we can get situation, when verts==2 and inds==0 due to geometry simplification -- this is OK (??)
+	// sample: map "actmet", inside building with rotating glass doors, floor 2: exotic lamp (nested cilinders with alpha)
 	if (gl_numVerts && gl_numIndexes)
-		// we can get situation, when verts==2 and inds==0 due to geometry simplification -- this is OK (??)
-		// sample: map "actmet", inside building with rotating glass doors, floor 2: exotic lamp (nested cilinders with alpha)
 	{
 		DrawTextLeft("SetCurrentShader() without flush!", RGB(1,0,0));
 		appWPrintf("SetCurrentShader(%s) without flush (old: %s, %d verts, %d inds)\n",
 			*shader->Name, *currentShader->Name, gl_numVerts, gl_numIndexes);
 	}
+	// prepare for new shader
 	currentShader = shader;
 	gl_numVerts = gl_numIndexes = gl_numExtra = 0;		// clear buffer
 }
@@ -2189,7 +2214,7 @@ static bool DrawNormals()
 }
 
 
-static int numDrawBrushes;
+static int			numDrawBrushes;
 static const CBrush	*drawBrushes[256];
 static const char	*brushLabels[256];
 static int			brushNums[256];
@@ -2439,9 +2464,6 @@ void BK_DrawScene()
 
 		if (shNum != currentShaderNum || entNum != currentEntityNum || currentDlightMask != dlightMask)
 		{
-			// flush data for the previous shader
-			BK_FlushShader();
-
 			// change shader
 			shader_t *shader = GetShaderByNum(shNum);
 			SetCurrentShader(shader);
@@ -2478,7 +2500,9 @@ void BK_DrawScene()
 			vp.time = (entNum == ENTITYNUM_WORLD) ? worldTime : currentEntity->time;
 		}
 
+		STAT(clock(gl_stats.tess));
 		surf->Tesselate(*currentEntity);
+		STAT(unclock(gl_stats.tess));
 	}
 
 	/*--------- finilize/debug -----------*/
@@ -2513,10 +2537,7 @@ void BK_DrawPic(shader_t *shader, int x, int y, int w, int h, float s1, float t1
 	if (!renderingEnabled) return;
 
 	if (currentShader != shader)
-	{
-		BK_FlushShader();
 		SetCurrentShader(shader);
-	}
 
 	GL_Set2DMode();
 
@@ -2592,10 +2613,7 @@ void BK_DrawText(const char *text, int len, int x, int y, int w, int h, unsigned
 	if (!renderingEnabled) return;
 
 	if (currentShader != gl_concharsShader)
-	{
-		BK_FlushShader();
 		SetCurrentShader(gl_concharsShader);
-	}
 
 	GL_Set2DMode();
 

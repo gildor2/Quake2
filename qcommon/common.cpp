@@ -602,8 +602,24 @@ static void ParseCmdline(const char *cmdline)
 				value = varValue;
 			cvar_t *var = Cvar_Set(varName, value);
 			if (var)
-				var->flags |= CVAR_CMDLINE;
-			else
+			{
+				// variable found ...
+				if (!strcmp(var->string, value))
+				{
+					// set successfuly
+					var->flags |= CVAR_CMDLINE;
+				}
+				else
+				{
+					// variable was found, but not set - check: may be,
+					// it was created from cmdline too (example: "-nosound=0 -nosound=1")
+					if (var->flags & CVAR_CMDLINE)
+						Cvar_ForceSet(varName, value);
+					else
+						var = NULL;		// flag: failed to set (readonly etc)
+				}
+			}
+			if (!var)
 				appWPrintf("ParseCmdline: unable to set \"%s\"\n", varName);
 
 			cmdlineParts[i] = NULL;		// remove command

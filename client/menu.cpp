@@ -638,7 +638,7 @@ struct optionsMenu_t : menuFramework_t
 		int i;
 		for (i = 1; i <= MAX_CROSSHAIRS; i++)	// item [0] is "none"
 		{
-			if (!ImageExists(va("pics/ch%d", i), IMAGE_ANY))
+			if (!ImageExists(va("pics/ch%d", i)))
 			{
 				crosshair_names[i] = NULL;
 				break;
@@ -2151,9 +2151,9 @@ struct playerConfigMenu_t : menuFramework_t
 		memset(&refdef, 0, sizeof(refdef));
 		refdef.x      = viddef.width / 2;
 		refdef.y      = viddef.height * 6 / 25;
-		refdef.width  = viddef.width * 4 / 10 + 16;
-		refdef.height = viddef.width * 5 / 10;
-		refdef.fov_x  = refdef.width * 90 / viddef.width;
+		refdef.width  = viddef.height * 16 / 30 + 16;
+		refdef.height = viddef.height * 20 / 30;
+		refdef.fov_x  = refdef.height * 55 / viddef.height;
 		refdef.fov_y  = CalcFov(refdef.fov_x, refdef.width, refdef.height);
 		refdef.time   = cls.realtime / 1000.0f;
 
@@ -2647,7 +2647,8 @@ struct videoMenu_t : menuFramework_t
 		static const char *resolutions[] = {
 			"[320  240 ]",	"[400  300 ]",	"[512  384 ]",	"[640  480 ]",
 			"[800  600 ]",	"[960  720 ]",	"[1024 768 ]",	"[1152 864 ]",
-			"[1280 960 ]",	"[1600 1200]",	"[2048 1536]",	NULL
+			"[1280 960 ]",	"[1280 1024]",	"[1600 1200]",	"[1680 1050]",
+			"[1920 1200]",	"[2048 1536]",	NULL
 		};
 		static const char *overbrightNames[] = {
 			"no",			"yes",			"auto",			NULL

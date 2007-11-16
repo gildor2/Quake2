@@ -177,9 +177,15 @@ void QGL_InitExtensions()
 		if (ExtensionSupported(ext, ext1, ext2))
 		{
 			if (!ext->cvar || Cvar_VariableInt(ext->cvar))
+			{
 				enable = true;
+				if (gl_config.bugExt & (1 << i))
+					enable = false;
+			}
 			else
+			{
 				gl_config.disabledExt |= 1 << i;
+			}
 		}
 		else
 			notFoundExt |= 1 << i;
