@@ -519,8 +519,11 @@ static void MouseMove(usercmd_t *cmd)
 	if (m_invert->integer) my = -my;
 
 	// add mouse X/Y movement to cmd
-	cl.viewangles[YAW]   -= mx * MOUSE_SCALE;
-	cl.viewangles[PITCH] += my * MOUSE_SCALE;
+	if (!cl_paused->integer)
+	{
+		cl.viewangles[YAW]   -= mx * MOUSE_SCALE;
+		cl.viewangles[PITCH] += my * MOUSE_SCALE;
+	}
 }
 
 

@@ -503,15 +503,15 @@ void UpdateDynamicLightmap(surfacePlanar_t *surf, bool vertexOnly, unsigned dlig
 		// apply vertex dlights
 		if (dlightMask)
 		{
-			const surfDlight_t *sdl = surf->dlights;
-			for ( ; dlightMask; dlightMask >>= 1)
+			const planeDlight_t *sdl = surf->dlights;
+			for (i = 0; dlightMask; i++, dlightMask >>= 1)
 			{
 				if (!(dlightMask & 1)) continue;
 
-				refDlight_t *dlight = sdl->dlight;
+				refDlight_t *dlight = vp.dlights + i;
 				float intens2 = sdl->radius * sdl->radius;
 
-				for (i = 0, v = surf->verts; i < surf->numVerts; i++, v++)
+				for (z = 0, v = surf->verts; z < surf->numVerts; z++, v++)
 				{
 					float f1 = sdl->pos[0] - v->pos[0];
 					float f2 = sdl->pos[1] - v->pos[1];

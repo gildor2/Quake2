@@ -38,7 +38,7 @@ static cvar_t	*gl_clear;
 static cvar_t	*gl_finish;			// debug ? (can be a situation, when gl_finish==1 is necessary ? (linux))
 #if !NO_DEBUG
 static cvar_t	*gl_showbboxes, *gl_showTris, *gl_showNormals;
-static cvar_t	*gl_forcePostLight;
+static cvar_t	*gl_forcePostLight, *gl_noFog;
 #endif
 #if SPY_SHADER
 static cvar_t	*gl_spyShader;
@@ -52,6 +52,7 @@ static cvar_t	*gl_spyShader;
 static shader_t		*currentShader;
 static refEntity_t	*currentEntity;
 static int			currentDlightMask;
+static int			currentFogNum;
 
 
 // vertex arrays
@@ -635,7 +636,58 @@ static void GenerateTexCoordArray(shaderStage_t *st, int tmu, const image_t *tex
 			}
 		}
 		break;
-	// other types: FOG (?)
+	case TCGEN_FOG:
+		{
+			bufVertex_t *vec = vb->verts;
+			const gl_fog_t &fog = map.fogs[currentFogNum];
+			CVec3 distVec, depthVec;
+			float dist0, depth0;
+			// compute distance vector (for Z-coordinate computation)
+			// distVec + dist0 is equalent to CPlane
+			distVec = vp.view.axis[0];
+			dist0 = dot(vp.view.origin, distVec) * fog.texCoordScale;
+			distVec.Scale(fog.texCoordScale);
+			// compute depth vector (depth in surface-based fog)
+			float eyeDepth = 1;
+			if (fog.hasSurface)
+			{
+				//?? use Coords.TransformPlane() ?
+//				vp.view.axis.TransformVector(fog.surface.normal, depthVec);
+				depthVec = fog.surface.normal;
+				depth0   = dot(vp.view.origin, depthVec) + fog.surface.dist;
+//??				eyeDepth = dot(vp.view.origin, depthVec) - depth0;
+eyeDepth = dot(vp.view.origin, fog.surface.normal) - fog.surface.dist;
+			}
+			// compute texcoords
+			//?? separate 32 as const
+			for (j = 0; j < gl_numVerts; j++, vec++, dst++)
+			{
+				//!!! IMPLEMENT !!!
+				float s = dot(vec->xyz, distVec) - dist0;
+				float t;
+				if (eyeDepth < 0)
+				{
+					// eye is outside of fog volume
+//??					t = dot(vec->xyz, depthVec) - depth0;
+t = dot(vec->xyz, fog.surface.normal) - fog.surface.dist;
+					if (t < 1)
+						t = 1.0f/32;
+					else
+						t = 1.0f/32 + 30.0f/32 * t / (t - eyeDepth);
+				}
+				else
+				{
+					// eye is inside fog volume
+					if (t < 0)
+						t = 1.0f/32;
+					else
+						t = 31.0f/32;
+				}
+				dst->tex[0] = s;
+				dst->tex[1] = t;
+			}
+		}
+		break;
 
 	default:
 		if (st->tcGenType >= TCGEN_DLIGHT0 && st->tcGenType < TCGEN_DLIGHT0 + MAX_DLIGHTS)
@@ -646,12 +698,44 @@ static void GenerateTexCoordArray(shaderStage_t *st, int tmu, const image_t *tex
 			bufVertex_t *vec = vb->verts;
 			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
-				surfDlight_t *sdl = &ex->dlight[num];
-				float invRadius = 0.5f / sdl->radius;
-				for (k = 0; k < ex->numVerts; k++, dst++, vec++)
+				if (ex->pDlight)
 				{
-					dst->tex[0] = (dot(vec->xyz, sdl->axis[0]) - sdl->pos[0]) * invRadius + 0.5f;
-					dst->tex[1] = (dot(vec->xyz, sdl->axis[1]) - sdl->pos[1]) * invRadius + 0.5f;
+					// planar surface, dlight is already projected
+					planeDlight_t   *pdl = &ex->pDlight[num];
+					float invRadius = 0.5f / pdl->radius;
+					for (k = 0; k < ex->numVerts; k++, dst++, vec++)
+					{
+						dst->tex[0] = (dot(vec->xyz, pdl->axis[0]) - pdl->pos[0]) * invRadius + 0.5f;
+						dst->tex[1] = (dot(vec->xyz, pdl->axis[1]) - pdl->pos[1]) * invRadius + 0.5f;
+					}
+				}
+				else if (ex->tDlight)
+				{
+					// triangle surface, should compute texcoords for each vertex
+					trisurfDlight_t *tdl = &ex->tDlight[num];
+					float invRadius = 1.0f / tdl->radius;
+					for (k = 0; k < ex->numVerts; k++, dst++, vec++)
+					{
+						CVec3 dist;
+						VectorSubtract(vec->xyz, tdl->origin, dist);
+#if TRISURF_DLIGHT_VIEWAXIS
+// This mode is view-dependent: when pause dlights and move around its origin,
+// picture will change - dut it looks much better, than another solutions.
+// Note: quake3 uses dist[0] and dist[1] coords, and dlight becomes vertical
+// ellipse.
+//?? can use currentEntity->modelvieworg, but require modelviewaxis (not computed)
+#	define AXIS		vp.view.axis
+#else
+#	define AXIS		tdl->axis
+#endif
+						float t = 1.0f - fabs(dot(dist, AXIS[0])) * invRadius;
+						if (t <= 1.0f / BIG_NUMBER) t = BIG_NUMBER;
+						else t = 1.0f / t;
+						float scale = t * invRadius * 0.5f;
+						dst->tex[0] = dot(dist, AXIS[1]) * scale + 0.5f;
+						dst->tex[1] = dot(dist, AXIS[2]) * scale + 0.5f;
+#undef AXIS
+					}
 				}
 			}
 		}
@@ -804,9 +888,9 @@ struct renderPass_t
 };
 
 // reserve space for new separate passes for dlights
-#define MAX_RENDER_PASSES	(MAX_SHADER_STAGES+MAX_DLIGHTS)
+#define MAX_RENDER_PASSES		(MAX_SHADER_STAGES+MAX_DLIGHTS)
 // PostLight() will add 2 stages per dlight
-#define MAX_RENDER_STAGES	(MAX_SHADER_STAGES+MAX_DLIGHTS*2)
+#define MAX_RENDER_STAGES		(MAX_SHADER_STAGES+MAX_DLIGHTS*2)
 
 static renderStage_t rendSt[MAX_RENDER_STAGES];
 static int			numRenderStages;
@@ -829,17 +913,17 @@ static bool			spy;
 
 #ifndef LOG_PP
 #	if SPY_SHADER
-#		define LOG_PP(x)	if (spy) DrawTextLeft(x,RGB(0.3,0.6,0.6));
+#		define LOG_PP(x)		if (spy) DrawTextLeft(x,RGB(0.3,0.6,0.6));
 		// NOTE: when LOG_PP() placed inside "if" operator, we should use {} around LOG_PP()
 		// (because LOG_PP have its own "if")
 #	else
 #		define LOG_PP(x)
-#		define NO_LOG_PP	1
+#		define NO_LOG_PP		1
 #	endif
 #endif
 
 #if MAX_DEBUG
-#	define LOG_PP2(x)		LOG_PP(x)
+#	define LOG_PP2(x)			LOG_PP(x)
 #else
 #	define LOG_PP2(x)
 #endif
@@ -1003,6 +1087,43 @@ void PostLight(const shader_t *sh)
 		assert(numRenderPasses <= MAX_RENDER_PASSES);
 	}
 	//!! NOTE: ATI and NV combiners have ability to draw MAX_ACTIVE_TEXTURES-1 dlights in a single pass
+
+	unguardSlow;
+}
+
+
+void AddFogPass(const shader_t *sh)
+{
+	guardSlow(AddFogPass);
+
+	if (gl_noFog->integer) return;
+
+//	DrawTextLeft(va("fog: %s [%d]", *currentShader->Name, currentFogNum));
+	renderPass_t *pass = renderPasses + numRenderPasses;
+	renderStage_t *st  = rendSt + numRenderStages;
+
+	const gl_fog_t *fog = map.fogs + currentFogNum;
+
+	LOG_PP("-- next pass (fog)");
+	// start new pass
+	pass->glState        = BLEND(S_ALPHA,M_S_ALPHA);
+	if (sh->sortParam <= SORT_OPAQUE)		// possibly, alpha-tested surface
+		pass->glState |= GLSTATE_DEPTHEQUALFUNC;
+	pass->numStages      = 1;
+	pass->stages         = st;
+	pass->colorStage     = st;
+	// dlight stage
+	st[0].texEnv         = TEXENV_MODULATE;	// modulate by fog color
+	st[0].mapImage[0]    = gl_fogImage;
+	st[0].alphaGenType   = ALPHAGEN_CONST;
+	st[0].rgbGenType     = RGBGEN_CONST;
+	st[0].rgbaConst.rgba = fog->color.rgba;
+	st[0].tcGenType      = TCGEN_FOG;
+
+	numRenderStages++;
+	assert(numRenderStages <= MAX_RENDER_STAGES);
+	numRenderPasses++;
+	assert(numRenderPasses <= MAX_RENDER_PASSES);
 
 	unguardSlow;
 }
@@ -1561,6 +1682,8 @@ void ComputeCombiners(const shader_t *sh)
 {
 	guard(ComputeCombiners);
 
+	numRenderPasses = numRenderStages = 0;
+
 #if SPY_SHADER
 	const char *shaderName = sh->Name;
 	spy = false;
@@ -1591,31 +1714,24 @@ void ComputeCombiners(const shader_t *sh)
 	// convert some dynamic rgbGen to const (same color for all verts)
 	ComputeConstColor();
 
-	if (!numRenderStages)
+	if (numRenderStages)
 	{
-		DrawTextLeft(va("ComputeCombiners(%s): 0 stages", *currentShader->Name), RGB(1,0,0));
-		return;
+		if (numRenderStages > MAX_RENDER_STAGES)
+			appError("ComputeCombiners: numStages too large (%d)", numRenderStages);
+
+		// combine single stages to multitextured passes
+
+		// if no multitexturing or only 1 stage -- nothing to combine
+		if (numRenderStages < 2 || gl_config.maxActiveTextures < 2)
+			NoMultitexture();
+		else
+			UseMultitexture();
+
+		// apply lights when PreLight() failed
+		if (needPostLight) PostLight(sh);
 	}
 
-	if (numRenderStages > MAX_RENDER_STAGES)
-		appError("ComputeCombiners: numStages too large (%d)", numRenderStages);
-
-	// combine single stages to multitextured passes
-
-	// if no multitexturing or only 1 stage -- nothing to combine
-	if (numRenderStages < 2 || gl_config.maxActiveTextures < 2)
-	{
-		NoMultitexture();
-		// note: do not need PostLight() here, because here either 1-stage shader, which
-		// can be easily PreLight()'ed, or cannot PostLight() because of no multitexturing
-		return;
-	}
-
-	// have multitexturing
-	UseMultitexture();
-
-	// apply lights when PreLight() failed
-	if (needPostLight) PostLight(sh);
+	if (currentFogNum) AddFogPass(sh);
 
 	LOG_PP("-----------------");
 	unguard;
@@ -1630,7 +1746,6 @@ void BK_FlushShader()
 	guard(BK_FlushShader);
 
 	if (!gl_numIndexes) return;					// buffer is empty
-	if (!currentShader->numStages) return;		// wrong shader?
 
 //	DrawTextLeft(va("FlushShader(%s, %d, %d)\n", *currentShader->Name, gl_numVerts, gl_numIndexes));//!!!
 	LOG_STRING(va("*** FlushShader(%s, %d, %d) ***", *currentShader->Name, gl_numVerts, gl_numIndexes));
@@ -1826,7 +1941,8 @@ void surfacePlanar_t::Tesselate(refEntity_t &ent)
 	if (lightmap) ex->lmWidth = lightmap->w;
 	ex->normal   = plane.normal;
 	ex->axis     = axis;
-	ex->dlight   = dlights;
+	ex->pDlight  = dlights;
+	ex->tDlight  = NULL;
 
 	bufVertex_t *v = &vb->verts[firstVert];
 	bufTexCoordSrc_t *t = &srcTexCoord[firstVert];
@@ -1884,7 +2000,8 @@ void surfaceTrisurf_t::Tesselate(refEntity_t &ent)
 		ex->numVerts = 1;
 		ex->normal   = vs->normal;
 		ex->axis     = NULL;
-		ex->dlight   = NULL;
+		ex->pDlight  = NULL;
+		ex->tDlight  = dlights;
 	}
 
 	// copy indexes
@@ -1910,7 +2027,8 @@ void surfacePoly_t::Tesselate(refEntity_t &ent)
 	bufExtra_t *ex = &gl_extra[gl_numExtra++];
 	ex->numVerts = numVerts;
 	ex->axis     = NULL;
-	ex->dlight   = NULL;
+	ex->pDlight  = NULL;
+	ex->tDlight  = NULL;
 	ex->normal.Zero();				// normal = {0,0,0} - compute light for point
 
 	bufVertex_t *v = &vb->verts[firstVert];
@@ -1988,7 +2106,8 @@ void surfaceMd3_t::Tesselate(refEntity_t &ent)
 			norm[2] = COS_FUNC2(a1,256) * frontLerp + COS_FUNC2(a2,256) * currentEntity->backLerp;
 			ex->numVerts = 1;
 			ex->axis     = NULL;
-			ex->dlight   = NULL;
+			ex->pDlight  = NULL;
+			ex->tDlight  = NULL;
 		}
 	}
 	else
@@ -2008,7 +2127,8 @@ void surfaceMd3_t::Tesselate(refEntity_t &ent)
 			norm[2] = COS_FUNC2(a,256);			// cos(a)
 			ex->numVerts = 1;
 			ex->axis     = NULL;
-			ex->dlight   = NULL;
+			ex->pDlight  = NULL;
+			ex->tDlight  = NULL;
 		}
 	}
 
@@ -2409,7 +2529,7 @@ void BK_DrawScene()
 
 	STAT(gl_stats.surfs += vp.numSurfaces);
 
-	currentDlightMask = 0;
+	currentDlightMask = currentFogNum = 0;
 	double worldTime = vp.time;
 
 	/*------------ draw sky --------------*/
@@ -2456,20 +2576,25 @@ void BK_DrawScene()
 		unsigned code   = (*si)->sort;
 		unsigned shNum  = (code >> SHADERNUM_SHIFT) & SHADERNUM_MASK;	//?? can use surf->shader ?
 		unsigned entNum = (code >> ENTITYNUM_SHIFT) & ENTITYNUM_MASK;
+		unsigned fogNum = (code >> FOGNUM_SHIFT   ) & FOGNUM_MASK;
 		unsigned dlightMask;
 		if ((code >> DLIGHTNUM_SHIFT) & DLIGHTNUM_MASK)
 			dlightMask = surf->dlightMask;
 		else
 			dlightMask = 0;
 
-		if (shNum != currentShaderNum || entNum != currentEntityNum || currentDlightMask != dlightMask)
+		if (shNum             != currentShaderNum ||
+			entNum            != currentEntityNum ||
+			currentDlightMask != dlightMask       ||
+			fogNum            != currentFogNum)
 		{
 			// change shader
 			shader_t *shader = GetShaderByNum(shNum);
 			SetCurrentShader(shader);
-			currentDlightMask = dlightMask;
 			LOG_STRING(va("******** shader = %s ********", *shader->Name));
-			currentShaderNum = shNum;
+			currentDlightMask = dlightMask;
+			currentShaderNum  = shNum;
+			currentFogNum     = fogNum;
 		}
 
 		if (entNum != currentEntityNum)
@@ -2522,6 +2647,11 @@ void BK_DrawScene()
 #endif
 
 	if (gl_finish->integer == 2) glFinish();
+
+	// restore some global variables for 2D drawings
+	currentFogNum     = 0;
+	currentEntityNum  = 0;
+	currentDlightMask = 0;
 
 	unguard;
 }
@@ -2723,6 +2853,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_showTris, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showNormals, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_forcePostLight, 0, 0),
+	CVAR_VAR(gl_noFog, 0, CVAR_CHEAT),
 #endif
 	CVAR_VAR(gl_clear, 0, 0),
 	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE)
@@ -2731,7 +2862,7 @@ CVAR_END
 	ClearBuffers();
 
 	staticAssert(SHADERNUM_SHIFT+SHADERNUM_BITS <= 32, TooMuchShadernumBits);
-	staticAssert(MAX_SHADERS == 1 << SHADERNUM_SHIFT, InvalidMaxShaders);
+	staticAssert(MAX_SHADERS == 1 << SHADERNUM_BITS, InvalidMaxShaders);
 
 	// size of 1 buffer (depends on multitexturing ability)
 	int vbSize = vertexBuffer_t::getSize(gl_config.maxActiveTextures);

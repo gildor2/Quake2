@@ -315,31 +315,31 @@ void SV_LinkEdict(edict_t *ent)
 
 	// link to PVS leafs
 	ent->num_clusters = 0;
-	ent->areanum      = 0;
-	ent->areanum2     = 0;
+	ent->zonenum      = 0;
+	ent->zonenum2     = 0;
 
 	// get all leafs, including solids
 	CBspLeaf *leafs[MAX_TOTAL_ENT_LEAFS];
 	int topnode;
 	int num_leafs = CM_BoxLeafs(ent->absBounds, ARRAY_ARG(leafs), &topnode);
 
-	// set areas
+	// set zones
 	int clusters[MAX_TOTAL_ENT_LEAFS];
 	for (i = 0; i < num_leafs; i++)
 	{
 		clusters[i] = leafs[i]->cluster;
-		int area = leafs[i]->area;
-		if (area)
-		{	// doors may legally straggle two areas,
+		int zone = leafs[i]->zone;
+		if (zone)
+		{	// doors may legally straggle two zones,
 			// but nothing should evern need more than that
-			if (ent->areanum && ent->areanum != area)
+			if (ent->zonenum && ent->zonenum != zone)
 			{
-				if (ent->areanum2 && ent->areanum2 != area && sv.state == ss_loading)
-					Com_DPrintf("Object touching 3 areas at %g %g %g\n", VECTOR_ARG(ent->absBounds.mins));
-				ent->areanum2 = area;
+				if (ent->zonenum2 && ent->zonenum2 != zone && sv.state == ss_loading)
+					Com_DPrintf("Object touching 3 zones at %g %g %g\n", VECTOR_ARG(ent->absBounds.mins));
+				ent->zonenum2 = zone;
 			}
 			else
-				ent->areanum = area;
+				ent->zonenum = zone;
 		}
 	}
 

@@ -1334,7 +1334,7 @@ END_PROFILE
 -----------------------------------------------------------------------------*/
 
 #if 1
-//!! TEMP
+//!! TEMP; note: used for dBsp3Face_t::FLARE
 class surfaceNull_t : public surfaceBase_t
 {
 public:
@@ -1366,8 +1366,15 @@ static void LoadLightmaps3(byte *lightData, int lightDataSize)
 }
 
 
-static shader_t *CreateSurfShader3(unsigned sflags, const dBsp3Shader_t *stex)
+static shader_t *CreateSurfShader3(unsigned sflags, const dBsp3Shader_t *stex, int lightmapNum)
 {
+	if (lightmapNum >= 0)	// map surface can force lightmapNum==-1 for "no light"
+		sflags |= SHADER_LIGHTMAP;
+	else if (lightmapNum == LIGHTMAP_VERTEX)
+		sflags |= SHADER_VERTEXLIGHT;
+	else
+		lightmapNum = LIGHTMAP_NONE;
+
 	if (stex->surfaceFlags & Q3_SURF_SKY) sflags = SHADER_SKY;
 	shader_t *shader = FindShader(stex->name, sflags);
 
@@ -1389,7 +1396,137 @@ static shader_t *CreateSurfShader3(unsigned sflags, const dBsp3Shader_t *stex)
 	if (shader->type == SHADERTYPE_SKY && SHOWSKY == 2)
 		return gl_defaultShader;
 
+	if (lightmapNum >= 0)
+		shader = SetShaderLightmap(shader, lightmapNum);
+
 	return shader;
+}
+
+
+static surfaceBase_t *LoadFakePlanarSurface3(const dBsp3Face_t *surf, dBsp3Vert_t *verts, unsigned *indexes,
+	shader_t *shader)
+{
+	surfaceTrisurf_t *s = new (map.dataChain) surfaceTrisurf_t;
+	s->shader = shader;
+#if 1
+	if (shader->type != SHADERTYPE_SKY && shader->lightValue)
+		appWPrintf("Trisurf light: %s\n", *shader->Name);
+#endif
+
+	s->numVerts   = surf->numVerts;
+	s->verts      = new (map.dataChain) vertexNormal_t [surf->numVerts];
+	s->numIndexes = surf->numIndexes;
+	s->indexes    = new (map.dataChain) int [surf->numIndexes];
+	s->fogNum     = (surf->fogNum + 1) & 255;
+	// copy verts
+	vertexNormal_t *dst = s->verts;
+	s->bounds.Clear();
+	for (int j = 0; j < surf->numVerts; j++, verts++, dst++)
+	{
+		dst->xyz    = verts->v;
+		dst->st[0]  = verts->st[0];
+		dst->st[1]  = verts->st[1];
+		dst->lm[0]  = verts->lm[0];
+		dst->lm[1]  = verts->lm[1];
+		dst->c.rgba = verts->c.rgba;		//!! saturate
+		dst->normal = verts->normal;
+		s->bounds.Expand(dst->xyz);
+	}
+	// copy indexes
+	memcpy(s->indexes, indexes, surf->numIndexes * sizeof(int));
+	return s;
+}
+
+
+static surfaceBase_t *LoadPlanarSurface3(const dBsp3Face_t *surf, dBsp3Vert_t *verts, unsigned *indexes,
+	const dBsp3Shader_t *stex)
+{
+	unsigned sflags = SHADER_WALL;
+	shader_t *shader = CreateSurfShader3(sflags, stex, surf->lightmapNum);
+
+	if (surf->lightmapVecs[2][0] == 0 &&
+		surf->lightmapVecs[2][1] == 0 &&
+		surf->lightmapVecs[2][2] == 0)
+	{
+		// Third-party q3map2 compiler has special surface type: pre-tesselated patch.
+		// It is stored in bsp as planar surface, but really it is not planar. Create
+		// trisurf from it.
+		return LoadFakePlanarSurface3(surf, verts, indexes, shader);
+	}
+
+	surfacePlanar_t *s = new (map.dataChain) surfacePlanar_t;
+	s->shader     = shader;
+	s->numVerts   = surf->numVerts;
+	s->verts      = new (map.dataChain) vertex_t [surf->numVerts];
+	s->numIndexes = surf->numIndexes;
+	s->indexes    = new (map.dataChain) int [surf->numIndexes];
+	s->fogNum     = (surf->fogNum + 1) & 255;
+	// copy verts
+	vertex_t *dst = s->verts;
+	for (int i = 0; i < surf->numVerts; i++, verts++, dst++)
+	{
+		dst->xyz    = verts->v;
+		dst->st[0]  = verts->st[0];
+		dst->st[1]  = verts->st[1];
+		dst->lm[0]  = verts->lm[0];
+		dst->lm[1]  = verts->lm[1];
+		dst->c.rgba = verts->c.rgba;		//!! saturate
+		//?? check for same normal for all verts
+	}
+	// copy indexes
+	memcpy(s->indexes, indexes, surf->numIndexes * sizeof(int));
+
+	// surface plane
+	s->plane.normal = surf->lightmapVecs[2]; // Q3 bsp format ...
+	s->plane.dist   = dot(s->verts[0].xyz, s->plane.normal);
+	s->plane.Setup();
+
+	BuildPlanarSurf(s);
+	// surface light
+	if (shader->lightValue)
+	{
+		float area = GetSurfArea(s);
+		float surfLightScale = (r_q3map_overbright->integer) ? 2 : 1;
+		BuildSurfLight(s, &shader->lightColor, area, shader->lightValue * surfLightScale,
+			false /*?? (stex->flags & SURF_SKY) != 0*/);
+	}
+	return s;
+}
+
+
+static surfaceBase_t *LoadTriangleSurface3(const dBsp3Face_t *surf, dBsp3Vert_t *verts, unsigned *indexes,
+	const dBsp3Shader_t *stex)
+{
+	surfaceTrisurf_t *s = new (map.dataChain) surfaceTrisurf_t;
+	shader_t *shader = CreateSurfShader3(SHADER_WALL, stex, LIGHTMAP_VERTEX);
+	s->shader = shader;
+#if 1
+	if (shader->type != SHADERTYPE_SKY && shader->lightValue)
+		appWPrintf("Trisurf light: %s\n", *shader->Name);
+#endif
+
+	s->numVerts   = surf->numVerts;
+	s->verts      = new (map.dataChain) vertexNormal_t [surf->numVerts];
+	s->numIndexes = surf->numIndexes;
+	s->indexes    = new (map.dataChain) int [surf->numIndexes];
+	s->fogNum     = (surf->fogNum + 1) & 255;
+	// copy verts
+	vertexNormal_t *dst = s->verts;
+	s->bounds.Clear();
+	for (int j = 0; j < surf->numVerts; j++, verts++, dst++)
+	{
+		dst->xyz    = verts->v;
+		dst->st[0]  = verts->st[0];
+		dst->st[1]  = verts->st[1];
+		dst->lm[0]  = verts->lm[0];
+		dst->lm[1]  = verts->lm[1];
+		dst->c.rgba = verts->c.rgba;		//!! saturate
+		dst->normal = verts->normal;
+		s->bounds.Expand(dst->xyz);
+	}
+	// copy indexes
+	memcpy(s->indexes, indexes, surf->numIndexes * sizeof(int));
+	return s;
 }
 
 
@@ -1400,110 +1537,26 @@ static void LoadSurfaces3(const dBsp3Face_t *surfs, int numSurfaces, dBsp3Vert_t
 
 	nullSurface.shader = gl_defaultShader;
 
-	// prepare scaling factor for surface lights
-	float surfLightScale = 1;
-	if (bspfile.type == map_q3 && r_q3map_overbright->integer)
-		surfLightScale = 2;
-
 	map.numFaces = numSurfaces;
 	map.faces = new (map.dataChain) surfaceBase_t* [numSurfaces];
 	for (int i = 0; i < numSurfaces; i++, surfs++)
 	{
-		int numVerts   = surfs->numVerts;
-		int numIndexes = surfs->numIndexes;
-		unsigned sflags = SHADER_WALL;
-
 		switch (surfs->surfaceType)
 		{
 		case dBsp3Face_t::PLANAR:
-			{
-				surfacePlanar_t *s = new (map.dataChain) surfacePlanar_t;
-				int lightmapNum = surfs->lightmapNum;
-				if (lightmapNum >= 0)	// map surface can force lightmapNum==-1 for "no light"
-					sflags |= SHADER_LIGHTMAP;
-				else
-					lightmapNum = LIGHTMAP_NONE;
-				shader_t *shader = CreateSurfShader3(sflags, tex + surfs->shaderNum);
-				if (lightmapNum >= 0)
-					shader = SetShaderLightmap(shader, lightmapNum);
-				s->shader = shader;
-				map.faces[i] = s;
-
-				s->numVerts   = numVerts;
-				s->verts      = new (map.dataChain) vertex_t [numVerts];
-				s->numIndexes = numIndexes;
-				s->indexes    = new (map.dataChain) int [numIndexes];
-				// copy verts
-				dBsp3Vert_t *src = verts + surfs->firstVert;
-				vertex_t    *dst = s->verts;
-				for (int j = 0; j < numVerts; j++, src++, dst++)
-				{
-					dst->xyz    = src->v;
-					dst->st[0]  = src->st[0];
-					dst->st[1]  = src->st[1];
-					dst->lm[0]  = src->lm[0];
-					dst->lm[1]  = src->lm[1];
-					dst->c.rgba = src->c.rgba;		//!! saturate
-					//?? check for same normal for all verts
-				}
-				// copy indexes
-				memcpy(s->indexes, indexes + surfs->firstIndex, numIndexes * sizeof(int));
-
-				// surface plane
-				s->plane.normal = surfs->lightmapVecs[2]; // Q3 bsp format ...
-				s->plane.dist   = dot(s->verts[0].xyz, s->plane.normal);
-				s->plane.Setup();
-
-				BuildPlanarSurf(s);
-				// surface light
-				if (shader->lightValue)
-				{
-					float area = GetSurfArea(s);
-					BuildSurfLight(s, &shader->lightColor, area, shader->lightValue * surfLightScale,
-						false /*?? (stex->flags & SURF_SKY) != 0*/);
-				}
-			}
+			map.faces[i] = LoadPlanarSurface3(surfs, verts + surfs->firstVert, indexes + surfs->firstIndex,
+				tex + surfs->shaderNum);
 			break;
 
 		case dBsp3Face_t::TRISURF:
-			{
-				surfaceTrisurf_t *s = new (map.dataChain) surfaceTrisurf_t;
-				shader_t *shader = CreateSurfShader3(sflags|SHADER_VERTEXLIGHT, tex + surfs->shaderNum);
-				s->shader = shader;
-				map.faces[i] = s;
-#if 1
-				if (shader->type != SHADERTYPE_SKY && shader->lightValue)
-					appWPrintf("Trisurf light: %s\n", *shader->Name);
-#endif
-
-				s->numVerts   = numVerts;
-				s->verts      = new (map.dataChain) vertexNormal_t [numVerts];
-				s->numIndexes = numIndexes;
-				s->indexes    = new (map.dataChain) int [numIndexes];
-				// copy verts
-				dBsp3Vert_t *src = verts + surfs->firstVert;
-				vertexNormal_t *dst = s->verts;
-				s->bounds.Clear();
-				for (int j = 0; j < numVerts; j++, src++, dst++)
-				{
-					dst->xyz    = src->v;
-					dst->st[0]  = src->st[0];
-					dst->st[1]  = src->st[1];
-					dst->lm[0]  = src->lm[0];
-					dst->lm[1]  = src->lm[1];
-					dst->c.rgba = src->c.rgba;		//!! saturate
-					dst->normal = src->normal;
-					s->bounds.Expand(dst->xyz);
-				}
-				// copy indexes
-				memcpy(s->indexes, indexes + surfs->firstIndex, numIndexes * sizeof(int));
-			}
+			map.faces[i] = LoadTriangleSurface3(surfs, verts + surfs->firstVert, indexes + surfs->firstIndex,
+				tex + surfs->shaderNum);
 			break;
 
 		case dBsp3Face_t::PATCH:
 			{
 				surfaceNull_t *s = new (map.dataChain) surfaceNull_t;	//!!!
-				shader_t *shader = CreateSurfShader3(sflags|SHADER_VERTEXLIGHT, tex + surfs->shaderNum);
+				shader_t *shader = CreateSurfShader3(SHADER_WALL, tex + surfs->shaderNum, surfs->lightmapNum);
 				s->shader = shader;
 				map.faces[i] = s;
 #if 1
@@ -1561,6 +1614,48 @@ static void LoadFlares3(const dBsp3Face_t *surfs, int numSurfaces, const CBspMod
 }
 
 
+static void LoadFogs3(const dBsp3Fog_t *fogs, int numFogs, dBsp3Brush_t *brushes, dBsp3Brushside_t *sides,
+	CPlane *planes)
+{
+	// NOTE: here we reserve fog index 0 for "no fog"; indices starting with 1
+	map.numFogs = numFogs;
+	map.fogs = new (map.dataChain) gl_fog_t [numFogs + 1];
+	gl_fog_t *dst = map.fogs + 1;
+	for (int i = 0; i < numFogs; i++, fogs++, dst++)
+	{
+		dBsp3Brush_t *brush = brushes + fogs->brushNum;
+		// brushes in q3bsp always sorted with axial sides first
+		// following code taken from q3 R_LoadFogs()
+		dBsp3Brushside_t *side = sides + brush->firstside;
+		for (int j = 0; j < 3; j++)
+		{
+			dst->bounds.mins[j] = -planes[side->planenum].dist;
+			side++;
+			dst->bounds.maxs[j] =  planes[side->planenum].dist;
+			side++;
+		}
+		shader_t *shader = FindShader(fogs->name, SHADER_CHECK);
+		if (!shader || shader->type != SHADERTYPE_FOG)
+		{
+			appWPrintf("No shader %s exists for fog volume %d\n", fogs->name, i);
+			continue;
+		}
+//		appPrintf("FOG[%d]: shader %s (%08X)\n", i, *shader->Name, shader->fogColor.rgba);
+//		appPrintf("         bounds %d {%g %g %g} {%g %g %g}\n", fogs->brushNum, VECTOR_ARG(dst->bounds.mins), VECTOR_ARG(dst->bounds.maxs));
+		dst->color.rgba    = shader->fogColor.rgba;
+		dst->texCoordScale = (shader->fogDist > 1.0f) ? 1.0f / (shader->fogDist * 8) : 1.0f/8;
+		dst->hasSurface    = fogs->visibleSide != -1;
+		if (dst->hasSurface)
+		{
+			dst->surface = planes[sides[brush->firstside + fogs->visibleSide].planenum];
+			// inverse plane
+			dst->surface.normal.Negate();
+			dst->surface.dist = -dst->surface.dist;
+		}
+	}
+}
+
+
 static void LoadBsp3()
 {
 	guard(LoadBsp3);
@@ -1571,6 +1666,7 @@ static void LoadBsp3()
 	LoadLeafsNodes(bspfile.nodes, bspfile.numNodes, bspfile.leafs, bspfile.numLeafs);
 	LoadInlineModels(bspfile.models, bspfile.numModels);
 	LoadFlares3(bspfile.faces3, bspfile.numFaces, bspfile.models, bspfile.numModels);
+	LoadFogs3(bspfile.fogs, bspfile.numFogs, bspfile.brushes3, bspfile.brushsides3, bspfile.planes);
 
 	unguard;
 }

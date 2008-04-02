@@ -68,8 +68,13 @@ void AddSurfaceToPortal(surfaceBase_t *surf, shader_t *shader, int entityNum, in
 
 	if (numSurfacesTotal >= MAX_SCENE_SURFACES - 1) return;			// buffer is full
 	if (numDlights > DLIGHTNUM_MASK) numDlights = DLIGHTNUM_MASK;
+	int fogNum = surf->fogNum;
+//??	if (entityNum < ENTITYNUM_WORLD) fogNum = refEntities[entityNum].fogNum;
 	surfaceInfo_t &si = vp.surfaces[vp.numSurfaces++];
-	si.sort = (shader->sortIndex << SHADERNUM_SHIFT) | (entityNum << ENTITYNUM_SHIFT) | (numDlights << DLIGHTNUM_SHIFT);
+	si.sort = (fogNum            << FOGNUM_SHIFT)    |
+			  (shader->sortIndex << SHADERNUM_SHIFT) |
+			  (entityNum         << ENTITYNUM_SHIFT) |
+			  (numDlights        << DLIGHTNUM_SHIFT);
 	si.surf = surf;
 	numSurfacesTotal++;
 	// update maxUsedShaderIndex

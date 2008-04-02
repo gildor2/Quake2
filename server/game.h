@@ -63,7 +63,7 @@ struct edict_s
 	int			num_clusters;			// if -1, use headnode instead
 	int			clusternums[MAX_ENT_CLUSTERS];
 	int			headnode;				// unused if num_clusters != -1
-	int			areanum, areanum2;
+	int			zonenum, zonenum2;		// original: areanum, areanum2
 
 	int			svflags;				// SVF_NOCLIENT, SVF_DEADMONSTER, SVF_MONSTER, etc
 	CBox		bounds;
@@ -125,8 +125,8 @@ struct game_import_t
 	int		(*pointcontents) (const CVec3 &point);
 	qboolean (*inPVS) (const CVec3 &p1, const CVec3 &p2);
 	qboolean (*inPHS) (const CVec3 &p1, const CVec3 &p2);
-	void	(*SetAreaPortalState) (int portalnum, qboolean open);
-	qboolean (*AreasConnected) (int area1, int area2);
+	void	(*SetZonePortalState) (int portalnum, qboolean open); // original: SetAreaPortalState()
+	qboolean (*ZonesConnected) (int area1, int area2); // original: AreasConnected()
 
 	// an entity will never be sent to a client or used for collision
 	// if it is not passed to linkentity.  If the size, position, or

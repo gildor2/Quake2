@@ -714,7 +714,7 @@ static void DrawOriginInfo()
 	RE_DrawTextLeft(va("View direction: %g  %g  %g", VECTOR_ARG(view)), RGB(0.2,0.4,0.1));
 
 	const CBspLeaf *leaf = CM_FindLeaf(cl.refdef.vieworg);
-	RE_DrawTextLeft(va("Leaf: %d, cluster: %d, area: %d", leaf->num, leaf->cluster, leaf->area), RGB(0.2,0.4,0.1));
+	RE_DrawTextLeft(va("Leaf: %d, cluster: %d, zone: %d", leaf->num, leaf->cluster, leaf->zone), RGB(0.2,0.4,0.1));
 #if 0
 //!!!!!!!!!
 RE_DrawTextLeft(va("nBrushes: %d", leaf->numBrushes), RGB(1,0.2,0.2));
@@ -977,7 +977,7 @@ bool V_RenderView()
 		cl.refdef.fov_y  = CalcFov(cl.refdef.fov_x, cl.refdef.width, cl.refdef.height);
 		cl.refdef.time   = cl.ftime;
 
-		cl.refdef.areabits = cl.frame.areabits;
+		cl.refdef.zonebits = cl.frame.zonebits;
 
 		if (!cl_add_entities->integer)	r_numentities = 0;
 		if (!cl_add_lights->integer)	r_numdlights = 0;

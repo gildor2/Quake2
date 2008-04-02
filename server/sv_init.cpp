@@ -109,7 +109,7 @@ static void SV_CheckForSavegame()
 
 	SV_ClearWorld();
 
-	// get configstrings and areaportals
+	// get configstrings and zoneportals
 	SV_ReadLevelFile();
 
 	if (!sv.loadgame)
@@ -124,7 +124,11 @@ static void SV_CheckForSavegame()
 		previousState = sv.state;				// PGM
 		sv.state = ss_loading;					// PGM
 		for (int i = 0; i < 100; i++)
+		{
+			guardGame(ge.RunFrame);
 			ge->RunFrame();
+			unguardGame;
+		}
 
 		sv.state = previousState;				// PGM
 	}
@@ -219,13 +223,15 @@ void SV_SpawnServer(char *server, char *spawnpoint, server_state_t serverstate, 
 	Com_SetServerState(sv.state);
 
 	// load and spawn all other entities
-	guard(ge.SpawnEntities);
+	guardGame(ge.SpawnEntities);
 	ge->SpawnEntities(sv.name, bspfile.entStr, spawnpoint);
-	unguard;
+	unguardGame;
 
 	// run two frames to allow everything to settle
+	guardGame(ge.RunFrame);
 	ge->RunFrame();
 	ge->RunFrame();
+	unguardGame;
 
 	// all precaches are complete
 	sv.state = serverstate;

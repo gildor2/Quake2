@@ -70,8 +70,8 @@ enum client_state_t
 
 struct client_frame_t
 {
-	int			areabytes;
-	byte		areabits[MAX_MAP_AREAS/8]; // portalarea visibility bits
+	int			zonebytes;
+	byte		zonebits[MAX_MAP_ZONES/8]; // portalzone visibility bits
 	player_state_t ps;
 	int			num_entities;
 	int			first_entity;			// into the circular sv_packet_entities[]
@@ -194,13 +194,38 @@ extern	cvar_t	*sv_deathmatch, *sv_coop, *sv_maxclients;
 extern	cvar_t	*sv_noreload;			// don't reload level state when reentering
 extern	cvar_t	*sv_extProtocol;
 extern	cvar_t	*sv_shownet;
+#if MAX_DEBUG
 extern	cvar_t	*sv_labels;
+extern	cvar_t	*g_fpuXcpt;
+#endif
 
 extern	cvar_t	*sv_airaccelerate;
 extern	cvar_t	*sv_enforcetime;
 
 extern	client_t	*sv_client;
 extern	edict_t		*sv_player;
+
+
+#if MAX_DEBUG
+
+#define guardGame(x)			\
+		appAllowFpuXcpt(g_fpuXcpt->integer != 0); \
+		guard(x);
+#define unguardGame				\
+		unguard;				\
+		appAllowFpuXcpt(true);
+#define unguardfGame(x)			\
+		unguardf(x);			\
+		appAllowFpuXcpt(true);
+
+#else
+
+#define guardGame(x)			guard(x)
+#define unguardGame				unguard
+#define unguardfGame(x)			unguardf(x)
+
+#endif
+
 
 //===========================================================
 

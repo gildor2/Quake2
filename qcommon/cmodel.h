@@ -66,7 +66,7 @@ struct CBspLeaf : public CBspBaseNode
 	CBspLeafExtra *ex;					// first
 	unsigned	contents;				// for q3 map, this is OR of all brushes.contents; use GetContents() method
 	int			cluster;
-	int			area;
+	int			zone;
 	unsigned	firstFace, numFaces;
 	unsigned	numBrushes;
 	cbrush_t	**brushes;
@@ -236,11 +236,14 @@ struct bspfile_t
 		dBsp3Brushside_t *brushsides3;
 	};
 
-	int			numAreas;
-	dArea_t		*areas;
+	int			numFogs;
+	dBsp3Fog_t	*fogs;
 
-	int			numAreaportals;
-	dAreaPortal_t *areaportals;
+	int			numZones;
+	dZone_t		*zones;
+
+	int			numZonePortals;
+	dZonePortal_t *zonePortals;
 
 	int			numTexinfo;
 	union {

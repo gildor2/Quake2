@@ -15,8 +15,8 @@ static int viewCluster;
 
 viewPortal_t vp;
 
-// map areas
-byte		areaMask[MAX_MAP_AREAS/8];
+// map zones
+byte		zoneMask[MAX_MAP_ZONES/8];
 bool		forceVisMap;
 
 // entities
@@ -666,7 +666,6 @@ static void AddSurface(surfaceBase_t *surf, shader_t *shader, refEntity_t *ent =
 	//?? !ent -- change! (should use fxTime)
 	if (!ent || (ent->worldMatrix && (!shader->dependOnTime || (ent->time == vp.time)) && !shader->dependOnEntity))
 		entNum = ENTITYNUM_WORLD;
-
 	AddSurfaceToPortal(surf, shader, entNum, numDlights);
 }
 
@@ -735,51 +734,50 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 				pl->dlights = NULL;
 				if (pl->dlightMask && pl->shader->lightmapNumber != LIGHTMAP_NONE)
 				{
-					surfDlight_t *sdl;
+					planeDlight_t *sdl;
 					unsigned mask;
 
 					STAT(clock(gl_stats.dlightSurf));
 
-					sdl = pl->dlights = (surfDlight_t*)AllocDynamicMemory(sizeof(surfDlight_t) * MAX_DLIGHTS);
-					if (!sdl) pl->dlightMask = 0;		// easiest way to break the loop below; speed does not matter here
-					for (j = 0, mask = 1, dl = vp.dlights; j < vp.numDlights; j++, dl++, mask <<= 1)
-						if (pl->dlightMask & mask)
-						{
+					sdl = pl->dlights = (planeDlight_t*)AllocDynamicMemory(sizeof(planeDlight_t) * MAX_DLIGHTS);
+					if (sdl)
+					{
+						for (j = 0, mask = 1, dl = vp.dlights; j < vp.numDlights; j++, dl++, mask <<= 1)
+							if (pl->dlightMask & mask)
+							{
 #define CULL_DLIGHT	\
 	{				\
-		pl->dlightMask &= ~mask;	\
+		surf->dlightMask &= ~mask; \
 		continue;	\
 	}
-							CVec3 &dl_org = (e->worldMatrix) ? dl->origin : dl->modelOrg;
-							float dist = pl->plane.DistanceTo(dl_org);
-							if (!gl_dlightBacks->integer && dist < -8) CULL_DLIGHT;
-							if (dist < 0) dist = -dist;
+								CVec3 &dl_org = (e->worldMatrix) ? dl->origin : dl->modelOrg;
+								float dist = pl->plane.DistanceTo(dl_org);
+								if (!gl_dlightBacks->integer && dist < -8) CULL_DLIGHT;
+								if (dist < 0) dist = -dist;
 
-							if (dist >= dl->intensity) CULL_DLIGHT;
-							float rad = dl->intensity * dl->intensity - dist * dist;
-							rad = SQRTFAST(rad);
-							float org0 = dot(dl_org, pl->axis[0]);
-							if (org0 < pl->mins2[0] - rad || org0 > pl->maxs2[0] + rad) CULL_DLIGHT;
-							float org1 = dot(dl_org, pl->axis[1]);
-							if (org1 < pl->mins2[1] - rad || org1 > pl->maxs2[1] + rad) CULL_DLIGHT;
-							// save dlight info
-							sdl->pos[0] = org0;
-							sdl->pos[1] = org1;
-							sdl->radius = rad;
-							sdl->dlight = dl;
-							sdl->axis   = pl->axis;
-							// next dlight
-							numDlights++;
-							sdl++;
+								if (dist >= dl->intensity) CULL_DLIGHT;
+								float rad = dl->intensity * dl->intensity - dist * dist;
+								rad = SQRTFAST(rad);
+								float org0 = dot(dl_org, pl->axis[0]);
+								if (org0 < pl->mins2[0] - rad || org0 > pl->maxs2[0] + rad) CULL_DLIGHT;
+								float org1 = dot(dl_org, pl->axis[1]);
+								if (org1 < pl->mins2[1] - rad || org1 > pl->maxs2[1] + rad) CULL_DLIGHT;
+								// save dlight info
+								sdl->pos[0] = org0;
+								sdl->pos[1] = org1;
+								sdl->radius = rad;
+								sdl->axis   = pl->axis;
+								// next dlight
+								numDlights++;
+								sdl++;
+							}
+						ResizeDynamicMemory(pl->dlights, sizeof(planeDlight_t) * numDlights);
+						if (numDlights)
+						{
+							STAT(gl_stats.dlightSurfs++);
+							STAT(gl_stats.dlightVerts += numDlights * pl->numVerts);
 						}
-					if (pl->dlights)
-						ResizeDynamicMemory(pl->dlights, sizeof(surfDlight_t) * numDlights);
-					if (numDlights)
-					{
-						STAT(gl_stats.dlightSurfs++);
-						STAT(gl_stats.dlightVerts += numDlights * pl->numVerts);
 					}
-
 					STAT(unclock(gl_stats.dlightSurf));
 				}
 				else
@@ -802,7 +800,62 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 						if (TransformedCull(tri->bounds, e) == FRUSTUM_OUTSIDE) CULL_SURF;
 					}
 				}
-				//?? dlights
+				// project dlights
+				numDlights = 0;
+				tri->dlights = NULL;
+				if (tri->dlightMask && tri->shader->lightmapNumber != LIGHTMAP_NONE)
+				{
+					trisurfDlight_t *sdl;
+					unsigned mask;
+
+					STAT(clock(gl_stats.dlightSurf));
+
+					sdl = tri->dlights = (trisurfDlight_t*)AllocDynamicMemory(sizeof(trisurfDlight_t) * MAX_DLIGHTS);
+					if (sdl)
+					{
+						for (j = 0, mask = 1, dl = vp.dlights; j < vp.numDlights; j++, dl++, mask <<= 1)
+							if (tri->dlightMask & mask)
+							{
+								CVec3 &dl_org = (e->worldMatrix) ? dl->origin : dl->modelOrg;
+								// intersect surface bounds with dlight sphere
+								float rad = dl->intensity;
+								if (dl_org[0] - rad > tri->bounds.maxs[0] ||		//!! make separate function: sphere vs box !!
+									dl_org[0] + rad < tri->bounds.mins[0] ||
+									dl_org[1] - rad > tri->bounds.maxs[1] ||
+									dl_org[1] + rad < tri->bounds.mins[1] ||
+									dl_org[2] - rad > tri->bounds.maxs[2] ||
+									dl_org[2] + rad < tri->bounds.mins[2])
+								CULL_DLIGHT;
+#if !TRISURF_DLIGHT_VIEWAXIS
+								// compute axis for dlight projection
+								CVec3	tmp, viewDir;
+								CAxis	axis;										// length, width, depth
+								tri->bounds.GetCenter(tmp);
+								VectorSubtract(dl_org, tmp, axis[0]);				// dlight center -> surface center
+								VectorSubtract(dl_org, vp.view.origin, viewDir);	//?? may be incorrect when surface belongs to model
+								axis[0].NormalizeFast();
+								cross(axis[0], viewDir, axis[1]);
+								axis[1].NormalizeFast();
+								cross(axis[0], axis[1], axis[2]);					// already normalized
+								sdl->axis   = axis;
+#endif
+								// save dlight info
+								sdl->origin = dl_org;
+								sdl->radius = rad;
+								// next dlight
+								numDlights++;
+								sdl++;
+							}
+						if (tri->dlights)
+							ResizeDynamicMemory(tri->dlights, sizeof(trisurfDlight_t) * numDlights);
+						if (numDlights)
+						{
+							STAT(gl_stats.dlightSurfs++);
+							STAT(gl_stats.dlightVerts += numDlights * tri->numVerts);
+						}
+					}
+					STAT(unclock(gl_stats.dlightSurf));
+				}
 			}
 			break;
 
@@ -818,7 +871,12 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 		if (surf->shader->type != SHADERTYPE_SKY)
 		{
 			//!! apply fog
-			if (surf->shader->lightmapNumber == LIGHTMAP_VERTEX) numDlights = 0;	// sort all together
+			// planar surfaces uses here vertex dlights - can remove "dlight count"
+			// field to sort and draw surfaces all together, in single pass
+			if (surf->shader->lightmapNumber == LIGHTMAP_VERTEX &&
+				surf->type == SURFACE_PLANAR)
+				numDlights = 0;
+			// remember surface
 			int entNum = currentEntity;
 			if (entNum != ENTITYNUM_WORLD && e->worldMatrix && !surf->shader->dependOnEntity)
 				entNum = ENTITYNUM_WORLD;
@@ -904,7 +962,7 @@ void inlineModel_t::AddSurfaces(refEntity_t *e)
 		{
 			surf = *psurf;
 			surf->dlightFrame = drawFrame;
-			surf->dlightMask = dlightMask;
+			surf->dlightMask  = dlightMask;
 		}
 	AddBspSurfaces(faces, numFaces, e->frustumMask, e);
 }
@@ -1371,22 +1429,22 @@ static const CBspLeaf *WalkBspTree()
 	const CBspLeaf *firstLeaf = NULL, *lastLeaf = NULL;
 	int drawOrder = 0;
 
-#define PUSH_NODE(n,dl)		\
-	st = &stack[sptr++];	\
-	st->node = n;			\
-	st->frustumMask = frustumMask;	\
-	st->dlightMask = dl;
+#define PUSH_NODE(n,dl)					\
+	st = &stack[sptr++];				\
+	st->node        = n;				\
+	st->frustumMask = frustumMask;		\
+	st->dlightMask  = dl;
 
 	// if sptr == 0 -- whole tree visited
-#define POP_NODE()			\
-	if (!sptr)				\
-		node = NULL;		\
-	else					\
-	{						\
+#define POP_NODE()						\
+	if (!sptr)							\
+		node = NULL;					\
+	else								\
+	{									\
 		st = &stack[--sptr];			\
-		node = st->node;				\
+		node        = st->node;			\
 		frustumMask = st->frustumMask;	\
-		dlightMask = st->dlightMask;	\
+		dlightMask  = st->dlightMask;	\
 	}
 
 	while (node)			// when whole tree visited - node = NULL
@@ -1498,7 +1556,7 @@ static const CBspLeaf *WalkBspTree()
 					if (!(dlightMask & mask)) continue;
 					d = node->plane->DistanceTo(dl->origin);
 					if (d > -dl->intensity) dlight0 |= mask;
-					if (d < dl->intensity) dlight1 |= mask;
+					if (d <  dl->intensity) dlight1 |= mask;
 				}
 			}
 
@@ -1973,7 +2031,7 @@ static void MarkLeaves()
 
 	// determine the vieworg cluster
 	int cluster = CM_FindLeaf(vp.view.origin)->cluster;
-	// if cluster or areamask changed -- re-mark visible leaves
+	// if cluster or zonemask changed -- re-mark visible leaves
 	if (viewCluster == cluster && !forceVisMap) return;
 
 	viewCluster = cluster;
@@ -1996,9 +2054,9 @@ static void MarkLeaves()
 	for (i = 0, l = bspfile.leafs; i < bspfile.numLeafs; i++, l++)
 	{
 		int cl = l->cluster;
-		int ar = l->area;
+		int ar = l->zone;
 #define TEST_BIT(arr,bit)	((arr[bit>>3] >> (bit&7)) & 1)
-		if (TEST_BIT(row,cl) && TEST_BIT(areaMask,ar))
+		if (TEST_BIT(row,cl) && TEST_BIT(zoneMask,ar))
 		{
 			// mark leaf
 			l->ex->visFrame = visFrame;
@@ -2098,8 +2156,10 @@ void AddDlight(dlight_t *dl)
 		appWPrintf("R_AddDlight: MAX_GLDLIGHTS hit\n");
 		return;
 	}
+	if (!dl->intensity) return;
+
 	refDlight_t *out = &gl_dlights[gl_numDlights++];
-	out->origin = dl->origin;
+	out->origin    = dl->origin;
 	out->intensity = dl->intensity;
 	float r = dl->color[0] * gl_config.identityLightValue;
 	float g = dl->color[1] * gl_config.identityLightValue;

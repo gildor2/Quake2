@@ -191,10 +191,11 @@ extern GL_t GL;
 #define QGL_EXT_DRAW_RANGE_ELEMENTS	(1 << 11)
 #define QGL_NV_TEXTURE_RECTANGLE	(1 << 12)
 #define QGL_EXT_TEXTURE_LOD_BIAS	(1 << 13)
+#define QGL_EXT_TEXTURE_EDGE_CLAMP	(1 << 14)
 
 #if _WIN32
 
-#define QWGL_EXT_SWAP_CONTROL	(1 << 14)
+#define QWGL_EXT_SWAP_CONTROL	(1 << 15)
 
 #elif __linux__
 

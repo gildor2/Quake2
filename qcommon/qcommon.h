@@ -769,10 +769,10 @@ bool	CM_CombineTrace(trace_t &trace1, const trace_t &trace2);
 
 const byte *CM_ClusterPVS(int cluster);
 
-void	CM_SetAreaPortalState(int portalnum, bool open);
-bool	CM_AreasConnected(int area1, int area2);
+void	CM_SetZonePortalState(int portalnum, bool open);
+bool	CM_ZonesConnected(int zone1, int zone2);
 
-int		CM_WriteAreaBits(byte *buffer, int area);
+int		CM_WriteZoneBits(byte *buffer, int zone);
 bool	CM_HeadnodeVisible(int headnode, const byte *visbits);
 
 void	CM_WritePortalState(FILE *f);
@@ -882,8 +882,8 @@ void	SV_Frame(float msec);
 -----------------------------------------------------------------------------*/
 
 // from FileFormats.h
-#define MAX_MAP_AREAS			256
-#define	MAX_MAP_AREAPORTALS		1024
+#define MAX_MAP_ZONES			256
+#define	MAX_MAP_ZONEPORTALS		1024
 #define	MAX_MAP_LEAFS			0x20000		// 128k for Q3, 64k for Q2, 8k for Q1
 #define	MAX_MAP_FACES			0x20000 	// 128k for Q3, 64k for Q1/Q2
 

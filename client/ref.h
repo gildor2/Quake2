@@ -153,7 +153,7 @@ struct refdef_t
 	double	time;					// time for shader effects
 	unsigned rdflags;				// RDF_UNDERWATER, etc
 
-	byte	*areabits;				// if not NULL, only areas with set bits will be drawn
+	byte	*zonebits;				// if not NULL, only zones with set bits will be drawn
 
 	int		num_entities;
 	entity_t *entities;

@@ -111,7 +111,10 @@ static void SV_WriteLevelFile()
 	fclose(f);
 
 	Name.sprintf("./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
+
+	guardGame(ge.WriteLevel);
 	ge->WriteLevel(Name);
+	unguardGame;
 }
 
 
@@ -132,7 +135,10 @@ void SV_ReadLevelFile()
 	fclose(f);
 
 	Name.sprintf("./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
+
+	guardGame(ge.ReadLevel)
 	ge->ReadLevel(Name);
+	unguardGame;
 }
 
 
@@ -184,7 +190,10 @@ static void SV_WriteServerFile(bool autosave, const char *dir)
 
 	// write game state
 	Name.sprintf("./%s/" SAVEGAME_DIRECTORY "/%s/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
+
+	guardGame(ge.WriteGame);
 	ge->WriteGame(Name, autosave);
+	unguardGame;
 
 	// perform screenshot
 	if (!DEDICATED)					// can be uninitialized when dedicated server
@@ -238,7 +247,10 @@ static void SV_ReadServerFile()
 
 	// read game state
 	Name.sprintf("./%s/" SAVEGAME_DIRECTORY "/current/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
+
+	guardGame(ge.ReadGame);
 	ge->ReadGame(Name);
+	unguardGame;
 }
 
 
@@ -905,9 +917,9 @@ static void SV_ServerCommand_f(int argc, char **argv)
 	}
 	SV_TokenizeString(Buf);
 
-	guard(ge.ServerCommand);
+	guardGame(ge.ServerCommand);
 	ge->ServerCommand();
-	unguard;
+	unguardGame;
 }
 
 

@@ -205,10 +205,10 @@ static void SV_Begin_f(int argc, char **argv)
 
 	sv_client->state = cs_spawned;
 
-	guard(ge.ClientBegin);
+	guardGame(ge.ClientBegin);
 	// call the game begin function
 	ge->ClientBegin(sv_player);
-	unguard;
+	unguardGame;
 
 	Cbuf_InsertFromDefer();	//!! unpause buffer
 }
@@ -392,10 +392,10 @@ static void SV_ExecuteUserCommand(const char *s)
 	sv_player = sv_client->edict;
 	if (!ExecuteCommand(s, ARRAY_ARG(ucmds)) && sv.state == ss_game)
 	{
-		guard(ge.ClientCommand);
 		SV_TokenizeString(s);
+		guardGame(ge.ClientCommand);
 		ge->ClientCommand(sv_player);
-		unguardf(("cmd=%s", s));
+		unguardfGame(("cmd=%s", s));
 	}
 
 	unguard;
@@ -421,9 +421,9 @@ void SV_ClientThink(client_t *cl, usercmd_t *cmd)
 		return;
 	}
 
-	guard(ge.ClientThink);
+	guardGame(ge.ClientThink);
 	ge->ClientThink(cl->edict, cmd);
-	unguard;
+	unguardGame;
 }
 
 

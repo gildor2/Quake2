@@ -19,7 +19,7 @@
 class COutputDeviceCon : public COutputDevice
 {
 public:
-	void Write(const char *str)
+	virtual void Write(const char *str)
 	{
 		HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE); // fast function ...
 		while (char c = *str++)
@@ -52,7 +52,7 @@ public:
 		setbuf(stdout, NULL);						// disable buffering; required for cygwin, when connected to remote terminal
 	}
 #endif
-	void Write(const char *str)
+	virtual void Write(const char *str)
 	{
 		byte color = 0;
 		// draw message

@@ -64,7 +64,7 @@ static void SV_FatPVS(const CVec3 &org)
 }
 
 
-// Decides which entities are going to be visible to the client, and copies off the playerstat and areabits.
+// Decides which entities are going to be visible to the client, and copies off the playerstat and zonebits.
 static void SV_BuildClientFrame(client_t *client, const client_frame_t *oldframe)
 {
 	guard(SV_BuildClientFrame);
@@ -84,10 +84,10 @@ static void SV_BuildClientFrame(client_t *client, const client_frame_t *oldframe
 	for (i = 0; i < 3; i++)
 		org[i] = cl_ent->client->ps.pmove.origin[i]*0.125f + cl_ent->client->ps.viewoffset[i];
 
-	int clientarea = CM_FindLeaf(org)->area;
+	int clientzone = CM_FindLeaf(org)->zone;
 
-	// calculate the visible areas
-	frame->areabytes = CM_WriteAreaBits(frame->areabits, clientarea);
+	// calculate the visible zones
+	frame->zonebytes = CM_WriteZoneBits(frame->zonebits, clientzone);
 
 	// grab the current player_state_t
 	frame->ps = cl_ent->client->ps;
@@ -113,11 +113,11 @@ static void SV_BuildClientFrame(client_t *client, const client_frame_t *oldframe
 		// ignore if not touching a PV leaf
 		if (ent != cl_ent)
 		{
-			// check area
-			if (!CM_AreasConnected(clientarea, ent->areanum))
-			{	// doors can legally straddle two areas, so
+			// check zone
+			if (!CM_ZonesConnected(clientzone, ent->zonenum))
+			{	// doors can legally straddle two zones, so
 				// we may need to check another one
-				if (!ent->areanum2 || !CM_AreasConnected(clientarea, ent->areanum2))
+				if (!ent->zonenum2 || !CM_ZonesConnected(clientzone, ent->zonenum2))
 					continue;		// blocked by a door
 			}
 
@@ -147,6 +147,9 @@ static void SV_BuildClientFrame(client_t *client, const client_frame_t *oldframe
 					if (i == ent->num_clusters)
 						continue;		// not visible
 				}
+				//??????
+				if (!ent->s.modelindex && VectorDistance(org, ent->s.origin) > 400)
+					continue;
 			}
 		}
 
@@ -193,6 +196,7 @@ static void SV_BuildClientFrame(client_t *client, const client_frame_t *oldframe
 				SV_ComputeAnimation(&ent->client->ps, state, oldent, ent);
 		}
 
+#if MAX_DEBUG
 		if (sv_labels->integer)
 		{
 			const char *modelname = "";
@@ -221,6 +225,7 @@ static void SV_BuildClientFrame(client_t *client, const client_frame_t *oldframe
 				SV_DrawText3D(org, va("ent: %d cl: %04X\nframe: %d\nmdl: %s",
 					e, state.skinnum, state.frame, modelname), RGB(1,0,0));
 		}
+#endif
 #if 0
 		if (ent->client)
 			SV_DrawText3D(state.origin, va("pm.flags: %X\norg: %d %d %d\nvel: %d %d %d",
@@ -344,9 +349,9 @@ void SV_WriteFrameToClient(client_t *client, sizebuf_t *msg)
 	MSG_WriteByte(msg, client->surpressCount);	// rate dropped packets
 	client->surpressCount = 0;
 
-	// send over the areabits
-	MSG_WriteByte(msg, frame->areabytes);
-	msg->Write(frame->areabits, frame->areabytes);
+	// send over the zonebits
+	MSG_WriteByte(msg, frame->zonebytes);
+	msg->Write(frame->zonebits, frame->zonebytes);
 
 	// delta encode the playerstate
 	MSG_WriteByte(msg, svc_playerinfo);

@@ -264,8 +264,8 @@ struct dBsp2Hdr_t
 		LUMP_BRUSHES,				// dBsp2Brush_t[]
 		LUMP_BRUSHSIDES,			// dBsp2Brushside_t[]
 		LUMP_POP,					// ?
-		LUMP_AREAS,					// dArea_t[]
-		LUMP_AREAPORTALS,			// dAreaPortal_t[]
+		LUMP_ZONES,					// dZone_t[] (original: LUMP_AREAS)
+		LUMP_ZONEPORTALS,			// dZonePortal_t[] (original: LUMP_AREAPORTALS)
 
 		LUMP_COUNT					// should be last
 	};
@@ -310,7 +310,7 @@ struct dBsp2Leaf_t
 	unsigned contents;				// OR of all brushes (not needed?)
 
 	short	cluster;
-	short	area;
+	short	zone;
 
 	short	mins[3], maxs[3];		// for frustum culling
 
@@ -381,19 +381,19 @@ struct dBsp2Vis_t
 	int		bitOfs[8][2];			// bitOfs[numClusters][2]
 };
 
-// each area has a list of portals that lead into other areas
-// when portals are closed, other areas may not be visible or
+// each zone has a list of portals that lead into other zones
+// when portals are closed, other zones may not be visible or
 // hearable even if the vis info says that it should be
-struct dAreaPortal_t
+struct dZonePortal_t
 {
 	int		portalNum;
-	int		otherArea;
+	int		otherZone;
 };
 
-struct dArea_t
+struct dZone_t
 {
-	int		numAreaPortals;
-	int		firstAreaPortal;
+	int		numZonePortals;
+	int		firstZonePortal;
 };
 
 
@@ -606,7 +606,7 @@ struct dBsp3Node_t
 struct dBsp3Leaf_t
 {
 	int		cluster;
-	int		area;
+	int		zone;
 
 	int		mins[3], maxs[3];		// for frustum culling
 
@@ -632,7 +632,7 @@ struct dBsp3Face_t
 	};
 
 	int		shaderNum;
-	int		fogNum;
+	int		fogNum;					// 255 = no fog
 	int		surfaceType;			// value from enum above
 	int		firstVert, numVerts;
 	int		firstIndex, numIndexes;
@@ -669,8 +669,8 @@ struct dBsp3Vert_t
 struct dBsp3Fog_t
 {
 	char	name[MAX_QPATH];		// shader name
-	int		brushNum;
-	int		visibleSide;			// -1 == none
+	int		brushNum;				// brush, describing fog volume
+	int		visibleSide;			// -1 == none; brush side index
 };
 
 // the visibility lump consists of a header with a count, then the raw compressed bit vectors

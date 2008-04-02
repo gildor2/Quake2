@@ -118,11 +118,11 @@ void SV_Multicast(const CVec3 &origin, multicast_t to, bool oldclients)
 {
 	guard(SV_Multicast);
 
-	int area1;
+	int zone1;
 	if (to != MULTICAST_ALL_R && to != MULTICAST_ALL)
-		area1 = CM_FindLeaf(origin)->area;
+		zone1 = CM_FindLeaf(origin)->zone;
 	else
-		area1 = -1;
+		zone1 = -1;
 
 	// if doing a serverrecord, store everything
 	if (svs.wdemofile)
@@ -171,12 +171,12 @@ void SV_Multicast(const CVec3 &origin, multicast_t to, bool oldclients)
 
 		sizebuf_t *buf = (client->newprotocol) ? newBuf : &sv.multicast;
 
-		if (area1 != -1)
+		if (zone1 != -1)
 		{
 			const CBspLeaf *leaf = CM_FindLeaf(client->edict->s.origin);
 			int cluster = leaf->cluster;
-			int area2   = leaf->area;
-			if (!CM_AreasConnected(area1, area2)) continue;
+			int zone2   = leaf->zone;
+			if (!CM_ZonesConnected(zone1, zone2)) continue;
 			if (pvs)
 			{
 				if (!( pvs[cluster>>3] & (1<<(cluster&7)) ))

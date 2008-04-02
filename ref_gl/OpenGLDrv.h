@@ -127,7 +127,7 @@ extern const unsigned colorTable[];		// C_XXX->rgba; used for DrawChar() and Dra
 
 
 /* What we can do: (??)
- * - client should establish more control under refdef (detect viewcluster changes, areamask changes etc)
+ * - client should establish more control under refdef (detect viewcluster changes, zonemask changes etc)
  * - portals/mirrors: we needs a way to keep few visibility marks for leafs ? (useless -- can't find a point
  *    of view source in common case (all reflections), when it will come from "inside wall" ?)
  *    -- use occlusion culling for mirrors ? (OR in most cases of Q3 portals (not mirrors), can use PVS - portals

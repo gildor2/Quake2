@@ -29,8 +29,14 @@ void CL_CheckPredictionError()
 {
 	guard(CL_CheckPredictionError);
 
-	if (!cl_predict->integer || (cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION) || cl.attractloop)
+	if (!cl_predict->integer || (cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION) ||
+		cl.attractloop || cl_paused->integer)
 		return;
+	// Note: when paused, explicitly disabling prediction. Reason: when pausing in deathmatch
+	// mode (i.e. when client stopped, but server is running - with cheats, of course)
+	// server will send new frames for client (with the same content), but client will
+	// compare predicted/unpredicted origin as if it is running, and will cause
+	// prediction_error != 0 (but should be 0).
 
 	// calculate the last usercmd_t we sent that the server has processed
 	int frame = cls.netchan.incoming_acknowledged & (CMD_BACKUP-1);
@@ -47,7 +53,7 @@ void CL_CheckPredictionError()
 	}
 	else
 	{
-		// save for error itnerpolation
+		// save for error interpolation
 		for (int i = 0; i < 3; i++)
 			cl.prediction_error[i] = delta[i] * 0.125f;
 

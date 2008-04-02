@@ -28,7 +28,7 @@
 * 9) nopicmip
 * 10) polygonOffset
 * 11) entityMergable              -- ignored (have internal mechanist for efficient sprite combining)
-  12) fogParms ( <r> <g> <b> ) <dist_to_opaque>
+* 12) fogParms ( <r> <g> <b> ) <dist_to_opaque>
   13) portal		          -- set SORT_PORTAL
 * 14) skyparms <farbox|-> <cloud height> <nearbox|->  -- nearbox unsupported (not supported in q3 too)
 * 15) light		          -- ignore

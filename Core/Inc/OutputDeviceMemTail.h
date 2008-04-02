@@ -36,7 +36,7 @@ public:
 		}
 		return buffer;
 	}
-	void Write(const char *str)
+	virtual void Write(const char *str)
 	{
 		int len = strlen(str);
 		if (len > size - 1)

@@ -198,7 +198,6 @@ COLORS (SATURATE/OVERBRIGHT):
   !!! BUG !!! OpenGL fog works incorrect with multi-pass rendering (needs special fog rendering pass; will be separate pass -
     cannot be added to multipass shader)
   ? reading parms from file (model.c)
-  - gl_fog cvar
   ? controlling from console (color, depth)
   ? should not be affected by fog (check it!): flares
   ! if fogDens > LIMIT -> sky = defaultSky, its color = fogColor
@@ -303,13 +302,12 @@ FOR GAME:
 -------------------------------------------------------------------------------
 
 - portals
-- fog
 - curved surfaces
 ? fonts (Q3 format: font.tga+font.dat) -- Q3 uses this for Q3TA; may be migrated to Q3 UI interface
 ? image formats: bmp, pcx32 (using OWN palette instead of colormap)
 - finish shader support:
   - deform normal
-  - fogParms, portal
+  - portal
   - detail (?)
   - videomap
   - tcmod entityTranslate (?)

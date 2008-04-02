@@ -24,20 +24,19 @@ COMBINER BUGS:
       ok (lightmap is too bright?)
     - fullscreen (have gamma overbright): everything ok
 ---------------------------------------------------------------------------------------------------
-areaportals (q2,q3):
-- rename "areas" to "zones" (check UT)
+zoneportals (q2,q3):
 ! can clip visible contents with portal:
   a) no portals open - draw nothing (q2 does)
   b) 1 portal open   - compute special fructum for it (should improve performance)
   c) 2+ portals open - draw everything (q2/q3 does) or expand computed frustum by all portals
 ! Q2 portal game code is completely different from Q3 one, so, Q3 map portals will be "invisible"
   for Q2 game dll -- require server-side hook (or create func_areaportal entity?)
-* info: Q3A areabits computed in SV_AddEntitiesVisibleFromPoint()
-! this will require geometric information about area portal (model, surface, bbox etc)
-* Q2: a) door.target.class == "func_areaportal" -> open areaportal #target.style
+* info: Q3A zonebits computed in SV_AddEntitiesVisibleFromPoint()
+! this will require geometric information about zone portal (model, surface, bbox etc)
+* Q2: a) door.target.class == "func_areaportal" -> open zoneportal #target.style
          (check door_use_areaportals() in game code)
       b) standalone func_areaportal (used with doors only?) - check Use_Areaportal()
-* Q3: when moving entity touched 2 areas, then when entity is in original state, portal will be
+* Q3: when moving entity touched 2 zones, then when entity is in original state, portal will be
   closed, otherwise portal will be opened
 ---------------------------------------------------------------------------------------------------
 shader lighting:

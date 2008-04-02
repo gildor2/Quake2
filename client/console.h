@@ -28,7 +28,7 @@ public:
 		// ... but unregister automatically
 		Unregister();
 	}
-	void Write(const char *str);
+	virtual void Write(const char *str);
 };
 
 

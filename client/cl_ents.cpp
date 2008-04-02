@@ -288,9 +288,9 @@ void CL_ParseFrame()
 		cl.ftime = cl.time / 1000.0f;
 	}
 
-	// read areabits
+	// read zonebits
 	int len = MSG_ReadByte(&net_message);
-	MSG_ReadData(&net_message, &cl.frame.areabits, len);
+	MSG_ReadData(&net_message, &cl.frame.zonebits, len);
 
 	// read playerinfo
 	int cmd = MSG_ReadByte(&net_message);

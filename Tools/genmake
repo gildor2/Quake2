@@ -256,6 +256,9 @@ sub CheckCondition {
 	} else {
 		Error ("unknown if... directive: $cmd");
 	}
+	if (!$cond) {
+		$cond = 0;
+	}
 	return $cond;
 }
 
@@ -902,7 +905,9 @@ sub FlushObjectFile {
 		if ($srcType eq "asm") {
 			$line = "nasm.exe -f win32 -i $srcDir -o \"$objFile\"";
 		} elsif ($srcType eq "rc") {
-			$line = "rc.exe -l 0x409 -i $srcDir -fo\"$objFile\" -dNDEBUG";
+			my $inc = "";
+			$inc = " ".GenerateOptions ($includes, "-I ") if $includes ne "";
+			$line = "rc.exe -l 0x409 -i $srcDir$inc -fo\"$objFile\" -dNDEBUG";
 		} else {
 			# C/C++ file
 			my $crt = GetSrcOption ("LIBC");

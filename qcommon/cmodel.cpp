@@ -2,7 +2,7 @@
   - add functions:
 	- CM_BoxClusters(CBox&, dst) -- BoxLeafnums()+LeafCluster()+compress list (no duplicated clusters) -- used few times in server
 	- CM_BoxPVS(CBox&, dst) -- have SV_FatPVS() func; may be useful for renderer too
-	? CM_InPVS(pos1, pos2) -- have func in sv_game.cpp (uses PVS + areas)
+	? CM_InPVS(pos1, pos2) -- have func in sv_game.cpp (uses PVS + zones)
   - can create abstract CMapLoader with "virtual Load()" - it will check map format and load when supported
     (similar to CFileContainerArc ?)
   ! most Load*() functions have arguments, which can be used directly from bspfile struc
@@ -59,13 +59,13 @@ struct cbrush_t
 	int		traceFrame;					// to avoid repeated testings
 };
 
-struct carea_t
+struct czone_t
 {
 	// info from bsp file
-	int		numAreaPortals;
-	int		firstAreaPortal;
+	int		numZonePortals;
+	int		firstZonePortal;
 	// dynamic info
-	int		floodnum;					// if two areas have equal floodnums, they are connected
+	int		floodnum;					// if two zones have equal floodnums, they are connected
 	int		floodvalid;
 };
 
@@ -86,24 +86,24 @@ static surfBounds_t *map_faceBounds;	// [numFaces]; for Q1/HL maps trace
 static int		numBrushes;
 static cbrush_t	*map_brushes;
 
-static int		numAreas;
-static carea_t	*map_areas;
+static int		numZones;
+static czone_t	*map_zones;
 
-static int		numareaportals;
-static dAreaPortal_t *map_areaportals;
+static int		numzoneportals;
+static dZonePortal_t *map_zoneportals;
 
 static csurface_t nullsurface;
 
 static int		floodvalid;
 
-static bool		portalopen[MAX_MAP_AREAPORTALS];
+static bool		portalopen[MAX_MAP_ZONEPORTALS];
 
 
-static cvar_t	*map_noareas;
+static cvar_t	*map_noZones;
 
 // forwards
 static void InitBoxHull();
-static void FloodAreaConnections();
+static void FloodZoneConnections();
 
 
 
@@ -376,7 +376,7 @@ static void LoadLeafs2(dBsp2Leaf_t *data, int size)
 		out->num       = i;
 		out->contents  = data->contents;
 		out->cluster   = data->cluster;
-		out->area      = data->area;
+		out->zone      = data->zone;
 		out->firstFace = data->firstleafface;
 		out->numFaces  = data->numleaffaces;
 		for (int j = 0; j < 3; j++)
@@ -406,26 +406,26 @@ static void LoadPlanes2(dBsp2Plane_t *data, int size)
 }
 
 
-static void LoadAreas(dArea_t *data, int size)
+static void LoadZones(dZone_t *data, int size)
 {
-	carea_t *out;
-	out = map_areas = new (dataChain) carea_t [size];
-	numAreas = size;
+	czone_t *out;
+	out = map_zones = new (dataChain) czone_t [size];
+	numZones = size;
 
 	for (int i = 0; i < size; i++, data++, out++)
 	{
-		out->numAreaPortals  = data->numAreaPortals;
-		out->firstAreaPortal = data->firstAreaPortal;
+		out->numZonePortals  = data->numZonePortals;
+		out->firstZonePortal = data->firstZonePortal;
 		out->floodvalid      = 0;
 		out->floodnum        = 0;
 	}
 }
 
 
-inline void LoadAreaPortals(dAreaPortal_t *data, int size)
+inline void LoadZonePortals(dZonePortal_t *data, int size)
 {
-	numareaportals  = size;
-	map_areaportals = data;
+	numzoneportals  = size;
+	map_zoneportals = data;
 }
 
 
@@ -437,8 +437,8 @@ static void LoadQ2Map(bspfile_t *bsp)
 	LoadLeafs2(bsp->leafs2, bsp->numLeafs);
 	LoadNodes(bsp->nodes2, bsp->numNodes);
 	LoadLeafBrushes(bsp->leafbrushes2, bsp->numLeafbrushes, bsp->leafs2);
-	LoadAreas(bsp->areas, bsp->numAreas);
-	LoadAreaPortals(bsp->areaportals, bsp->numAreaportals);
+	LoadZones(bsp->zones, bsp->numZones);
+	LoadZonePortals(bsp->zonePortals, bsp->numZonePortals);
 	LoadSubmodels(bsp->models2, bsp->numModels);
 }
 
@@ -651,7 +651,7 @@ static void LoadLeafs1(dBsp1Leaf_t *data, int size)
 		out->isLeaf     = true;
 		out->num        = i;
 		out->contents   = q1Contents[-in->contents - 1];	// -1 => 0, -2 => 1 ...
-		out->area       = 0;
+		out->zone       = 0;
 		out->numBrushes = 0;
 		// texture info (here for trace)
 		out->firstFace  = in->firstleafface;
@@ -680,7 +680,7 @@ static void LoadLeafs1(dBsp1Leaf_t *data, int size)
 		out->isLeaf     = true;
 		out->num        = size+i;
 		out->contents   = CONTENTS_SOLID;
-		out->area       = 0;
+		out->zone       = 0;
 		out->numBrushes = 0;			// will be set to 1 later
 		out->cluster    = -1;
 	}
@@ -957,14 +957,14 @@ static void LoadQ1Map(bspfile_t *bsp)
 	BuildBrushes1(numLeafsOrig);
 	LoadFaces1(bsp->faces2, bsp->numFaces);
 
-	// Q1 areas: simulate loading (create 1 area)
-	map_areas = new (dataChain) carea_t;
-	numAreas  = 1;
-//	map_areas[0].numAreaPortals  = 0;
-//	map_areas[0].firstAreaPortal = 0;
-//	map_areas[0].floodvalid      = 0;
-//	map_areas[0].floodnum        = 0;
-	numareaportals = 0;
+	// Q1 zones: simulate loading (create 1 zone)
+	map_zones = new (dataChain) czone_t;
+	numZones  = 1;
+//	map_zones[0].numZonePortals  = 0;
+//	map_zones[0].firstZonePortal = 0;
+//	map_zones[0].floodvalid      = 0;
+//	map_zones[0].floodnum        = 0;
+	numzoneportals = 0;
 
 	ProcessModels1();
 }
@@ -1057,7 +1057,7 @@ static void LoadLeafs3(dBsp3Leaf_t *data, int size)
 		if (i >= size) continue;
 
 		out->cluster   = data->cluster;
-		out->area      = 0;			//?? data->area -- q3 areas too different from q2
+		out->zone      = 0;			//?? data->zone -- q3 zones too different from q2
 		out->firstFace = data->firstleafface;
 		out->numFaces  = data->numleaffaces;
 		for (int j = 0; j < 3; j++)
@@ -1210,12 +1210,12 @@ static void LoadQ3Map(bspfile_t *bsp)
 	ComputeLeafContents3();
 //	ShowModels();
 
-//!!	LoadAreas(bsp->areas, bsp->numAreas);
-//!!	LoadAreaPortals(bsp->areaportals, bsp->numAreaportals);
-	// Q3 areas: simulate loading (create 1 area)
-	map_areas = new (dataChain) carea_t;
-	numAreas  = 1;
-	numareaportals = 0;
+//!!	LoadZones(bsp->zones, bsp->numZones);
+//!!	LoadZonePortals(bsp->zoneportals, bsp->numZonePortals);
+	// Q3 zones: simulate loading (create 1 zone)
+	map_zones = new (dataChain) czone_t;
+	numZones  = 1;
+	numzoneportals = 0;
 }
 
 
@@ -1228,7 +1228,7 @@ CBspModel *CM_LoadMap(const char *name, bool clientload, unsigned *checksum)
 {
 	guard(CM_LoadMap);
 
-	map_noareas = Cvar_Get("map_noareas", "0");
+	map_noZones = Cvar_Get("map_noZones", "0");
 
 	//!! NOTE about "flushmap": should be synced with flushmap in LoadBspFile(): some
 	//!!   functions in cmodel.cpp will modify base fields in "bspfile", and CM_* functions
@@ -1240,7 +1240,7 @@ CBspModel *CM_LoadMap(const char *name, bool clientload, unsigned *checksum)
 		if (!clientload)
 		{
 			memset(portalopen, 0, sizeof(portalopen));
-			FloodAreaConnections();
+			FloodZoneConnections();
 		}
 		bspfile.clientLoaded |= clientload;
 		return &bspfile.models[0];
@@ -1253,7 +1253,7 @@ CBspModel *CM_LoadMap(const char *name, bool clientload, unsigned *checksum)
 
 	if (!name || !name[0])
 	{
-		numAreas  = 0;
+		numZones  = 0;
 		if (checksum) *checksum = 0;
 		memset(&bspfile, 0, sizeof(bspfile));
 		return &bspfile.models[0];			// cinematic servers won't have anything at all
@@ -1293,7 +1293,7 @@ CBspModel *CM_LoadMap(const char *name, bool clientload, unsigned *checksum)
 	bsp->entStr = ProcessEntstring(bsp->entStr);
 
 	memset(portalopen, 0, sizeof(portalopen));
-	FloodAreaConnections();
+	FloodZoneConnections();
 	InitBoxHull();
 
 	return &bspfile.models[0];
@@ -1860,6 +1860,7 @@ static void FindSurface1(const CBspLeaf &leaf, float p1f, float p2f)
 		int s2 = IsNegative(d2);
 		if (s1 != face.side) continue;		// 'start' placed on a back side of surface => skip surface
 		if (s1 == s2) continue;				// start/end on the same side of plane
+		if (d1 == d2) continue;				// this can be when d1==+0.0 and d2==-0.0 (computed on FPU)
 		if (face.side)
 		{
 			FNegate(d1);
@@ -2364,7 +2365,8 @@ static void RecursiveBrushTest(const CVec3 &point1, const CVec3 &point2, const C
 
 		int s1, s2;
 		s1 = IsNegative(d1); s2 = IsNegative(d2);
-		if (s1 == s2)
+		if (s1 == s2 ||
+			d1 == d2)						// this can be when d1==+0.0 and d2==-0.0 (computed on FPU)
 		{
 			node = node->children[s1];		// d1 >= 0  => [0], < 0  => [1]
 			continue;
@@ -2480,64 +2482,64 @@ const byte *CM_ClusterPVS(int cluster)
 
 
 /*-----------------------------------------------------------------------------
-	Areaportals
+	ZonePortals
 -----------------------------------------------------------------------------*/
 
-static void FloodArea_r(carea_t *area, int floodnum)
+static void FloodZone_r(czone_t *zone, int floodnum)
 {
-	if (area->floodvalid == floodvalid)
+	if (zone->floodvalid == floodvalid)
 	{
-		if (area->floodnum == floodnum)
+		if (zone->floodnum == floodnum)
 			return;
-		Com_DropError("FloodArea_r: reflooded");
+		Com_DropError("FloodZone_r: reflooded");
 	}
 
-	area->floodnum   = floodnum;
-	area->floodvalid = floodvalid;
-	dAreaPortal_t *p = &map_areaportals[area->firstAreaPortal];
-	for (int i = 0; i < area->numAreaPortals; i++, p++)
+	zone->floodnum   = floodnum;
+	zone->floodvalid = floodvalid;
+	dZonePortal_t *p = &map_zoneportals[zone->firstZonePortal];
+	for (int i = 0; i < zone->numZonePortals; i++, p++)
 	{
 		if (portalopen[p->portalNum])
-			FloodArea_r(&map_areas[p->otherArea], floodnum);
+			FloodZone_r(&map_zones[p->otherZone], floodnum);
 	}
 }
 
-static void FloodAreaConnections()
+static void FloodZoneConnections()
 {
 	// all current floods are now invalid
 	floodvalid++;
 	int floodnum = 0;
 
-	// area 0 is not used
-	for (int i = 1; i < numAreas; i++)
+	// zone 0 is not used
+	for (int i = 1; i < numZones; i++)
 	{
-		carea_t *area = &map_areas[i];
-		if (area->floodvalid == floodvalid)
+		czone_t *zone = &map_zones[i];
+		if (zone->floodvalid == floodvalid)
 			continue;		// already flooded into
 		floodnum++;
-		FloodArea_r(area, floodnum);
+		FloodZone_r(zone, floodnum);
 	}
 }
 
-void CM_SetAreaPortalState(int portalnum, bool open)
+void CM_SetZonePortalState(int portalnum, bool open)
 {
-	if (portalnum > numareaportals)
-		Com_DropError("areaportal > numareaportals");
+	if (portalnum > numzoneportals)
+		Com_DropError("zoneportal > numzoneportals");
 
 	portalopen[portalnum] = open;
-	FloodAreaConnections();
+	FloodZoneConnections();
 }
 
 // used by game dll
-bool CM_AreasConnected(int area1, int area2)
+bool CM_ZonesConnected(int zone1, int zone2)
 {
-	if (map_noareas->integer)
+	if (map_noZones->integer)
 		return true;
 
-	if (area1 > numAreas || area2 > numAreas)
-		Com_DropError("area > numAreas");
+	if (zone1 > numZones || zone2 > numZones)
+		Com_DropError("zone > numZones");
 
-	if (map_areas[area1].floodnum == map_areas[area2].floodnum)
+	if (map_zones[zone1].floodnum == map_zones[zone2].floodnum)
 		return true;
 	return false;
 }
@@ -2546,20 +2548,20 @@ bool CM_AreasConnected(int area1, int area2)
 //?? can move CM_Write... CM_Read... functions to server
 /*
 =================
-CM_WriteAreaBits
+CM_WriteZoneBits
 
-Writes a bit vector of all the areas
-that area in the same flood as the area parameter
+Writes a bit vector of all the zones
+that zone in the same flood as the zone parameter
 Returns the number of bytes needed to hold all the bits.
 
 This is used by the renderer to cull visibility
 =================
 */
-int CM_WriteAreaBits(byte *buffer, int area)
+int CM_WriteZoneBits(byte *buffer, int zone)
 {
-	int bytes = (numAreas + 7) >> 3;
+	int bytes = (numZones + 7) >> 3;
 
-	if (map_noareas->integer)
+	if (map_noZones->integer)
 	{	// for debugging, send everything
 		memset(buffer, 255, bytes);
 	}
@@ -2567,10 +2569,10 @@ int CM_WriteAreaBits(byte *buffer, int area)
 	{
 		memset(buffer, 0, bytes);
 
-		int floodnum = map_areas[area].floodnum;
-		for (int i = 0; i < numAreas; i++)
+		int floodnum = map_zones[zone].floodnum;
+		for (int i = 0; i < numZones; i++)
 		{
-			if (map_areas[i].floodnum == floodnum || !area)
+			if (map_zones[i].floodnum == floodnum || !zone)
 				buffer[i >> 3] |= 1 << (i & 7);
 		}
 	}
@@ -2586,11 +2588,11 @@ void CM_WritePortalState(FILE *f)
 }
 
 
-// Reads the portal state from a savegame file and recalculates the area connections
+// Reads the portal state from a savegame file and recalculates the zone connections
 void CM_ReadPortalState(FILE *f)
 {
 	fread(portalopen, sizeof(portalopen), 1, f);
-	FloodAreaConnections();
+	FloodZoneConnections();
 }
 
 /*

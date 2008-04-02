@@ -142,23 +142,23 @@ struct tcModParms_t
 	tcModType_t type;
 	union {
 		struct {	// TCMOD_ROTATE
-			float	rotateSpeed;
+			float		rotateSpeed;
 		};
 		struct {	// TCMOD_SCROLL
-			float	sSpeed, tSpeed;
+			float		sSpeed, tSpeed;
 		};
 		struct {	// TCMOD_OFFSET
-			float	sOffset, tOffset;
+			float		sOffset, tOffset;
 		};
 		struct {	// TCMOD_SCALE
-			float	sScale, tScale;
+			float		sScale, tScale;
 		};
 		struct {	// TCMOD_STRETCH, TCMOD_TURB (type=sin)
 			waveParams_t wave;
 		};
 		struct {	// TCMOD_TRANSFORM
-			float	m[2][2];
-			float	t[2];
+			float		m[2][2];
+			float		t[2];
 		};
 	};
 };
@@ -169,14 +169,14 @@ struct deformParms_t
 	union {
 		struct {	// DEFORM_WAVE
 			waveParams_t wave;
-			float	waveDiv;			// additional parameter for wave func
+			float		waveDiv;		// additional parameter for wave func
 		};
 		struct {	// DEFORM_BULGE
-			float	bulgeWidth, bulgeHeight, bulgeSpeed;
+			float		bulgeWidth, bulgeHeight, bulgeSpeed;
 		};
 		struct {	// DEFORM_MOVE
 			waveParams_t moveWave;
-			CVec3	move;
+			CVec3		move;
 		};
 	};
 };
@@ -185,32 +185,32 @@ struct deformParms_t
 struct shaderStage_t
 {
 	// GL_State ...
-	unsigned glState;
+	unsigned	glState;
 
-	bool	isLightmap:1;
-//	bool	detail:1;				//?? true is stage is detail (unused ??)
+	bool		isLightmap:1;
+//	bool		detail:1;			//?? true is stage is detail (unused ??)
 
 	/*---------------- RGBA params ----------------*/
-	color_t	rgbaConst;				// if RGBGEN_CONST or ALPHAGEN_CONST
+	color_t		rgbaConst;			// if RGBGEN_CONST or ALPHAGEN_CONST
 	// rgbGen params
 	rgbGenType_t rgbGenType;
 	waveParams_t rgbGenWave;		// if RGBGEN_WAVE
 	// alphaGen params
 	alphaGenType_t alphaGenType;
 	waveParams_t alphaGenWave;		// if ALPHAGEN_WAVE
-	float	alphaMin, alphaMax;		// if ALPHAGEN_[ONE_MINUS_]DOT
-	float	alphaPortalRange;		// if ALPHAGEN_PORTAL
+	float		alphaMin, alphaMax;	// if ALPHAGEN_[ONE_MINUS_]DOT
+	float		alphaPortalRange;	// if ALPHAGEN_PORTAL
 	/*--------------- texture params --------------*/
 	// tcGen params
-	tcGenType_t tcGenType;
-	CVec3	tcGenVec[2];			// for TCGEN_VECTOR
+	tcGenType_t	tcGenType;
+	CVec3		tcGenVec[2];		// for TCGEN_VECTOR
 	// tcMod params
-	int		numTcMods;
+	int			numTcMods;
 	tcModParms_t *tcModParms;
 	// images: variable length
-	int		numAnimTextures;		// in range [1..MAX_STAGE_TEXTURES]; FinishShader(): if 0 -- ignore stage (and treat previous as last)
-	float	animMapFreq;			// valid only when numAnimTextures > 1 && (frameFromEntity == false || model = WORLD)
-	bool	frameFromEntity;
+	int			numAnimTextures;	// in range [1..MAX_STAGE_TEXTURES]; FinishShader(): if 0 -- ignore stage (and treat previous as last)
+	float		animMapFreq;		// valid only when numAnimTextures > 1 && (frameFromEntity == false || model = WORLD)
+	bool		frameFromEntity;
 	const image_t *mapImage[1];
 };
 
@@ -231,72 +231,72 @@ enum shaderType_t			//?? change this
 class shader_t : public CBasicImage
 {
 public:
-	int		lightmapNumber;
+	int			lightmapNumber;
 	union {
-		byte	lightStyles[4];	// 0 - unused; can be 1..31
+		byte	lightStyles[4];		// 0 - unused; can be 1..31
 		unsigned lightStyles_i;
 	};
-	bool	fastStylesOnly;		// when true, surfaces with this shader will not have static lightmaps (dark)
-	int		sortIndex;
-	int		sortParam;			// values from sortParam_t
-	int		sortParam2;			// secondary sort values (main image, lightmap num etc.)
+	bool		fastStylesOnly;		// when true, surfaces with this shader will not have static lightmaps (dark)
+	int			sortIndex;
+	int			sortParam;			// values from sortParam_t
+	int			sortParam2;			// secondary sort values (main image, lightmap num etc.)
 
-	unsigned style;				// SHADER_XXX
-	float	tessSize;			// used for warp surface subdivision
+	unsigned	style;				// SHADER_XXX
+	float		tessSize;			// used for warp surface subdivision
 
 	gl_cullMode_t cullMode;
 
-	bool	scripted:1;
-	bool	bad:1;				// errors in script or no map image found (for auto-generated shader)
-	bool	dependOnEntity:1;	// when false, surface may be mixed with surfaces from different entities
-	bool	dependOnTime:1;		// when false, can mix surfaces from entities with different effect time
-	bool	noDraw:1;			// when true, do not draw this surfaces with this shader
+	bool		scripted:1;
+	bool		bad:1;				// errors in script or no map image found (for auto-generated shader)
+	bool		dependOnEntity:1;	// when false, surface may be mixed with surfaces from different entities
+	bool		dependOnTime:1;		// when false, can mix surfaces from entities with different effect time
+	bool		noDraw:1;			// when true, do not draw this surfaces with this shader
 
-	bool	usePolygonOffset:1;
+	bool		usePolygonOffset:1;
 
-	byte	numDeforms;
+	byte		numDeforms;
 	deformParms_t deforms[MAX_SHADER_DEFORMS];
 
 	shaderType_t type;
-/*	union
+	union
 	{
 		// fog params (SHADERTYPE_FOG)
 		struct {
-			float	fogDist;
-			float	fogColor[3];
-		}; */
+			float		fogDist;
+			color_t		fogColor;
+		};
 		// sky params SHADERTYPE_SKY)
 		struct {
 			//?? these sky params are only 1 at a time - may be, make as global variables?
-			bool	useSkyBox;	// when true, draw skybox using skyBox[] textures, 1st stage is reserved for this
+			bool		useSkyBox;	// when true, draw skybox using skyBox[] textures, 1st stage is reserved for this
 			const image_t *skyBox[6];
-			float	skyRotate;
-			CVec3	skyAxis;
-			float	cloudHeight;
+			float		skyRotate;
+			CVec3		skyAxis;
+			float		cloudHeight;
 		};
 		// portal params (SHADERTYPE_PORTAL)
 /*		struct {
-			float	portalRange;
-		};
-	}; */
+			float		portalRange;
+		}; */
+	};
 
 	// lighting
-	float	lightValue;
-	color_t	lightColor;
+	float		lightValue;
+	color_t		lightColor;
 	// sunlight (for sky shaders only)
-	CVec3	sunColor;
-	CVec3	sunDirection;
+	CVec3		sunColor;
+	CVec3		sunDirection;
 
 	// remap shader
-	shader_t *alphaShader;		// for skins: same shader as current, but translucent
+	shader_t	*alphaShader;		// for skins: same shader as current, but translucent
 
 	// primary stage index - with TCGEN_TEXTURE; -1 when not detected
-	int		primaryStage;
+	int			primaryStage;
 
-	shader_t *hashNext;
+	shader_t	*hashNext;
 
 	// stages: variable length
-	int		numStages;
+	int			numStages;
 	shaderStage_t *stages[1];	// WARNING: should be last data field
 
 	// functions

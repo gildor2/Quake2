@@ -25,7 +25,7 @@ public:
 	{
 		return buffer;
 	}
-	void Write(const char *str)
+	virtual void Write(const char *str)
 	{
 		int len = strlen(str);
 		//?? Move S_WHITE part to appPrintf(); add when string is colored only!

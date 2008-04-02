@@ -3,15 +3,15 @@
 #if _WIN32
 #	define NUM_GLFUNCS	62
 #	define NUM_EXTFUNCS	8
-#	define NUM_EXTENSIONS	15
+#	define NUM_EXTENSIONS	16
 #elif __linux__
 #	define NUM_GLFUNCS	54
 #	define NUM_EXTFUNCS	7
-#	define NUM_EXTENSIONS	14
+#	define NUM_EXTENSIONS	15
 #else
 #	define NUM_GLFUNCS	54
 #	define NUM_EXTFUNCS	7
-#	define NUM_EXTENSIONS	14
+#	define NUM_EXTENSIONS	15
 #endif
 
 
@@ -255,6 +255,8 @@ static const char *EnumName(GLenum v)
 		return "CLAMP";
 	case GL_REPEAT:
 		return "REPEAT";
+	case GL_CLAMP_TO_EDGE:
+		return "CLAMP_TO_EDGE";
 	case GL_MODULATE:
 		return "MODULATE";
 	case GL_DECAL:
@@ -925,7 +927,8 @@ static extInfo_t extInfo[NUM_EXTENSIONS] = {
 	{"GL_EXT_compiled_vertex_array\0", NULL, "gl_ext_compiled_vertex_array", NUM_GLFUNCS+4, 2, 0, 0},
 	{"GL_EXT_draw_range_elements\0", NULL, "gl_ext_draw_range_elements", NUM_GLFUNCS+6, 1, 0, 0},
 	{"GL_NV_texture_rectangle\0" "GL_ARB_texture_rectangle\0" "GL_EXT_texture_rectangle\0", NULL, "gl_ext_texture_rectangle", 0, 0, 0, 0},
-	{"GL_EXT_texture_lod_bias\0", NULL, NULL, 0, 0, 0, 0}
+	{"GL_EXT_texture_lod_bias\0", NULL, NULL, 0, 0, 0, 0},
+	{"GL_EXT_texture_edge_clamp\0" "GL_SGIS_texture_edge_clamp\0", NULL, NULL, 0, 0, 0, 0}
 #if _WIN32
 
 ,

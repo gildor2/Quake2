@@ -47,7 +47,7 @@ extern	image_t		*gl_defaultImage;
 extern	image_t		*gl_identityLightImage;
 extern	image_t		*gl_dlightImage;
 extern	image_t		*gl_particleImage;
-//extern	image_t		*gl_fogImage;
+extern	image_t		*gl_fogImage;
 extern	image_t		*gl_reflImage;		// NULL if not found
 extern	image_t		*gl_reflImage2;		// NULL if not found
 

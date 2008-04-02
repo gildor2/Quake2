@@ -423,9 +423,15 @@ static shader_t *FinishShader()
 				sh.dependOnTime = true;
 
 		// detect primary stage
-		if (s->rgbGenType == RGBGEN_IDENTITY && s->tcGenType == TCGEN_TEXTURE)
+		if ((s->rgbGenType == RGBGEN_IDENTITY || s->rgbGenType == RGBGEN_IDENTITY_LIGHTING ||
+			 s->rgbGenType == RGBGEN_VERTEX || s->rgbGenType == RGBGEN_EXACT_VERTEX)
+			&& s->tcGenType == TCGEN_TEXTURE)
 		{
+			// compute stage weight
 			int weight = 100 - s->numTcMods;
+			if (s->rgbGenType != RGBGEN_IDENTITY && s->rgbGenType != RGBGEN_IDENTITY_LIGHTING)
+				weight -= 20;
+			// update primaryStage
 			if (weight > primStageWeight)
 			{
 				sh.primaryStage = numStages;
@@ -439,7 +445,8 @@ static shader_t *FinishShader()
 		}
 	}
 	sh.numStages = numStages;
-	if (!numStages && !(sh.style & SHADER_ABSTRACT)) sh.noDraw = true;
+	if (!numStages && !(sh.style & SHADER_ABSTRACT) && sh.type != SHADERTYPE_FOG)
+		sh.noDraw = true;
 
 	// exchange 1st 2 stages, when 2nd stage uses DSTALPHA (to allow correct drawing in 16-bit modes)
 	//?? check: is it correct, when 3rd stage uses DSTALPHA too?
@@ -473,7 +480,12 @@ static shader_t *FinishShader()
 
 	// if sortParam is not yet set - set it to opaque
 	if (!sh.sortParam)
-		sh.sortParam = SORT_OPAQUE;
+	{
+		if (!sh.numStages && sh.type == SHADERTYPE_FOG)
+			sh.sortParam = SORT_SEETHROUGH;
+		else
+			sh.sortParam = SORT_OPAQUE;
+	}
 
 	return CreateShader();
 

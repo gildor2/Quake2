@@ -13,7 +13,7 @@ image_t	*gl_defaultImage;
 image_t	*gl_identityLightImage;
 image_t	*gl_dlightImage;
 image_t	*gl_particleImage;
-//image_t	*gl_fogImage;
+image_t	*gl_fogImage;
 image_t	*gl_videoImage;
 image_t	*gl_reflImage;
 image_t	*gl_reflImage2;
@@ -601,7 +601,9 @@ static void Upload(void *pic, unsigned flags, image_t *image)
 	}
 
 	// setup wrap flags
-	GLenum repMode = flags & IMAGE_CLAMP ? GL_CLAMP : GL_REPEAT;
+	GLenum repMode = GL_REPEAT;
+	if (flags & IMAGE_CLAMP)
+		repMode = GL_SUPPORT(QGL_EXT_TEXTURE_EDGE_CLAMP) ? GL_CLAMP_TO_EDGE : GL_CLAMP;
 	glTexParameteri(image->target, GL_TEXTURE_WRAP_S, repMode);
 	glTexParameteri(image->target, GL_TEXTURE_WRAP_T, repMode);
 
@@ -1399,7 +1401,7 @@ CVAR_END
 	CreateImage("*detail", tex, DETAIL_SIDE, DETAIL_SIDE, IMAGE_MIPMAP);
 
 	/*------------ create fog image --------------*/
-/*	p = tex;
+	p = tex;
 	for (y = 0; y < 32; y++)
 	{
 		float	yf;
@@ -1429,8 +1431,8 @@ CVAR_END
 			p += 4;
 		}
 	}
-	gl_fogImage = CreateImage("*fog", tex, 256, 32, IMAGE_CLAMP|IMAGE_TRUECOLOR);	//?? mipmap
-	gl_fogImage->flags |= IMAGE_SYSTEM; */
+	gl_fogImage = CreateImage("*fog", tex, 256, 32, IMAGE_CLAMP|IMAGE_TRUECOLOR);
+	gl_fogImage->flags |= IMAGE_SYSTEM;
 
 	gl_reflImage = FindImage("fx/specular", IMAGE_MIPMAP);	//!! move reflection images to a different place
 	gl_reflImage2 = FindImage("fx/diffuse", IMAGE_MIPMAP);

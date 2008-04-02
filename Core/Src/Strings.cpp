@@ -111,7 +111,6 @@ void appStrncpylwr(char *dst, const char *src, int count)
 
 void appStrncpyz(char *dst, const char *src, int count)
 {
-
 	if (count <= 0) return;	// zero-length string
 
 	char c;

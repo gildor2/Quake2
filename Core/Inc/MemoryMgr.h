@@ -49,7 +49,7 @@ public:
 	// deleting chain
 	void operator delete(void* ptr);
 	// stats
-	int GetSize();
+	int GetSize() const;
 };
 
 
@@ -99,7 +99,7 @@ FORCEINLINE void operator delete[](void *ptr)
 FORCEINLINE void* operator new[](size_t size, CMemoryChain *chain, int alignment = DEFAULT_ALIGNMENT)
 {
 	return chain->Alloc(size, alignment);
-};
+}
 
 #endif
 

@@ -58,7 +58,10 @@ cvar_t			*sv_extProtocol;
 cvar_t			*sv_shownet;
 
 static cvar_t	*sv_camperSounds;
+#if MAX_DEBUG
 cvar_t			*sv_labels;
+cvar_t			*g_fpuXcpt;
+#endif
 //static cvar_t	*sv_fps;
 
 // forwards
@@ -90,7 +93,9 @@ void SV_DropClient(client_t *drop, char *info)
 	{
 		// call the prog function for removing a client
 		// this will remove the body, among other things
+		guardGame(ge.ClientDisconnect);
 		ge->ClientDisconnect(drop->edict);
+		unguardGame;
 	}
 
 	if (drop->download)
@@ -357,7 +362,12 @@ static void cDirectConnect(int argc, char **argv)
 	newcl->challenge = challenge;		// save challenge for checksumming
 
 	// get the game a chance to reject this connection or modify the userinfo
-	if (!(ge->ClientConnect(ent, userinfo)))
+	qboolean result;
+	guardGame(ge.ClientConnect);
+	result = ge->ClientConnect(ent, userinfo);
+	unguardGame;
+
+	if (!result)
 	{
 		if (*Info_ValueForKey(userinfo, "rejmsg"))
 			Netchan_OutOfBandPrint(NS_SERVER, adr, "print\n%s\nConnection refused.\n",
@@ -1170,9 +1180,9 @@ void SV_Frame(float msec)
 	{
 		time_before_game = appCycles();
 
-		guard(ge.RunFrame);
+		guardGame(ge.RunFrame);
 		ge->RunFrame();
-		unguard;
+		unguardGame;
 
 
 		// never get more than one tic behind
@@ -1283,7 +1293,9 @@ void SV_UserinfoChanged(client_t *cl)
 	const char *val;
 
 	// call game code to allow overrides
+	guardGame(ge.ClientUserinfoChanged);
 	ge->ClientUserinfoChanged(cl->edict, cl->Userinfo);
+	unguardGame;
 
 	// name
 	cl->Name = Info_ValueForKey(cl->Userinfo, "name");
@@ -1365,7 +1377,10 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(sv_reconnect_limit, 3, CVAR_ARCHIVE),
 
-	CVAR_VAR(sv_labels, 0, CVAR_CHEAT)
+#if MAX_DEBUG
+	CVAR_VAR(sv_labels, 0, CVAR_CHEAT),
+	CVAR_VAR(g_fpuXcpt, 0, CVAR_ARCHIVE),
+#endif
 //	CVAR_VAR(sv_fps, 20, 0)	// archive/serverinfo ??
 CVAR_END
 	Cvar_GetVars(ARRAY_ARG(vars));

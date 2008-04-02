@@ -431,6 +431,9 @@ void DrawRangeElementsEXT(GLenum mode, GLuint start, GLuint end, GLsizei count, 
 
 #name GL_EXT_texture_lod_bias
 
+#name GL_EXT_texture_edge_clamp
+#alias GL_SGIS_texture_edge_clamp
+
 #platform win32
 
 //?? is it useful ?

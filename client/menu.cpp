@@ -1,22 +1,3 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
 #include "client.h"
 #include "qmenu.h"
 
@@ -2190,7 +2171,7 @@ struct playerConfigMenu_t : menuFramework_t
 			memset(&e, 0, sizeof(e));
 			// setup for renderer
 			int numEnts = ParsePlayerEntity(cent, ci, &st, base, ARRAY_ARG(e), 0);
-//			refdef.areabits     = NULL;
+//			refdef.zonebits     = NULL;
 			refdef.num_entities = numEnts;
 			refdef.entities     = e;
 //			refdef.lightstyles  = NULL;
@@ -2510,7 +2491,7 @@ CFileList *dmbrowseMenu_t::browse_list;
 thumbParams_t dmbrowseMenu_t::thumbs;
 
 
-static void Menu_DMBrowse_f ()
+static void Menu_DMBrowse_f()
 {
 	dmbrowseMenu.Push();
 }
@@ -2785,7 +2766,7 @@ menuList_t	videoMenu_t::textureFilter;
 float videoMenu_t::old_gamma, videoMenu_t::old_contrast, videoMenu_t::old_bright;
 
 
-static void Menu_Video_f ()
+static void Menu_Video_f()
 {
 	videoMenu.Push();
 }
@@ -2838,7 +2819,7 @@ struct quitMenu_t : menuFramework_t
 };
 static quitMenu_t quitMenu;
 
-static void Menu_Quit_f ()
+static void Menu_Quit_f()
 {
 	quitMenu.Push();
 }

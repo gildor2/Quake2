@@ -4,8 +4,16 @@
 
 // parser helpers
 
-static unsigned GetColor(int argc, char **argv, int pos)
+static unsigned GetColor(int argc, char **argv, int pos, bool parenthesis = false)
 {
+	if (parenthesis)
+	{
+		if (!IS(pos-1, "(") || !IS(pos+3, ")"))
+		{
+			shaderError = "missing parenthesis";
+			return RGB(1,1,1);
+		}
+	}
 	if (pos + 3 > argc)
 	{
 		shaderError = "invalid rgbGen const";
@@ -224,6 +232,16 @@ FUNC(tessSize)
 }
 
 
+FUNC(fogParms)
+{
+	sh.type = SHADERTYPE_FOG;
+	if (argc != 7)
+		ERROR_IN_SHADER("bad fogparms");
+	sh.fogColor.rgba = GetColor(argc, argv, 2, true);
+	sh.fogDist       = atof(argv[6]);
+}
+
+
 FUNC(skyParms)
 {
 	sh.type = SHADERTYPE_SKY;
@@ -304,6 +322,8 @@ static CSimpleCommand shaderFuncs[] = {
 	TBL(deformVertexes),
 	TBL(surfaceparm),
 	TBL(tessSize),
+	// fog
+	TBL(fogParms),
 	// sky, light
 	TBL(skyParms),
 	TBL(q3map_surfacelight),
@@ -547,7 +567,7 @@ FUNC(rgbGen)
 		}
 	int waveArg = 0;
 	unsigned rgbaConst = RGB(1,1,1);
-	if (rgbGen == RGBGEN_NONE)	// not in table
+	if (rgbGen == RGBGEN_NONE)		// not in table
 	{
 		if (IS(1, "colorWave"))
 		{
@@ -561,7 +581,7 @@ FUNC(rgbGen)
 	}
 
 	if (rgbGen == RGBGEN_CONST)
-		rgbaConst = GetColor(argc, argv, 2);
+		rgbaConst = GetColor(argc, argv, 3, true);
 
 	shaderStage_t &s = st[sh.numStages];
 	if (waveArg)

@@ -181,8 +181,11 @@ static void KeyboardMove(usercmd_t *cmd)
 	if (in_Speed.state & STATE_DOWN)
 		speed *= cl_anglespeedkey->value;
 
-	cl.viewangles[YAW]   += speed * cl_yawspeed->value   * KeyDelta(in_Left, in_Right);
-	cl.viewangles[PITCH] += speed * cl_pitchspeed->value * KeyDelta(in_Lookdown, in_Lookup);
+	if (!cl_paused->integer)
+	{
+		cl.viewangles[YAW]   += speed * cl_yawspeed->value   * KeyDelta(in_Left, in_Right);
+		cl.viewangles[PITCH] += speed * cl_pitchspeed->value * KeyDelta(in_Lookdown, in_Lookup);
+	}
 
 	// copy angles with float->short
 	cmd->angles[0] = appRound(cl.viewangles[0]);
@@ -190,9 +193,12 @@ static void KeyboardMove(usercmd_t *cmd)
 	cmd->angles[2] = appRound(cl.viewangles[2]);
 
 	// movement
-	cmd->forwardmove += appRound(cl_forwardspeed->value * KeyDelta(in_Forward, in_Back));
-	cmd->sidemove    += appRound(cl_sidespeed->value    * KeyDelta(in_Moveright, in_Moveleft));
-	cmd->upmove      += appRound(cl_upspeed->value      * KeyDelta(in_Up, in_Down));
+	if (!cl_paused->integer)
+	{
+		cmd->forwardmove += appRound(cl_forwardspeed->value * KeyDelta(in_Forward, in_Back));
+		cmd->sidemove    += appRound(cl_sidespeed->value    * KeyDelta(in_Moveright, in_Moveleft));
+		cmd->upmove      += appRound(cl_upspeed->value      * KeyDelta(in_Up, in_Down));
+	}
 
 	// adjust for speed key / running
 	if ((in_Speed.state & STATE_DOWN) ^ cl_run->integer)
@@ -264,20 +270,9 @@ static void CreateCmd(usercmd_t *cmd)
 	frame_msec = sys_frame_time - old_sys_frame_time;
 	frame_msec = bound(frame_msec, 1, 200);
 
-	// save view angles to restore it when needed
-	CVec3 oldAngles = cl.viewangles;
-
 	KeyboardMove(cmd);
 	IN_Move(cmd);			// mouse and joystick movement (platform-dependent)
 	FinishMove(cmd);
-
-	// if client paused, do not produce movement
-	if (cl_paused->integer)
-	{
-		//?? if not in game (menu, console, gui ...) -- clear usercmd too
-		memset(cmd, 0, sizeof(usercmd_t));
-		cl.viewangles = oldAngles;
-	}
 
 	old_sys_frame_time = sys_frame_time;
 

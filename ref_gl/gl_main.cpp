@@ -677,18 +677,18 @@ void RenderFrame(refdef_t *fd)
 
 	if (!(fd->rdflags & RDF_NOWORLDMODEL))
 	{
-		byte	floodArea[MAX_MAP_AREAS/8];
+		byte	floodZone[MAX_MAP_ZONES/8];
 
-		// check for areabits changes
-		byte *areas = fd->areabits;
-		if (!areas)
+		// check for zonebits changes
+		byte *zones = fd->zonebits;
+		if (!zones)
 		{
-			memset(floodArea, 0xFF, sizeof(floodArea));
-			areas = &floodArea[0];
+			memset(floodZone, 0xFF, sizeof(floodZone));
+			zones = &floodZone[0];
 		}
-		if (memcmp(areaMask, areas, sizeof(areaMask)) != 0)
+		if (memcmp(zoneMask, zones, sizeof(zoneMask)) != 0)
 		{
-			memcpy(areaMask, areas, sizeof(areaMask));
+			memcpy(zoneMask, zones, sizeof(zoneMask));
 			forceVisMap = true;
 		}
 	}

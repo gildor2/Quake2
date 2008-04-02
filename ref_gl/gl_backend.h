@@ -14,31 +14,32 @@ namespace OpenGLDrv {
 
 struct bufVertex_t
 {
-	CVec3	xyz;
-	float	pad;
+	CVec3		xyz;
+	float		pad;
 };
 
 
 struct bufTexCoordSrc_t
 {
-	float	tex[2];
-	float	lm[2];
+	float		tex[2];
+	float		lm[2];
 };
 
 
 struct bufTexCoord_t
 {
-	float	tex[2];
+	float		tex[2];
 };
 
 // some data may be grouped by few vertexes
 struct bufExtra_t
 {
-	int		numVerts;
-	int		lmWidth;
-	CVec3	normal;
-	CVec3	*axis;				// CVec3[2]
-	surfDlight_t *dlight;
+	int			numVerts;
+	int			lmWidth;
+	CVec3		normal;
+	CVec3		*axis;				// CVec3[2]
+	planeDlight_t   *pDlight;
+	trisurfDlight_t *tDlight;
 };
 
 
@@ -53,7 +54,7 @@ struct vertexBuffer_t
 	}
 };
 
-extern vertexBuffer_t *vb;		// pointers to current buffer
+extern vertexBuffer_t *vb;			// pointers to current buffer
 
 
 extern int gl_numVerts, gl_numIndexes, gl_numExtra;
@@ -94,6 +95,10 @@ void BK_FlushShader();
 #define DLIGHTNUM_BITS		2
 #define DLIGHTNUM_MASK		((1<<DLIGHTNUM_BITS) - 1)
 
+#define FOGNUM_BITS			8
+#define FOGNUM_MASK			((1<<FOGNUM_BITS) - 1)
+
+// total: 32 bits
 
 #define MAX_ENTITYNUM		(1<<ENTITYNUM_BITS)
 #define ENTITYNUM_WORLD		(MAX_ENTITYNUM-2)
@@ -101,10 +106,15 @@ void BK_FlushShader();
 
 #define MAX_GLENTITIES		(MAX_ENTITYNUM-1)	// MAX_ENTITIES defined in ref.h
 
-// Bits layout: shaderNum, entityNum, dlightNum
+// Bits layout: fogNum, shaderNum, entityNum, dlightNum
 #define DLIGHTNUM_SHIFT		0
-#define ENTITYNUM_SHIFT		(DLIGHTNUM_SHIFT+DLIGHTNUM_BITS)
+#define FOGNUM_SHIFT		(DLIGHTNUM_SHIFT+DLIGHTNUM_BITS)
+#define ENTITYNUM_SHIFT		(FOGNUM_SHIFT   +FOGNUM_BITS   )
 #define SHADERNUM_SHIFT		(ENTITYNUM_SHIFT+ENTITYNUM_BITS)
+
+#if SHADERNUM_SHIFT + SHADERNUM_BITS > 32
+#error Sort key overflow
+#endif
 
 
 } // namespace

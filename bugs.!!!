@@ -1,3 +1,6 @@
+- q3a map "mythology": has areas with very slow lighting (shoot from hyperblaster inside a long corrydor with disabled lightgrid ...
+  fps will fall to 15, 'ent light' will be 50ms)
+
 - gl_light.cpp: when lightstyle #0 (any slow lightstyle?) changed, light from grid not changed; to fix should:
   a) clear lightgrid
   b) store into lightgrid light as style[0]==1.0, and rescale after GetCellLight()

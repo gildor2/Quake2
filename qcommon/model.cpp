@@ -82,7 +82,7 @@ static void SwapQ2BspFile(bspfile_t *f)
 		dBsp2Leaf_t &leaf = f->leafs2[i];
 		LTL(leaf.contents);
 		LTL(leaf.cluster);
-		LTL(leaf.area);
+		LTL(leaf.zone);
 		for (j = 0; j < 3; j++)
 		{
 			LTL(leaf.mins[j]);
@@ -122,18 +122,18 @@ static void SwapQ2BspFile(bspfile_t *f)
 		LTL(f->brushes2[i].contents);
 	}
 
-	// areas
-	for (i = 0; i < f->numAreas; i++)
+	// zones
+	for (i = 0; i < f->numZones; i++)
 	{
-		LTL(f->areas[i].numAreaPortals);
-		LTL(f->areas[i].firstAreaPortal);
+		LTL(f->zones[i].numZonePortals);
+		LTL(f->zones[i].firstZonePortal);
 	}
 
-	// areasportals
-	for (i = 0; i < f->numAreaportals; i++)
+	// zonesPortals
+	for (i = 0; i < f->numZonePortals; i++)
 	{
-		LTL(f->areaportals[i].portalNum);
-		LTL(f->areaportals[i].otherArea);
+		LTL(f->zonePortals[i].portalNum);
+		LTL(f->zonePortals[i].otherZone);
 	}
 
 	// brushsides
@@ -411,8 +411,8 @@ void LoadQ2BspFile()
 	C(EDGES, edges, numEdges, dEdge_t);
 	C(BRUSHES, brushes2, numBrushes, dBsp2Brush_t);
 	C(BRUSHSIDES, brushsides2, numBrushSides, dBsp2Brushside_t);
-	C(AREAS, areas, numAreas, dArea_t);
-	C(AREAPORTALS, areaportals, numAreaportals, dAreaPortal_t);
+	C(ZONES, zones, numZones, dZone_t);
+	C(ZONEPORTALS, zonePortals, numZonePortals, dZonePortal_t);
 	C(MODELS, models2, numModels, dBsp2Model_t);
 
 #if !LITTLE_ENDIAN
@@ -541,7 +541,7 @@ void LoadQ3BspFile()
 	C(BRUSHES, brushes3, numBrushes, dBsp3Brush_t);
 	C(BRUSHSIDES, brushsides3, numBrushSides, dBsp3Brushside_t);
 	C(MODELS, models3, numModels, dBsp3Model_t);
-	//!! C(FOGS, ...);
+	C(FOGS, fogs, numFogs, dBsp3Fog_t);
 
 #if !LITTLE_ENDIAN
 	// swap everything

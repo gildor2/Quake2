@@ -230,10 +230,10 @@ void *CMemoryChain::Alloc(size_t size, int alignment)
 }
 
 
-int CMemoryChain::GetSize()
+int CMemoryChain::GetSize() const
 {
 	int n = 0;
-	for (CMemoryChain *c = this; c; c = c->next)
+	for (const CMemoryChain *c = this; c; c = c->next)
 		n += c->size;
 	return n;
 }

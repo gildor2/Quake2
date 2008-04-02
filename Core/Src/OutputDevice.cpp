@@ -12,7 +12,7 @@ COutputDevice *GLogHook = NULL;
 class COutputDeviceNull : public COutputDevice
 {
 public:
-	void Write(const char *str)
+	virtual void Write(const char *str)
 	{ /* empty */ }
 };
 
@@ -28,7 +28,7 @@ class COutputDeviceLog : public COutputDevice
 private:
 	int recurse;
 public:
-	void Write(const char *str)
+	virtual void Write(const char *str)
 	{
 		// do not allow GLog to be used in appPrintf() output device chains
 		// in this case, GLog.Write -> appPrintf -> GLog.Write

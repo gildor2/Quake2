@@ -1,8 +1,5 @@
 #include "WinPrivate.h"
 #include "../client/client.h"		//!! for editLine[], CompleteCommand() + COutputDeviceCon
-#if MAX_DEBUG
-#	include <float.h>				// for _controlfp()
-#endif
 
 //!! TODO: COutputDeviceWin32: derive from COutputDeviceCon
 
@@ -84,7 +81,7 @@ public:
 		WriteFile(hOutput, str, strlen(str), &dummy, NULL);
 	}
 	// writting with processing
-	void Write(const char *str)
+	virtual void Write(const char *str)
 	{
 		EraseInput();
 		// draw message
@@ -314,9 +311,7 @@ int main(int argc, const char **argv) // force to link as console application
 			SetUnhandledExceptionFilter(mingw32ExceptFilter);
 #	endif
 			// allow exceptions from FPU
-			unsigned fpMask = _controlfp(0, 0);
-			_controlfp(fpMask & ~(_EM_ZERODIVIDE|_EM_INVALID), _MCW_EM);
-			_clearfp();		// required to prevent re-raising old exceptions on ANY FPU operation
+			appAllowFpuXcpt(true);
 #endif // MAX_DEBUG
 
 			if (DEDICATED)

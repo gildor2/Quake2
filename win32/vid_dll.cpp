@@ -1,7 +1,4 @@
 #include "WinPrivate.h"
-#if MAX_DEBUG
-#	include <float.h>
-#endif
 #include "../client/client.h"
 
 #if __MINGW32__
@@ -555,7 +552,7 @@ static bool LoadRenderer()
 #if MAX_DEBUG
 	// when FPU exceptions are enabled, game may crash in DirectSoundCreate()
 	// note: exceptions will be re-enabled in next MainLoop iteration
-	_controlfp(_controlfp(0, 0) | _EM_ZERODIVIDE|_EM_INVALID, _MCW_EM);
+	appAllowFpuXcpt(false);
 #endif
 
 	if (refActive)

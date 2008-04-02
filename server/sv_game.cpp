@@ -179,7 +179,7 @@ static void G_WriteDir(const CVec3 *dir)
 
 
 
-// Also checks portalareas so that doors block sight
+// Also checks portalzones so that doors block sight
 static qboolean G_inPVS(const CVec3 &p1, const CVec3 &p2)
 {
 	const CBspLeaf *leaf1 = CM_FindLeaf(p1);
@@ -190,19 +190,19 @@ static qboolean G_inPVS(const CVec3 &p1, const CVec3 &p2)
 	if (mask && (!(mask[cluster >> 3] & (1<<(cluster & 7)))))
 		return false;
 
-	if (!CM_AreasConnected(leaf1->area, leaf2->area))
+	if (!CM_ZonesConnected(leaf1->zone, leaf2->zone))
 		return false;		// a door blocks sight
 	return true;
 }
 
 
-// Checks portalareas so that doors block sound
+// Checks portalzones so that doors block sound
 static qboolean G_inPHS(const CVec3 &p1, const CVec3 &p2)
 {
 	const CBspLeaf *leaf1 = CM_FindLeaf(p1);
 	const CBspLeaf *leaf2 = CM_FindLeaf(p2);
 
-	if (!CM_AreasConnected(leaf1->area, leaf2->area))
+	if (!CM_ZonesConnected(leaf1->zone, leaf2->zone))
 		return false;		// a door blocks hearing
 
 	return true;
@@ -216,15 +216,15 @@ static void G_StartSound(edict_t *entity, int channel, int sound_num, float volu
 }
 
 
-static void	G_SetAreaPortalState(int portalnum, qboolean open)
+static void	G_SetZonePortalState(int portalnum, qboolean open)
 {
-	CM_SetAreaPortalState(portalnum, open != 0);
+	CM_SetZonePortalState(portalnum, open != 0);
 }
 
 
-static qboolean G_AreasConnected(int area1, int area2)
+static qboolean G_ZonesConnected(int zone1, int zone2)
 {
-	return CM_AreasConnected(area1, area2);
+	return CM_ZonesConnected(zone1, zone2);
 }
 
 
@@ -510,7 +510,7 @@ void SV_InitGameLibrary(bool dummy)
 		SV_ModelIndex, SV_SoundIndex, SV_ImageIndex,
 		G_setmodel,
 		G_Trace, SV_PointContents,
-		G_inPVS, G_inPHS, G_SetAreaPortalState, G_AreasConnected,
+		G_inPVS, G_inPHS, G_SetZonePortalState, G_ZonesConnected,
 		SV_LinkEdict, SV_UnlinkEdict, SV_AreaEdicts,
 		SV_Pmove,
 		SV_MulticastOld, G_Unicast,
@@ -561,9 +561,9 @@ void SV_InitGameLibrary(bool dummy)
 	if (ge->apiversion != GAME_API_VERSION)
 		Com_DropError("game is version %d, not " STR(GAME_API_VERSION), ge->apiversion);
 
-	guard(ge.Init);
+	guardGame(ge.Init);
 	ge->Init();
-	unguard;
+	unguardGame;
 
 	RegisterCommand("gz_stats", GZ_Stats_f);
 	// register NULL commands for ability to complete them from console (will be forwarded to server)
@@ -586,9 +586,9 @@ void SV_ShutdownGameLibrary()
 	if (!ge) return;
 
 	// unload game library
-	guard(ge.Shutdown);
+	guardGame(ge.Shutdown);
 	ge->Shutdown();
-	unguard;
+	unguardGame;
 	UnloadGame();
 	ge = NULL;
 

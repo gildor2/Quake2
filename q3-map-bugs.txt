@@ -1,9 +1,16 @@
+- dlight bugs: wvwq3dm7, estatica
+
+! fog bugs:
+  - no fogging on models and particles/sprites/flares
+  - "fire" texture (q3tourney5 etc): visible rect with alpha=0
+    * q3 perfors fogging via fading alpha surfaces
+  ! add fog timings to r_stats
+  - should lightscale (*= identityLight) and saturate fog
+
 - map "chartres":
   - have "rgbgen filter" - check Q3 error message
   - no particle trails from blaster on a whole level
   - renderer frontend is very slow
-- q3map2 bugs/features:
-  - "planar", but curved surfaces: pom, estatica (bugs with dlights)
 - q3dm7, textures/sfx/computerpurptileb {2480,-246,369 } - have PostLight and PreLight textures near,
   when shooting to PostLight with r_sfx_pause=1, have VERY bright PostLight texture, and not so bright
   PreLight ... Looks like visual artefact
@@ -36,6 +43,9 @@
 - q3dm7: renderer uses darker lights from sky - possibly, sky shader was changed after lightmaps created
   (before compilation sky had brighter light values)
 - scienselab (UT): glass textures: draw order issues (look at one glass through another)
+
+- estatica: shoot at {-435, -419, 56} -- bugs with dlight (not all surfaces lighted, cut by triangles)
+  * note: uses q3map2 pretesselated pathes
 
 Bad maps, kept for incorrect drawing:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

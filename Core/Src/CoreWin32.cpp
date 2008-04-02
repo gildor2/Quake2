@@ -4,6 +4,8 @@
 #include <mmsystem.h>				// for timeGetTime() stuff
 #pragma comment (lib, "winmm.lib")	// ...
 
+#include <float.h>					// for _controlfp()
+
 #include "CorePrivate.h"
 
 
@@ -147,6 +149,17 @@ void appDisplayError()
 		GErr.Message,
 #endif
 		Title, MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
+}
+
+
+void appAllowFpuXcpt(bool allow)
+{
+	unsigned fpMask = _controlfp(0, 0);
+	if (allow)
+		_controlfp(fpMask & ~(_EM_ZERODIVIDE|_EM_INVALID), _MCW_EM);
+	else
+		_controlfp(fpMask | (_EM_ZERODIVIDE|_EM_INVALID), _MCW_EM);
+	_clearfp();		// required to prevent re-raising old exceptions on ANY FPU operation
 }
 
 

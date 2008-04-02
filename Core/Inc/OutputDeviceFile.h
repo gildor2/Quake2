@@ -20,7 +20,7 @@ public:
 		Unregister();
 		Close();
 	}
-	void Write(const char *str)
+	virtual void Write(const char *str)
 	{
 		if (!log || !str[0]) return;
 		// remove color codes
@@ -34,7 +34,7 @@ public:
 			log = NULL;
 		}
 	}
-	void Flush()
+	virtual void Flush()
 	{
 		if (log) fflush(log);
 	}

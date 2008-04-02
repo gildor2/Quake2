@@ -148,6 +148,11 @@ bool appQuoteString(char *dst, int dstSize, const char *src)
 			*dst++ = '\\'; *dst++ = '"';
 			dstSize -= 2;
 		}
+		else if (c == '\\')
+		{
+			*dst++ = '\\'; *dst++ = '\\';
+			dstSize -= 2;
+		}
 		else
 		{
 			*dst++ = c;
@@ -156,8 +161,9 @@ bool appQuoteString(char *dst, int dstSize, const char *src)
 	}
 
 	// place closing quote
-	if (!dstSize) return false;
-	*dst = '\"';
+	if (dstSize < 2) return false;
+	*dst++ = '\"';
+	*dst   = 0;
 
 	return true;
 }
