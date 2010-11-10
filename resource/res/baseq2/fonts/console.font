@@ -1,0 +1,3 @@
+bitmap "console"
+firstChar 32
+charSize 8 16

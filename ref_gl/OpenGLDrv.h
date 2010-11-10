@@ -101,12 +101,10 @@ void	QGL_LogMessage(const char *text);
 #endif // NO_GL_LOG
 
 
-//??
-extern unsigned vid_width, vid_height;
-
 // forwards
 class image_t;
 class shader_t;
+class CFont;
 class model_t;
 class surfaceBase_t;
 class surfacePlanar_t;

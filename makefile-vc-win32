@@ -98,6 +98,7 @@ STATIC = \
 	Release/obj-win32/q2stat/makeres.obj \
 	Release/obj-win32/q2stat/gl_backend.obj \
 	Release/obj-win32/q2stat/gl_buffers.obj \
+	Release/obj-win32/q2stat/gl_font.obj \
 	Release/obj-win32/q2stat/gl_frontend.obj \
 	Release/obj-win32/q2stat/gl_image.obj \
 	Release/obj-win32/q2stat/gl_interface.obj \
@@ -121,7 +122,7 @@ STATIC_DIRS = \
 
 Release/Quake2.exe : $(STATIC_DIRS) $(STATIC)
 	echo Creating executable "Release/Quake2.exe" ...
-	$(LINK) -out:"Release/Quake2.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"Release/Quake2.map" $(STATIC) -subsystem:windows
+	$(LINK) -out:"Release/Quake2.exe" -libpath:SDK/lib kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"Release/Quake2.map" $(STATIC) -subsystem:windows
 
 #------------------------------------------------------------------------------
 #	"Release/q2ded.exe" target
@@ -183,7 +184,7 @@ DEDICATED_DIRS = \
 
 Release/q2ded.exe : $(DEDICATED_DIRS) $(DEDICATED)
 	echo Creating executable "Release/q2ded.exe" ...
-	$(LINK) -out:"Release/q2ded.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"Release/q2ded.map" $(DEDICATED) -subsystem:console
+	$(LINK) -out:"Release/q2ded.exe" -libpath:SDK/lib kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"Release/q2ded.map" $(DEDICATED) -subsystem:console
 
 #------------------------------------------------------------------------------
 #	"TestApp/TestApp.exe" target
@@ -217,7 +218,7 @@ TEST_DIRS = \
 
 TestApp/TestApp.exe : $(TEST_DIRS) $(TEST)
 	echo Creating executable "TestApp/TestApp.exe" ...
-	$(LINK) -out:"TestApp/TestApp.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"TestApp/TestApp.map" $(TEST) -subsystem:console
+	$(LINK) -out:"TestApp/TestApp.exe" -libpath:SDK/lib kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"TestApp/TestApp.map" $(TEST) -subsystem:console
 
 #------------------------------------------------------------------------------
 #	compiling source files
@@ -234,10 +235,9 @@ Release/obj-win32/dedstat/md4.obj : qcommon/md4.cpp
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/md4.obj" qcommon/md4.cpp
 
 Release/obj-win32/q2stat/q2.res : win32/q2.rc
-	rc.exe -l 0x409 -i win32/ -fo"Release/obj-win32/q2stat/q2.res" -dNDEBUG win32/q2.rc
+	rc.exe -l 0x409 -i win32/  -I SDK/include -I Core/Inc -I qcommon -fo"Release/obj-win32/q2stat/q2.res" -dNDEBUG win32/q2.rc
 
 DEPENDS = \
-	Core/../lib/zlib/zlib.h \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -259,6 +259,7 @@ DEPENDS = \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
+	SDK/../lib/zlib/zlib.h \
 	client/engine.h \
 	client/engine_intf.h \
 	lib/zlib/zconf.h \
@@ -273,7 +274,6 @@ Release/obj-win32/dedstat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DE
 OPT_TEST = -W3 -O1 -EHs- -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
-	Core/../lib/zlib/zlib.h \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -295,6 +295,7 @@ DEPENDS = \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
+	SDK/../lib/zlib/zlib.h \
 	lib/zlib/zconf.h
 
 Release/obj-win32/TestApp/TestApp.obj : TestApp/TestApp.cpp $(DEPENDS)
@@ -770,6 +771,7 @@ DEPENDS = \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_buffers.h \
+	ref_gl/gl_font.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
@@ -1265,6 +1267,39 @@ DEPENDS = \
 	qcommon/qcommon.h \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_font.h \
+	ref_gl/gl_interface.h
+
+Release/obj-win32/q2stat/gl_font.obj : ref_gl/gl_font.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_font.obj" ref_gl/gl_font.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/qcommon.h \
+	ref_gl/GLBind.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
@@ -1540,14 +1575,53 @@ DEPENDS = \
 	client/snd_loc.h \
 	client/sound.h \
 	client/vid.h \
+	qcommon/FileFormats.h \
+	qcommon/cmodel.h \
+	qcommon/protocol.h \
+	qcommon/qcommon.h
+
+Release/obj-win32/q2stat/snd_dma.obj : client/snd_dma.cpp $(DEPENDS)
+	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/snd_dma.obj" client/snd_dma.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/CoreGnuC.h \
+	Core/Inc/CoreUnix.h \
+	Core/Inc/CoreVisualC.h \
+	Core/Inc/CoreWin32.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/ErrorMgr.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/Math3D.h \
+	Core/Inc/MathMisc.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_input.h \
+	client/cl_playermodel.h \
+	client/cl_scrn.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/keys.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/snd_loc.h \
+	client/sound.h \
+	client/vid.h \
 	qcommon/protocol.h \
 	qcommon/qcommon.h
 
 Release/obj-win32/q2stat/cl_tent.obj : client/cl_tent.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/cl_tent.obj" client/cl_tent.cpp
-
-Release/obj-win32/q2stat/snd_dma.obj : client/snd_dma.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/snd_dma.obj" client/snd_dma.cpp
 
 Release/obj-win32/q2stat/snd_mem.obj : client/snd_mem.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/snd_mem.obj" client/snd_mem.cpp

@@ -1,6 +1,7 @@
 #include "OpenGLDrv.h"
 #include "gl_backend.h"
 #include "gl_image.h"
+#include "gl_font.h"
 #include "gl_light.h"
 #include "gl_lightmap.h"
 #include "gl_sky.h"
@@ -720,9 +721,8 @@ t = dot(vec->xyz, fog.surface.normal) - fog.surface.dist;
 						VectorSubtract(vec->xyz, tdl->origin, dist);
 #if TRISURF_DLIGHT_VIEWAXIS
 // This mode is view-dependent: when pause dlights and move around its origin,
-// picture will change - dut it looks much better, than another solutions.
-// Note: quake3 uses dist[0] and dist[1] coords, and dlight becomes vertical
-// ellipse.
+// picture will change - but it looks much better, than another solutions.
+// Note: quake3 uses dist[0] and dist[1] coords, and dlight looks like vertical cylinder
 //?? can use currentEntity->modelvieworg, but require modelviewaxis (not computed)
 #	define AXIS		vp.view.axis
 #else
@@ -2737,13 +2737,14 @@ void BK_DrawPic(shader_t *shader, int x, int y, int w, int h, float s1, float t1
 
 
 // This is slightly optimized version of BK_DrawPic() for drawing texts
-void BK_DrawText(const char *text, int len, int x, int y, int w, int h, unsigned color)
+void BK_DrawText(const CFont *font, const char *text, int len, int x, int y, unsigned color)
 {
 	if (!len) return;
 	if (!renderingEnabled) return;
 
-	if (currentShader != gl_concharsShader)
-		SetCurrentShader(gl_concharsShader);
+	shader_t *shader = font->shader;
+	if (currentShader != shader)
+		SetCurrentShader(shader);
 
 	GL_Set2DMode();
 
@@ -2756,48 +2757,53 @@ void BK_DrawText(const char *text, int len, int x, int y, int w, int h, unsigned
 	int idx0 = gl_numVerts;
 
 	float x1 = x;
-	float x2 = x + w;
+	float x2 = x + font->outWidth;
 
-	float size = 1.0f / 16;
-	for (int i = len; i > 0 && x1 < vid_width; i--)
+	int   spaceWidth  = font->charWidth  + font->spacing;
+	int   spaceHeight = font->charHeight + font->spacing;
+	float scaleWidth  = 1.0f / shader->width;
+	float scaleHeight = 1.0f / shader->height;
+	int charsPerLine  = shader->width / spaceWidth;
+
+	for (int i = len; i > 0 && x1 < gl_config.width; i--)
 	{
-		char chr = *text++;
-		if (chr != ' ')		// space is hardcoded
-		{
-			float s1 = (chr & 15) * size;
-			float t1 = (chr >> 4 & 15) * size;
-			float s2 = s1 + size;
-			float t2 = t1 + size;
+		byte chr = *text++ - font->firstChar;
+		int line = chr / charsPerLine;
+		int col  = chr % charsPerLine;
+		float s1 = scaleWidth  * (col * spaceWidth);
+		float s2 = scaleWidth  * (col * spaceWidth + font->charWidth);
+		float t1 = scaleHeight * (line * spaceHeight);
+		float t2 = scaleHeight * (line * spaceHeight + font->charHeight);
 
-			// set vert.z
-			v[0].xyz[2] = v[1].xyz[2] = v[2].xyz[2] = v[3].xyz[2] = 0;
-			// set vert.x
-			v[0].xyz[0] = v[3].xyz[0] = x1;
-			v[1].xyz[0] = v[2].xyz[0] = x2;
-			// set vert.y
-			v[0].xyz[1] = v[1].xyz[1] = y;
-			v[2].xyz[1] = v[3].xyz[1] = y + h;
-			// set s
-			t[0].tex[0] = t[3].tex[0] = s1;
-			t[1].tex[0] = t[2].tex[0] = s2;
-			// set t
-			t[0].tex[1] = t[1].tex[1] = t1;
-			t[2].tex[1] = t[3].tex[1] = t2;
-			// store colors
-			c[0] = c[1] = c[2] = c[3] = color;
+		// set vert.z
+		v[0].xyz[2] = v[1].xyz[2] = v[2].xyz[2] = v[3].xyz[2] = 0;
+		// set vert.x
+		v[0].xyz[0] = v[3].xyz[0] = x1;
+		v[1].xyz[0] = v[2].xyz[0] = x2;
+		// set vert.y
+		v[0].xyz[1] = v[1].xyz[1] = y;
+		v[2].xyz[1] = v[3].xyz[1] = y + font->outHeight;
+		// set s
+		t[0].tex[0] = t[3].tex[0] = s1;
+		t[1].tex[0] = t[2].tex[0] = s2;
+		// set t
+		t[0].tex[1] = t[1].tex[1] = t1;
+		t[2].tex[1] = t[3].tex[1] = t2;
+		// store colors
+		c[0] = c[1] = c[2] = c[3] = color;
 
-			*idx++ = idx0+0; *idx++ = idx0+1; *idx++ = idx0+2;
-			*idx++ = idx0+0; *idx++ = idx0+2; *idx++ = idx0+3;
+		*idx++ = idx0+0; *idx++ = idx0+1; *idx++ = idx0+2;
+		*idx++ = idx0+0; *idx++ = idx0+2; *idx++ = idx0+3;
 
-			idx0 += 4;
-			v += 4;
-			t += 4;
-			c += 4;
-			gl_numVerts   += 4;
-			gl_numIndexes += 6;
-		}
+		idx0 += 4;
+		v += 4;
+		t += 4;
+		c += 4;
+		gl_numVerts   += 4;
+		gl_numIndexes += 6;
+
 		x1 = x2;
-		x2 += w;
+		x2 += font->outWidth;
 	}
 }
 

@@ -671,6 +671,18 @@ image_t *CreateImage(const char *name, void *pic, int width, int height, unsigne
 		if (!alphaRemoved)
 			flags &= ~IMAGE_NOALPHA;		// original image have no alpha-channel -- reset NOALPHA flag
 	}
+	else if (flags & IMAGE_MAKEALPHA)
+	{
+		//?? may be, use special GL texture format (A8 etc)
+		byte *p = (byte*)pic;
+		for (int i = 0; i < size; i++, p += 4)
+		{
+			byte b = (p[0] + p[1] + p[2]) / 3;
+			p[0] = p[1] = p[2] = 255;
+			p[3] = b;
+		}
+		alpha = 2;					//?? compute
+	}
 	else
 	{
 		// check for alpha channel in image
@@ -1182,9 +1194,9 @@ void PerformScreenshot()
 	screenshotName = NULL;
 
 	// allocate buffer for 4 color components (required for ResampleTexture()
-	byte *buffer = new byte [vid_width * vid_height * 4];
+	byte *buffer = new byte [gl_config.width * gl_config.height * 4];
 	// read frame buffer data
-	glReadPixels(0, 0, vid_width, vid_height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	glReadPixels(0, 0, gl_config.width, gl_config.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
 /*
 	if (!buffer[2000] && !buffer[2001] && !buffer[2002] && !buffer[2004] && !buffer[2005] && !buffer[2006]) appWPrintf("BLACK!\n");
@@ -1196,7 +1208,7 @@ void PerformScreenshot()
 	if (screenshotFlags & SHOT_SMALL)
 	{
 		byte *buffer2 = new byte [LEVELSHOT_W * LEVELSHOT_H * 4];
-		ResampleTexture((unsigned *)buffer, vid_width, vid_height, (unsigned *)buffer2, LEVELSHOT_W, LEVELSHOT_H);
+		ResampleTexture((unsigned *)buffer, gl_config.width, gl_config.height, (unsigned *)buffer2, LEVELSHOT_W, LEVELSHOT_H);
 		// replace "buffer" pointer with a resampled image
 		delete buffer;
 		buffer = buffer2;
@@ -1205,8 +1217,8 @@ void PerformScreenshot()
 	}
 	else
 	{
-		width  = vid_width;
-		height = vid_height;
+		width  = gl_config.width;
+		height = gl_config.height;
 	}
 	int size = width * height;
 
@@ -1509,8 +1521,8 @@ void ShowImages()
 	}
 
 	// display images
-	float dx = vid_width / nx;
-	float dy = vid_height / ny;
+	float dx = gl_config.width / nx;
+	float dy = gl_config.height / ny;
 	int num = numImg;
 	img = imagesArray;
 	for (int y = 0; y < ny && num; y++)

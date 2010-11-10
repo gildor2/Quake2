@@ -678,11 +678,11 @@ void GL_Set2DMode()
 		PerformScreenshot();
 
 	LOG_STRING("***** Set2DMode() *****");
-	glViewport(0, 0, vid_width, vid_height);
-	glScissor(0, 0, vid_width, vid_height);
+	glViewport(0, 0, gl_config.width, gl_config.height);
+	glScissor(0, 0, gl_config.width, gl_config.height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, vid_width, vid_height, 0, 0, 1);
+	glOrtho(0, gl_config.width, gl_config.height, 0, 0, 1);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	GL_State(BLEND(S_ALPHA,M_S_ALPHA)|GLSTATE_NODEPTHTEST);

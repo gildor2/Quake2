@@ -56,7 +56,8 @@ static void DetectOs()
 		{	5,0,	WNT,	"2000"	},
 		{	5,1,	WNT,	"XP"	},
 		{	5,2,	WNT,	"2003"	},
-		{	6,0,	WNT,	"Vista"	}
+		{	6,0,	WNT,	"Vista"	},
+		{	6,1,	WNT,	"7"		},
 	};
 	OSVERSIONINFO ver;
 	ver.dwOSVersionInfoSize = sizeof(ver);
@@ -154,12 +155,12 @@ void appDisplayError()
 
 void appAllowFpuXcpt(bool allow)
 {
+	_clearfp();		// required to prevent re-raising old exceptions on ANY FPU operation
 	unsigned fpMask = _controlfp(0, 0);
 	if (allow)
 		_controlfp(fpMask & ~(_EM_ZERODIVIDE|_EM_INVALID), _MCW_EM);
 	else
 		_controlfp(fpMask | (_EM_ZERODIVIDE|_EM_INVALID), _MCW_EM);
-	_clearfp();		// required to prevent re-raising old exceptions on ANY FPU operation
 }
 
 

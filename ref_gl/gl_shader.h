@@ -311,7 +311,6 @@ public:
 extern	shader_t	*gl_defaultShader;
 extern	shader_t	*gl_identityLightShader;	// no depth test/write
 extern	shader_t	*gl_identityLightShader2;	// with depth test/write
-extern	shader_t	*gl_concharsShader;
 extern	shader_t	*gl_videoShader;
 extern	shader_t	*gl_defaultSkyShader;
 extern	shader_t	*gl_particleShader;
@@ -328,7 +327,7 @@ extern	shader_t	*gl_alphaShader1, *gl_alphaShader2;
 
 void	InitShaders();
 void	ShutdownShaders();
-void	ResetShaders();				// should be called every time before loading a new map
+void	ResetShaders();					// should be called every time before loading a new map
 
 // lightmap types (negative numbers -- no lightmap stage, >= 0 -- has lightmap stage)
 #define LIGHTMAP_NONE		(-1)
@@ -353,6 +352,7 @@ void	ResetShaders();				// should be called every time before loading a new map
 #define SHADER_ENVMAP2		0x04000		// add diffuse environment map
 #define SHADER_CLAMP		0x08000		// load image with IMAGE_CLAMP flag
 #define SHADER_ABSTRACT		0x10000		// create shader without stages
+#define SHADER_MAKEALPHA	0x20000		// generate alpha-channel from image color
 
 // mask of styles, stored to shader (exclude hints)
 #define SHADER_STYLEMASK	0x000FFFFF

@@ -6,8 +6,8 @@
 class CRenderModel
 {
 public:
-	TString<64>	Name;
-	// return "false" when tag not found
+	TString<64>		Name;
+	// return "false" when tag is not found
 	virtual bool LerpTag(int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const = 0;
 };
 
@@ -15,23 +15,33 @@ public:
 class CBasicImage
 {
 public:
-	TString<64> Name;
-	short	width, height;
+	TString<64>		Name;
+	short			width, height;
 	virtual void Reload() = 0;
+};
+
+
+class CBasicFont
+{
+public:
+	TString<64>		Name;
+	int				charWidth;
+	int				charHeight;
 };
 
 
 class CModelSkin
 {
-private:
-	// declaration of a single surface skin
+public:
+	// declaration of the single surface skin
 	struct CSkinnedSurface {
 		TString<32> Name;			// size should be enough
 		CBasicImage *shader;
 	};
-public:
-	int numSurfs;
-	CSkinnedSurface surf[32];		// MAX_MD3_SURFACES == 32; should be [numSurfs]
+
+	int				numSurfs;
+	CSkinnedSurface	surf[32];		// MAX_MD3_SURFACES == 32; should be [numSurfs]
+
 	inline bool IsValid()
 	{
 		return numSurfs > 0;
@@ -49,28 +59,28 @@ public:
 
 struct entity_t
 {
-	CRenderModel *model;
-	CCoords	pos;
-	CVec3	angles;					// not used by renderer
-	int		frame;
-	int		oldframe;
-	float	backlerp;				// 0.0 = current, 1.0 = old; used for frame models only
-	float	scale;					// scale model; 0 == 1 == unscaled
+	CRenderModel	*model;
+	CCoords			pos;
+	CVec3			angles;			// not used by renderer
+	int				frame;
+	int				oldframe;
+	float			backlerp;		// 0.0 = current, 1.0 = old; used for frame models only
+	float			scale;			// scale model; 0 == 1 == unscaled
 			//?? why do we use backlerp instead of simple lerp ?
 	// misc
-	CVec3	size;					// for RF_BBOX only; size of box
+	CVec3			size;			// for RF_BBOX only; size of box
 	// color info
-	color_t	color;
-	float	alpha;					// ignore if RF_TRANSLUCENT isn't set
+	color_t			color;
+	float			alpha;			// ignore if RF_TRANSLUCENT isn't set
 			//?? use color.c[3]
 
 	// entity shading; priority: 1.customShader 2.skin 3.skinnum
-	CBasicImage *customShader;		// single shader for all entity surfaces
-	CModelSkin *skin;				// NULL for built-in skin
-	int		skinnum;				// number of model built-in skin
+	CBasicImage		*customShader;	// single shader for all entity surfaces
+	CModelSkin		*skin;			// NULL for built-in skin
+	int				skinnum;		// number of model built-in skin
 
-	unsigned flags;					// set of RF_XXX flags
-	double	time;					// for effects; used as refdef.time-ent.time (starting time of fx)
+	unsigned		flags;			// set of RF_XXX flags
+	double			time;			// for effects; used as refdef.time-ent.time (starting time of fx)
 };
 
 
@@ -85,31 +95,31 @@ enum beamType_t
 
 struct beam_t
 {
-	CVec3	start;
-	CVec3	end;
-	float	radius;
-	beamType_t type;
-	color_t	color;
-	CBasicImage *shader;
+	CVec3			start;
+	CVec3			end;
+	float			radius;
+	beamType_t		type;
+	color_t			color;
+	CBasicImage		*shader;
 	// internal fields
-	float	alpha;					// color.c[3] is byte and have no enough precision
-	float	fadeTime;
-	float	lifeTime;
-	float	dstAlpha;				// alpha, which will be reached at end of life cycle (default==0)
-	float	growSpeed;				// radius_delta/sec
+	float			alpha;			// color.c[3] is byte and have no enough precision
+	float			fadeTime;
+	float			lifeTime;
+	float			dstAlpha;		// alpha, which will be reached at end of life cycle (default==0)
+	float			growSpeed;		// radius_delta/sec
 	// temporary fields
-	CVec3	drawStart, drawEnd;
+	CVec3			drawStart, drawEnd;
 
-	beam_t *next;
-	beam_t *drawNext;
+	beam_t			*next;
+	beam_t			*drawNext;
 };
 
 
 struct dlight_t
 {
-	CVec3	origin;
-	CVec3	color;					//?? make color_t
-	float	intensity;
+	CVec3			origin;
+	CVec3			color;			//?? make color_t
+	float			intensity;
 };
 
 
@@ -122,48 +132,48 @@ enum particleType_t
 struct particle_t
 {
 	// appearance
-	CVec3	org;
-	byte	color;					// paletted
-	bool	isNew;
-	particleType_t type;
-	float	alpha;
-	const CBspLeaf *leaf;			// NULL -- uninitialized
+	CVec3			org;
+	byte			color;			// paletted
+	bool			isNew;
+	particleType_t	type;
+	float			alpha;
+	const CBspLeaf	*leaf;			// NULL -- uninitialized
 	// some physics
-	CVec3	vel;					// org += vel * time
-	CVec3	accel;					// vel += accel * time
-	float	alphavel;				// alpha/sec
+	CVec3			vel;			// org += vel * time
+	CVec3			accel;			// vel += accel * time
+	float			alphavel;		// alpha/sec
 
-	particle_t *next;
-	particle_t *drawNext;
+	particle_t		*next;
+	particle_t		*drawNext;
 };
 
 struct lightstyle_t
 {
-	byte	length;
-	byte	value;					// current lighting; monochrome; 0 .. 255 -> 0.0 .. 2.0
-	byte	map[MAX_QPATH];
+	byte			length;
+	byte			value;			// current lighting; monochrome; 0 .. 255 -> 0.0 .. 2.0
+	byte			map[MAX_QPATH];
 };
 
 struct refdef_t
 {
-	int		x, y, width, height;	// in virtual screen coordinates
-	float	fov_x, fov_y;
-	CVec3	vieworg;
-	CVec3	viewangles;
-	double	time;					// time for shader effects
-	unsigned rdflags;				// RDF_UNDERWATER, etc
+	int				x, y, width, height; // using virtual screen coordinates
+	float			fov_x, fov_y;
+	CVec3			vieworg;
+	CVec3			viewangles;
+	double			time;			// time for shader effects
+	unsigned		rdflags;		// RDF_UNDERWATER, etc
 
-	byte	*zonebits;				// if not NULL, only zones with set bits will be drawn
+	byte			*zonebits;		// if not NULL, only zones with set bits will be drawn
 
-	int		num_entities;
-	entity_t *entities;
+	int				num_entities;
+	entity_t		*entities;
 
-	int		num_dlights;
-	dlight_t *dlights;
+	int				num_dlights;
+	dlight_t		*dlights;
 
-	lightstyle_t *lightstyles;		// [MAX_LIGHTSTYLES]
-	particle_t *particles;
-	beam_t	 *beams;
+	lightstyle_t	*lightstyles;	// [MAX_LIGHTSTYLES]
+	particle_t		*particles;
+	beam_t			*beams;
 };
 
 

@@ -47,6 +47,15 @@ inline unsigned cpuid0(unsigned code)
 	}
 }
 
+inline unsigned cpuid2(unsigned code)
+{
+	__asm {
+		mov		eax,code
+		cpuid
+		mov		eax,ecx
+	}
+}
+
 inline unsigned cpuid3(unsigned code)
 {
 	__asm {
@@ -81,6 +90,21 @@ inline unsigned cpuid0(unsigned code)
 	: "=a" (r0), "=b" (r1), "=c" (r2), "=d" (r3)
 	: "a" (code));
 	return r0;
+#endif
+}
+
+inline unsigned cpuid2(unsigned code)
+{
+#if 0
+	cpuid(code);
+	return cpuidRegs[2];
+#else
+	unsigned r0, r1, r2, r3;
+	__asm __volatile__
+	("cpuid"
+	: "=a" (r0), "=b" (r1), "=c" (r2), "=d" (r3)
+	: "a" (code));
+	return r2;
 #endif
 }
 
@@ -149,7 +173,8 @@ static void CheckCpuModel()
 	// caps
 	appPrintf("CPU caps: [ ");
 
-	unsigned tmp = cpuid3(1);
+	unsigned tmp  = cpuid3(1);
+	unsigned tmp2 = cpuid2(1);
 	if (tmp & 0x00000001)	appPrintf("FPU ");
 	if (tmp & 0x00000010)
 	{
@@ -167,7 +192,10 @@ static void CheckCpuModel()
 		appPrintf("SSE ");
 		IsSSE = true;
 	}
-	if (tmp & 0x04000000)	appPrintf("SSE2 ");
+	if (tmp  & 0x04000000)	appPrintf("SSE2 ");
+	if (tmp2 & 0x00000001)	appPrintf("SSE3 ");
+	if (tmp2 & 0x00080000)	appPrintf("SSE4.1 ");
+	if (tmp2 & 0x00100000)	appPrintf("SSE4.2 ");
 
 	// check extended features
 	if (cpu0 >= 0x80000001)			// largest recognized extended function

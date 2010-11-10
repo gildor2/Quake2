@@ -3,6 +3,7 @@
 #include "gl_backend.h"
 #include "gl_math.h"
 #include "gl_image.h"
+#include "gl_font.h"
 #include "gl_buffers.h"
 
 /*!! TODO:
@@ -23,8 +24,6 @@ refImport_t	ri;
 #endif
 
 bool renderingEnabled;
-
-unsigned vid_width, vid_height;	//?? remove; move to gl_config
 
 #define I 255
 #define o 51
@@ -231,7 +230,7 @@ static bool SetMode()
 	r_fullscreen->modified = false;
 	gl_mode->modified = false;
 
-	if (GLimp_SetMode(&vid_width, &vid_height, gl_mode->integer, r_fullscreen->integer != 0))
+	if (GLimp_SetMode(&gl_config.width, &gl_config.height, gl_mode->integer, r_fullscreen->integer != 0))
 	{
 		gl_config.prevMode = gl_mode->integer;
 		gl_config.prevBPP  = gl_bitdepth->integer;
@@ -246,7 +245,7 @@ static bool SetMode()
 	Cvar_SetInteger("gl_bitdepth", gl_config.prevBPP);
 
 	// try setting it back to something safe
-	if (!GLimp_SetMode(&vid_width, &vid_height, gl_config.prevMode, gl_config.prevFS))
+	if (!GLimp_SetMode(&gl_config.width, &gl_config.height, gl_config.prevMode, gl_config.prevFS))
 	{
 		appWPrintf("SetMode() - could not revert to safe mode\n");	//?? "to previous mode" ? (but, here will be mode "3")
 		return false;
@@ -403,6 +402,7 @@ bool Init()
 		InitTexts();
 		InitImages();
 		InitShaders();
+		InitFonts();
 		InitModels();
 		BK_Init();
 		CreateBuffers();
@@ -429,6 +429,7 @@ void Shutdown(bool complete)
 	FreeBuffers();
 	BK_Shutdown();
 	ShutdownModels();
+	ShutdownFonts();
 	ShutdownShaders();
 	ShutdownImages();
 
@@ -693,13 +694,13 @@ void RenderFrame(refdef_t *fd)
 		}
 	}
 
-	gl_state.haveFullScreen3d = (vp.x == 0) && (vp.y == 0) && (vp.w == vid_width) && (vp.h == vid_height);
+	gl_state.haveFullScreen3d = (vp.x == 0) && (vp.y == 0) && (vp.w == gl_config.width) && (vp.h == gl_config.height);
 
 	// setup viewPortal structure
 	memset(&vp, 0, sizeof(vp));
 	vp.flags        = fd->rdflags;
 	vp.x            = fd->x;
-	vp.y            = vid_height - (fd->y + fd->height);
+	vp.y            = gl_config.height - (fd->y + fd->height);
 	vp.w            = fd->width;
 	vp.h            = fd->height;
 	vp.fov_x        = fd->fov_x;
@@ -897,7 +898,8 @@ void DrawPic(int x, int y, const char *name, int anchor, int color)
 void LoadNewWorld()
 {
 	STAT(gl_ldStats.Zero());		// clear loading stats
-	ResetShaders();				// delete all shaders and re-create auto-shaders
+	ResetShaders();					// delete all shaders and re-create auto-shaders
+	ResetFonts();					// required because shaders are reloaded
 	LoadWorldMap();
 	forceVisMap = true;
 }
@@ -957,6 +959,11 @@ CBasicImage *RegisterSkin(const char *name, bool force)
 	unsigned flags = SHADER_SKIN;
 	if (!force) flags |= SHADER_CHECK;
 	return FindShader(name, flags);
+}
+
+CBasicFont *RegisterFont(const char *name)
+{
+	return FindFont(name);
 }
 
 CRenderModel *RegisterModel(const char *name)

@@ -10,6 +10,7 @@ void	FinishLoadingWorld();
 CRenderModel* RegisterModel(const char *name);
 CBasicImage*  RegisterSkin(const char *name, bool force = false);
 CBasicImage*  RegisterPic(const char *name);	//?? rename (GetPic() etc)
+CBasicFont*   RegisterFont(const char *name);
 void	SetSky(const char *name, float rotate, const CVec3 &axis);
 
 // frame; rename!!
@@ -22,6 +23,7 @@ void	DrawPic(int x, int y, const char *pic, int anchor = ANCHOR_TOP_LEFT, int co
 void	DrawStretchPic(int x, int y, int w, int h, const char *name);
 void	DrawDetailedPic(int x, int y, int w, int h, const char *name);
 void	DrawChar(int x, int y, int c, int color = C_WHITE);
+void	DrawChar(CBasicFont *font, int x, int y, int c, int color = C_WHITE);
 void	TileClear(int x, int y, int w, int h, const char *name);
 void	Fill(int x, int y, int w, int h, unsigned rgba);
 void	Fill8(int x, int y, int w, int h, int c);

@@ -108,7 +108,7 @@ extern float GGuardValue;
 	if (!(expr)) appError("Assertion: %s (%s)", #expr, __FILE__);
 #endif
 
-// helper declararion
+// helper declaration
 template<int> struct CompileTimeError;
 template<>    struct CompileTimeError<true> {};
 

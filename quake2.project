@@ -169,6 +169,7 @@ D = ref_gl
 GL_RENDERER = {
 	$D/gl_backend.cpp
 	$D/gl_buffers.cpp
+	$D/gl_font.cpp
 	$D/gl_frontend.cpp
 	$D/gl_image.cpp
 	$D/gl_interface.cpp

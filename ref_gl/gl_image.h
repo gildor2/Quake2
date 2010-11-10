@@ -10,11 +10,12 @@ namespace OpenGLDrv {
 #define	IMAGE_MIPMAP		2			// generate and upload mipmap levels
 #define IMAGE_PICMIP		4			// allow texture downsampling for improving FPS
 #define IMAGE_NOALPHA		8			// original image have alpha-channel, but it was removed
+#define IMAGE_MAKEALPHA		0x10		// generate alpha-channel from color
 // image type
-#define IMAGE_SYSTEM		0x10		// auto-generated image (default, fog, dlight etc.)
-#define IMAGE_WORLD			0x20		// used for mip bias only
-#define IMAGE_SKIN			0x40		// ...
-//?? #define IMAGE_GUI			0x80
+#define IMAGE_SYSTEM		0x20		// auto-generated image (default, fog, dlight etc.)
+#define IMAGE_WORLD			0x40		// used for mip bias only
+#define IMAGE_SKIN			0x80		// ...
+//?? #define IMAGE_GUI			0x100
 // hints for image creation
 #define IMAGE_TRUECOLOR		0x80000000	// hint for GL_CreateImage: force to upload image in 32 bit
 #define IMAGE_LIGHTMAP		0x40000000

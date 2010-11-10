@@ -22,8 +22,7 @@ sub walkdir {
 
 	for $f (@filelist) {
 		if (-d "$name/$f") {
-			next if $f eq ".";
-			next if $f eq "..";
+			next if $f =~ /^\./;		# ".", ".." and unix hidden files
 			walkdir("$name/$f", "$prefix$f/");
 			next;
 		}
@@ -51,9 +50,9 @@ syswrite (ARC, pack ("l", 0));
 foreach $name (@list)
 {
 	open (F, "$srcpath/$name") || die "Input file ", $name, " is not found";
-	sysseek (F, 0, 2);
+	$len = sysseek (F, 0, 2);
 	# write file length
-	syswrite (ARC, pack ("l", tell (F)));
+	syswrite (ARC, pack ("l", $len));
 	# write filename (ASCIIZ)
 	syswrite (ARC, "$name\0");
 	close (F);

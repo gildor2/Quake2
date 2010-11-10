@@ -151,4 +151,4 @@ extern const char *menu_out_sound;
 		var.itemnames = items;	\
 	}
 
-#endif
+#endif // __QMENU_H__

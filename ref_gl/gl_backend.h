@@ -79,7 +79,7 @@ void BK_EndFrame();
 void BK_DrawPic(shader_t *shader, int x, int y, int w, int h,
 				float s1 = 0, float t1 = 0, float s2 = 1, float t2 = 1,
 				unsigned color = RGB(1,1,1), byte flipMode = 0);
-void BK_DrawText(const char *text, int len, int x, int y, int w, int h, unsigned color);
+void BK_DrawText(const CFont *font, const char *text, int len, int x, int y, unsigned color);
 void BK_DrawScene();
 void BK_FlushShader();
 

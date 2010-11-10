@@ -1,0 +1,632 @@
+#include <stdio.h>
+#include <windows.h>
+
+
+#pragma comment(lib, "gdi32")
+#pragma comment(lib, "user32")
+
+#define ARRAY_ARG(array)	array, sizeof(array)/sizeof(array[0])
+#define ARRAY_COUNT(array)	(sizeof(array)/sizeof(array[0]))
+
+#define TEX_WIDTH		256
+#define TEX_HEIGHT		256
+
+
+void Error(char *fmt, ...)
+{
+	va_list	argptr;
+	va_start(argptr, fmt);
+	char buf[4096];
+	int len = _vsnprintf(ARRAY_ARG(buf), fmt, argptr);
+	va_end(argptr);
+	if (len < 0 || len >= sizeof(buf) - 1) exit(1);
+	puts(buf);
+	exit(1);
+}
+
+
+template <class T> void ZeroMem(T &obj)
+{
+	memset(&obj, 0, sizeof(T));
+}
+
+
+struct letterloc_t
+{
+	float pos[2];
+	float size[2];
+};
+
+struct fontDef_t
+{
+	int			charWidth, charHeight;
+	int			indirection[256];
+	letterloc_t	locations[256];
+	float		height;
+	float		aspectRatio;
+	char		name[255];
+};
+
+class FontGen
+{
+private:
+	int			firstChar, lastChar, fontSize, fontStyle;
+
+	char		fontName[255];
+	char		fontWinName[255];
+
+	// font style
+	bool		isBold;
+	bool		isItalic;
+	bool		isUnderline;
+	bool		isStrike;
+
+	// output params
+	bool		compressTga;
+	bool 		monochrome;
+
+	// vars
+	HFONT		hf;
+	HDC			dc;
+	HBITMAP		dib, oldbitmap;
+	unsigned char *bmbits;
+	fontDef_t	font_def;
+	int			texture_height;
+
+	// Functions
+	void PrepareFont();
+	void PrepareBitmap();
+	void PrepareHeader();
+	void DrawFont();
+	void SaveTarga();
+	void SaveFontdef();
+	void SaveShader();
+
+public:
+	FontGen (int argc, char *argv[]);
+	virtual ~FontGen();
+	void Go();
+};
+
+
+const char *GetArg(int which, int argc, char **argv)
+{
+	if ( which >= argc )
+		return "";
+	else
+		return argv[which];
+}
+
+#define ARG(X) GetArg ( X, argc, argv )
+
+
+FontGen::FontGen(int argc, char **argv)
+:	hf(NULL)
+,	dc(NULL)
+,	dib(NULL)
+,	oldbitmap(NULL)
+,	fontStyle(0)
+,	fontSize(16)
+,	firstChar(' ')
+,	lastChar(126)
+,	isBold(false)
+,	isUnderline(false)
+,	isItalic(false)
+,	isStrike(false)
+,	compressTga(false)
+,	monochrome(false)
+{
+	int arg;
+
+	fontName[0] = 0;
+	fontWinName[0] = 0;
+
+	for (arg = 1; arg < argc; arg++) {
+		if (!stricmp(ARG(arg), "-size")) {
+			fontSize = atoi(ARG(++arg));
+		}
+		else if (!stricmp(ARG(arg), "-styles")) {
+			const char *styles = ARG(++arg);
+
+			fontStyle = 0;
+			if (strstr(styles, "bold"))
+				isBold = true;
+			if (strstr(styles, "italic"))
+				isItalic = true;
+			if (strstr(styles, "underline"))
+				isUnderline = true;
+			if (strstr(styles, "strikeout"))
+				isStrike = true;
+		}
+		else if (!stricmp(ARG(arg), "-first")) {
+			firstChar = atoi(ARG(++arg));
+		}
+		else if (!stricmp(ARG(arg), "-last")) {
+			lastChar = atoi(ARG(++arg));
+		}
+		else if (!stricmp(ARG(arg), "-winname")) {
+			strcpy(fontWinName, ARG(++arg));
+		}
+		else if (!stricmp(ARG(arg), "-name")) {
+			strcpy(fontName, ARG(++arg));
+		}
+		else if (!stricmp(ARG(arg), "-tga")) {
+			const char *parms = ARG(++arg);
+			if (strstr(parms, "packed"))
+				compressTga = true;
+			if (strstr(parms, "8bit")) {
+				monochrome = true;
+			}
+		}
+	}
+
+	// Check validity...
+	if ( firstChar >= lastChar ) {
+		Error( "ERROR: First char (%d) is >= last char (%d)\n", firstChar, lastChar );
+	}
+	if ( fontSize <= 0 ) {
+		Error( "ERROR: Font size (%d) is <= 0\n", fontSize );
+	}
+	if ( !fontName[0] ) {
+		Error( "ERROR: No font name specified (do it with -name)\n" );
+	}
+	if ( !fontWinName[0] ) {
+		Error( "ERROR: No windows font name specified (do it with -winname)\n" );
+	}
+}
+
+FontGen::~FontGen()
+{
+	if (dc)
+	{
+		SelectObject(dc, GetStockObject(DEFAULT_GUI_FONT));
+		if (oldbitmap)
+			SelectObject(dc, oldbitmap);
+	}
+
+	if (hf)
+		DeleteObject(hf);
+	if (dib)
+		DeleteObject(dib);
+	if (dc)
+		DeleteDC(dc);
+}
+
+void FontGen::PrepareFont()
+{
+	hf = CreateFont(fontSize, 0, 0, 0,
+		isBold      ? FW_BOLD : FW_NORMAL,
+		isItalic    ? TRUE    : FALSE,
+		isUnderline ? TRUE    : FALSE,
+		isStrike    ? TRUE    : FALSE,
+		DEFAULT_CHARSET,
+		OUT_DEFAULT_PRECIS,//OUT_TT_PRECIS,
+		CLIP_DEFAULT_PRECIS,
+		PROOF_QUALITY,
+		DEFAULT_PITCH | FF_DONTCARE,
+		fontWinName
+	);
+
+	if (!hf) Error("ERROR: Could not create font object\n");
+}
+
+void FontGen::PrepareBitmap()
+{
+	BITMAPINFO bmi;
+	BITMAPINFOHEADER &head = bmi.bmiHeader;
+
+	ZeroMem(bmi);
+	head.biSize        = sizeof(BITMAPINFOHEADER);
+	head.biWidth       = TEX_WIDTH;
+	head.biHeight      = TEX_HEIGHT;
+	head.biPlanes      = 1;
+	head.biBitCount    = 24;
+	head.biCompression = BI_RGB;
+
+	dib = CreateDIBSection(dc, &bmi, DIB_RGB_COLORS, (void **)&bmbits, NULL, 0);
+	if (!dib) Error("ERROR: Could not create DIB section.\n");
+
+	dc = CreateCompatibleDC(NULL);
+	if (!dc) Error("ERROR: Couldn't create DC\n");
+	oldbitmap = (HBITMAP)SelectObject(dc, dib);
+
+	SetTextColor(dc, RGB(0xFF, 0xFF, 0xFF));
+	SetBkColor(dc, 0);
+	SelectObject(dc, hf);
+
+	SIZE theSize;
+	GetTextExtentPoint32( dc, " ", 1, &theSize);
+	fontSize = theSize.cy;
+
+	memset(bmbits, 0, TEX_WIDTH * TEX_HEIGHT * 3);
+}
+
+void FontGen::PrepareHeader()
+{
+	int i;
+
+	ZeroMem(font_def);
+	for (i = 0; i < 256; i++)
+		font_def.indirection[i] = -1;
+	for (i = firstChar; i <= lastChar; i++)
+		font_def.indirection[i] = i-firstChar;
+
+	strcpy(font_def.name, fontName);
+	font_def.height = float(fontSize);
+}
+
+void FontGen::DrawFont()
+{
+	int currentLine = 0;
+	int currentColumn = 0;
+	int maxHeight = 0;
+	int numChars = lastChar - firstChar + 1;
+
+	for (int i = 0; i < numChars; i++)
+	{
+		char s[2];
+		SIZE size;
+		RECT fmtRect;
+
+		s[0] = i + firstChar;
+		s[1] = 0;
+
+		if ( !GetTextExtentPoint32 ( dc, s, 1, &size ) ) {
+			Error( "ERROR: Couldn't draw character #%d (%c) - Bye!\n", (int) s[0], s[0] );
+		}
+
+		// These below are padded for bilinear filtering
+		size.cx += 1;
+		size.cy += 1;
+
+		if ( currentColumn + size.cx > TEX_WIDTH ) {
+			currentColumn = 0;
+			currentLine += maxHeight;
+			maxHeight = 0;
+			i--;
+			continue;
+		}
+
+		if ( currentLine + size.cy > TEX_HEIGHT ) {
+			// FIXME allow multiple textures
+			Error("ERROR: Font size exceeds %dx%d texture size.\n", TEX_WIDTH, TEX_HEIGHT);
+		}
+
+		maxHeight = max ( maxHeight, size.cy );
+
+		fmtRect.left   = currentColumn;
+		fmtRect.top    = currentLine;
+		fmtRect.right  = fmtRect.left + size.cx - 1;
+		fmtRect.bottom = fmtRect.top + size.cy - 1;
+
+		if ( !DrawText ( dc, s, 1, &fmtRect, DT_LEFT | DT_NOPREFIX | DT_TOP ) )
+			printf ( "ERROR: Drawtext failed on char #%d (%c) - Bye!\n", (int) s[0], s[0] );
+
+		font_def.locations[i].pos[0]  = (float) currentColumn;
+		font_def.locations[i].pos[1]  = (float) currentLine;
+		font_def.locations[i].size[0] = (float) size.cx-1;
+		font_def.locations[i].size[1] = (float) size.cy-1;
+		if (!i)
+		{
+			font_def.charWidth  = size.cx;
+			font_def.charHeight = size.cy;
+		}
+		else
+		{
+			if (size.cx != font_def.charWidth || size.cy != font_def.charHeight)
+				Error("Non-monospace font!");
+		}
+
+		currentColumn += size.cx;
+	}
+
+	// This sees if it can eliminate things
+	texture_height = TEX_HEIGHT;
+	currentLine += maxHeight;
+
+	font_def.aspectRatio = 1.f;
+
+	// compute best texture height (will be a power of 2)
+	while ((texture_height / 2) > currentLine)
+	{
+		texture_height /= 2;
+		font_def.aspectRatio *= 2.f;
+	}
+
+	// I don't know how necessary this is, but it can't hurt.
+	GdiFlush ();
+}
+
+
+#define TGA_ORIGIN_MASK		0x30
+#define TGA_BOTLEFT			0x00
+#define TGA_BOTRIGHT		0x10					// unused
+#define TGA_TOPLEFT			0x20
+#define TGA_TOPRIGHT		0x30					// unused
+
+#if _MSC_VER
+#pragma pack(push,1)
+#endif
+
+struct tgaHdr_t
+{
+	byte 	id_length, colormap_type, image_type;
+	unsigned short colormap_index, colormap_length;
+	byte	colormap_size;
+	unsigned short x_origin, y_origin;				// unused
+	unsigned short width, height;
+	byte	pixel_size, attributes;
+};
+
+#if _MSC_VER
+#pragma pack(pop)
+#endif
+
+bool WriteTGA(const char *name, byte *pic, int width, int height, bool canCompress, bool monochrome)
+{
+	int		i;
+
+	FILE *f;
+	if (!(f = fopen(name, "wb")))
+	{
+		printf("WriteTGA(%s): cannot create file\n", name);
+		return false;
+	}
+
+	byte *src;
+	int size = width * height;
+
+	byte *packed = new byte [width * height * 3];
+	byte *threshold = packed + width * height * 3 - 16;		// threshold for "dst"
+
+	src = pic;
+	byte *dst = packed;
+	int column = 0;
+	byte *flag = NULL;
+	bool rle = false;
+
+	bool useCompression = true;
+	if (!canCompress)
+	{
+		useCompression = false;
+		goto skip_compress;
+	}
+
+	for (i = 0; i < size; i++)
+	{
+		if (dst >= threshold)								// when compressed is too large, same uncompressed
+		{
+			useCompression = false;
+			break;
+		}
+
+		byte b = *src++;
+		byte g = *src++;
+		byte r = *src++;
+		if (monochrome) b = (b + g + r) / 3;				// b = B/W color
+
+		bool colorsSame = false;
+		if (column < width - 1)
+		{
+			// not on screen edge; NOTE: when i == size-1, col==width-1
+			if (!monochrome)
+			{
+				colorsSame = b == src[0] && g == src[1] && r == src[2];
+			}
+			else
+			{
+				int b2 = (src[0] + src[1] + src[2]) / 3;
+				colorsSame = (b == b2);
+			}
+		}
+
+		if (colorsSame &&									// next byte will be the same
+			!(rle && flag && *flag == 254))					// flag overflow
+		{
+			if (!rle || !flag)
+			{
+				// starting new RLE sequence
+				flag = dst++;
+				*flag = 128 - 1;							// will be incremented below
+				*dst++ = b;
+				if (!monochrome)
+				{
+					*dst++ = g; *dst++ = r;
+				}
+			}
+			(*flag)++;										// enqueue one more texel
+			rle = true;
+		}
+		else
+		{
+			if (rle)
+			{
+				// previous block was RLE, and next (now: current) byte was
+				// the same - enqueue it to previous block and close block
+				(*flag)++;
+				flag = NULL;
+			}
+			else
+			{
+				if (!flag)
+				{
+					// start new copy sequence
+					flag = dst++;
+					*flag = 0 - 1;							// 255, to be exact
+				}
+				// copy texel
+				*dst++ = b;
+				if (!monochrome)
+				{
+					*dst++ = g; *dst++ = r;
+				}
+				(*flag)++;
+				if (*flag == 127) flag = NULL;				// check for overflow
+			}
+			rle = false;
+		}
+
+		if (++column == width) column = 0;
+	}
+
+skip_compress:
+	// write header
+	tgaHdr_t header;
+	memset(&header, 0, sizeof(header));
+	header.width  = width;
+	header.height = height;
+
+	if (monochrome)
+	{
+		// debug: write black/white image
+		header.pixel_size = 8;
+		header.image_type = useCompression ? 11 : 3;
+		fwrite(&header, 1, sizeof(header), f);
+		if (useCompression)
+		{
+			printf("WriteTGA: packed %d -> %d\n", size * 3, dst - packed);
+			fwrite(packed, 1, dst - packed, f);
+		}
+		else
+		{
+			for (i = 0; i < width * height; i++, pic += 3)
+			{
+				int c = (pic[0]+pic[1]+pic[2]) / 3;
+				fwrite(&c, 1, 1, f);
+			}
+		}
+	}
+	else
+	{
+		header.pixel_size = 24;
+		header.image_type = useCompression ? 10 : 2;	// RLE or uncompressed
+		fwrite(&header, 1, sizeof(header), f);
+
+		if (useCompression)
+		{
+			printf("WriteTGA: packed %d -> %d\n", size * 3, dst - packed);
+			fwrite(packed, 1, dst - packed, f);
+		}
+		else
+		{
+			printf("WriteTGA: save uncompressed, %d bytes\n", size * 3);
+			fwrite(pic, 1, size * 3, f);
+		}
+	}
+
+	fclose(f);
+	delete packed;
+	return true;
+}
+
+
+void FontGen::SaveTarga()
+{
+	char fileName[256];
+	sprintf(fileName, "%s.tga", font_def.name);
+
+	int start_line = TEX_HEIGHT - texture_height;
+	WriteTGA(fileName, bmbits + TEX_WIDTH * 3 * start_line, TEX_WIDTH, texture_height, compressTga, monochrome);
+}
+
+
+void FontGen::SaveFontdef()
+{
+#if 0
+
+	FILE *f;
+	char fileName[255];
+	int i;
+
+	sprintf ( fileName, "%s.RitualFont", font_def.name );
+
+	if (!(f = fopen(fileName, "wt")))
+		Error("ERROR: Could not write %s\n", fileName);
+
+	fprintf( f, "RitFont\n" );
+	fprintf( f, "height %f\n", font_def.height );
+	fprintf( f, "aspect %.8f\n", font_def.aspectRatio );
+	fprintf( f, "indirections { \n" );
+	for ( i=0; i < 256; i++ )
+	{
+		fprintf ( f, "%d ", font_def.indirection[i] );
+		if ( ( i + 1 ) % 10 == 0 )
+			fprintf ( f, "\n" );
+	}
+
+	fprintf( f, "\n}\n" );
+	fprintf( f, "locations {\n" );
+	for ( i=0; i < 256; i++ )
+	{
+		fprintf( f, "{ %g %g %g %g } ", font_def.locations[i].pos[0], font_def.locations[i].pos[1],
+			font_def.locations[i].size[0], font_def.locations[i].size[1] );
+		if ( ( i + 1 ) % 3 == 0 )
+			fprintf( f, "\n" );
+	}
+
+	fprintf( f, "\n}\n" );
+	fclose(f);
+
+#else
+
+	int i;
+
+	char fileName[255];
+	sprintf(fileName, "%s.font", font_def.name);
+
+	FILE *f = fopen(fileName, "wt");
+	if (!f) Error("ERROR: Could not write %s\n", fileName);
+
+	fprintf(f,
+		"bitmap \"%s\"\n"
+		"firstChar %d\n"
+		"charSize %d %d\n",
+		font_def.name,
+		firstChar,
+		font_def.charWidth,
+		font_def.charHeight
+	);
+
+	fclose(f);
+
+#endif
+}
+
+void FontGen::Go()
+{
+	// Starts genereting the font stuff
+	PrepareFont();
+	PrepareBitmap();
+	PrepareHeader();
+	DrawFont();
+	SaveTarga();
+	SaveFontdef();
+}
+
+void main(int argc, char **argv)
+{
+	if (argc == 1)
+	{
+		printf(
+			"Usage: fontgen -name <name> -winname \"<name>\" [options]\n"
+			"  Required:\n"
+			"    -name <name>      - The font name that the game will use\n"
+			"    -winname \"<name>\" - The Windows name of the font (in quotes)\n"
+			"  Optional:\n"
+			"    -size <number>    - The size of the font in pixels (default 16)\n"
+			"    -first <number>   - First character number to use. (default 32 (spacebar) )\n"
+			"    -last <number>    - Last character number to use (default 126)\n"
+			"    -styles <string>  - Styles to apply. <string> is comma separated list of:\n"
+			"                        bold, underline, strikeout, italic\n"
+			"                        Example: For a bold underlined string, use\n"
+			"                        \"-styles bold,underline\" (No spaces between commas)\n"
+			"    -tga <type>       - TGA output format, comma separated list of:\n"
+			"                        8 (8-bit texture), 24, 32, packed\n"
+		);
+		return;
+	}
+
+	FontGen font(argc, argv);
+	font.Go();
+	printf( "Success!\n" );
+}

@@ -14,7 +14,6 @@ namespace OpenGLDrv {
 shader_t *gl_defaultShader;
 shader_t *gl_identityLightShader;
 shader_t *gl_identityLightShader2;
-shader_t *gl_concharsShader;
 shader_t *gl_videoShader;			// fullscreen video
 shader_t *gl_defaultSkyShader;		// default sky shader (black image)
 shader_t *gl_particleShader;
@@ -787,8 +786,9 @@ shader_t *FindShader(const char *name, unsigned style)
 	}
 
 	// non-scripted shaders: purge alpha-channel when not required
-	if (!(style & (SHADER_ALPHA|SHADER_FORCEALPHA|SHADER_TRANS33|SHADER_TRANS66)))
+	if (!(style & (SHADER_ALPHA|SHADER_FORCEALPHA|SHADER_MAKEALPHA|SHADER_TRANS33|SHADER_TRANS66)))
 		sh_imgFlags |= IMAGE_NOALPHA;	//?? add it always, when stage have no alpha-depending blend modes
+	if (style & SHADER_MAKEALPHA) sh_imgFlags |= IMAGE_MAKEALPHA;
 	// check SHADER_CLAMP (for scripts, should explicitly use clampMap/animClampMap)
 	if (style & SHADER_CLAMP) sh_imgFlags |= IMAGE_CLAMP;
 
@@ -881,7 +881,7 @@ shader_t *FindShader(const char *name, unsigned style)
 		stage->rgbGenType   = RGBGEN_EXACT_VERTEX;
 		stage->alphaGenType = ALPHAGEN_VERTEX;	// no alpha for lightmapped surface, but rgb=vertex and alpha=vertex -- fast
 	}
-	else if (style & SHADER_FORCEALPHA)
+	else if (style & (SHADER_FORCEALPHA|SHADER_MAKEALPHA))
 	{
 		stage->glState = BLEND(S_ALPHA,M_S_ALPHA)|GLSTATE_ALPHA_GT0;
 				// image has no alpha, but use glColor(x,x,x,<1)
@@ -1311,8 +1311,6 @@ void ResetShaders()
 		gl_detailShader->cullMode = CULL_NONE;
 		gl_detailShader->stages[0]->glState = BLEND(D_COLOR,S_COLOR)|GLSTATE_NODEPTHTEST;
 	}
-
-	gl_concharsShader = FindShader("pics/conchars", SHADER_ALPHA);
 
 	// sky shader
 	ClearTempShader();

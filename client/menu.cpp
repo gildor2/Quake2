@@ -2255,7 +2255,7 @@ struct thumbParams_t
 {
 	unsigned short w, h;	// thumbnail sizes
 	byte	cx, cy;			// number of thumbnail on screen
-	unsigned short x0, y0, dx, dy; // delta for coputing thumbnail coordinates on screen (Xo+Ix*Dx, Yo+Iy*Dy)
+	short	x0, y0, dx, dy; // delta for coputing thumbnail coordinates on screen (Xo+Ix*Dx, Yo+Iy*Dy)
 	int		count;			// number of maps
 	int		top;
 	int		current;
@@ -2264,19 +2264,16 @@ struct thumbParams_t
 struct thumbLayout_t
 {
 	unsigned short width;	// max screen width
-	byte	cx, cy;			// count of thumbs per x/y side
 	unsigned short w, h;	// thumb sizes
 };
 
 
 static const thumbLayout_t thumbLayout[] =
 {
-	{320, 2, 1, 128, 96},
-	{512, 2, 2, 128, 96},
-	{640, 2, 2, 192, 144},
-	{800, 3, 3, 192, 144},
-	{1024, 3, 3, 256, 192},
-	{65535, 4, 4, 256, 192}		// I don't think screen will have resolution of 65536 x 49152 pixels (~12 TBytes with 32-bit color)
+	{0,    128,  96},
+	{640,  192, 144},
+	{1024, 256, 192},
+	{1600, 320, 240},
 };
 
 
@@ -2306,24 +2303,29 @@ struct dmbrowseMenu_t : menuFramework_t
 		int oldcount = thumbs.count;
 		thumbs.count = 0;
 
-		int i = 0;
-		while (true)
+		int i;
+
+		for (i = 0; i < ARRAY_COUNT(thumbLayout); i++)
 		{
-			if (viddef.width <= thumbLayout[i].width)
-			{
-				thumbs.cx = thumbLayout[i].cx;
-				thumbs.cy = thumbLayout[i].cy;
-				thumbs.w  = thumbLayout[i].w;
-				thumbs.h  = thumbLayout[i].h;
+			if (viddef.width < thumbLayout[i].width)
 				break;
-			}
-			i++;
+			thumbs.w = thumbLayout[i].w;
+			thumbs.h = thumbLayout[i].h;
 		}
 
 		thumbs.dx = thumbs.w + THUMBNAIL_BORDER * 4;
 		thumbs.dy = thumbs.h + THUMBNAIL_BORDER * 4 + THUMBNAIL_TEXT;
-		thumbs.x0 = (viddef.width - thumbs.cx * thumbs.dx + thumbs.dx - thumbs.w) / 2;	// (x-cx*dx)/2 + (dx-w)/2
-		thumbs.y0 = (viddef.height - thumbs.cy * thumbs.dy + thumbs.dy - thumbs.h) / 2 - CHAR_HEIGHT;
+		// compute suitable thumbnail grid size
+		for (thumbs.cx = 5; thumbs.cx >= 2; thumbs.cx--)
+		{
+			thumbs.x0 = (viddef.width - thumbs.cx * thumbs.dx + thumbs.dx - thumbs.w) / 2;	// (x-cx*dx)/2 + (dx-w)/2
+			if (thumbs.x0 >= 0) break;		// size is ok
+		}
+		for (thumbs.cy = 4; thumbs.cy >= 2; thumbs.cy--)
+		{
+			thumbs.y0 = (viddef.height - thumbs.cy * thumbs.dy + thumbs.dy - thumbs.h) / 2 - CHAR_HEIGHT;
+			if (thumbs.y0 >= 0) break;		// size is ok
+		}
 
 		const char *path = NULL;
 		browse_list = new CFileList;
@@ -2628,8 +2630,9 @@ struct videoMenu_t : menuFramework_t
 		static const char *resolutions[] = {
 			"[320  240 ]",	"[400  300 ]",	"[512  384 ]",	"[640  480 ]",
 			"[800  600 ]",	"[960  720 ]",	"[1024 768 ]",	"[1152 864 ]",
-			"[1280 960 ]",	"[1280 1024]",	"[1600 1200]",	"[1680 1050]",
-			"[1920 1200]",	"[2048 1536]",	NULL
+			"[1280 700 ]",	"[1280 960 ]",	"[1280 1024]",	"[1600 900 ]",
+			"[1600 1200]",	"[1680 1050]",	"[1920 1200]",	"[2048 1536]",
+			NULL
 		};
 		static const char *overbrightNames[] = {
 			"no",			"yes",			"auto",			NULL

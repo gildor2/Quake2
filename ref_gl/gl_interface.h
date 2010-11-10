@@ -6,49 +6,50 @@
 
 // Hardware identitiers for some special cases
 // should be a bit mask for easier checking multiple platforms at one step
-#define HW_GENERIC		0x00000000	// any `unknown' platform
-#define HW_NV			0x00000001	// any NVidia videocard
-#define HW_GF2MX		0x00000002	// GeForce2 MX
-#define HW_ATI			0x00010000	// any ATi videocard
+#define HW_GENERIC		0x00000000		// any `unknown' platform
+#define HW_NV			0x00000001		// any NVidia videocard
+#define HW_GF2MX		0x00000002		// GeForce2 MX
+#define HW_ATI			0x00010000		// any ATi videocard
 // NOTE: (HW_GF2MX & HW_NV) == 0
 
 
 struct glconfig_t
 {
-	unsigned platformId;			// HW_xxx ...
-	int		maxTextureSize;
-	int		maxRectTextureSize;
-	unsigned extensionMask;			// for GL_SUPPORT() macro (used extensions)
-	unsigned disabledExt, ignoredExt; // extensions, disabled by user + covered by a different extension; for gfxinfo()
-	unsigned bugExt;				// buggy extensions, disabled by engine
+	unsigned	platformId;				// HW_xxx ...
+	int			maxTextureSize;
+	int			maxRectTextureSize;
+	unsigned	extensionMask;			// for GL_SUPPORT() macro (used extensions)
+	unsigned	disabledExt, ignoredExt; // extensions, disabled by user + covered by a different extension; for gfxinfo()
+	unsigned	bugExt;					// buggy extensions, disabled by engine
 	// fields for gfxinfo
 	const char	*extensions, *extensions2;
 
 	// multitexturing
-	int		maxActiveTextures;		// == 1 if no multitexturing
+	int			maxActiveTextures;		// == 1 if no multitexturing
 
-	bool	doubleModulateLM;		// when false, lightmaps lightscaled by 2 (hardware unable to perform src*dst*2 blend)
-	bool	multiPassLM;			// when false, upload dynamic lightmaps
+	bool		doubleModulateLM;		// when false, lightmaps lightscaled by 2 (hardware unable to perform src*dst*2 blend)
+	bool		multiPassLM;			// when false, upload dynamic lightmaps
 
 	// texture compression formats (0 if unavailable)
-	GLenum	formatSolid;			// RGB (no alpha)
-	GLenum	formatAlpha;			// RGBA (full alpha range)
-	GLenum	formatAlpha1;			// RGB_A1 (1 bit for alpha)
+	GLenum		formatSolid;			// RGB (no alpha)
+	GLenum		formatAlpha;			// RGBA (full alpha range)
+	GLenum		formatAlpha1;			// RGB_A1 (1 bit for alpha)
 
-	bool	fullscreen;
-	byte	prevMode;				// last valid video mode
-	byte	prevBPP;
-	bool	prevFS;
+	bool		fullscreen;
+	byte		prevMode;				// last valid video mode
+	byte		prevBPP;
+	bool		prevFS;
+	unsigned	width, height;			// viewport dimensions
 
 	// gamma
-	bool	deviceSupportsGamma;
-	int		overbright;				// 0 - normal, 1 - double gamma
-	int		identityLightValue;		// 255/(1<<overbright)
-	float	identityLightValue_f;	// 1.0/(1<<overbright)
-	bool	vertexLight;
+	bool		deviceSupportsGamma;
+	int			overbright;				// 0 - normal, 1 - double gamma
+	int			identityLightValue;		// 255/(1<<overbright)
+	float		identityLightValue_f;	// 1.0/(1<<overbright)
+	bool		vertexLight;
 
 	// tables
-	unsigned tbl_8to32[256];		// palette->RGBA
+	unsigned	tbl_8to32[256];			// palette->RGBA
 };
 
 // macro for checking extension support

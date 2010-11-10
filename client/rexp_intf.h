@@ -10,6 +10,7 @@ struct refExport_t
 	CRenderModel*	(*RegisterModel) (const char *name);
 	CBasicImage*	(*RegisterSkin) (const char *name, bool force);
 	CBasicImage*	(*RegisterPic) (const char *name);
+	CBasicFont*	(*RegisterFont) (const char *name);
 	void	(*SetSky) (const char *name, float rotate, const CVec3 &axis);
 	void	(*BeginFrame) (double time);
 	void	(*RenderFrame) (refdef_t *fd);
@@ -18,6 +19,7 @@ struct refExport_t
 	void	(*DrawStretchPic) (int x, int y, int w, int h, const char *name);
 	void	(*DrawDetailedPic) (int x, int y, int w, int h, const char *name);
 	void	(*DrawChar) (int x, int y, int c, int color);
+	void	(*DrawChar1) (CBasicFont *font, int x, int y, int c, int color);
 	void	(*TileClear) (int x, int y, int w, int h, const char *name);
 	void	(*Fill) (int x, int y, int w, int h, unsigned rgba);
 	void	(*Fill8) (int x, int y, int w, int h, int c);
@@ -67,6 +69,10 @@ inline CBasicImage* RE_RegisterPic(const char *name)
 {
 	return re.RegisterPic(name);
 }
+inline CBasicFont* RE_RegisterFont(const char *name)
+{
+	return re.RegisterFont(name);
+}
 inline void RE_SetSky(const char *name, float rotate, const CVec3 &axis)
 {
 	re.SetSky(name, rotate, axis);
@@ -98,6 +104,10 @@ inline void RE_DrawDetailedPic(int x, int y, int w, int h, const char *name)
 inline void RE_DrawChar(int x, int y, int c, int color = C_WHITE)
 {
 	re.DrawChar(x, y, c, color);
+}
+inline void RE_DrawChar(CBasicFont *font, int x, int y, int c, int color = C_WHITE)
+{
+	re.DrawChar1(font, x, y, c, color);
 }
 inline void RE_TileClear(int x, int y, int w, int h, const char *name)
 {
@@ -164,6 +174,7 @@ namespace OpenGLDrv
 #define RE_RegisterModel	OpenGLDrv::RegisterModel
 #define RE_RegisterSkin	OpenGLDrv::RegisterSkin
 #define RE_RegisterPic	OpenGLDrv::RegisterPic
+#define RE_RegisterFont	OpenGLDrv::RegisterFont
 #define RE_SetSky	OpenGLDrv::SetSky
 #define RE_BeginFrame	OpenGLDrv::BeginFrame
 #define RE_RenderFrame	OpenGLDrv::RenderFrame
@@ -171,6 +182,7 @@ namespace OpenGLDrv
 #define RE_DrawPic	OpenGLDrv::DrawPic
 #define RE_DrawStretchPic	OpenGLDrv::DrawStretchPic
 #define RE_DrawDetailedPic	OpenGLDrv::DrawDetailedPic
+#define RE_DrawChar	OpenGLDrv::DrawChar
 #define RE_DrawChar	OpenGLDrv::DrawChar
 #define RE_TileClear	OpenGLDrv::TileClear
 #define RE_Fill	OpenGLDrv::Fill

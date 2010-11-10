@@ -12,9 +12,6 @@
 
 #define	CON_TEXTSIZE 32768
 
-//?? move consts outside; may be, make a variable; should be synched with renderer char sizes
-#define CHAR_WIDTH	8
-#define CHAR_HEIGHT	8
 
 struct console_t
 {
@@ -64,6 +61,12 @@ int		con_height;
 
 // WRAP_CHAR will be placed as "soft" line-feed instead of a space char
 #define		WRAP_CHAR	(char)(' ' + 128)
+
+
+inline CBasicFont *GetConsoleFont()
+{
+	return RE_RegisterFont("console");
+}
 
 
 static void Con_Clear_f()
@@ -142,7 +145,9 @@ void Con_CheckResize()
 		con.wordwrap = con_wordWrap->integer != 0;
 	}
 
-	int width = (viddef.width / CHAR_WIDTH) - 2;
+	CBasicFont *font = GetConsoleFont();
+
+	int width = (viddef.width / font->charWidth) - 2;
 	if (width < 1) width = 38;			// wideo hash't initialized
 
 	if (width == GScreenWidth)
@@ -351,15 +356,17 @@ static void DrawInput()
 	else
 		shift = 0;
 
+	CBasicFont *font = GetConsoleFont();
+
 	// draw it
-	int y = con.vislines - CHAR_HEIGHT - 14;
+	int y = con.vislines - font->charHeight * 2 + 2;
 
 	bool eoln = false;
 	for (int i = 0; i < GScreenWidth; i++, text++)
 	{
 		char	c;
 
-		int x = (i+1) * CHAR_WIDTH;
+		int x = (i+1) * font->charWidth;
 		if (!eoln)
 		{
 			c = *text;
@@ -367,11 +374,14 @@ static void DrawInput()
 		}
 		if (eoln) c = ' ';
 		// draw char
-		RE_DrawChar(x, y, c);
+		RE_DrawChar(font, x, y, c);
 		// draw blinking cursor
-#define CURSOR_HEIGHT	(CHAR_HEIGHT/4)
 		if ((i == editPos  - shift) && (cls.realtime >> 8) & 1 && cls.key_dest == key_console)
-			RE_Fill(x, y+CHAR_HEIGHT-CURSOR_HEIGHT, CHAR_WIDTH, CURSOR_HEIGHT, RGBA(1,0.2,0.3,0.8));
+		{
+			int cursorHeight = font->charHeight / 4;
+			if (cursorHeight < 2) cursorHeight = 2;
+			RE_Fill(x, y + font->charHeight - cursorHeight, font->charWidth, cursorHeight, RGBA(1,0.2,0.3,0.8));
+		}
 	}
 }
 
@@ -380,6 +390,8 @@ void Con_DrawNotify(bool drawBack)
 {
 	int v = 0;
 	int pos = -1;
+	CBasicFont *font = GetConsoleFont();
+
 	for (int i = con.current - NUM_CON_TIMES + 1; i <= con.current; i++)
 	{
 		if (i < 0) continue;
@@ -402,7 +414,11 @@ void Con_DrawNotify(bool drawBack)
 
 		if (drawBack)
 		{
-			RE_Fill(0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * CHAR_HEIGHT + CHAR_HEIGHT/2, RGBA(1,0,0,0.3));
+#if 0
+			RE_Fill(0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * font->charHeight + font->charHeight / 2, RGBA(1,0,0,0.3));
+#else
+			RE_DrawStretchPic(0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * font->charHeight + font->charHeight / 2, "pics/notify");
+#endif
 			drawBack = false;
 		}
 		for (int x = 0; x < GScreenWidth; x++)
@@ -412,10 +428,10 @@ void Con_DrawNotify(bool drawBack)
 			if (++pos >= CON_TEXTSIZE) pos -= CON_TEXTSIZE;
 
 			if (c == '\n' || c == WRAP_CHAR) break;
-			RE_DrawChar((x + 1) * CHAR_WIDTH, v, c, color);
+			RE_DrawChar(font, (x + 1) * font->charWidth, v, c, color);
 		}
 
-		v += CHAR_HEIGHT;
+		v += font->charHeight;
 	}
 }
 
@@ -440,6 +456,10 @@ void Con_DrawConsole(float frac)
 	if (lines > viddef.height)
 		lines = viddef.height;
 
+	CBasicFont *font = GetConsoleFont();
+	int charWidth  = font->charWidth;
+	int charHeight = font->charHeight;
+
 	// draw the background
 #if 0
 //	RE_Fill(0, 0, viddef.width, lines, RGBA(0,0,0.02,Cvar_VariableValue("con_alpha")));
@@ -455,19 +475,19 @@ void Con_DrawConsole(float frac)
 	TString<64> Version;
 	i = Version.sprintf("%s v" STR(VERSION), appPackage());
 	for (x = 0; x < i; x++)
-		RE_DrawChar(viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, Version[x], C_GREEN);
+		RE_DrawChar(font, viddef.width - i * charWidth - charWidth / 2 + x * charWidth, lines - charHeight - 4, Version[x], C_GREEN);
 #else
 	static const char version[] = APPNAME " v" STR(VERSION);
 	i = sizeof(version) - 1;
 	for (x = 0; x < i; x++)
-		RE_DrawChar(viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, version[x], C_GREEN);
+		RE_DrawChar(font, viddef.width - i * charWidth - charWidth / 2 + x * charWidth, lines - charHeight - 4, version[x], C_GREEN);
 #endif
 
 	// draw the text
 	con.vislines = lines;
 
-	int rows = (lines - CHAR_HEIGHT/2) / CHAR_HEIGHT - 2;	// rows of text to draw
-	int y = lines - 30;
+	int rows = (lines - charHeight / 2) / charHeight - 2;	// rows of text to draw
+	int y = lines - charHeight * 3;
 
 	int topline = con.current - con.totallines + 1;			// number of top line in buffer
 
@@ -489,12 +509,12 @@ void Con_DrawConsole(float frac)
 	}
 
 	int y0 = y;												// last console text line
-	y -= (rows - 1) * CHAR_HEIGHT;
+	y -= (rows - 1) * charHeight;
 	if (con.totallines && con.display != con.current)
 	{
 		/*------ draw arrows to show the buffer is backscrolled -------*/
 		for (x = 0; x < GScreenWidth; x += 4)
-			RE_DrawChar((x + 1) * CHAR_WIDTH, y0, '^');
+			RE_DrawChar(font, (x + 1) * charWidth, y0, '^');
 		rows--;
 	}
 
@@ -518,16 +538,16 @@ void Con_DrawConsole(float frac)
 				if (c == '\n' || c == WRAP_CHAR) break;
 
 				if (!con_colorText->integer) color = C_WHITE;
-				RE_DrawChar((x + 1) * CHAR_WIDTH, y, c, color);
+				RE_DrawChar(font, (x + 1) * charWidth, y, c, color);
 			}
-			y += CHAR_HEIGHT;
+			y += charHeight;
 		}
 	}
 	CON_DBG(va(" disp:%d total:%d",con.display,con.totallines));
 #if DEBUG_CONSOLE
 	i = DbgBuf.len();
 	for (x = 0; x < i; x++)
-		RE_DrawChar(x*CHAR_WIDTH, lines - 12, DbgBuf[x], C_BLUE);
+		RE_DrawChar(font, x * charWidth, lines - font->charHeight - 2, DbgBuf[x], C_BLUE);
 #endif
 	// draw the input prompt, user text, and cursor
 	DrawInput();

@@ -1,5 +1,6 @@
 #include "OpenGLDrv.h"
 #include "gl_backend.h"
+#include "gl_font.h"
 #include "gl_math.h"		// for ProjectToScreen()
 
 
@@ -13,14 +14,16 @@ static cvar_t	*gl_logTexts;
 	Text output
 -----------------------------------------------------------------------------*/
 
-//?? should be synched with console+menu char sizes
-#define CHAR_WIDTH	8
-#define CHAR_HEIGHT	8
-
 void DrawChar(int x, int y, int c, int color)
 {
 	if (c == ' ') return;
-	BK_DrawText((char*)&c, 1, x, y, CHAR_WIDTH, CHAR_HEIGHT, colorTable[color]);
+	BK_DrawText(gl_concharsFont, (char*)&c, 1, x, y, colorTable[color]);
+}
+
+
+void DrawChar(CBasicFont *font, int x, int y, int c, int color)
+{
+	BK_DrawText(static_cast<CFont*>(font), (char*)&c, 1, x, y, colorTable[color]);
 }
 
 
@@ -29,8 +32,6 @@ void DrawChar(int x, int y, int c, int color)
 -----------------------------------------------------------------------------*/
 
 #define TOP_TEXT_POS	64
-#define CHARSIZE_X		6
-#define CHARSIZE_Y		8
 
 
 struct CRText : public CTextRec
@@ -52,27 +53,6 @@ void ClearTexts()
 }
 
 
-//?? later (CFont): implement as CFont method
-static void GetTextExtents(const char *s, int &width, int &height)
-{
-	int x = 0, w = 0;
-	int h = CHARSIZE_Y;
-	while (char c = *s++)
-	{
-		if (c == '\n')
-		{
-			if (x > w) w = x;
-			x = 0;
-			h += CHARSIZE_Y;
-			continue;
-		}
-		x += CHARSIZE_X;
-	}
-	width = max(x, w);
-	height = h;
-}
-
-
 static void DrawText(const CRText *rec)
 {
 	if (gl_logTexts->integer)
@@ -86,10 +66,10 @@ static void DrawText(const CRText *rec)
 		const char *s = strchr(text, '\n');
 		int len = s ? s - text : strlen(text);
 
-		BK_DrawText(text, len, rec->x, y, CHARSIZE_X, CHARSIZE_Y, rec->c.rgba);
+		BK_DrawText(gl_debugFont, text, len, rec->x, y, rec->c.rgba);
 		if (!s) return;							// all done
 
-		y += CHARSIZE_Y;
+		y += gl_debugFont->outHeight;
 		text = s + 1;
 	}
 }
@@ -118,8 +98,8 @@ void DrawTextPos(int x, int y, const char *text, unsigned rgba)
 void DrawTextLeft(const char *text, unsigned rgba)
 {
 	int w, h;
-	if (nextLeft_y >= vid_height) return;	// out of screen
-	GetTextExtents(text, w, h);
+	if (nextLeft_y >= gl_config.height) return;	// out of screen
+	gl_debugFont->GetTextExtents(text, w, h);
 	DrawTextPos(0, nextLeft_y, text, rgba);
 	nextLeft_y += h;
 }
@@ -128,9 +108,9 @@ void DrawTextLeft(const char *text, unsigned rgba)
 void DrawTextRight(const char *text, unsigned rgba)
 {
 	int w, h;
-	if (nextRight_y >= vid_height) return;	// out of screen
-	GetTextExtents(text, w, h);
-	DrawTextPos(vid_width - w, nextRight_y, text, rgba);
+	if (nextRight_y >= gl_config.height) return;	// out of screen
+	gl_debugFont->GetTextExtents(text, w, h);
+	DrawTextPos(gl_config.width - w, nextRight_y, text, rgba);
 	nextRight_y += h;
 }
 
