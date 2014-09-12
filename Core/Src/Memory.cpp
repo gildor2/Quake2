@@ -61,9 +61,9 @@ FMemHeader *FMemHeader::first;
 #endif
 
 
-static void OutOfMemory()
+static void OutOfMemory(size_t size)
 {
-	appError("Out of memory");
+	appError("Out of memory: unable to allocate %u bytes", size);
 }
 
 
@@ -74,7 +74,7 @@ void *appMalloc(size_t size, int alignment)
 	size_t alloc = size + alignment - 1 + sizeof(FMemHeader);
 	FMemHeader *hdr = (FMemHeader *) malloc(alloc);
 	if (!hdr)
-		OutOfMemory();
+		OutOfMemory(size);
 	memset(hdr, 0, alloc);
 	void *data = hdr + 1;
 	// align pointers
@@ -154,7 +154,7 @@ void* CMemoryChain::operator new(size_t size, int dataSize)
 	int alloc = Align(size + dataSize, MEM_CHUNK_SIZE);
 	CMemoryChain *chain = (CMemoryChain *) malloc(alloc);
 	if (!chain)
-		OutOfMemory();
+		OutOfMemory(size + dataSize);
 	chain->size = alloc;
 	chain->next = NULL;
 	chain->data = (byte*) OffsetPointer(chain, size);

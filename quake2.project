@@ -15,7 +15,7 @@ CPP_EXCEPT = 0
 	WARNLEVEL = 3
 #	INLINES   = explicit
 #	LIBC      = static
-#	PDB       = 1
+	PDB       = 2
 	COM_DEFINES = _CRT_SECURE_NO_WARNINGS	# VC8: ignore "unsafe strcpy()" etc
 !elif "$COMPILER" eq "GnuC"
 #	INLINES   = explicit	-- not supported?

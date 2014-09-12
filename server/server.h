@@ -196,6 +196,8 @@ extern	cvar_t	*sv_extProtocol;
 extern	cvar_t	*sv_shownet;
 #if MAX_DEBUG
 extern	cvar_t	*sv_labels;
+#endif
+#if FPU_EXCEPTIONS
 extern	cvar_t	*g_fpuXcpt;
 #endif
 
@@ -206,7 +208,7 @@ extern	client_t	*sv_client;
 extern	edict_t		*sv_player;
 
 
-#if MAX_DEBUG
+#if FPU_EXCEPTIONS
 
 #define guardGame(x)			\
 		appAllowFpuXcpt(g_fpuXcpt->integer != 0); \
@@ -218,13 +220,13 @@ extern	edict_t		*sv_player;
 		unguardf(x);			\
 		appAllowFpuXcpt(true);
 
-#else
+#else // FPU_EXCEPTIONS
 
 #define guardGame(x)			guard(x)
 #define unguardGame				unguard
 #define unguardfGame(x)			unguardf(x)
 
-#endif
+#endif // FPU_EXCEPTIONS
 
 
 //===========================================================

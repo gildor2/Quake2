@@ -122,7 +122,7 @@ STATIC_DIRS = \
 
 Release/Quake2.exe : $(STATIC_DIRS) $(STATIC)
 	echo Creating executable "Release/Quake2.exe" ...
-	$(LINK) -out:"Release/Quake2.exe" -libpath:SDK/lib kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"Release/Quake2.map" $(STATIC) -subsystem:windows
+	$(LINK) -out:"Release/Quake2.exe" -libpath:SDK/lib kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"Release/Quake2.map" -debug -pdb:"Release/Quake2.pdb" -pdbtype:sept -opt:ref -opt:icf $(STATIC) -subsystem:windows
 
 #------------------------------------------------------------------------------
 #	"Release/q2ded.exe" target
@@ -184,7 +184,7 @@ DEDICATED_DIRS = \
 
 Release/q2ded.exe : $(DEDICATED_DIRS) $(DEDICATED)
 	echo Creating executable "Release/q2ded.exe" ...
-	$(LINK) -out:"Release/q2ded.exe" -libpath:SDK/lib kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"Release/q2ded.map" $(DEDICATED) -subsystem:console
+	$(LINK) -out:"Release/q2ded.exe" -libpath:SDK/lib kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"Release/q2ded.map" -debug -pdb:"Release/q2ded.pdb" -pdbtype:sept -opt:ref -opt:icf $(DEDICATED) -subsystem:console
 
 #------------------------------------------------------------------------------
 #	"TestApp/TestApp.exe" target
@@ -218,18 +218,18 @@ TEST_DIRS = \
 
 TestApp/TestApp.exe : $(TEST_DIRS) $(TEST)
 	echo Creating executable "TestApp/TestApp.exe" ...
-	$(LINK) -out:"TestApp/TestApp.exe" -libpath:SDK/lib kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"TestApp/TestApp.map" $(TEST) -subsystem:console
+	$(LINK) -out:"TestApp/TestApp.exe" -libpath:SDK/lib kernel32.lib user32.lib gdi32.lib lib/libs-vc-win32.lib -map:"TestApp/TestApp.map" -debug -pdb:"TestApp/TestApp.pdb" -pdbtype:sept -opt:ref -opt:icf $(TEST) -subsystem:console
 
 #------------------------------------------------------------------------------
 #	compiling source files
 #------------------------------------------------------------------------------
 
-OPT_STATIC = -W3 -O1 -EHs- -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
+OPT_STATIC = -W3 -O1 -EHs- -Zi -Fd"Release/obj-win32/q2stat" -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
 
 Release/obj-win32/q2stat/md4.obj : qcommon/md4.cpp
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/md4.obj" qcommon/md4.cpp
 
-OPT_DEDICATED = -W3 -O1 -EHs- -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
+OPT_DEDICATED = -W3 -O1 -EHs- -Zi -Fd"Release/obj-win32/dedstat" -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
 
 Release/obj-win32/dedstat/md4.obj : qcommon/md4.cpp
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/md4.obj" qcommon/md4.cpp
@@ -271,7 +271,7 @@ Release/obj-win32/q2stat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEP
 Release/obj-win32/dedstat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_DEDICATED) -Fo"Release/obj-win32/dedstat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
 
-OPT_TEST = -W3 -O1 -EHs- -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
+OPT_TEST = -W3 -O1 -EHs- -Zi -Fd"Release/obj-win32/TestApp" -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -301,6 +301,8 @@ DEPENDS = \
 Release/obj-win32/TestApp/TestApp.obj : TestApp/TestApp.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/TestApp/TestApp.obj" TestApp/TestApp.cpp
 
+OPT_STATIC_2 = -W3 -O1 -EHs- -Zi -Fd"Release/obj-win32/CoreStatic" -D _CRT_SECURE_NO_WARNINGS -D MAX_DEBUG=1 -D NO_DEBUG=0 -D STATIC_BUILD -I SDK/include -I Core/Inc -I qcommon
+
 DEPENDS = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
@@ -324,7 +326,7 @@ DEPENDS = \
 	Core/Src/CorePrivate.h
 
 Release/obj-win32/CoreStatic/ErrorMgr.obj : Core/Src/ErrorMgr.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ErrorMgr.obj" Core/Src/ErrorMgr.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/ErrorMgr.obj" Core/Src/ErrorMgr.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -348,7 +350,7 @@ DEPENDS = \
 	Core/Src/CorePrivate.h
 
 Release/obj-win32/CoreStatic/DbgSymbols.obj : Core/Src/DbgSymbols.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/DbgSymbols.obj" Core/Src/DbgSymbols.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/DbgSymbols.obj" Core/Src/DbgSymbols.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -587,43 +589,43 @@ Release/obj-win32/TestApp/Commands.obj : Core/Src/Commands.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/TestApp/Commands.obj" Core/Src/Commands.cpp
 
 Release/obj-win32/CoreStatic/CoreCpuid.obj : Core/Src/CoreCpuid.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/CoreCpuid.obj" Core/Src/CoreCpuid.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/CoreCpuid.obj" Core/Src/CoreCpuid.cpp
 
 Release/obj-win32/CoreStatic/CoreMain.obj : Core/Src/CoreMain.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/CoreMain.obj" Core/Src/CoreMain.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/CoreMain.obj" Core/Src/CoreMain.cpp
 
 Release/obj-win32/CoreStatic/CoreWin32.obj : Core/Src/CoreWin32.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/CoreWin32.obj" Core/Src/CoreWin32.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/CoreWin32.obj" Core/Src/CoreWin32.cpp
 
 Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj : Core/Src/DbgSymbolsWin32.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj" Core/Src/DbgSymbolsWin32.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/DbgSymbolsWin32.obj" Core/Src/DbgSymbolsWin32.cpp
 
 Release/obj-win32/CoreStatic/FileContainerArc.obj : Core/Src/FileContainerArc.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/FileContainerArc.obj" Core/Src/FileContainerArc.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/FileContainerArc.obj" Core/Src/FileContainerArc.cpp
 
 Release/obj-win32/CoreStatic/FileSystemWin32.obj : Core/Src/FileSystemWin32.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/FileSystemWin32.obj" Core/Src/FileSystemWin32.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/FileSystemWin32.obj" Core/Src/FileSystemWin32.cpp
 
 Release/obj-win32/CoreStatic/Math3D.obj : Core/Src/Math3D.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/Math3D.obj" Core/Src/Math3D.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/Math3D.obj" Core/Src/Math3D.cpp
 
 Release/obj-win32/CoreStatic/MathMisc.obj : Core/Src/MathMisc.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/MathMisc.obj" Core/Src/MathMisc.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/MathMisc.obj" Core/Src/MathMisc.cpp
 
 Release/obj-win32/CoreStatic/Memory.obj : Core/Src/Memory.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/Memory.obj" Core/Src/Memory.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/Memory.obj" Core/Src/Memory.cpp
 
 Release/obj-win32/CoreStatic/OutputDevice.obj : Core/Src/OutputDevice.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/OutputDevice.obj" Core/Src/OutputDevice.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/OutputDevice.obj" Core/Src/OutputDevice.cpp
 
 Release/obj-win32/CoreStatic/ScriptParser.obj : Core/Src/ScriptParser.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ScriptParser.obj" Core/Src/ScriptParser.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/ScriptParser.obj" Core/Src/ScriptParser.cpp
 
 Release/obj-win32/CoreStatic/Strings.obj : Core/Src/Strings.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/Strings.obj" Core/Src/Strings.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/Strings.obj" Core/Src/Strings.cpp
 
 Release/obj-win32/CoreStatic/TextContainer.obj : Core/Src/TextContainer.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/TextContainer.obj" Core/Src/TextContainer.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/TextContainer.obj" Core/Src/TextContainer.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -647,7 +649,7 @@ DEPENDS = \
 	Core/Src/ExceptDumpers.h
 
 Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj : Core/Src/ExceptHandlerWin32.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj" Core/Src/ExceptHandlerWin32.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/ExceptHandlerWin32.obj" Core/Src/ExceptHandlerWin32.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -672,7 +674,7 @@ DEPENDS = \
 	Core/Src/ExceptInfoLinux.h
 
 Release/obj-win32/CoreStatic/ExceptDumpers.obj : Core/Src/ExceptDumpers.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/ExceptDumpers.obj" Core/Src/ExceptDumpers.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/ExceptDumpers.obj" Core/Src/ExceptDumpers.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -696,7 +698,7 @@ DEPENDS = \
 	Core/Src/FileContainerOS.h
 
 Release/obj-win32/CoreStatic/FileSystem.obj : Core/Src/FileSystem.cpp $(DEPENDS)
-	$(CPP) -MD $(OPT_TEST) -Fo"Release/obj-win32/CoreStatic/FileSystem.obj" Core/Src/FileSystem.cpp
+	$(CPP) -MD $(OPT_STATIC_2) -Fo"Release/obj-win32/CoreStatic/FileSystem.obj" Core/Src/FileSystem.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -816,6 +818,7 @@ DEPENDS = \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_buffers.h \
+	ref_gl/gl_font.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
@@ -945,6 +948,7 @@ DEPENDS = \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
+	ref_gl/gl_font.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
@@ -1268,7 +1272,9 @@ DEPENDS = \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_font.h \
-	ref_gl/gl_interface.h
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_shader.h
 
 Release/obj-win32/q2stat/gl_font.obj : ref_gl/gl_font.cpp $(DEPENDS)
 	$(CPP) -MD $(OPT_STATIC) -Fo"Release/obj-win32/q2stat/gl_font.obj" ref_gl/gl_font.cpp

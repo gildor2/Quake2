@@ -11,6 +11,8 @@
 #define TEX_WIDTH		256
 #define TEX_HEIGHT		256
 
+//#define DEBUG_CPP		1
+#define CPP_4BPP		1
 
 void Error(char *fmt, ...)
 {
@@ -24,6 +26,8 @@ void Error(char *fmt, ...)
 	exit(1);
 }
 
+
+#define assert(x)	if (!(x)) { Error("Assertsion failed: %s (%s, %d)\n", #x, __FILE__, __LINE__); }
 
 template <class T> void ZeroMem(T &obj)
 {
@@ -64,6 +68,7 @@ private:
 	// output params
 	bool		compressTga;
 	bool 		monochrome;
+	bool		cppFormat;
 
 	// vars
 	HFONT		hf;
@@ -80,16 +85,16 @@ private:
 	void DrawFont();
 	void SaveTarga();
 	void SaveFontdef();
-	void SaveShader();
+	void SaveCpp();
 
 public:
-	FontGen (int argc, char *argv[]);
+	FontGen(int argc, char *argv[]);
 	virtual ~FontGen();
 	void Go();
 };
 
 
-const char *GetArg(int which, int argc, char **argv)
+static const char *GetArg(int which, int argc, char **argv)
 {
 	if ( which >= argc )
 		return "";
@@ -98,6 +103,18 @@ const char *GetArg(int which, int argc, char **argv)
 }
 
 #define ARG(X) GetArg ( X, argc, argv )
+
+static void MemSwap(void *a0, void *b0, int count)
+{
+	byte *a = (byte*)a0;
+	byte *b = (byte*)b0;
+	for (int i = 0; i < count; i++)
+	{
+		byte c = *a;
+		*a++ = *b;
+		*b++ = c;
+	}
+}
 
 
 FontGen::FontGen(int argc, char **argv)
@@ -115,6 +132,7 @@ FontGen::FontGen(int argc, char **argv)
 ,	isStrike(false)
 ,	compressTga(false)
 ,	monochrome(false)
+,	cppFormat(false)
 {
 	int arg;
 
@@ -157,6 +175,9 @@ FontGen::FontGen(int argc, char **argv)
 			if (strstr(parms, "8bit")) {
 				monochrome = true;
 			}
+		}
+		else if (!stricmp(ARG(arg), "-cpp")) {
+			cppFormat = true;
 		}
 	}
 
@@ -578,9 +599,11 @@ void FontGen::SaveFontdef()
 	if (!f) Error("ERROR: Could not write %s\n", fileName);
 
 	fprintf(f,
+		"// Generated from %s %d\n\n"
 		"bitmap \"%s\"\n"
 		"firstChar %d\n"
 		"charSize %d %d\n",
+		fontWinName, fontSize,
 		font_def.name,
 		firstChar,
 		font_def.charWidth,
@@ -592,6 +615,143 @@ void FontGen::SaveFontdef()
 #endif
 }
 
+
+static void output(FILE *f, byte c)
+{
+	static int out_len = 10000;
+	if (out_len >= 17)
+	{
+		out_len = 0;
+		fprintf(f, "\n\t");
+	}
+	fprintf(f, "0x%02X,", c);
+	out_len++;
+}
+
+
+void FontGen::SaveCpp()
+{
+	char fileName[255];
+	sprintf(fileName, "Font%s.h", font_def.name);
+
+	FILE *f = fopen(fileName, "wt");
+	if (!f) Error("ERROR: Could not write %s\n", fileName);
+
+	fprintf(f,
+		"// Generated from %s %d\n\n"
+		"#define CHAR_WIDTH        %d\n"
+		"#define CHAR_HEIGHT       %d\n"
+		"#define FONT_FIRST_CHAR   %d\n"
+		"#define TEX_WIDTH         %d\n"
+		"#define TEX_HEIGHT        %d\n"
+		"\n"
+		"byte TEX_DATA[] = {",
+		fontWinName, fontSize,
+		font_def.charWidth,
+		font_def.charHeight,
+		firstChar,
+		TEX_WIDTH,
+		texture_height
+	);
+
+	int start_line = TEX_HEIGHT - texture_height;
+	byte *src  = bmbits + TEX_WIDTH * 3 * start_line;
+	int width  = TEX_WIDTH;
+	int height = texture_height;
+
+	// flip texture vertically
+	int y1 = 0;
+	int y2 = height - 1;
+	while (y1 < y2)
+	{
+		MemSwap(src + y1 * width * 3, src + y2 * width * 3, width * 3);
+		y1++;
+		y2--;
+	}
+
+	int size = width * height;
+	int i;
+
+	// convert to monochrome
+	byte *mono = new byte[size];
+	for (i = 0; i < size; i++)
+	{
+		byte b = *src++;
+		byte g = *src++;
+		byte r = *src++;
+		mono[i] = (b + g + r) / 3;				// B/W color
+	}
+
+#if CPP_4BPP
+	// make font 4 bits per pixel
+	src = mono;
+	byte *dst = src;
+	for (i = 0; i < size/2; i++)
+	{
+		byte c1 = *src++;
+		byte c2 = *src++;
+		// 0->0, 255->15, 255/15 = 17
+		*dst++ = (c1 / 17 << 4) | (c2 / 17);
+	}
+	size /= 2;
+#endif
+
+	// dump
+	src = mono;
+	byte *end = src + size;
+	while (src < end)
+	{
+		byte c = *src++;
+
+		// try RLE for zero bytes
+		if (c == 0 && src + 1 < end && *src == 0)
+		{
+			src++;
+			int count = 0;	// means 1 zero byte
+			while ((src < end) && (count < 127) && (*src == 0))
+			{
+				src++;
+				count++;
+			}
+			assert(count < 128);
+#if DEBUG_CPP
+			fprintf(f, "/*null %d*/", count);
+#endif
+			output(f, count);
+			continue;
+		}
+
+		// copy non-zero bytes
+		byte *src2 = src;
+		int count = 0;
+		while ((src2 < end) && (count < 127))
+		{
+			if (src2 + 1 < end && src2[0] == 0 && src2[1] == 0)
+				break;		// break on 2 zero bytes only
+			src2++;
+			count++;
+		}
+		assert(count < 128);
+		output(f, 0x80 | count);
+		src--;		// should put previous byte too
+#if DEBUG_CPP
+		fprintf(f, "/*copy %d*/", count);
+#endif
+		while (src < src2)
+			output(f, *src++);
+#if DEBUG_CPP
+		fprintf(f, "/*end*/");
+#endif
+	}
+
+	fprintf(f, "\n};\n\n");
+
+	delete[] mono;
+
+	fclose(f);
+}
+
+
 void FontGen::Go()
 {
 	// Starts genereting the font stuff
@@ -599,8 +759,15 @@ void FontGen::Go()
 	PrepareBitmap();
 	PrepareHeader();
 	DrawFont();
-	SaveTarga();
-	SaveFontdef();
+	if (!cppFormat)
+	{
+		SaveTarga();
+		SaveFontdef();
+	}
+	else
+	{
+		SaveCpp();
+	}
 }
 
 void main(int argc, char **argv)
@@ -622,6 +789,7 @@ void main(int argc, char **argv)
 			"                        \"-styles bold,underline\" (No spaces between commas)\n"
 			"    -tga <type>       - TGA output format, comma separated list of:\n"
 			"                        8 (8-bit texture), 24, 32, packed\n"
+			"    -cpp              - write as C header file instead of binaries\n"
 		);
 		return;
 	}

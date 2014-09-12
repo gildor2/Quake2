@@ -37,6 +37,20 @@ void appSleep(unsigned msec)
 	Detecting Windows version
 -----------------------------------------------------------------------------*/
 
+static bool DetectWow64()
+{
+	typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
+
+	LPFN_ISWOW64PROCESS fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(GetModuleHandle("kernel32"), "IsWow64Process");
+	if (!fnIsWow64Process)
+		return false;
+	BOOL bIsWow64 = FALSE;
+	if (!fnIsWow64Process(GetCurrentProcess(), &bIsWow64))
+		return false;
+	return bIsWow64 != FALSE;
+}
+
+
 static void DetectOs()
 {
 	struct osInfo_t {
@@ -69,6 +83,7 @@ static void DetectOs()
 	}
 	GIsWinNT = (ver.dwPlatformId == VER_PLATFORM_WIN32_NT);
 	GIsWin2K = (GIsWinNT && ver.dwMajorVersion >= 5);
+	bool isWOW64 = DetectWow64();
 	if (!GIsWinNT)
 		ver.dwBuildNumber &= 0xFFFF;	// win9x: LOWORD contains build number, HIGHWORD contains OS version ...
 	for (int i = 0; i < ARRAY_COUNT(table); i++)
@@ -78,7 +93,11 @@ static void DetectOs()
 			v.vMaj == ver.dwMajorVersion &&
 			v.vMin == ver.dwMinorVersion)
 		{
-			appSprintf(ARRAY_ARG(GMachineOS), "Windows %s (Build: %d)", v.name, ver.dwBuildNumber);
+			appSprintf(ARRAY_ARG(GMachineOS), "Windows %s %s (Build: %d)",
+				v.name,
+				isWOW64 ? "64 bit" : "32 bit",
+				ver.dwBuildNumber
+			);
 			appPrintf("Detected OS: %s\n", GMachineOS);
 			return;
 		}
@@ -88,7 +107,11 @@ static void DetectOs()
 		platf = "9X";
 	else if (ver.dwPlatformId == VER_PLATFORM_WIN32_NT)
 		platf = "NT";
-	appSprintf(ARRAY_ARG(GMachineOS), "Windows %s %d.%d (Build: %d)", platf, ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber);
+	appSprintf(ARRAY_ARG(GMachineOS), "Windows %s %d.%d %s (Build: %d)",
+		platf, ver.dwMajorVersion, ver.dwMinorVersion,
+		isWOW64 ? "64 bit" : "32 bit",
+		ver.dwBuildNumber
+	);
 	appPrintf("Detected OS: %s\n", GMachineOS);
 }
 
@@ -153,6 +176,7 @@ void appDisplayError()
 }
 
 
+#if FPU_EXCEPTIONS
 void appAllowFpuXcpt(bool allow)
 {
 	_clearfp();		// required to prevent re-raising old exceptions on ANY FPU operation
@@ -162,6 +186,7 @@ void appAllowFpuXcpt(bool allow)
 	else
 		_controlfp(fpMask | (_EM_ZERODIVIDE|_EM_INVALID), _MCW_EM);
 }
+#endif // FPU_EXCEPTIONS
 
 
 /*-----------------------------------------------------------------------------

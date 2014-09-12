@@ -715,10 +715,6 @@ t = dot(vec->xyz, fog.surface.normal) - fog.surface.dist;
 					// triangle surface, should compute texcoords for each vertex
 					trisurfDlight_t *tdl = &ex->tDlight[num];
 					float invRadius = 1.0f / tdl->radius;
-					for (k = 0; k < ex->numVerts; k++, dst++, vec++)
-					{
-						CVec3 dist;
-						VectorSubtract(vec->xyz, tdl->origin, dist);
 #if TRISURF_DLIGHT_VIEWAXIS
 // This mode is view-dependent: when pause dlights and move around its origin,
 // picture will change - but it looks much better, than another solutions.
@@ -728,12 +724,44 @@ t = dot(vec->xyz, fog.surface.normal) - fog.surface.dist;
 #else
 #	define AXIS		tdl->axis
 #endif
-						float t = 1.0f - fabs(dot(dist, AXIS[0])) * invRadius;
-						if (t <= 1.0f / BIG_NUMBER) t = BIG_NUMBER;
-						else t = 1.0f / t;
-						float scale = t * invRadius * 0.5f;
+					for (k = 0; k < ex->numVerts; k++, dst++, vec++)
+					{
+						CVec3 dist;
+						VectorSubtract(vec->xyz, tdl->origin, dist);
+
+#if 0
+
+//						float t = 1.0f - fabs(dot(dist, AXIS[0])) * invRadius;
+//						if (t <= 1.0f / BIG_NUMBER) t = BIG_NUMBER;
+//						else t = 1.0f / t;
+//						float scale = t * invRadius * 0.5f;
+						float t = fabs(dot(dist, AXIS[0]));
+						float scale;
+						if (t < tdl->radius)
+							scale = appRsqrt(tdl->radius * tdl->radius - t * t) * 0.5f;
+						else
+							scale = 0; //BIG_NUMBER;
 						dst->tex[0] = dot(dist, AXIS[1]) * scale + 0.5f;
 						dst->tex[1] = dot(dist, AXIS[2]) * scale + 0.5f;
+
+#else
+
+						float x = dot(dist, AXIS[1]);
+						float y = dot(dist, AXIS[2]);
+						//!! try !TRISURF_DLIGHT_VIEWAXIS, remove unneeded brunch
+						//!! check invRadius above
+	#if 1
+						float scale = 0.5f / tdl->radius * appRsqrt((x * x + y * y) / dot(dist, dist));
+	#else
+		float d = sqrt(dot(dist,dist));
+		float dp = sqrt(x*x+y*y);
+		float dn = d / tdl->radius;
+		float scale = dn / dp * 0.5f;
+		DrawText3D(vec->xyz, va("%.2f\n%.2f, %.2f", dn, x*scale, y*scale), RGB(0,1,0.2));
+	#endif
+						dst->tex[0] = x * scale + 0.5f;
+						dst->tex[1] = y * scale + 0.5f;
+#endif
 #undef AXIS
 					}
 				}
@@ -830,9 +858,17 @@ t = dot(vec->xyz, fog.surface.normal) - fog.surface.dist;
 		case TCMOD_ROTATE:
 			{
 				// rotate around texture center
-				float f = tcmod->rotateSpeed * vp.time / 360;	// angle
+#if 0
+				float f = tcmod->rotateSpeed * vp.time / 360;			// angle
 				f1 = SIN_FUNC(f);
 				f2 = COS_FUNC(f);
+#else
+				// we can use sin/cos once per flush without affecting performance
+				// but with smoother rotations
+				float f = tcmod->rotateSpeed * vp.time / 180 * M_PI;	// angle: degrees -> radians
+				f1 = sin(f);
+				f2 = cos(f);
+#endif
 				float c1 = 0.5f * (1 - f1 - f2);
 				float c2 = 0.5f * (1 + f1 - f2);
 				for (k = 0; k < gl_numVerts; k++, dst++)

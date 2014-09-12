@@ -60,6 +60,8 @@ cvar_t			*sv_shownet;
 static cvar_t	*sv_camperSounds;
 #if MAX_DEBUG
 cvar_t			*sv_labels;
+#endif
+#if FPU_EXCEPTIONS
 cvar_t			*g_fpuXcpt;
 #endif
 //static cvar_t	*sv_fps;
@@ -1379,6 +1381,8 @@ CVAR_BEGIN(vars)
 
 #if MAX_DEBUG
 	CVAR_VAR(sv_labels, 0, CVAR_CHEAT),
+#endif
+#if FPU_EXCEPTIONS
 	CVAR_VAR(g_fpuXcpt, 0, CVAR_ARCHIVE),
 #endif
 //	CVAR_VAR(sv_fps, 20, 0)	// archive/serverinfo ??

@@ -10,7 +10,9 @@ static float skyMins[2][6], skyMaxs[2][6];
 
 
 #define	ON_EPSILON		0.1f			// point on plane side epsilon
-#define	MAX_CLIP_VERTS	64
+#define	MAX_CLIP_VERTS	256				// 64 is not enough, has some maps with complex sky surfaces;
+										// can check sky surface size on map loading stage and simplify too
+										// complex surfaces (for example, make a bounding box)
 
 enum {SIDE_FRONT, SIDE_BACK, SIDE_ON};
 
@@ -223,6 +225,7 @@ static void AddSkyTris(const CVec3 *verts, int numVerts, int vertexSize, const i
 	int i;
 	const CVec3 *src;
 	// transform all surface verts
+	assert(numVerts <= MAX_CLIP_VERTS);
 	for (i = 0, src = verts; i < numVerts; i++, src = OffsetPointer(src, vertexSize))
 	{
 		if (skyRotated)
@@ -287,7 +290,7 @@ static void AddSkyTris(const CVec3 *verts, int numVerts, int vertexSize, const i
 		}
 	}
 
-	unguardSlow;
+	unguardfSlow(("numVerts=%d", numVerts));
 }
 
 #if !NO_DEBUG

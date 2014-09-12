@@ -25,6 +25,9 @@ namespace OpenGLDrv {
 #define CACHE_LIGHT_SCALE	2
 
 
+#define MAX_WORLD_COORD		8192	// +/- 4096 for Quake2
+
+
 static CVec3 entityColorAxis[6];
 // contain color values for box
 // array layout: back/front/right/left/bottom/top
@@ -925,14 +928,20 @@ void DiffuseLight(color_t *dst, float lightScale)
 
 void InitLightGrid()
 {
+	guard(InitLightGrid);
 	for (int i = 0; i < 3; i++)
 	{
-		map.gridMins[i] = appFloor(bspfile.nodes[0].bounds.mins[i] / LIGHTGRID_STEP);
-		map.mapGrid[i]  = appCeil  (bspfile.nodes[0].bounds.maxs[i] / LIGHTGRID_STEP) - map.gridMins[i];
+		float mins = bspfile.nodes[0].bounds.mins[i];
+		float maxs = bspfile.nodes[0].bounds.maxs[i];
+		if (mins < -MAX_WORLD_COORD) mins = -MAX_WORLD_COORD;
+		if (maxs >  MAX_WORLD_COORD) maxs =  MAX_WORLD_COORD;
+		map.gridMins[i] = appFloor(mins / LIGHTGRID_STEP);
+		map.mapGrid[i]  = appCeil (maxs / LIGHTGRID_STEP) - map.gridMins[i];
 	}
 	map.lightGridChain = new CMemoryChain;
 	map.lightGrid      = new (map.lightGridChain) lightCell_t* [map.mapGrid[0] * map.mapGrid[1] * map.mapGrid[2]];
 	map.numLightCells  = 0;
+	unguardf(("bounds: %g %g %g - %g %g %g", VECTOR_ARG(bspfile.nodes[0].bounds.mins), VECTOR_ARG(bspfile.nodes[0].bounds.maxs)));
 }
 
 

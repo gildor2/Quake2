@@ -551,7 +551,7 @@ static bool LoadRenderer()
 {
 	guard(LoadRenderer);
 
-#if MAX_DEBUG
+#if FPU_EXCEPTIONS
 	// when FPU exceptions are enabled, game may crash in DirectSoundCreate()
 	// note: exceptions will be re-enabled in next MainLoop iteration
 	appAllowFpuXcpt(false);

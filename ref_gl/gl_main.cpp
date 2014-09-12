@@ -330,13 +330,13 @@ bool Init()
 
 	/*------------------ Check extensions ----------------------*/
 	//?? move this part to gl_interface.cpp ??
-#if MAX_DEBUG
+#if FPU_EXCEPTIONS
 	if (gl_config.platformId & HW_NV)								// BUG002 FIX when FPU exceptions are ON
 	{
 		Com_DPrintf("BUG002: disabling texture compression\n");
 		gl_config.bugExt |= QGL_ARB_TEXTURE_COMPRESSION|QGL_S3_S3TC|QGL_EXT_TEXTURE_COMPRESSION_S3TC;
 	}
-#endif
+#endif // FPU_EXCEPTIONS
 	QGL_InitExtensions();
 
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))

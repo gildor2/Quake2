@@ -82,40 +82,39 @@ static void Field_Draw(menuField_t *f)
 		Menu_DrawStringR2L(f->x + f->parent->x + LCOLUMN_OFFSET, f->y + f->parent->y,
 			va(S_GREEN"%s", f->name));
 
+	int x = f->x + f->parent->x;
+	int y = f->y + f->parent->y;
+
 	// draw border
-	RE_DrawChar(f->x + f->parent->x + CHAR_WIDTH * 2, f->y + f->parent->y - CHAR_HEIGHT/2, 18);
-	RE_DrawChar(f->x + f->parent->x + CHAR_WIDTH * 2, f->y + f->parent->y + CHAR_HEIGHT/2, 24);
-	RE_DrawChar(f->x + f->parent->x + (f->visible_length + 3) * CHAR_WIDTH, f->y + f->parent->y - CHAR_HEIGHT/2, 20);
-	RE_DrawChar(f->x + f->parent->x + (f->visible_length + 3) * CHAR_WIDTH, f->y + f->parent->y + CHAR_HEIGHT/2, 26);
+#if 1
+	RE_DrawChar(x + CHAR_WIDTH * 2, y - CHAR_HEIGHT/2, 18);				// left
+	RE_DrawChar(x + CHAR_WIDTH * 2, y + CHAR_HEIGHT/2, 24);
+	RE_DrawChar(x + (f->visible_length + 3) * CHAR_WIDTH, y - CHAR_HEIGHT/2, 20);	// right
+	RE_DrawChar(x + (f->visible_length + 3) * CHAR_WIDTH, y + CHAR_HEIGHT/2, 26);
 	for (i = 0; i < f->visible_length; i++)
 	{
-		RE_DrawChar(f->x + f->parent->x + (i + 3) * CHAR_WIDTH, f->y + f->parent->y - CHAR_HEIGHT/2, 19);
-		RE_DrawChar(f->x + f->parent->x + (i + 3) * CHAR_WIDTH, f->y + f->parent->y + CHAR_HEIGHT/2, 25);
+		RE_DrawChar(x + (i + 3) * CHAR_WIDTH, y - CHAR_HEIGHT/2, 19);	// top
+		RE_DrawChar(x + (i + 3) * CHAR_WIDTH, y + CHAR_HEIGHT/2, 25);	// bottom
 	}
+#else
+	RE_Fill(x + CHAR_WIDTH * 2, y - CHAR_HEIGHT / 2, (f->visible_length + 2) * CHAR_WIDTH, CHAR_HEIGHT * 2, RGBA(1, 0, 0, 0.2));
+#endif
 
 	// perform string drawing without text coloring
 	appStrncpyz(tempbuffer, f->buffer + f->visible_offset, max(f->visible_length, sizeof(tempbuffer)));
 	const char *s = tempbuffer;
-	int x = f->x + f->parent->x + 3 * CHAR_WIDTH;
-	int y = f->y + f->parent->y;
+	int x1 = x + 3 * CHAR_WIDTH;
 	while (char c = *s++)
 	{
-		RE_DrawChar(x, y, c);
-		x += CHAR_WIDTH;
+		RE_DrawChar(x1, y, c);
+		x1 += CHAR_WIDTH;
 	}
 
 	if (f->parent->ItemAtCursor() == f)
 	{
-		int offset;
-
-		if (f->visible_offset)
-			offset = f->visible_length;
-		else
-			offset = f->cursor;
-
+		int offset = (f->visible_offset) ? f->visible_length : f->cursor;
 		// show cursor
-		RE_DrawChar(f->x + f->parent->x + (offset + 3) * CHAR_WIDTH,
-					 f->y + f->parent->y, ((cls.realtime >> 8) & 1) ? 11 : ' ');
+		RE_DrawChar(x + (offset + 3) * CHAR_WIDTH, y, ((cls.realtime >> 8) & 1) ? 11 : ' ');
 	}
 }
 
@@ -468,10 +467,12 @@ static void MenuList_Draw(menuList_t *l)
 
 static void Separator_Draw(menuSeparator_t *s)
 {
-	int x = s->x + s->parent->x;
-	int y = s->y + s->parent->y;
 	const char *name = s->name;
 	if (!name) return;
+
+	int x = s->x + s->parent->x;
+	int y = s->y + s->parent->y;
+
 	if (s->flags & QMF_CENTER)
 		Menu_DrawStringCenter(x, y, va(S_GREEN"%s", name));
 	else
@@ -495,13 +496,14 @@ static void Slider_Draw(menuSlider_t *s)
 	s->range = (s->curvalue - s->minvalue) / (float)(s->maxvalue - s->minvalue);
 	s->range = bound(s->range, 0, 1);
 
-	RE_DrawChar(s->x + s->parent->x + RCOLUMN_OFFSET, s->y + s->parent->y, 128);
-	int i;
-	for (i = 0; i < SLIDER_RANGE; i++)
-		RE_DrawChar(RCOLUMN_OFFSET + s->x + i*8 + s->parent->x + 8, s->y + s->parent->y, 129);
-	RE_DrawChar(RCOLUMN_OFFSET + s->x + i*8 + s->parent->x + 8, s->y + s->parent->y, 130);
-	RE_DrawChar(appRound(8 + RCOLUMN_OFFSET + s->parent->x + s->x + (SLIDER_RANGE-1)*8 * s->range),
-		s->y + s->parent->y, 131);
+	int x = s->x + s->parent->x;
+	int y = s->y + s->parent->y;
+
+	RE_DrawChar(x + RCOLUMN_OFFSET, y, 128);									// left
+	for (int i = 0; i < SLIDER_RANGE; i++)
+		RE_DrawChar(x + RCOLUMN_OFFSET + (i + 1) * CHAR_WIDTH, y, 129);			// middle
+	RE_DrawChar(x + RCOLUMN_OFFSET + (SLIDER_RANGE + 1) * CHAR_WIDTH, y, 130);	// right
+	RE_DrawChar(appRound(x + CHAR_WIDTH + RCOLUMN_OFFSET + (SLIDER_RANGE - 1) * CHAR_WIDTH * s->range), y, 131);
 }
 
 
@@ -531,14 +533,18 @@ static void SpinControl_Draw(menuList_t *s)
 	// draw value
 	const char *text = s->itemnames[s->curvalue];
 	const char *newline;
+
+	int x = s->x + s->parent->x;
+	int y = s->y + s->parent->y;
+
 	if (!(newline = strchr(text, '\n')))
-		DrawString(RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y, text);
+		DrawString(RCOLUMN_OFFSET + x, y, text);
 	else
 	{
 		char buffer[256];
 		appStrncpyz(buffer, text, newline - text + 1);	// copy text till '\n' and put zero to its place
-		DrawString(RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y, buffer);
-		DrawString(RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y + 10, newline+1);
+		DrawString(RCOLUMN_OFFSET + x, y, buffer);
+		DrawString(RCOLUMN_OFFSET + x, y + 10, newline+1);
 	}
 }
 
@@ -582,15 +588,19 @@ static void SpinControl2_Draw(menuList2_t *s)
 	// draw value
 	const char *text = item->name;
 	const char *newline;
+
+	int x = s->x + s->parent->x;
+	int y = s->y + s->parent->y;
+
 	if (!(newline = strchr(text, '\n')))
-		DrawString(RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y, text);
+		DrawString(RCOLUMN_OFFSET + x, y, text);
 	else
 	{
 		char	buffer[256];
 
 		appStrncpyz(buffer, text, newline - text + 1);	// copy text till '\n' and put zero to its place
-		DrawString(RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y, buffer);
-		DrawString(RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y + 10, newline+1);
+		DrawString(RCOLUMN_OFFSET + x, y, buffer);
+		DrawString(RCOLUMN_OFFSET + x, y + 10, newline+1);
 	}
 }
 

@@ -758,6 +758,12 @@ FUNC(tcMod)
 }
 
 
+FUNC(detail)
+{
+	//?? empty
+}
+
+
 // registration
 
 static CSimpleCommand stageFuncs[] = {
@@ -774,7 +780,8 @@ static CSimpleCommand stageFuncs[] = {
 	TBL(alphaGen),
 	TBL(tcGen),
 	TBL2(tcGen, "texgen"),		// alias
-	TBL(tcMod)
+	TBL(tcMod),
+	TBL(detail)
 };
 
 #undef FUNC

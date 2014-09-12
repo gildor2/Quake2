@@ -3,8 +3,11 @@
 =============================================================================*/
 
 #define MEM_DEBUG		1			// comment when unneeded
-//#define MAX_DEBUG		1
+#define MAX_DEBUG		1
 //#define NO_DEBUG		1
+#define FPU_EXCEPTIONS	1
+
+//#define DO_GUARD		0
 
 
 /*-----------------------------------------------------------------------------
@@ -56,6 +59,10 @@
 #define STATS			DEBUG_MODE
 #endif
 
+#ifndef FPU_EXCEPTIONS
+#define FPU_EXCEPTIONS	DEBUG_MODE
+#endif
+
 #endif // MAX_DEBUG || NO_DEBUG
 
 
@@ -93,4 +100,8 @@
 
 #ifndef STATS
 #define STATS			1
+#endif
+
+#ifndef FPU_EXCEPTIONS
+#define FPU_EXCEPTIONS	0
 #endif

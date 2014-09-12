@@ -252,8 +252,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 int main(int argc, const char **argv) // force to link as console application
 #endif
 {
+#if DO_GUARD
 	TRY_CRASH
 	{
+#endif
 		hInstance = GetModuleHandle(NULL);
 		// get command line
 		const char *cmdline = GetCommandLine();
@@ -304,12 +306,12 @@ int main(int argc, const char **argv) // force to link as console application
 		while (!GIsRequestingExit)
 		{
 #if MAX_DEBUG
-#	if __MINGW32__
+	#if __MINGW32__
 			// reinstall exception handler in a case of someone (ATI's OpenGL.dll) replaced it
 			// (this is done because GCC have no win32 SEH support)
 			long WINAPI mingw32ExceptFilter(struct _EXCEPTION_POINTERS *info);
 			SetUnhandledExceptionFilter(mingw32ExceptFilter);
-#	endif
+	#endif
 			// allow exceptions from FPU
 			appAllowFpuXcpt(true);
 #endif // MAX_DEBUG
@@ -347,8 +349,12 @@ int main(int argc, const char **argv) // force to link as console application
 				if (timeDelta > 1.0f) break;	//?? client (or server?) time bugs with ">0" condition & cl_maxfps < realFPS -- net/prediction errors
 				Sleep(0);
 			}
+#if DO_GUARD
+			//!! warning: when DO_GUARD is off, "drop" errors will not be catched
 			TRY {
+#endif
 				Com_Frame(timeDelta);
+#if DO_GUARD
 			} CATCH {
 				if (!GErr.nonFatalError) THROW_AGAIN;					// go to outer CATCH{}, outside of MainLoop
 				// process DropError()
@@ -360,16 +366,19 @@ int main(int argc, const char **argv) // force to link as console application
 				// and continue execution ...
 				GErr.Reset();
 			} END_CATCH
+#endif // DO_GUARD
 			oldtime = newtime;
 		}
 		unguard;
+#if DO_GUARD
 	} CATCH_CRASH {
-#if 0
+	#if 0
 		extern COutputDevice *debugLog;
 		if (debugLog)
 			debugLog->Printf("***** CRASH *****\n%s\nHistory: %s\n*****************\n", *GErr.Message, *GErr.History);
-#endif
+	#endif
 	} END_CATCH
+#endif // DO_GUARD
 
 	// shutdown all systems
 	TRY {

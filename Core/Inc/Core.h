@@ -284,8 +284,12 @@ CORE_API void appSleep(unsigned msec);
 	Debugging functions
 -----------------------------------------------------------------------------*/
 
+#if FPU_EXCEPTIONS
 // Allow or disallow FPU exceptions
 CORE_API void appAllowFpuXcpt(bool allow);
+#else
+#define appAllowFpuXcpt(allow)
+#endif
 
 
 /*-----------------------------------------------------------------------------

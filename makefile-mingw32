@@ -816,6 +816,7 @@ DEPENDS_17 = \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_buffers.h \
+	ref_gl/gl_font.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
@@ -945,6 +946,7 @@ DEPENDS_20 = \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
+	ref_gl/gl_font.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
@@ -1268,7 +1270,9 @@ DEPENDS_28 = \
 	ref_gl/GLBind.h \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_font.h \
-	ref_gl/gl_interface.h
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_shader.h
 
 Release/obj-win32/q2stat/gl_font.o : ref_gl/gl_font.cpp $(DEPENDS_28)
 	$(CPP) $(OPT_STATIC) -o Release/obj-win32/q2stat/gl_font.o ref_gl/gl_font.cpp

@@ -111,10 +111,12 @@ void appDisplayError()
 }
 
 
+#if FPU_EXCEPTIONS
 void appAllowFpuXcpt(bool allow)
 {
 	//?? implement
 }
+#endif
 
 
 /*-----------------------------------------------------------------------------

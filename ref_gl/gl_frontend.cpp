@@ -838,7 +838,7 @@ static void AddBspSurfaces(surfaceBase_t **psurf, int numFaces, int frustumMask,
 								axis[1].NormalizeFast();
 								cross(axis[0], axis[1], axis[2]);					// already normalized
 								sdl->axis   = axis;
-#endif
+#endif // !TRISURF_DLIGHT_VIEWAXIS
 								// save dlight info
 								sdl->origin = dl_org;
 								sdl->radius = rad;

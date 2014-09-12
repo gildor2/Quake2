@@ -60,12 +60,13 @@ platform specification:
 		Should specify either "TARGET" or "PLATFORM"+"COMPILER"
 
 global:
-	CPP_EXCEPT	= 1 == undef | 0		when 0 -- C++ exceptions system disabled
+	CPP_EXCEPT	= 1 == undef | 0		0 = disable C++ exceptions
 	MAPFILES	= 1 | 0 == undef
-	PDB			= 1 | 0 == undef (VisualC only)
+	PDB			= 1 | 2 | 0 == undef	1 = link-level, 2 = compile-level, 0 = off (VisualC only)
 	STDLIBS		= list of used libraries (for "GNU Make" will append "lib" and will search in paths)
 	LIBRARIES   = path(s) to additional library files
 	LIBC		= static | shared == undef
+	DEFFILE		= .def filename
 	ALLOW_MISSING_INCLUDES = 1 | 0		when #include "filename" will fail, warning will be generated instead of error
 
 per-target:
@@ -82,18 +83,19 @@ at a time of registration of source files
 	INCLUDES	= path1 [path2 path3 ...]
 	OBJDIR		= directory for obj files (if not specified, obj files will be placed near c/cpp files)
 	WARNLEVEL	= num					compiler warning level (0 - disable; 1 - max; 2+ - less)
-	OPTIMIZE	= size | speed
+	OPTIMIZE	= size | speed | none
 	INLINES		= no | explicit | all	expanding inlines: disabled | explicit only | any suitable
 	OPTIONS		= string				compiler-dependent: extra options for command line
 
 4. Commands:
 	sources(NAME) = source files		add source files to list <NAME> with flags DEFINES,INCLUDES,OBJDIR;
 										all items separated with spaces; item may be a wildcard
-	target(type, outfile, NAME[, sym])	build target with type=={executable,dynamic (dll,so), static (lib,a)}
-										from objects, specified in list sources(NAME); if sym specified,
-										will be added symbolic name for a target; may specify few symbolic
-										targets, separated with spaces
+	target(type, outfile, NAME[, sym])	build target with type == {executable (exe), shared (dll/so), static (lib/a)}
+										from objects, specified in list sources(NAME); NAME may contain multiple source lists
+										separated with "+" (spaces are allowed); if sym specified, will be added symbolic
+										name for a target; may specify a few symbolic targets, separated with spaces
 	mkdir(directory)					create directory during build process
+	push(var), pop(var)					save and restore value of the variable
 
 5. Supported source files:
 	*.asm		= NASM file
@@ -171,8 +173,9 @@ sub Splitter {
 #	Reading source file with simple preprocessing
 #------------------------------------------------------------------------------
 
-@includes = ();
-%vars     = ();
+@includes  = ();
+%vars      = ();
+@var_stack = ();
 
 
 sub ExpandVars {
@@ -187,11 +190,29 @@ sub ExpandVars {
 
 	return $line if $line !~ /\$/;				# line contains no vars
 
+	#!! not fine parser: iterates all variables instead of parsing input string
 	for my $key (keys(%vars)) {
-		$line =~ s/\$\b$key\b/$vars{$key}/g;	# replace $var with value
-		$line =~ s/\$\{$key\}/$vars{$key}/g;	# replace ${var} with value
+		my $value = $vars{$key};
+		$value = "" if !defined($value);
+		$line =~ s/\$\b$key\b/$value/g;			# replace $var with value
+		$line =~ s/\$\{$key\}/$value/g;			# replace ${var} with value
 	}
 	return $line;
+}
+
+
+sub PushVar {
+	my $var = $_[0];
+	push @var_stack, $vars{$var};
+}
+
+
+sub PopVar {
+	my $var = $_[0];
+	if (!@var_stack) {
+		Error("pop $var with empty stack!");
+	}
+	$vars{$var} = pop @var_stack;
 }
 
 
@@ -368,9 +389,10 @@ sub getline {
 			if ($cmd eq "include") {
 				# limit nested includes (and stop infinite recursion)
 				Error ("too much nested includes") if $#includes > 16;
+				local $file = ExpandVars($args);
 				push @includes, *IN;
 				local *IN2;							# NOTE: "local", not "my"
-				open (IN2, $args) || Error ("cannot open include file \"$args\"");
+				open (IN2, $file) || Error ("cannot open include file \"$file\"");
 				*IN = *IN2;
 			} elsif ($cmd eq "undef") {
 				delete $vars{$args};
@@ -395,7 +417,13 @@ sub getline {
 			my ($var, $value) = $line =~ /^\s*(\w+)\s*\+\=\s*(\S+.*)/;
 			$value = GetMultiLine() if defined($value) && $value eq "{";
 			if (exists($vars{$var})) {
-				$vars{$var} = "$vars{$var} ".ExpandVars($value);
+				my $oldVar = $vars{$var};
+				my $add    = ExpandVars($value);
+				if (defined($oldVar)) {
+					$vars{$var} = $oldVar." ".$add;
+				} else {
+					$vars{$var} = $add;
+				}
 			} else {
 				$vars{$var} = ExpandVars($value);
 			}
@@ -514,13 +542,34 @@ sub EmitCompilerDefs {
 #	(source filename, obj dir, defines, include dirs, options, list name)
 @sources = ();
 # array of output directories
-@outdirs = ();
+@outdirs  = ();		# real names
+@outdirs2 = ();		# assigned variable name
 
-# usage: GetSrcOption (opt_name)
+# usage: GetSrcOption (opt_name[, default])
 sub GetSrcOption {
 	my $opt = $vars{$_[0]};
 	return $opt if defined($opt);
+	return $_[1] if defined $_[1];
 	return "";
+}
+
+# fill outdirs and outdirs2, return variable name in a form $(varname)
+sub ConvertObjdir {
+	my $objdir = $_[0];
+
+	return "" if !defined($objdir) || ($objdir eq "");
+
+	# register output directory
+	my $i = 0;
+	for my $dir (@outdirs) {
+		return "\$(".$outdirs2[$i].")" if $dir eq $objdir;
+		$i++;
+	}
+	my $varname = ($i > 0) ? "OUT_".$i : "OUT";
+#	print STDERR "$dir -> $varname\n";
+	push @outdirs, $objdir;
+	push @outdirs2, $varname;
+	return "\$(".$varname.")";
 }
 
 # usage: AddObjectList (list_name, objects)
@@ -529,6 +578,8 @@ sub AddObjectList {
 	my $defines  = GetSrcOption ("DEFINES");
 	my $includes = GetSrcOption ("INCLUDES");
 	my $objdir   = GetSrcOption ("OBJDIR");
+
+	$objdir = ConvertObjdir ($objdir);
 
 	# add objects
 	ADD: for my $src (split (' ', $objs)) {
@@ -545,6 +596,8 @@ sub AddObjectList {
 				$options .= " -O1";
 			} elsif ($opt eq "speed") {
 				$options .= " -O2";
+			} elsif ($opt eq "none") {
+				$options .= " -Od";
 			} elsif ($opt ne "") {
 				WarningOnce ("unknown OPTIMIZE option: [$opt]");
 			}
@@ -568,16 +621,21 @@ sub AddObjectList {
 			} else {
 				WarningOnce ("unknown CPP_EXCEPT option: [$opt]");
 			}
+			# debugging
+			$opt = GetSrcOption("PDB", 0);
+			if ($opt >= 2) {
+				$options .= " -Zi -Fd\"$objdir/\"";	# enable debugging information; note: no final slash, so pdb will be names as objdir
+			}
 		} elsif ($COMPILER eq "GnuC") {		#!! GnuC - compiler options
 			my $opt = GetSrcOption ("WARNLEVEL");
 			# warning level: GnuC can disable warnings or enable all warnings
 			if ($opt ne "") {
 				if ($opt eq "0") {
-					$options .= " -w";				# disable warnings
+					$options .= " -w";					# disable warnings
 				} elsif ($opt eq "1") {
-					$options .= " -Wall -Wextra";	# max warning level
+					$options .= " -Wall -Wextra";		# max warning level
 				} else { #if ($opt eq "2")
-					$options .= " -Wall";			# all & !extra ...
+					$options .= " -Wall";				# all & !extra ...
 				}
 			}
 			# optimization strategy
@@ -632,13 +690,6 @@ sub AddObjectList {
 		# register source file
 		push @sources, join('%', $src, $objdir, $defines, $includes, $options, $listName);
 	}
-	if ($objdir ne "") {
-		# register output directory
-		for my $dir (@outdirs) {
-			return if $dir eq $objdir;
-		}
-		push @outdirs, $objdir;
-	}
 }
 
 # usage: GetObjFilename (source_name, obj_dir)
@@ -673,7 +724,8 @@ sub AppendFilePath {
 	return $file;
 }
 
-# usage: GetObjectList (list_name)
+# usage: GetObjectList(list_name)
+# accepts single object list name
 sub GetObjectList {
 	my $listName = $_[0];
 	my $list = "";
@@ -686,18 +738,22 @@ sub GetObjectList {
 	return $list;
 }
 
-# usage: GetDirsList (list_name)
+# usage: GetDirsList(obj_list_name)
+# accepts list of object list names
 sub GetDirsList {
-	my $listName = $_[0];
+	my $objListName = $_[0];
 	my $list = "";
 	my %dirs = ();
 	# output files
 	for my $item (@sources) {
 		my (undef, $objdir, undef, undef, undef, $lst) = split('%', $item);
-		if ($lst eq $listName) {
-			if (!exists($dirs{$objdir})) {
-				$list .= " \\\n\t".$objdir;
-				$dirs{$objdir} = 1;
+		for my $listName (split(',', $objListName)) {
+			if ($lst eq $listName) {
+				if (!exists($dirs{$objdir})) {
+					$list .= " ".$objdir;
+					$dirs{$objdir} = 1;
+					last;
+				}
 			}
 		}
 	}
@@ -759,12 +815,13 @@ sub ExpandWildcards {
 %depends = ();
 
 sub CollectFileDependencies {
-	my ($file, $includes, $srcType) = @_;
+	my ($file, $includes, $srcType, $chain) = @_;
 	my $dep = $depends{$file};
 	if (defined($dep)) {
 		return 0 if $dep ne "(computing)";		# already finished
 		return -1;								# recurse to this file: will display warning
 	}
+	$chain = $file if !defined($chain);			# used for error reporting
 
 	$dep = "";
 	$depends{$file} = "(computing)";			# flag for detection of recursive includes
@@ -805,7 +862,10 @@ sub CollectFileDependencies {
 				my $inc3 = AppendFilePath ($inc, $path2);
 				next if $inc3 eq $inc2;			# file with appended path is known ...
 				if (-f $inc3) {
-					WarningOnce ("file \"$inc\" present in few places from INCLUDES=[$includes]", "many:$inc:$includes") if $found != 0;
+					if ($inc !~ /.*\.\..*/) {
+						# file has no ".." in path, warning if found in multiple places
+						WarningOnce ("file \"$inc\" were found in a few places; INCLUDES=[$includes]", "many:$inc:$includes") if $found != 0;
+					}
 					$found++;
 					$inc2 = $inc3;
 				}
@@ -815,16 +875,16 @@ sub CollectFileDependencies {
 		if (!$found) {
 			my $doWarn = $vars{"ALLOW_MISSING_INCLUDES"};
 			if (defined($doWarn) && $doWarn) {
-				Warning ("cannot find file \"$inc\" included from \"$file\", directories used: [$includes]") unless $found;
+				Warning ("cannot find file \"$inc\" included from \"$chain\", directories used: [$includes]") unless $found;
 			} else {
-				Error ("cannot find file \"$inc\" included from \"$file\", directories used: [$includes]") unless $found;
+				Error ("cannot find file \"$inc\" included from \"$chain\", directories used: [$includes]") unless $found;
 			}
 		} else {
 			# check file presense
 			if ($doRecurse) {
-				if (CollectFileDependencies ($inc2, $includes, $srcType) == -1) {
+				if (CollectFileDependencies ($inc2, $includes, $srcType, $chain."->".$inc2) == -1) {
 					# may be inc<->file, and may be file1->file2->file3->file1 ...
-					WarningOnce ("circular reference from \"$inc2\" to \"$file\"", "circ:$file<->$inc2");
+					WarningOnce ("circular reference from \"$inc2\" to \"$chain\"", "circ:$file<->$inc2");
 				}
 			} else {
 				$depends{$inc2} = "";
@@ -899,11 +959,17 @@ $optionVar   = "";		# current options variable
 %optionNmCt  = ();		# hash: obj list name -> num (check existence of name)
 
 # usage: FlushObjectFile (src, obj_dir, defines, includes, list_name)
+# will generate makefile lines to compile single object file
 sub FlushObjectFile {
 	my ($srcFile, $objDir, $defines, $includes, $options, $objListName) = @_;
 	my $objFile = GetObjFilename ($srcFile, $objDir);
 	my ($srcType) = $srcFile =~ /\S+\.(\w+)/;
 	my ($srcDir)  = $srcFile =~ /(\S+\/)[\w\.]+/;
+
+	# linker-only files - GetObjFilename() returns $srcFile
+	if ($srcFile eq $objFile) {
+		return;
+	}
 
 	# compute additional options (defines and includes)
 	$options .= GenerateOptions ($defines, "-D ") if $defines ne "";
@@ -1001,7 +1067,7 @@ sub FlushObjectFile {
 #	Targets
 #------------------------------------------------------------------------------
 # targets array:
-#	(symbolic name, output file, type, objListName)
+#	(symbolic name, output file, type, objListName, targetDir)
 @targets = ();
 # target options:
 #	{filename:option} = value
@@ -1045,9 +1111,10 @@ sub GetTargetOption {
 	return "";
 }
 
-# usage: RememberTarget (SymbolicName, OutFile, type, ObjListName)
+# usage: RememberTarget (SymbolicName, OutFile, type, ObjListName, TargetDirectory)
+# store target info into @targets array
 sub RememberTarget {
-	my ($symName, $n, $type, $objListName) = @_;
+	my ($symName, $n, $type, $objListName, $targetDir) = @_;
 	# append default extension for output file
 	if ($type eq "executable") {
 		$n = SetDefaultExtension ($n, $ExeFileExt);
@@ -1060,7 +1127,6 @@ sub RememberTarget {
 	}
 	# remember options
 	SetTargetOption ($n, "MAPFILES");
-	SetTargetOption ($n, "PDB");
 	if ($COMPILER eq "VisualC") {
 		SetTargetOption ($n, "STDLIBS", 0, $LibFileExt);
 	} else {
@@ -1074,14 +1140,16 @@ sub RememberTarget {
 	SetTargetOption ($n, "CONSOLE",   1);
 	SetTargetOption ($n, "IMAGEBASE", 1);
 	SetTargetOption ($n, "IMPLIB",    1, $LibFileExt);
+	SetTargetOption ($n, "DEFFILE",   1);
 	# remember target command
-	push @targets, join('%', $symName, $n, $type, $objListName);
+	push @targets, join('%', $symName, $n, $type, $objListName, $targetDir);
 }
 
 
 # usage: FlushTargetText (target={executable,shared,static}, outfile, objlist, haveDirs)
+# generate makefile lines to link target file (exe, dll, lib)
 sub FlushTargetText {
-	my ($target, $n, $objListName, $haveDirs) = @_;
+	my ($target, $n, $objListName, $dirList) = @_;
 	my $line;
 
 	# cut file extension
@@ -1093,19 +1161,28 @@ sub FlushTargetText {
 
 	my $baseaddr = GetTargetOption ($n, "IMAGEBASE");
 
+	my $fileList = "";
+	for my $listName (split(',', $objListName)) {
+		$fileList .= " \$(${listName}_FILES)";
+	}
+
 	# build target dependency line
-	my $prefix = "$n : ";
-	$prefix .= "\$(${objListName}_DIRS) " if $haveDirs;
-	$prefix .= "\$($objListName)";
+	my $prefix = "$n :";
+	$prefix .= "$dirList" if $dirList ne "";	# directories
+	$prefix .= "$fileList";						# files
 	# check dependency by libs from another targets
 	for my $lib (split(" ", $libs)) {
 		for my $t (@targets) {
-			my (undef, $file, undef, undef) = split ('%', $t);
+			my (undef, $file) = split ('%', $t);
 			if (($file eq $lib) || (GetTargetOption ($file, "IMPLIB") eq $lib)) {
 				$prefix .= " $file";
 				Warning ("target \"$n\" depends with library \"$lib\" on self") if $file eq $n;
 			}
 		}
+	}
+	my $deffile = GetTargetOption ($n, "DEFFILE");
+	if ($deffile ne "") {
+		$prefix .= " $deffile";
 	}
 	$prefix .= "\n";
 
@@ -1119,8 +1196,8 @@ sub FlushTargetText {
 		$line .= " $libs" if $libs ne "";
 		$line .= " -base:0x$baseaddr" if $baseaddr ne "";
 		$line .= " -map:\"$shortOutName.map\"" if GetTargetOption ($n, "MAPFILES") eq "1";
-		$line .= " -debug -pdb:\"$shortOutName.pdb\" -pdbtype:sept -opt:ref -opt:icf" if GetTargetOption ($n, "PDB") eq "1";
-		$line .= " \$($objListName)";
+		$line .= " -debug -pdb:\"$shortOutName.pdb\" -pdbtype:sept -opt:ref -opt:icf" if GetSrcOption("PDB", 0) >= 1;
+		$line .= $fileList;
 		my $linkflags = GetTargetOption ($n, "LINKFLAGS");
 		$line .= " $linkflags" if ($linkflags ne "");
 		if (GetTargetOption ($n, "CONSOLE") eq "1") {
@@ -1132,9 +1209,12 @@ sub FlushTargetText {
 			return $prefix.$line;
 		} elsif ($target eq "shared") {
 			$line .= " -dll";
+			if ($deffile ne "") {
+				$line .= " -def:\"$deffile\"";
+			}
 			my $implib = GetTargetOption ($n, "IMPLIB");
 			if ($implib ne "") {
-				$line .= " -implib:\"$implib\""
+				$line .= " -implib:\"$implib\"";
 			} else {
 				# if IMPLIB is not specified, delete unneeded linker output
 				$line .= " -implib:\"delete.lib\"";
@@ -1142,7 +1222,7 @@ sub FlushTargetText {
 			}
 			return $prefix.$line;
 		} elsif ($target eq "static") {
-			return $prefix."\t\$(AR) -out:\"$n\" \$($objListName)";
+			return $prefix."\t\$(AR) -out:\"$n\"$fileList";
 #		} else {
 #			Error ("unknown target: \"$target\"");
 		}
@@ -1150,7 +1230,7 @@ sub FlushTargetText {
 	} elsif ($COMPILER eq "GnuC") {		#!! GnuC - linker
 		$prefix .= "\t\@echo Creating $target \"$n\" ...\n";
 		$line = "\t\$(LINK) -o $n";
-		$line .= " \$($objListName)";
+		$line .= $fileList;
 		# static/shared libgcc
 		my $crt = GetSrcOption ("LIBC");
 		if ($crt eq "static") {
@@ -1178,7 +1258,7 @@ sub FlushTargetText {
 			#?? IMPLIB for GnuC
 			return $prefix.$line;
 		} elsif ($target eq "static") {
-			return $prefix."\t\$(AR) $n \$($objListName)";
+			return $prefix."\t\$(AR) ${n}${fileList}";
 #		} else {
 #			Error ("unknown target: \"$target\"");
 		}
@@ -1233,12 +1313,18 @@ while (getline ())
 		$srcFiles = ExpandWildcards($srcFiles);
 		AddObjectList ($objListName, $srcFiles);
 	} elsif ($line =~ /^target\(.*\)$/) {
-		my ($type, $outfile, $objListName, undef, $symName) = $line =~
-			/\( \s* (\w+) \s*,\s* (\S+) \s*,\s* (\w+) (\s*,\s*(\w+([\s\w]*\w+)?))? \s*\)/x;
+		my ($type, $outfile, $objListName, undef, undef, $symName) = $line =~
+			/\( \s* (\w+) \s*,\s* (\S+) \s*,\s* (\w+([\w\s\+]*\w)?) (\s*,\s*(\w+([\s\w]*\w+)?))? \s*\)/x;
+		$objListName = join(',', split('\s*\+\s*', $objListName));		# rejoin $objListName - remove possible spaces
 		$symName = "" unless defined($symName);
-		RememberTarget ($symName, $outfile, $type, $objListName);
+		$targetDir = ConvertObjdir (($outfile =~ /(\S+(.*\S+)?)\/([^\/]\S+)/)[0]);
+		RememberTarget ($symName, $outfile, $type, $objListName, $targetDir);
 	} elsif ($line =~ /^mkdir\(.*\)/) {
-		push @outdirs, ($line =~ /\(\s*(\S+(.*\S+)?)\s*\)/)[0];
+		ConvertObjdir (($line =~ /\(\s*(\S+(.*\S+)?)\s*\)/)[0]);		#?? not linked to any dependency?
+	} elsif ($line =~ /^push\(.*\)/) {
+		PushVar(($line =~ /\(\s*(\S+)\s*\)/)[0]);
+	} elsif ($line =~ /^pop\(.*\)/) {
+		PopVar(($line =~ /\(\s*(\S+)\s*\)/)[0]);
 	} else {
 		Error ("don't know what to do with line [$line]");
 	}
@@ -1254,6 +1340,17 @@ print "# Makefile for $COMPILER/$PLATFORM target\n";
 print "# This file was automatically generated from \"$INNAME\": do not edit\n\n";
 
 EmitCompilerDefs ();
+
+if (@outdirs2) {
+	Splitter ("Directories");
+	$i = 0;
+	for my $dir (@outdirs) {
+		print "${outdirs2[$i]} = $dir\n";
+		$i++;
+	}
+	print "\n";
+}
+
 
 %symTargets = ();
 Splitter ("symbolic targets");
@@ -1279,15 +1376,20 @@ print "\n";
 
 # generate targets
 for $target (@targets) {
-	my (undef, $outfile, $type, $objListName) = split ('%', $target);
-	Splitter ("\"$outfile\" target");
+	my (undef, $outfile, $type, $objListName, $targetDir) = split('%', $target);
+	Splitter("\"$outfile\" target");
 
-	print "$objListName =".GetObjectList ($objListName)."\n\n";
-	my $dirList = GetDirsList ($objListName);
-	if ($dirList ne "") {
-		print "${objListName}_DIRS =$dirList\n\n";
+	# generate lists obj object files
+	for my $listName (split(',', $objListName)) {
+		print "${listName}_FILES =".GetObjectList($listName)."\n\n";
 	}
-	print FlushTargetText ($type, $outfile, $objListName, $dirList ne "")."\n\n";
+	# gather directory list
+	my $dirList = GetDirsList($objListName);
+	if ($targetDir ne "") {
+		$dirList .= " ".$targetDir;
+	}
+
+	print FlushTargetText($type, $outfile, $objListName, $dirList)."\n\n";
 }
 
 # refine @sources array: remove files, not linked into any target
@@ -1296,13 +1398,16 @@ for $item (@sources) {
 	my ($src, undef, undef, undef, undef, $objListName) = split('%', $item);
 	for my $tgt (@targets) {
 		my (undef, undef, undef, $tgtObjListName) = split('%', $tgt);
-		if ($objListName eq $tgtObjListName) {
-			push @sources2, $item;
-			undef $item;							# "found" flag
-			last;
+		for my $listName (split(',', $tgtObjListName)) {
+			if ($objListName eq $listName) {
+				push @sources2, $item;					#?? check for duplicates - single cpp may be included multiple times for different targets
+				undef $item;							# "found" flag
+				last;
+			}
 		}
 	}
-	WarningOnce ("unused object list \"$objListName\"", "unused:$objListName") if defined($item);
+# -- it's normal situation now when the object list is not used
+#	WarningOnce("unused object list \"$objListName\"", "unused:$objListName") if defined($item);
 }
 @sources = @sources2;
 
@@ -1334,9 +1439,10 @@ for $item (@sources) {
 }
 
 # generate targets for directories
-if (@outdirs) {
+if (@outdirs2) {
 	Splitter ("creating output directories");
-	for my $dir (@outdirs) {
+	for my $dir (@outdirs2) {
+		$dir = "\$(".$dir.")";
 		print "$dir:\n";
 		print "\t", GenMkdir ($dir), "\n\n";
 	}

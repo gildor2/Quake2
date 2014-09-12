@@ -1,3 +1,10 @@
+- limit packet size to 1400 bytes (old behaviour), but add possibility to use a few sequential packets as a single
+  large packet (new protocol); should support "older new protocol" for demo playback compatibility
+- server->client: do not remove entities which are not visible for player - simply stop updating their properties
+  (this may significantly reduce bandwidth when there are a lot of "static" entities on the map)
+
+- find a way to make ERR_DROP without exception (so Quake will be full-functional with DO_GUARD=0)
+- Q3 knc_dm1 - hung on loading
 - dlights: currently uses vertex color for planar surfaces (when gl_vertexLight=1), and dlight texture for trisurfs
   - textured dlight will be applied with PostLight() as separate rendering pass -- should try to combine passes
     color = (vertex_color + dligth_texture) * main_texture  -- single pass!
