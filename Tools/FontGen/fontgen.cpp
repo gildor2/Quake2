@@ -27,7 +27,7 @@ void Error(char *fmt, ...)
 }
 
 
-#define assert(x)	if (!(x)) { Error("Assertsion failed: %s (%s, %d)\n", #x, __FILE__, __LINE__); }
+#define assert(x)	if (!(x)) { Error("Assertion failed: %s (%s, %d)\n", #x, __FILE__, __LINE__); }
 
 
 struct letterloc_t
@@ -75,6 +75,27 @@ private:
 	fontDef_t	font_def;
 	int			texture_height;
 
+	// Saved program arguments
+	int			_argc;
+	const char** _argv;
+	const char* ARG(int index)
+	{
+		return (index >= _argc) ? "" : _argv[index];
+	}
+	void PrintArgs(FILE* f)
+	{
+		fprintf(f, "// FontGen");
+		for (int i = 1; i < _argc; i++)
+		{
+			const char* arg = _argv[i];
+			if (strchr(arg, ' '))
+				fprintf(f, " \"%s\"", arg);
+			else
+				fprintf(f, " %s", arg);
+		}
+		fprintf(f, "\n");
+	}
+
 	// Functions
 	void PrepareFont();
 	void PrepareBitmap();
@@ -85,22 +106,12 @@ private:
 	void SaveCpp();
 
 public:
-	FontGen(int argc, char *argv[]);
+	FontGen(int argc, const char** argv);
 	virtual ~FontGen();
 	static void Usage();
 	void Go();
 };
 
-
-static const char *GetArg(int which, int argc, char **argv)
-{
-	if (which >= argc)
-		return "";
-	else
-		return argv[which];
-}
-
-#define ARG(X) GetArg(X, argc, argv)
 
 static void MemSwap(void *a0, void *b0, int count)
 {
@@ -115,7 +126,7 @@ static void MemSwap(void *a0, void *b0, int count)
 }
 
 
-FontGen::FontGen(int argc, char **argv)
+FontGen::FontGen(int argc, const char **argv)
 :	hf(NULL)
 ,	dc(NULL)
 ,	dib(NULL)
@@ -136,6 +147,8 @@ FontGen::FontGen(int argc, char **argv)
 {
 	fontName[0] = 0;
 	fontWinName[0] = 0;
+	_argc = argc;
+	_argv = argv;
 
 	for (int argIdx = 1; argIdx < argc; argIdx++)
 	{
@@ -297,8 +310,12 @@ void FontGen::PrepareBitmap()
 	SelectObject(dc, hf);
 
 	SIZE theSize;
-	GetTextExtentPoint32( dc, " ", 1, &theSize);
-	fontSize = theSize.cy;
+	GetTextExtentPoint32( dc, "W", 1, &theSize);
+	if (fontSize != theSize.cy)
+	{
+		fontSize = theSize.cy;
+		printf("Overriding font size to %d\n", fontSize);
+	}
 
 	memset(bmbits, 0, TEX_WIDTH * TEX_HEIGHT * 3);
 }
@@ -646,6 +663,7 @@ void FontGen::SaveFontdef()
 	FILE *f = fopen(fileName, "wt");
 	if (!f) Error("ERROR: Could not write %s\n", fileName);
 
+	PrintArgs(f);
 	fprintf(f,
 		"// Generated from %s %d\n\n"
 		"bitmap \"%s\"\n"
@@ -685,6 +703,7 @@ void FontGen::SaveCpp()
 	FILE *f = fopen(fileName, "wt");
 	if (!f) Error("ERROR: Could not write %s\n", fileName);
 
+	PrintArgs(f);
 	fprintf(f,
 		"// Generated from %s %d\n\n"
 		"#define CHAR_WIDTH        %d\n"
@@ -825,7 +844,7 @@ void FontGen::Go()
 	}
 }
 
-void main(int argc, char **argv)
+void main(int argc, const char **argv)
 {
 	if (argc == 1)
 	{
