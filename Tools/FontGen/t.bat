@@ -1,11 +1,15 @@
 @echo off
 bash build.sh
 
-mkdir test
+if not exist test mkdir test
 cd test
 
-rem ..\fontgen.exe -name Abc1 -winname "Courier" -size 10
-rem ..\fontgen.exe -name Abc2 -winname "Courier New" -size 10 -tga packed,8bit
-..\fontgen.exe -name debug -winname "Consolas" -size 14 -tga packed,8bit -cpp
+::set styles=-styles antialias
+set font=-winname "Consolas" -size 14
+::set font=-winname "Courier" -size 10
 
-#start debug.tga
+..\fontgen.exe -name Debug %font% %styles% -tga packed,8bit
+..\fontgen.exe -name Debug-packed %font% %styles% -cpp packed
+..\fontgen.exe -name Debug-unpacked %font% %styles% -cpp
+
+::start debug.tga
