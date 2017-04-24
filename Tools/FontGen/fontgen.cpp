@@ -260,7 +260,7 @@ void FontGen::Usage()
 		"    -first <number>     - First character number to use. (default 32 (spacebar) )\n"
 		"    -last <number>      - Last character number to use (default 126)\n"
 		"    -styles <string>    - Styles to apply. <string> is comma separated list of:\n"
-		"                          bold, underline, strikeout, italic, ansialias\n"
+		"                          bold, underline, strikeout, italic, antialias\n"
 		"                          Example: For a bold underlined string, use\n"
 		"                          \"-styles bold,underline\" (No spaces between commas)\n"
 		"    -variadic           - allow variable-width fonts\n"
