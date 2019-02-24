@@ -2210,7 +2210,7 @@ bool CM_CombineTrace(trace_t &trace1, const trace_t &trace2)
 
 	if (trace1.startsolid)
 	{
-		trace1.startsolid = true;
+		trace2.startsolid = true;
 		ret = true;
 	}
 
