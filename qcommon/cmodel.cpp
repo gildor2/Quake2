@@ -447,12 +447,11 @@ static void LoadQ2Map(bspfile_t *bsp)
 	q1/hl bsp map loading
 -----------------------------------------------------------------------------*/
 
-static CBrush *GetHugeBrush()
-{
 #define BSIZE		65536
+static CBrush *GetHugeBrush(const CBox &largeBounds = {{-BSIZE,-BSIZE,-BSIZE}, {BSIZE,BSIZE,BSIZE}})
+{
 	// create large brush: should be allocated dynamically, because it will
 	// be modified and stored to leafBrushes[]
-	static const CBox largeBounds = {{-BSIZE,-BSIZE,-BSIZE}, {BSIZE,BSIZE,BSIZE}};
 	return new (CBrush::mem) CBrush(largeBounds);
 }
 
@@ -809,7 +808,7 @@ static void BuildBrushes1(int numLeafsOrig)
 		CBrush *stack2[MAX_TREE_DEPTH];
 
 		CBspNode *node = bspfile.nodes + bspfile.models[model].headnode;
-		CBrush *brush = GetHugeBrush();
+		CBrush *brush = GetHugeBrush(node->bounds);
 		while (true)
 		{
 			if (node->isLeaf)
