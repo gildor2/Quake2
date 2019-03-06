@@ -808,7 +808,8 @@ static void BuildBrushes1(int numLeafsOrig)
 		CBrush *stack2[MAX_TREE_DEPTH];
 
 		CBspNode *node = bspfile.nodes + bspfile.models[model].headnode;
-		CBrush *brush = GetHugeBrush(node->bounds);
+		const CBox largeBounds {CVec3 {node->bounds.mins[0] - 8.0f, node->bounds.mins[1] - 8.0f, node->bounds.mins[2] - 8.0f}, CVec3 {node->bounds.maxs[0] + 8.0f, node->bounds.maxs[1] + 8.0f, node->bounds.maxs[2] + 8.0f}};
+		CBrush *brush = GetHugeBrush(largeBounds);
 		while (true)
 		{
 			if (node->isLeaf)
@@ -825,6 +826,20 @@ static void BuildBrushes1(int numLeafsOrig)
 					brush->AddBevels(FindPlane);
 					BRUSH_STAT(unclock(brushBevelTime));
 					leafBrushes[leaf->num] = brush;
+
+					// unlink largeBounds sides:
+					{
+						CBrushSide** sideNode = &brush->sides;
+						while (*sideNode)
+						{
+							if ((*sideNode)->plane->dist == headNodeBounds.maxs.x ||
+							    (*sideNode)->plane->dist == headNodeBounds.maxs.y ||
+							    (*sideNode)->plane->dist == headNodeBounds.maxs.z)	// is this largeBounds side?
+								*sideNode = (*sideNode)->next;	// ignore largeBounds sides
+							else
+								sideNode = &(*sideNode)->next;
+						}
+					}
 				}
 
 				if (!sptr)
@@ -872,17 +887,15 @@ static void BuildBrushes1(int numLeafsOrig)
 		CBrushSide *s;
 		// count brush sides
 		for (s = brush->sides; s; s = s->next)
-			if (s->plane->dist != BSIZE)			// ignore largeBounds sides
-				dst->numSides++;
+			dst->numSides++;
 		dst->sides = new (dataChain) cbrushside_t [dst->numSides];
 		cbrushside_t *bs = dst->sides;
 		for (s = brush->sides; s; s = s->next)
-			if (s->plane->dist != BSIZE)			// ignore largeBounds sides
-			{
-				bs->plane   = (s->back) ? FindBackplane(s->plane) : s->plane;
-				bs->surface = &nullsurface;			// texture will be found by trace function
-				bs++;
-			}
+		{
+			bs->plane   = (s->back) ? FindBackplane(s->plane) : s->plane;
+			bs->surface = &nullsurface;			// texture will be found by trace function
+			bs++;
+		}
 		dst++;										// next brush
 	}
 	BRUSH_STAT(unclock(brushConvertTime));
