@@ -832,9 +832,9 @@ static void BuildBrushes1(int numLeafsOrig)
 						CBrushSide** sideNode = &brush->sides;
 						while (*sideNode)
 						{
-							if ((*sideNode)->plane->dist == headNodeBounds.maxs.x ||
-							    (*sideNode)->plane->dist == headNodeBounds.maxs.y ||
-							    (*sideNode)->plane->dist == headNodeBounds.maxs.z)	// is this largeBounds side?
+							if ((*sideNode)->plane->dist == headNodeBounds.maxs[0] ||
+							    (*sideNode)->plane->dist == headNodeBounds.maxs[1] ||
+							    (*sideNode)->plane->dist == headNodeBounds.maxs[2])	// is this largeBounds side?
 								*sideNode = (*sideNode)->next;	// ignore largeBounds sides
 							else
 								sideNode = &(*sideNode)->next;
