@@ -428,19 +428,21 @@ static void DrawGUI(bool allowNotifyArea)
 				int shift = 0;
 				while (src)
 				{
-					char buf[64];
+					char buf[80]; // 64 (configstring size) + gap
 					const char *end = strchr(src, '\n');
 					int len;
 					if (end)
 					{
 						len = end - src;
+						if (len > 64) len = 64; // in a case map name exactly fits 64 bytes, i.e. no zero char
 						appStrncpyz(buf, src, len + 1);
 						src = end + 1;
 					}
 					else
 					{
 						len = strlen(src);
-						memcpy(buf, src, len + 1);
+						memcpy(buf, src, len);
+						buf[len] = 0;
 						src = NULL;
 					}
 					// note: up to 6 lines until overlap
