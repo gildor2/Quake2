@@ -111,6 +111,7 @@ lightmapBlock_t *LM_NextBlock()
 void LM_CheckMinlight(dynamicLightmap_t *dl)
 {
 	const byte *src = dl->source[0];
+	if (!src) return; // seems dl->numStyles == 0 here
 	for (int i = 0; i < dl->w * dl->h; i++)
 	{
 		int r, g, b, m;
@@ -292,6 +293,9 @@ void LM_PutBlock(dynamicLightmap_t *dl)
 {
 	guardSlow(LM_PutBlock);
 	assert(dl);
+
+	if (dl->source[0] == NULL) return; // numStyles may be 0 for HL
+
 	int stride = (LIGHTMAP_SIZE - dl->w) * 4;
 
 	// put main lightmap (style 0, slow)
