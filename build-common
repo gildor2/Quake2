@@ -23,11 +23,8 @@ dir="${thisfile%/*}"
 if [ $dir == $thisfile ]; then
 	dir="."
 fi
-pushd $dir >/dev/null
-rootdir=$PWD
-popd >/dev/null
-
-tools=$rootdir/Tools
+rootdir=$dir
+tools=$rootdir/Tools		#?? review: not working for SymInfoBuilder, may be should remove from all locations
 
 # default output directory
 [ "$OUT" ]      || OUT="Release"
@@ -87,5 +84,6 @@ function BuildTarget()
 {
 	time $build makefile-$PLATFORM $TARGET || exit 1
 	# generate symbols.dbg
-	$tools/SymInfoBuilder/work.pl $OUT $maptype
+	echo "$tools/SymInfoBuilder/work.pl $OUT $maptype"
+	Tools/SymInfoBuilder/work.pl $OUT $maptype
 }
