@@ -27,7 +27,7 @@ COMBINER BUGS:
 zoneportals (q2,q3):
 ! can clip visible contents with portal:
   a) no portals open - draw nothing (q2 does)
-  b) 1 portal open   - compute special fructum for it (should improve performance)
+  b) 1 portal open   - compute special frustum for it (should improve performance)
   c) 2+ portals open - draw everything (q2/q3 does) or expand computed frustum by all portals
 ! Q2 portal game code is completely different from Q3 one, so, Q3 map portals will be "invisible"
   for Q2 game dll -- require server-side hook (or create func_areaportal entity?)

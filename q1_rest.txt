@@ -3,7 +3,7 @@
 - 'ahl_streets': lamps have 'halo' with rendermode==5 (additive)
 - 'ccity2':
   - have rotating lamps with rendermode=5 (additive)
-  - BUG: this rotating lamp have surf with "red" texture, whith is listed in "lights.rad" -- it will generate light
+  - BUG: this rotating lamp have surf with "red" texture, which is listed in "lights.rad" -- it will generate light
     emitter at map position {0,0,0}
   - have sliding doors with glasses -- uses trigger_multiple for synch ?
 ! use LightOrigin for renderer entity (weapon model, multi-part models ...)
@@ -69,4 +69,4 @@
   - can detect light surfaces:
     1) check lightmap for all faces with same texture
     2) all of them should be filled with a single color (because received light is smaller, than emitting light)
-    3) at leats one of color components should be 255 (normalized color)
+    3) at least one of color components should be 255 (normalized color)

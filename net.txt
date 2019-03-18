@@ -1,7 +1,7 @@
 when it is possible, that 2 sockets (server+client) used at the same time? (server browser?)
 which port used for network connection? (server port?)
 BUG: when server launched, cannot see other servers in "join" menu - cl send "info" req, remote
- server ansver "info ...", and this answer go to out local server, where rejected (should go to client!)
+ server answer "info ...", and this answer go to out local server, where rejected (should go to client!)
  - original Q2 uses PORT_SERVER and PORT_CLIENT - 2 sockets
  - may be, create temp connection with separate port (when to close connection, if no answers?)
 =================

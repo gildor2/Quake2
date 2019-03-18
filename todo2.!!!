@@ -1,4 +1,4 @@
-- sort levelshort by numeric strcmp
+- sort levelshort with numeric strcmp
 - check misc/ut/network.htm
 - try LZMA decoder for resources and for .7z
 
@@ -74,5 +74,5 @@ Win32 CDS (ChangeDisplaySettings()):
 - Win9x: vid_restart will restore resolution (via WM_SIZE+MINIMIZE)
 ! should centralize resolution changes: do not restore desktop res when not
   minimized (check WM_SIZE correctness ?)
-  ? place to GLimp_Activate(), call CDS simputaneously with minimize/restore
+  ? place to GLimp_Activate(), call CDS simultaneously with minimize/restore
 ? try TNT with 16 <-> 32 bit change with "force=false"

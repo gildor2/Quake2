@@ -40,7 +40,7 @@ MAP PATCH:
     - surface flags: envmap, autoflare
     - fogging (patch worldspawn entity)
     * this will allow us to modify patch script specs with reimplementation of macros to keep compatibility
-  - these include files may be overriden in mods (use game-based name to include), mod can use following file:
+  - these include files may be overridden in mods (use game-based name to include), mod can use following file:
     ... <code> ...
     #include "/baseq2/includes/entpatch.h"
     ... <code> ...

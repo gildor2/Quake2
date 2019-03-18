@@ -7,7 +7,7 @@ Source code: https://github.com/gildor2/Quake2
 
 For more details, please visit http://www.gildor.org/en/projects/quake2
 
-## Just a brief list of major heatures
+## Just a brief list of major features
 
 - Support for game levels (maps) from other games: Quake 1, Half-Life, Quake 3, Kingpin. Those levels are playable with standard Quake 2 game
   and mods, level entities are converted into Q2 at loading time.

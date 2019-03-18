@@ -42,7 +42,7 @@ Using third-party libraries:
 - improved "set game directory" action
 - ability to reverse sound channels; controllable with "s_reverse_stereo"
 - player skins:
-  - md2: can use skins without icon ("*_i.???") file -- skin shound have name "skn_*.???"; side effect: even when
+  - md2: can use skins without icon ("*_i.???") file -- skin should have name "skn_*.???"; side effect: even when
     skin icon exists, it will be ignored
   - md2: implemented skin selection logic when specified skin is absent
 - added "disconnect" menu item into "multiplayer" menu
@@ -155,7 +155,7 @@ Console/Menu
   - Ctrl-Backspace - delete word before cursor
   - any char - insert text
 - history navigation:
-  - Crtl-Home / Ctrl-End will rewind console to begin/end of buffer (old behaviour: same, but without Ctrl)
+  - Crtl-Home / Ctrl-End will rewind console to begin/end of buffer (old behavior: same, but without Ctrl)
   - PgUp / PgDn will scroll history up/down (hold Ctrl to scroll faster)
   - mouse wheel scroll history (hold Ctrl to scroll slower)
 - changed command history code to prevent appearing of empty lines and duplicates
@@ -269,7 +269,7 @@ Network
   - surface-dependent bullet hit sounds (client-side)
   - camper sounds (server-side)
   - falling sounds (server-side)
-  - customised rail trail
+  - customized rail trail
   * side effect: demos will crash server, when played with original Quake2; to record compatible demos, just
     use cl_extprotocol=0 or sv_extprotocol=0
   - faster downloading speed (10 times)

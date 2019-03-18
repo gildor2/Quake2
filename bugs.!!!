@@ -1,3 +1,6 @@
+- a.bat, map tokyo, nosound 0, snd_restart -> crash with "cannot read file ... .wav"
+  - the file is corrupt, so should simply ignore it
+
 - q3a map "mythology": has areas with very slow lighting (shoot from hyperblaster inside a long corrydor with disabled lightgrid ...
   fps will fall to 15, 'ent light' will be 50ms)
 

@@ -1,4 +1,12 @@
-- limit packet size to 1400 bytes (old behaviour), but add possibility to use a few sequential packets as a single
+Mar,2019:
+- use pdb files (can borrow code from umodel), probably remove .dbg file system at all
+- most HL maps (game=hl) will say that there's no spawn point: probably should replace some entity with it?
+- most HL maps uses wad files, so they're not textured - code assumes that WAD will be converted to TGA with
+  offline tool "WadExtract"; should load WAD files?
+
+-------
+
+- limit packet size to 1400 bytes (old behavior), but add possibility to use a few sequential packets as a single
   large packet (new protocol); should support "older new protocol" for demo playback compatibility
 - server->client: do not remove entities which are not visible for player - simply stop updating their properties
   (this may significantly reduce bandwidth when there are a lot of "static" entities on the map)
@@ -56,7 +64,7 @@
   conflicts, when few versions (mostly - win32+unix) resides in a single directory
 
 ? remove "./" from all OS filename starts ? (when non-game mounted FS used -- for .pak files etc (not "./baseq2/pak0.pak" but
-  "baseq2/pak0.pak")) -- but keep for quake fs to allow load root-relative file (w/o searchig in few game dirs + w/o adding "baseq2")
+  "baseq2/pak0.pak")) -- but keep for quake fs to allow load root-relative file (w/o searching in few game dirs + w/o adding "baseq2")
   - can replace (add synonym for "./path" = "/path" and use it everywhere)
 ! add [auto-]detail for rail
 ? make InitialSnapPosition() work with Trace() to allow "teleporter grenade" in LOX mod
@@ -107,7 +115,7 @@ MOD COMPATIBILITY:
 - "paused": incorrect timing (at least, fx will be incorrect after paused=0)
   - should reimplement it in a different way
   - may be, make multiplayer pause (with sync clients to server; make attention to not timeout clients when server is paused)
-? check for hook ability of precicious PMove (more than 1/8) (2 non-spectators cannot be in the same quantized world point;
+? check for hook ability of accurate PMove (more than 1/8) (2 non-spectators cannot be in the same quantized world point;
   every new player will be performed InitialSnapPosition()
   - idea: save non-quantized+quantized positions (+velocity?); next time find non-quantized by quantized (save for few pmove types
     only to avoid 2 ghosts in one quantized place); may be, if few players in one quantized place - ignore detailed info
@@ -174,7 +182,7 @@ HALFLIFE2:
 CAMERA:
   - interpolate camera 1st/3rd person change
   ? cl_3rd_person 2 -- smooth camera; add game option: play with 3rd person camera (ext protocol only ?)
-  - 3rd person camera trace: can extend Trace() to decect point of contents change
+  - 3rd person camera trace: can extend Trace() to detect point of contents change
     (do not leave water; current: will not enter water, but can leave it)
     - trace note: can add flag for contents: CONTENTS_VIS_BLOCK (different name?) to detect visibility block: can check
       collided brush side surface flags - when TRANS33 | TRANS66 | ALPHA | NODRAW (?) - continue trace, else - stop
@@ -309,7 +317,7 @@ BSP:
     every frame twice, and without portal - once per few frames.
   - culling:
     1) PVS: project portal entity to destination, find its leafnums->clusters, combine PVS
-    2) shrink frustum by original portal entity (may use GetBoxRect(entityBox)); shring 5th frustum plane too!
+    2) shrink frustum by original portal entity (may use GetBoxRect(entityBox)); shrink 5th frustum plane too!
     3) use this computed data for determining rendered leafs
   - requires server-side code to not cull entities by PVS, when player can see it with portal
   - rendering:
@@ -320,7 +328,7 @@ BSP:
 ? place LoadMd2 outside renderer and perform lovercase for a skin names
 ! fog occlusion (for global fog) -- implement it like sky (occluded surface -> sky surface, sky -> fog color);
   may look at Alice (additional clip plane to 4 frustum planes)
-- detail textures + magnify filter (i.e. advmame2x -- check its name!) - use file "detail.lst" (?) wich will specify detail+filter
+- detail textures + magnify filter (i.e. advmame2x -- check its name!) - use file "detail.lst" (?) which will specify detail+filter
   for Q2 (KP) textures
 
 ------------ SOUND ---------------
@@ -357,7 +365,7 @@ BSP:
   removing "/" and "\" at line start before parsing; may be, change prompt "]" -> other (">", "#"
   or #define'd string; draw prompt separately -- remove it from input line, i.e. empty line will be
   "" (in memory), not "]")
-  ? may keep Q3-like behaviour (any text during game, not beginning with slash -> chat) -- but for multiplayer only (not for
+  ? may keep Q3-like behavior (any text during game, not beginning with slash -> chat) -- but for multiplayer only (not for
     botmatch) and when developer=0
 
 - md4.c::Encode()/Decode() -- works exactly as memcpy() for little-endian platforms, memcpy()+LongSwapBuffer() with big-endian
@@ -399,4 +407,4 @@ BSP:
   ? complete savegames too (load/save command)
 ? make completion "dir"-like formatting + colorizing against char-marks (types)
 ? add "Cmd_AddHidden()" - for server commands (cannot be completed/listed, but accessible)
-  (or just implement with Cmd_AddCommand(), but use name prefix, which will be ignored for seaching, but disables completion)
+  (or just implement with Cmd_AddCommand(), but use name prefix, which will be ignored for searching, but disables completion)

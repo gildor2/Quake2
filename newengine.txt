@@ -96,10 +96,10 @@
     - screen (manage/visualize everything)
     - network/game support
   - CSubsystem: as class; all should Tick() from MainLoop() (not from client)
-    - shedule using system->MaxFps value (some subsystems really do not require high FPS)
+    - schedule using system->MaxFps value (some subsystems really do not require high FPS)
     - server: separate too (game+network; game - 10fps, network - more);
-    - add "bool inactive" - do not shedule
-    - global sheduler may create sleep() system calls when everything is fast enough!
+    - add "bool inactive" - do not schedule
+    - global scheduler may create sleep() system calls when everything is fast enough!
 
 ------------ New renderer system -----------
 - separate renderer (math only) and backend (OpenGL); call hierarchy: mainEngine->renderer->backend->gl
@@ -107,15 +107,15 @@
   - remove dependency on "gl.h", "glext.h", "qgl_*.h" etc from scene graph files
 - backend should provide "caps" field:
   - rect textures (GL_NV_texture_rectangle: clamp, no mipmap)
-  - rect textures 2 (GL_ARB_texture_non_power_of_two: full-feautured textures)
+  - rect textures 2 (GL_ARB_texture_non_power_of_two: full-featured textures)
   - compressed textures (for disabling by menu)
   - fast blend (for soft renderer: can draw console etc with opaque rects)
   - fast culling (for soft: when "false" will try to cull everything before sending to backend)
   - some lighting info (software, hardware with/without cubemaps etc)
 - images.cpp -> renderer (not backend); backend - uploading only
-* (abstract) class CImage, wisible from GUI/client - implementation in renderer, some service funcs
+* (abstract) class CImage, visible from GUI/client - implementation in renderer, some service funcs
   (uploading, retreiving from screen, rendering to texture) - in backend
-? vid_restart: restart backend ? (renderer restarting - unneded ??); rename cmd ?
+? vid_restart: restart backend ? (renderer restarting - unneeded ??); rename cmd ?
 ? share model/map loading with cmodel (separate into own library, used by server/client/renderer)
 - CImage->CShader (CMaterial?); CImage->CGlImage; CMaterial->CGlMaterial
 - client rendering:
