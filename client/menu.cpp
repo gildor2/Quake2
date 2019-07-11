@@ -2627,25 +2627,36 @@ struct videoMenu_t : menuFramework_t
 
 	bool Init ()
 	{
-		static const char *resolutions[] = {
-			"[320  240 ]",	"[400  300 ]",	"[512  384 ]",	"[640  480 ]",
-			"[800  600 ]",	"[960  720 ]",	"[1024 768 ]",	"[1152 864 ]",
-			"[1280 700 ]",	"[1280 960 ]",	"[1280 1024]",	"[1600 900 ]",
-			"[1600 1200]",	"[1680 1050]",	"[1920 1200]",	"[2048 1536]",
-			NULL
-		};
-		static const char *overbrightNames[] = {
+		static const char* resolutions[32];
+
+		static const char* overbrightNames[] = {
 			"no",			"yes",			"auto",			NULL
 		};
-		static const char *bits[] = {
+		static const char* bits[] = {
 			"default",		"16 bit",		"32 bit",		NULL
 		};
-		static const char *lighting[] = {
+		static const char* lighting[] = {
 			"lightmap",		"vertex",		NULL
 		};
-		static const char *filters[] = {
+		static const char* filters[] = {
 			"bilinear",		"trilinear",	NULL
 		};
+
+		// Init video modes
+		if (resolutions[0] == NULL)
+		{
+			for (int mode = 0; /* empty */; mode++)
+			{
+				int w, h;
+				if (!Vid_GetModeInfo(&w, &h, mode))
+					break;
+				assert(mode < ARRAY_COUNT(resolutions)-1);
+				char buf[32];
+				appSprintf(ARRAY_ARG(buf), "[%4dx%4d]", w, h);
+				resolutions[mode] = appStrdup(buf); // not releasing string
+				resolutions[mode+1] = NULL;
+			}
+		}
 
 		// init cvars
 CVAR_BEGIN(vars)
